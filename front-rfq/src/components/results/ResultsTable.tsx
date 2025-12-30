@@ -37,11 +37,13 @@ export function ResultsTable() {
 
   // Extraer opciones únicas para los filtros
   const uniqueEvaluations = useMemo(() => {
+    if (!results) return [];
     const evaluations = new Set(results.map(r => r.evaluation));
     return Array.from(evaluations).sort();
   }, [results]);
 
   const uniqueFases = useMemo(() => {
+    if (!results) return [];
     const fases = new Set(results.map(r => r.fase));
     return Array.from(fases).sort();
   }, [results]);
@@ -56,6 +58,7 @@ export function ResultsTable() {
 
   // Filtrar resultados (solo por texto, evaluación y fase)
   const filteredResults = useMemo(() => {
+    if (!results) return [];
     return results.filter(result => {
       // Filtro por texto de búsqueda (busca en descripción)
       if (filters.searchText) {

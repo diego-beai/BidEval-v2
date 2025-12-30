@@ -11,8 +11,7 @@ export function RfqBaseUploader() {
     isProcessingRfqBase,
     rfqBaseError,
     clearRfqBase,
-    setRfqBaseError,
-    rfqBaseStatus
+    setRfqBaseError
   } = useRfqStore();
 
   const { handleRfqBaseUpload } = useRfqBaseProcessing();
@@ -56,7 +55,7 @@ export function RfqBaseUploader() {
     setProcessingFileCount(fileCount);
     setShowConfirm(false);
 
-    const success = await handleRfqBaseUpload(selectedFiles);
+    await handleRfqBaseUpload(selectedFiles);
 
     // Limpiar archivos seleccionados después del procesamiento
     setSelectedFiles([]);

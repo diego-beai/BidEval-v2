@@ -22,5 +22,18 @@ export enum EvaluationType {
   FEED = 'FEED Deliverables'
 }
 
+/**
+ * Nombres display para proveedores
+ */
+export const PROVIDER_DISPLAY_NAMES: Record<Provider, string> = {
+  [Provider.TR]: 'Técnicas Reunidas',
+  [Provider.IDOM]: 'IDOM',
+  [Provider.SACYR]: 'SACYR',
+  [Provider.EA]: 'Empresarios Agrupados',
+  [Provider.SENER]: 'SENER',
+  [Provider.TRESCA]: 'TRESCA',
+  [Provider.WORLEY]: 'WORLEY'
+};
+
 export type ProviderName = keyof typeof Provider;
 export type EvaluationTypeName = keyof typeof EvaluationType;
