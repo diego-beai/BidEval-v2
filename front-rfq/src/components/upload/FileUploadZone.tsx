@@ -4,7 +4,7 @@ import { useRfqStore } from '../../stores/useRfqStore';
 import { validateFile } from '../../utils/validators';
 
 export const FileUploadZone = memo(function FileUploadZone() {
-  const { addFiles, setError } = useRfqStore();
+  const { selectedFiles, addFiles, setError, isProcessing } = useRfqStore();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -34,7 +34,8 @@ export const FileUploadZone = memo(function FileUploadZone() {
       'application/pdf': ['.pdf']
     },
     maxFiles: 7,
-    multiple: true
+    multiple: true,
+    disabled: isProcessing
   });
 
   return (
@@ -44,8 +45,15 @@ export const FileUploadZone = memo(function FileUploadZone() {
       data-drag={isDragActive ? '1' : '0'}
     >
       <input {...getInputProps()} />
+
       <p className="dropzonePrompt">
-        {isDragActive
+        {isProcessing
+          ? 'Procesando propuestas... Esto puede tardar unos minutos'
+          : selectedFiles.length > 0
+          ? selectedFiles.length > 1
+            ? `${selectedFiles.length} archivos seleccionados (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
+            : `${selectedFiles[0].name} (${(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
+          : isDragActive
           ? 'Suelta los archivos PDF aquí...'
           : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
       </p>

@@ -1,7 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
-import { Provider } from '../../types/provider.types';
-import { PROVIDER_COLORS, PROVIDER_DISPLAY_NAMES } from '../../config/constants';
 import * as XLSX from 'xlsx';
 import './ResultsTable.css';
 
@@ -9,48 +7,28 @@ interface Filters {
   searchText: string;
   selectedEvaluations: string[];
   selectedFases: string[];
-  selectedProviders: Provider[];
 }
 
 export function ResultsTable() {
   const { results, selectedFiles } = useRfqStore();
 
-  // Todos los proveedores disponibles
-  const allProviders: Provider[] = [
-    Provider.IDOM,
-    Provider.TR,
-    Provider.SACYR,
-    Provider.EA,
-    Provider.SENER,
-    Provider.TRESCA,
-    Provider.WORLEY
-  ];
-
   // Estado de filtros
   const [filters, setFilters] = useState<Filters>({
     searchText: '',
     selectedEvaluations: [],
-    selectedFases: [],
-    selectedProviders: allProviders // Por defecto, todos seleccionados
+    selectedFases: []
   });
 
   // Estado para mostrar/ocultar filtros
   const [showFilters, setShowFilters] = useState(false);
 
   // Estado para mostrar/ocultar dropdowns
-  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
   const [showFaseDropdown, setShowFaseDropdown] = useState(false);
 
   // Refs para detectar clics fuera de los dropdowns
-  const providerDropdownRef = useRef<HTMLDivElement>(null);
   const evaluationDropdownRef = useRef<HTMLDivElement>(null);
   const faseDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Proveedores visibles (los seleccionados en el filtro)
-  const visibleProviders = filters.selectedProviders.length > 0
-    ? filters.selectedProviders
-    : allProviders;
 
   // Extraer opciones únicas para los filtros
   const uniqueEvaluations = useMemo(() => {
@@ -89,28 +67,6 @@ export function ResultsTable() {
       return true;
     });
   }, [results, filters.searchText, filters.selectedEvaluations, filters.selectedFases]);
-
-  // Toggle selección de proveedor
-  const toggleProvider = (provider: Provider) => {
-    setFilters(prev => {
-      const isSelected = prev.selectedProviders.includes(provider);
-      const newSelected = isSelected
-        ? prev.selectedProviders.filter(p => p !== provider)
-        : [...prev.selectedProviders, provider];
-
-      return { ...prev, selectedProviders: newSelected };
-    });
-  };
-
-  // Seleccionar/Deseleccionar todos los proveedores
-  const toggleAllProviders = () => {
-    setFilters(prev => ({
-      ...prev,
-      selectedProviders: prev.selectedProviders.length === allProviders.length
-        ? []
-        : allProviders
-    }));
-  };
 
   // Toggle selección de evaluación
   const toggleEvaluation = (evaluation: string) => {
@@ -161,8 +117,7 @@ export function ResultsTable() {
     setFilters({
       searchText: '',
       selectedEvaluations: [],
-      selectedFases: [],
-      selectedProviders: allProviders
+      selectedFases: []
     });
   };
 
@@ -170,37 +125,29 @@ export function ResultsTable() {
   const hasActiveFilters =
     filters.searchText ||
     filters.selectedEvaluations.length > 0 ||
-    filters.selectedFases.length > 0 ||
-    filters.selectedProviders.length !== allProviders.length;
+    filters.selectedFases.length > 0;
 
   const handleExportCSV = () => {
-    // Usar resultados filtrados y columnas visibles para exportación
+    // Usar resultados filtrados para exportación
     const dataToExport = filteredResults;
 
-    // Crear headers solo con proveedores visibles
+    // Crear headers con solo las columnas requeridas
     const headers = [
       'ID',
       'Evaluación',
       'Fase',
       'Descripción',
-      'Requisitos RFQ',
-      ...visibleProviders.map(p => PROVIDER_DISPLAY_NAMES[p])
+      'Requisito RFQ'
     ];
 
-    // Crear filas con datos solo de proveedores visibles
+    // Crear filas con solo las columnas requeridas
     const rows = dataToExport.map(result => {
-      const providerValues = visibleProviders.map(provider => {
-        const evaluation = result.evaluations[provider];
-        return evaluation?.evaluation || 'Null';
-      });
-
       return [
         result.id,
         `"${result.evaluation.replace(/"/g, '""')}"`,
         `"${result.fase.replace(/"/g, '""')}"`,
         `"${result.item.replace(/"/g, '""')}"`,
-        `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`,
-        ...providerValues.map(v => `"${v.replace(/"/g, '""')}"`)
+        `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`
       ];
     });
 
@@ -221,33 +168,26 @@ export function ResultsTable() {
   };
 
   const handleExportExcel = () => {
-    // Usar resultados filtrados y columnas visibles para exportación
+    // Usar resultados filtrados para exportación
     const dataToExport = filteredResults;
 
-    // Crear headers solo con proveedores visibles
+    // Crear headers con solo las columnas requeridas
     const headers = [
       'ID',
       'Evaluación',
       'Fase',
       'Descripción',
-      'Requisitos RFQ',
-      ...visibleProviders.map(p => PROVIDER_DISPLAY_NAMES[p])
+      'Requisito RFQ'
     ];
 
-    // Crear filas con datos solo de proveedores visibles
+    // Crear filas con solo las columnas requeridas
     const rows = dataToExport.map(result => {
-      const providerValues = visibleProviders.map(provider => {
-        const evaluation = result.evaluations[provider];
-        return evaluation?.evaluation || 'Null';
-      });
-
       return [
         result.id,
         result.evaluation,
         result.fase,
         result.item,
-        result.rfq_requisito || '-',
-        ...providerValues
+        result.rfq_requisito || '-'
       ];
     });
 
@@ -261,8 +201,7 @@ export function ResultsTable() {
       { wch: 25 }, // Evaluación
       { wch: 15 }, // Fase
       { wch: 50 }, // Descripción
-      { wch: 40 }, // Requisitos RFQ
-      ...visibleProviders.map(() => ({ wch: 20 })) // Proveedores visibles
+      { wch: 40 }  // Requisito RFQ
     ];
 
     // Crear workbook y agregar worksheet
@@ -276,12 +215,6 @@ export function ResultsTable() {
   // Efecto para cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Cerrar dropdown de proveedores
-      if (providerDropdownRef.current &&
-          !providerDropdownRef.current.contains(event.target as Node)) {
-        setShowProviderDropdown(false);
-      }
-
       // Cerrar dropdown de evaluación
       if (evaluationDropdownRef.current &&
           !evaluationDropdownRef.current.contains(event.target as Node)) {
@@ -296,7 +229,7 @@ export function ResultsTable() {
     };
 
     // Agregar listener solo si al menos un dropdown está abierto
-    if (showProviderDropdown || showEvaluationDropdown || showFaseDropdown) {
+    if (showEvaluationDropdown || showFaseDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
@@ -304,7 +237,7 @@ export function ResultsTable() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showProviderDropdown, showEvaluationDropdown, showFaseDropdown]);
+  }, [showEvaluationDropdown, showFaseDropdown]);
 
   // Early return si no hay resultados
   if (!results || results.length === 0) {
@@ -434,46 +367,6 @@ export function ResultsTable() {
               </div>
             </div>
 
-            <div className="filter-item provider-filter">
-              <label className="filter-label">
-                Proveedores visibles ({filters.selectedProviders.length}/{allProviders.length})
-              </label>
-              <div className="provider-dropdown-container" ref={providerDropdownRef}>
-                <button
-                  type="button"
-                  className="provider-dropdown-btn"
-                  onClick={() => setShowProviderDropdown(!showProviderDropdown)}
-                >
-                  {filters.selectedProviders.length === allProviders.length
-                    ? 'Todos los proveedores'
-                    : `${filters.selectedProviders.length} seleccionados`}
-                  <span className="dropdown-arrow">{showProviderDropdown ? '▲' : '▼'}</span>
-                </button>
-
-                {showProviderDropdown && (
-                  <div className="provider-checkboxes">
-                    <label className="checkbox-item checkbox-all">
-                      <input
-                        type="checkbox"
-                        checked={filters.selectedProviders.length === allProviders.length}
-                        onChange={toggleAllProviders}
-                      />
-                      <span>Todos</span>
-                    </label>
-                    {allProviders.map(provider => (
-                      <label key={provider} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={filters.selectedProviders.includes(provider)}
-                          onChange={() => toggleProvider(provider)}
-                        />
-                        <span>{PROVIDER_DISPLAY_NAMES[provider]}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
           {hasActiveFilters && (
@@ -494,24 +387,13 @@ export function ResultsTable() {
               <th className="col-evaluation">Evaluación</th>
               <th className="col-fase">Fase</th>
               <th className="col-item">Descripción del Ítem</th>
-              <th className="col-rfq-requisito">Requisitos RFQ</th>
-              {visibleProviders.map(provider => (
-                <th
-                  key={provider}
-                  className="col-provider"
-                  style={{
-                    borderBottom: `3px solid ${PROVIDER_COLORS[provider]}`
-                  }}
-                >
-                  {PROVIDER_DISPLAY_NAMES[provider]}
-                </th>
-              ))}
+              <th className="col-rfq-requisito">Requisito RFQ</th>
             </tr>
           </thead>
           <tbody>
             {filteredResults.length === 0 ? (
               <tr>
-                <td colSpan={5 + visibleProviders.length} className="no-results">
+                <td colSpan={5} className="no-results">
                   No se encontraron resultados con los filtros aplicados
                 </td>
               </tr>
@@ -525,21 +407,6 @@ export function ResultsTable() {
                   <td className="col-rfq-requisito" title={result.rfq_requisito}>
                     {result.rfq_requisito || '-'}
                   </td>
-                  {visibleProviders.map(provider => {
-                    const evaluation = result.evaluations[provider];
-                    const value = evaluation?.evaluation || 'Null';
-                    const hasValue = evaluation?.hasValue ?? false;
-
-                    return (
-                      <td
-                        key={provider}
-                        className={`col-provider ${hasValue ? 'has-value' : 'no-value'}`}
-                        title={value}
-                      >
-                        {value}
-                      </td>
-                    );
-                  })}
                 </tr>
               ))
             )}
@@ -551,13 +418,11 @@ export function ResultsTable() {
         <p>
           {hasActiveFilters ? (
             <>
-              <strong>Mostrando:</strong> {filteredResults.length} ítems |
-              <strong> Proveedores visibles:</strong> {visibleProviders.length}/{allProviders.length}
+              <strong>Mostrando:</strong> {filteredResults.length} de {results.length} ítems
             </>
           ) : (
             <>
-              <strong>Total de ítems:</strong> {results.length} |
-              <strong> Proveedores:</strong> {allProviders.length}
+              <strong>Total de ítems:</strong> {results.length}
             </>
           )}
         </p>

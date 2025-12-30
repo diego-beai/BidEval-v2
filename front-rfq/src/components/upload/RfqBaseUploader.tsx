@@ -1,24 +1,21 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRfqStore } from '../../stores/useRfqStore';
-import { uploadRfqBase } from '../../services/n8n.service';
-import { ApiError } from '../../types/api.types';
+import { useRfqBaseProcessing } from '../../hooks/useRfqBaseProcessing';
 import { API_CONFIG } from '../../config/constants';
 import { RfqBaseProcessingStatus } from '../processing/RfqBaseProcessingStatus';
-import { ProcessingStage } from '../../types/rfq.types';
 
 export function RfqBaseUploader() {
   const {
     rfqBase,
     isProcessingRfqBase,
     rfqBaseError,
-    setRfqBase,
     clearRfqBase,
-    startProcessingRfqBase,
-    updateRfqBaseStatus,
-    setRfqBaseError
+    setRfqBaseError,
+    rfqBaseStatus
   } = useRfqStore();
 
+  const { handleRfqBaseUpload } = useRfqBaseProcessing();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [processingFileCount, setProcessingFileCount] = useState(0);
@@ -57,52 +54,13 @@ export function RfqBaseUploader() {
 
     const fileCount = selectedFiles.length;
     setProcessingFileCount(fileCount);
-    startProcessingRfqBase(fileCount);
     setShowConfirm(false);
 
-    try {
-      // Actualizar progreso: procesando
-      updateRfqBaseStatus({
-        stage: ProcessingStage.OCR_PROCESSING,
-        progress: 30,
-        message: `Procesando ${fileCount} RFQ${fileCount > 1 ? 's' : ''}...`
-      });
+    const success = await handleRfqBaseUpload(selectedFiles);
 
-      // Procesar todos los archivos en paralelo
-      const uploadPromises = selectedFiles.map(file => uploadRfqBase(file));
-      const responses = await Promise.all(uploadPromises);
-
-      // Actualizar progreso: finalizando
-      updateRfqBaseStatus({
-        stage: ProcessingStage.EVALUATING,
-        progress: 80,
-        message: 'Extrayendo requisitos...'
-      });
-
-      // Tomar la última respuesta como la principal
-      const lastResponse = responses[responses.length - 1];
-      const allTipos = [...new Set(responses.flatMap(r => r.tipos_procesados))];
-
-      setRfqBase({
-        fileId: lastResponse.file_id,
-        fileName: fileCount > 1
-          ? `${fileCount} archivos RFQ`
-          : selectedFiles[0].name,
-        tiposProcesados: allTipos,
-        uploadedAt: new Date()
-      });
-
-      setSelectedFiles([]);
-      setProcessingFileCount(0);
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setRfqBaseError(error.message);
-      } else {
-        setRfqBaseError('Error desconocido al procesar la RFQ');
-      }
-      setSelectedFiles([]);
-      setProcessingFileCount(0);
-    }
+    // Limpiar archivos seleccionados después del procesamiento
+    setSelectedFiles([]);
+    setProcessingFileCount(0);
   };
 
   const handleClear = () => {
