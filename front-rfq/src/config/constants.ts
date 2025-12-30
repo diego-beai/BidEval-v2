@@ -6,8 +6,8 @@ import { Provider } from '../types/provider.types';
 export const API_CONFIG = {
   // Usar proxy en desarrollo para evitar CORS, URL directa en producción
   N8N_WEBHOOK_URL: import.meta.env.PROD
-    ? (import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/rfq')
-    : '/api/n8n/webhook/rfq',
+    ? (import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook-test/rfq')
+    : '/api/n8n/webhook-test/rfq',
   // URL del webhook de ingesta de RFQ base del cliente
   N8N_RFQ_INGESTA_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'http://localhost:5678/webhook-test/ingesta-rfq')
