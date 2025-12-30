@@ -4,26 +4,27 @@
  * Script para verificar el estado de n8n
  */
 
-import http from 'http';
+import https from 'https';
 
-const N8N_HOST = 'localhost';
-const N8N_PORT = 5678;
-const WEBHOOK_PATH = '/webhook/rfq';
+const N8N_URL = 'https://n8n.beaienergy.com';
+const WEBHOOK_PATH = '/webhook-test/rfq';
 
 function checkN8nStatus() {
-  console.log('🔍 Verificando estado de n8n...\n');
+  console.log('🔍 Verificando estado de n8n en producción...\n');
 
   // Verificar si n8n está corriendo
+  const url = new URL(N8N_URL);
+
   const options = {
-    hostname: N8N_HOST,
-    port: N8N_PORT,
+    hostname: url.hostname,
+    port: 443,
     path: '/',
     method: 'GET',
     timeout: 5000
   };
 
-  const req = http.request(options, (res) => {
-    console.log('✅ n8n está corriendo en http://localhost:5678');
+  const req = https.request(options, (res) => {
+    console.log(`✅ n8n está accesible en ${N8N_URL}`);
     console.log(`📊 Status: ${res.statusCode}`);
 
     // Verificar el webhook
@@ -31,10 +32,8 @@ function checkN8nStatus() {
   });
 
   req.on('error', (err) => {
-    console.log('❌ n8n NO está corriendo en http://localhost:5678');
-    console.log('💡 Solución: Ejecuta n8n en otra terminal con:');
-    console.log('   n8n start');
-    console.log('\n🔧 O verifica que n8n esté corriendo en el puerto correcto');
+    console.log(`❌ n8n NO está accesible en ${N8N_URL}`);
+    console.log('💡 Solución: Verifica la conexión a internet y que n8n esté corriendo');
   });
 
   req.on('timeout', () => {
@@ -52,10 +51,12 @@ function checkWebhook() {
     test: 'connection'
   });
 
+  const url = new URL(N8N_URL + WEBHOOK_PATH);
+
   const options = {
-    hostname: N8N_HOST,
-    port: N8N_PORT,
-    path: WEBHOOK_PATH,
+    hostname: url.hostname,
+    port: 443,
+    path: url.pathname,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,17 +65,18 @@ function checkWebhook() {
     timeout: 5000
   };
 
-  const req = http.request(options, (res) => {
+  const req = https.request(options, (res) => {
     console.log(`📊 Webhook response: ${res.statusCode}`);
 
     if (res.statusCode === 404) {
-      console.log('❌ Webhook no encontrado');
+      console.log('❌ Webhook no encontrado o no activo');
       console.log('💡 Solución:');
-      console.log('   1. Crea un nodo Webhook en n8n');
-      console.log('   2. Configura el path como "rfq"');
-      console.log('   3. En modo test: haz click en "Execute workflow"');
+      console.log('   1. Accede a n8n en https://n8n.beaienergy.com');
+      console.log('   2. Crea un nodo Webhook en el workflow');
+      console.log('   3. Configura el path como "webhook-test/rfq"');
+      console.log('   4. En modo test: haz click en "Execute workflow"');
     } else if (res.statusCode === 200) {
-      console.log('✅ Webhook está activo');
+      console.log('✅ Webhook está activo y funcionando');
     } else {
       console.log(`⚠️ Respuesta inesperada: ${res.statusCode}`);
     }

@@ -1,5 +1,4 @@
 {
-  "name": "RFQ-multiples ofertas v4",
   "nodes": [
     {
       "parameters": {
@@ -126,7 +125,9 @@
       "parameters": {
         "chunkSize": 1500,
         "chunkOverlap": 200,
-        "options": {}
+        "options": {
+          "splitCode": "markdown"
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
@@ -523,7 +524,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "### TAREA: CLASIFICACIÓN DE DOCUMENTO RFQ BASE\n\nEres un auditor senior de documentación de ingeniería.\nEste documento es una RFQ (Request for Quotation) emitida por el CLIENTE.\n\n---\n\n## TU OBJETIVO\n\nIdentificar qué TIPOS DE REQUISITOS contiene esta RFQ para saber qué columnas de la tabla deben poblarse.\n\n---\n\n## TIPOS POSIBLES\n\n### 1. \"Technical Evaluation\"\nLa RFQ contiene requisitos técnicos como:\n- Especificaciones de ingeniería\n- Normativas aplicables (ASME, API, ISO, etc.)\n- Metodologías requeridas\n- Alcance técnico del trabajo\n- Criterios de aceptación técnica\n\n### 2. \"Economical Evaluation\"\nLa RFQ contiene requisitos económicos como:\n- Formato de cotización esperado\n- Desglose de precios requerido\n- Condiciones de pago\n- Moneda de cotización\n- Estructura de costos esperada\n\n### 3. \"Pre-FEED Deliverables\"\nLa RFQ solicita entregables de fase Pre-FEED:\n- Lista de documentos a entregar en Pre-FEED\n- Matriz de entregables conceptuales\n- Requisitos de formato y revisiones\n\n### 4. \"FEED Deliverables\"\nLa RFQ solicita entregables de fase FEED:\n- Lista de documentos a entregar en FEED\n- Matriz de entregables de ingeniería básica\n- Requisitos de formato y revisiones\n\n---\n\n## REGLAS\n\n1. Una RFQ típicamente contiene MÚLTIPLES tipos (ej: Technical + Economical)\n2. Marca todos los tipos que apliquen\n3. Si hay duda, incluye el tipo (es mejor tener más cobertura)\n4. Si no hay evidencia clara de un tipo, no lo incluyas\n\n---\n\n## FORMATO DE SALIDA\n\n```json\n{\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"La RFQ incluye sección de especificaciones técnicas (Sección 3) con normativas ASME y API, y sección de formato de cotización (Sección 5) con desglose de precios requerido.\"\n}\n```"
+              "message": "=### TAREA: CLASIFICACIÓN DE DOCUMENTO RFQ BASE\n\nEres un auditor senior de documentación de ingeniería.\nEste documento es una RFQ (Request for Quotation) emitida por el CLIENTE.\nPara clasificar, es muy importante fijarse en el titulo del archivo y en las primeras lineas.\n\n---\n\n## TU OBJETIVO\n\nIdentificar qué TIPOS DE REQUISITOS contiene esta RFQ para saber qué columnas de la tabla deben poblarse.\n\n---\n\n## TIPOS POSIBLES\n\n### 1. \"Technical Evaluation\"\nLa RFQ contiene requisitos técnicos como:\n- Especificaciones de ingeniería\n- Normativas aplicables (ASME, API, ISO, etc.)\n- Metodologías requeridas\n- Alcance técnico del trabajo\n- Criterios de aceptación técnica\n\n### 2. \"Economical Evaluation\"\nLa RFQ contiene requisitos económicos como:\n- Formato de cotización esperado\n- Desglose de precios requerido\n- Condiciones de pago\n- Moneda de cotización\n- Estructura de costos esperada\n\n### 3. \"Pre-FEED Deliverables\"\nLa RFQ solicita entregables de fase Pre-FEED:\n- Lista de documentos a entregar en Pre-FEED\n- Matriz de entregables conceptuales\n- Requisitos de formato y revisiones\n\n### 4. \"FEED Deliverables\"\nLa RFQ solicita entregables de fase FEED:\n- Lista de documentos a entregar en FEED\n- Matriz de entregables de ingeniería básica\n- Requisitos de formato y revisiones\n\n---\n\n## REGLAS\n\n1. Una RFQ típicamente contiene MÚLTIPLES tipos (ej: Technical + Economical)\n2. Marca todos los tipos que apliquen\n3. Si hay duda, incluye el tipo (es mejor tener más cobertura)\n4. Si no hay evidencia clara de un tipo, no lo incluyas\n\n---\n\n## FORMATO DE SALIDA\n\n```json\n{\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"La RFQ incluye sección de especificaciones técnicas (Sección 3) con normativas ASME y API, y sección de formato de cotización (Sección 5) con desglose de precios requerido.\"\n}\n```"
             }
           ]
         },
@@ -961,37 +962,18 @@
     },
     {
       "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
-      "typeVersion": 1.2,
-      "position": [
-        -1232,
-        544
-      ],
-      "id": "20e0bb1b-f65e-49f6-b878-6ed7d489e086",
-      "name": "Embeddings OpenAI1",
-      "credentials": {
-        "openAiApi": {
-          "id": "jeoPnm5hJ7rbEVSO",
-          "name": "OpenAi account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "documents",
         "toolDescription": "Use RAG to look up information in the knowledgebase.",
         "tableName": {
           "__rl": true,
-          "value": "documents_768",
+          "value": "documents_rfq",
           "mode": "list",
-          "cachedResultName": "documents_768"
+          "cachedResultName": "documents_rfq"
         },
         "topK": 10,
         "options": {
-          "queryName": "match_documents_768"
+          "queryName": "match_documents_rfq"
         }
       },
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
@@ -2953,7 +2935,7 @@
     },
     {
       "parameters": {
-        "model": "qwen/qwen3-32b",
+        "model": "openai/gpt-oss-20b",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
@@ -2970,9 +2952,27 @@
           "name": "Groq account"
         }
       }
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -1232,
+        544
+      ],
+      "id": "65a8c842-2dba-403d-af46-ff5fcaf5aa7b",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "Qy5SfLiSYwx3Okjy",
+          "name": "Ollama account"
+        }
+      }
     }
   ],
-  "pinData": {},
   "connections": {
     "Webhook RFQ": {
       "main": [
@@ -3000,7 +3000,7 @@
       "main": [
         [
           {
-            "node": "Docling OCR RFQ",
+            "node": "Extract from File1",
             "type": "main",
             "index": 0
           }
@@ -3020,13 +3020,7 @@
     },
     "Docling OCR RFQ": {
       "main": [
-        [
-          {
-            "node": "Validar Contenido PDF RFQ",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Default Data Loader RFQ": {
@@ -3383,17 +3377,6 @@
     "OpenRouter Chat Model": {
       "ai_languageModel": [
         []
-      ]
-    },
-    "Embeddings OpenAI1": {
-      "ai_embedding": [
-        [
-          {
-            "node": "consultar_ofertas",
-            "type": "ai_embedding",
-            "index": 0
-          }
-        ]
       ]
     },
     "consultar_ofertas": {
@@ -3905,7 +3888,13 @@
     },
     "Extract from File1": {
       "main": [
-        []
+        [
+          {
+            "node": "Validar Contenido PDF RFQ",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Groq Chat Model": {
@@ -3918,20 +3907,33 @@
           }
         ]
       ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "consultar_ofertas",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": true,
-  "settings": {
-    "executionOrder": "v1",
-    "availableInMCP": true,
-    "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+  "pinData": {
+    "Clasificador Tipo RFQ": [
+      {
+        "output": {
+          "tipos_detectados": [
+            "Pre-FEED Deliverables"
+          ],
+          "razonamiento": "El documento es un anexo de una RFQ que detalla una lista de entregables para la fase Pre-FEED de un proyecto de planta de hidrógeno. Incluye requisitos técnicos como códigos y estándares de ejecución del proyecto, estudios técnicos y económicos, y una lista detallada de documentos y estudios a entregar en la fase Pre-FEED, como estudios de proceso, ingeniería mecánica, eléctrica, y de instrumentación, entre otros. No se identifican requisitos económicos específicos ni entregables para la fase FEED."
+        }
+      }
+    ]
   },
-  "versionId": "b41258bf-2fd8-43c2-afb8-1a7eafe181d7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1fc4900212c9d62621a09257b15453fd8c3a567221719830af6b072b6c697fd7"
-  },
-  "id": "XRmNU555m1py7bz7",
-  "tags": []
+  }
 }
