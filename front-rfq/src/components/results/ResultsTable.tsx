@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import * as XLSX from 'xlsx';
 import './ResultsTable.css';
 
@@ -7,6 +8,7 @@ interface Filters {
   searchText: string;
   selectedEvaluations: string[];
   selectedFases: string[];
+  selectedProviders: Provider[];
 }
 
 export function ResultsTable() {
@@ -16,7 +18,8 @@ export function ResultsTable() {
   const [filters, setFilters] = useState<Filters>({
     searchText: '',
     selectedEvaluations: [],
-    selectedFases: []
+    selectedFases: [],
+    selectedProviders: []
   });
 
   // Estado para mostrar/ocultar filtros
@@ -25,10 +28,12 @@ export function ResultsTable() {
   // Estado para mostrar/ocultar dropdowns
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
   const [showFaseDropdown, setShowFaseDropdown] = useState(false);
+  const [showProviderDropdown, setShowProviderDropdown] = useState(false);
 
   // Refs para detectar clics fuera de los dropdowns
   const evaluationDropdownRef = useRef<HTMLDivElement>(null);
   const faseDropdownRef = useRef<HTMLDivElement>(null);
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
 
   // Extraer opciones únicas para los filtros
   const uniqueEvaluations = useMemo(() => {
@@ -40,6 +45,14 @@ export function ResultsTable() {
     const fases = new Set(results.map(r => r.fase));
     return Array.from(fases).sort();
   }, [results]);
+
+  // Lista de todos los proveedores disponibles
+  const allProviders = useMemo(() => Object.values(Provider), []);
+
+  // Proveedores a mostrar (filtrados o todos)
+  const providersToShow = useMemo(() => {
+    return filters.selectedProviders.length > 0 ? filters.selectedProviders : allProviders;
+  }, [filters.selectedProviders, allProviders]);
 
   // Filtrar resultados (solo por texto, evaluación y fase)
   const filteredResults = useMemo(() => {
@@ -112,12 +125,35 @@ export function ResultsTable() {
     }));
   };
 
+  // Toggle selección de proveedor
+  const toggleProvider = (provider: Provider) => {
+    setFilters(prev => {
+      const isSelected = prev.selectedProviders.includes(provider);
+      const newSelected = isSelected
+        ? prev.selectedProviders.filter(p => p !== provider)
+        : [...prev.selectedProviders, provider];
+
+      return { ...prev, selectedProviders: newSelected };
+    });
+  };
+
+  // Seleccionar/Deseleccionar todos los proveedores
+  const toggleAllProviders = () => {
+    setFilters(prev => ({
+      ...prev,
+      selectedProviders: prev.selectedProviders.length === allProviders.length
+        ? []
+        : allProviders
+    }));
+  };
+
   // Limpiar todos los filtros
   const clearFilters = () => {
     setFilters({
       searchText: '',
       selectedEvaluations: [],
-      selectedFases: []
+      selectedFases: [],
+      selectedProviders: []
     });
   };
 
@@ -125,29 +161,37 @@ export function ResultsTable() {
   const hasActiveFilters =
     filters.searchText ||
     filters.selectedEvaluations.length > 0 ||
-    filters.selectedFases.length > 0;
+    filters.selectedFases.length > 0 ||
+    filters.selectedProviders.length > 0;
 
   const handleExportCSV = () => {
     // Usar resultados filtrados para exportación
     const dataToExport = filteredResults;
 
-    // Crear headers con solo las columnas requeridas
+    // Crear headers con las columnas requeridas más proveedores
     const headers = [
       'ID',
       'Evaluación',
       'Fase',
       'Descripción',
-      'Requisito RFQ'
+      'Requisito RFQ',
+      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
     ];
 
-    // Crear filas con solo las columnas requeridas
+    // Crear filas con las columnas requeridas más datos de proveedores
     const rows = dataToExport.map(result => {
+      const providerData = providersToShow.map(provider => {
+        const evaluation = result.evaluations[provider];
+        return evaluation ? `"${evaluation.evaluation.replace(/"/g, '""')}"` : '-';
+      });
+
       return [
         result.id,
         `"${result.evaluation.replace(/"/g, '""')}"`,
         `"${result.fase.replace(/"/g, '""')}"`,
         `"${result.item.replace(/"/g, '""')}"`,
-        `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`
+        `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`,
+        ...providerData
       ];
     });
 
@@ -171,23 +215,30 @@ export function ResultsTable() {
     // Usar resultados filtrados para exportación
     const dataToExport = filteredResults;
 
-    // Crear headers con solo las columnas requeridas
+    // Crear headers con las columnas requeridas más proveedores
     const headers = [
       'ID',
       'Evaluación',
       'Fase',
       'Descripción',
-      'Requisito RFQ'
+      'Requisito RFQ',
+      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
     ];
 
-    // Crear filas con solo las columnas requeridas
+    // Crear filas con las columnas requeridas más datos de proveedores
     const rows = dataToExport.map(result => {
+      const providerData = providersToShow.map(provider => {
+        const evaluation = result.evaluations[provider];
+        return evaluation ? evaluation.evaluation : '-';
+      });
+
       return [
         result.id,
         result.evaluation,
         result.fase,
         result.item,
-        result.rfq_requisito || '-'
+        result.rfq_requisito || '-',
+        ...providerData
       ];
     });
 
@@ -196,13 +247,15 @@ export function ResultsTable() {
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
     // Ajustar ancho de columnas
-    ws['!cols'] = [
+    const columnWidths = [
       { wch: 8 },  // ID
       { wch: 25 }, // Evaluación
       { wch: 15 }, // Fase
       { wch: 50 }, // Descripción
-      { wch: 40 }  // Requisito RFQ
+      { wch: 40 }, // Requisito RFQ
+      ...providersToShow.map(() => ({ wch: 25 })) // Ancho para cada proveedor
     ];
+    ws['!cols'] = columnWidths;
 
     // Crear workbook y agregar worksheet
     const wb = XLSX.utils.book_new();
@@ -226,10 +279,16 @@ export function ResultsTable() {
           !faseDropdownRef.current.contains(event.target as Node)) {
         setShowFaseDropdown(false);
       }
+
+      // Cerrar dropdown de proveedor
+      if (providerDropdownRef.current &&
+          !providerDropdownRef.current.contains(event.target as Node)) {
+        setShowProviderDropdown(false);
+      }
     };
 
     // Agregar listener solo si al menos un dropdown está abierto
-    if (showEvaluationDropdown || showFaseDropdown) {
+    if (showEvaluationDropdown || showFaseDropdown || showProviderDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
@@ -237,7 +296,7 @@ export function ResultsTable() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEvaluationDropdown, showFaseDropdown]);
+  }, [showEvaluationDropdown, showFaseDropdown, showProviderDropdown]);
 
   // Early return si no hay resultados
   if (!results || results.length === 0) {
@@ -367,6 +426,49 @@ export function ResultsTable() {
               </div>
             </div>
 
+            <div className="filter-item">
+              <label className="filter-label">
+                Proveedores ({filters.selectedProviders.length}/{allProviders.length})
+              </label>
+              <div className="provider-dropdown-container" ref={providerDropdownRef}>
+                <button
+                  type="button"
+                  className="provider-dropdown-btn"
+                  onClick={() => setShowProviderDropdown(!showProviderDropdown)}
+                >
+                  {filters.selectedProviders.length === 0
+                    ? 'Todos los proveedores'
+                    : filters.selectedProviders.length === allProviders.length
+                    ? 'Todos los proveedores'
+                    : `${filters.selectedProviders.length} seleccionados`}
+                  <span className="dropdown-arrow">{showProviderDropdown ? '▲' : '▼'}</span>
+                </button>
+
+                {showProviderDropdown && (
+                  <div className="provider-checkboxes">
+                    <label className="checkbox-item checkbox-all">
+                      <input
+                        type="checkbox"
+                        checked={filters.selectedProviders.length === allProviders.length}
+                        onChange={toggleAllProviders}
+                      />
+                      <span>Todos</span>
+                    </label>
+                    {allProviders.map(provider => (
+                      <label key={provider} className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          checked={filters.selectedProviders.includes(provider)}
+                          onChange={() => toggleProvider(provider)}
+                        />
+                        <span>{PROVIDER_DISPLAY_NAMES[provider]}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
           {hasActiveFilters && (
@@ -388,12 +490,17 @@ export function ResultsTable() {
               <th className="col-fase">Fase</th>
               <th className="col-item">Descripción del Ítem</th>
               <th className="col-rfq-requisito">Requisito RFQ</th>
+              {providersToShow.map(provider => (
+                <th key={provider} className="col-provider">
+                  {PROVIDER_DISPLAY_NAMES[provider]}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {filteredResults.length === 0 ? (
               <tr>
-                <td colSpan={5} className="no-results">
+                <td colSpan={5 + providersToShow.length} className="no-results">
                   No se encontraron resultados con los filtros aplicados
                 </td>
               </tr>
@@ -407,6 +514,14 @@ export function ResultsTable() {
                   <td className="col-rfq-requisito" title={result.rfq_requisito}>
                     {result.rfq_requisito || '-'}
                   </td>
+                  {providersToShow.map(provider => {
+                    const evaluation = result.evaluations[provider];
+                    return (
+                      <td key={provider} className="col-provider">
+                        {evaluation ? evaluation.evaluation : '-'}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}
