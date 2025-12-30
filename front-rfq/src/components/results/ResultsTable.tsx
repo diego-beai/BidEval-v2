@@ -14,12 +14,12 @@ interface Filters {
 export function ResultsTable() {
   const { results, selectedFiles } = useRfqStore();
 
-  // Estado de filtros - Proveedores inicializados como todos seleccionados
+  // Estado de filtros
   const [filters, setFilters] = useState<Filters>({
     searchText: '',
     selectedEvaluations: [],
     selectedFases: [],
-    selectedProviders: Object.values(Provider) // Todos los proveedores seleccionados por defecto
+    selectedProviders: []
   });
 
   // Estado para mostrar/ocultar filtros
@@ -156,7 +156,7 @@ export function ResultsTable() {
       searchText: '',
       selectedEvaluations: [],
       selectedFases: [],
-      selectedProviders: allProviders // Mantener todos los proveedores seleccionados
+      selectedProviders: []
     });
   };
 
