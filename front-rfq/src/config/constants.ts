@@ -10,7 +10,7 @@ export const API_CONFIG = {
     : '/api/n8n/webhook/rfq',
   // URL del webhook de ingesta de RFQ base del cliente
   N8N_RFQ_INGESTA_URL: import.meta.env.PROD
-    ? (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq')
+    ? (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook/ingesta-rfq')
     : '/api/n8n/webhook/ingesta-rfq',
   // URL del webhook de chat de n8n
   N8N_CHAT_URL: import.meta.env.PROD
