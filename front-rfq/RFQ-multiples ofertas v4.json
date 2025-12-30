@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Validar Contenido PDF RFQ\n// =============================================\n\nconst input = $input.first().json;\n\nlet pages = [];\nlet totalChars = 0;\nlet hasTablesDetected = false;\n\nif (input.pages && Array.isArray(input.pages) && input.pages.length > 0) {\n  pages = input.pages;\n  pages.forEach(page => {\n    const text = page.text || page.pageContent || \"\";\n    totalChars += text.length;\n    if ((text.match(/\\s{4,}/g) || []).length > 5) hasTablesDetected = true;\n  });\n} else if (input.text && typeof input.text === 'string') {\n  const text = input.text;\n  totalChars = text.length;\n  pages = [{ text: text, pageNumber: 1 }];\n  if ((text.match(/\\s{4,}/g) || []).length > 20) hasTablesDetected = true;\n} else {\n  pages = [];\n}\n\nlet realPageCount = input.numpages || input.numPages || input.numberOfPages || 0;\nif (!realPageCount || realPageCount === 0) {\n    realPageCount = pages.length;\n}\nif (realPageCount <= 1 && totalChars > 10000) {\n    realPageCount = Math.ceil(totalChars / 3000);\n}\nrealPageCount = Math.max(1, realPageCount);\n\nconst avgCharsPerPage = totalChars / realPageCount;\nconst needsOCR = avgCharsPerPage < 100;\n\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n  const metaNode = $('Set File ID2').first().json;\n  fileId = metaNode.file_id;\n  fileTitle = metaNode.file_title;\n} catch (e) {}\n\nconsole.log(`📄 RFQ Análisis: ${fileTitle}`);\nconsole.log(`   ├─ Páginas: ${realPageCount}`);\nconsole.log(`   ├─ Caracteres: ${totalChars}`);\n\nreturn {\n  json: {\n    totalPages: realPageCount,\n    totalChars: totalChars,\n    avgCharsPerPage: Math.round(avgCharsPerPage),\n    hasTables: hasTablesDetected,\n    needsOCR: needsOCR,\n    pages: pages,\n    fileId: fileId,\n    fileName: fileTitle\n  }\n};"
+        "jsCode": "// =============================================\n// NODO: Format RFQ - Extracción Segura de Imágenes\n// =============================================\n\n// 1. OBTENER EL CONTENIDO\n// Accedemos de forma segura a la variable que indicaste\nconst inputData = $input.first().json;\nlet content = \"\";\n\nif (inputData.document && inputData.document.md_content) {\n    content = inputData.document.md_content;\n} else {\n    // Fallback por seguridad si no existe la ruta\n    content = inputData.text || \"\";\n}\n\n// 2. FUNCIÓN DE LIMPIEZA QUIRÚRGICA\nfunction extractImagesSafely(text) {\n    if (!text) return { cleanText: \"\", images: [] };\n\n    const imagesFound = [];\n    \n    // EXPLICACIÓN DEL REGEX:\n    // !\\[(.*?)\\]   -> Captura el texto alternativo (ej: \"Figura 1\") en el grupo 1. Es \"lazy\" (.*?) para no comerse texto de más.\n    // \\(           -> Paréntesis de apertura literal.\n    // (data:image\\/[^;]+;base64,[^)]+) -> Captura la data Base64 en el grupo 2.\n    //    [^)]+     -> Significa \"todo lo que no sea un paréntesis de cierre\". Esto evita que se rompa si hay paréntesis dentro del base64 (raro pero posible) y asegura que pare al final de la URL.\n    // \\)           -> Paréntesis de cierre literal.\n    // g            -> Global (buscar todas).\n    \n    const regex = /!\\[(.*?)\\]\\((data:image\\/[^;]+;base64,[^)]+)\\)/g;\n\n    const cleanText = text.replace(regex, (match, altText, base64Data) => {\n        // 1. Guardamos la imagen en el array aparte\n        imagesFound.push({\n            alt: altText || \"Sin descripción\",\n            data: base64Data\n        });\n\n        // 2. RETORNAMOS EL PLACEHOLDER (CRÍTICO PARA NO DESCOLOCAR)\n        // Mantenemos el 'altText' para que el LLM sepa qué había ahí.\n        // Si la imagen estaba dentro de una tabla |...|, esto mantiene la celda ocupada y no rompe la tabla.\n        return ``; \n    });\n\n    return { cleanText, images: imagesFound };\n}\n\n// 3. EJECUTAR\nconst { cleanText, images } = extractImagesSafely(content);\n\n// 4. RECUPERAR METADATOS (Mantenemos tu lógica existente)\nlet fileMeta = { id: \"unknown\", title: \"unknown\" };\ntry {\n    const f = $('Set File ID2').first().json;\n    fileMeta = { id: f.file_id, title: f.file_title };\n} catch(e) {}\n\nlet tipoEval = [\"Technical Evaluation\"];\ntry {\n    const t = $('Clasificador Tipo RFQ').first().json;\n    const out = t.output || t;\n    if (out.tipos_detectados) tipoEval = Array.isArray(out.tipos_detectados) ? out.tipos_detectados : [out.tipos_detectados];\n} catch(e) {}\n\n// 5. OUTPUT\nreturn {\n    json: {\n        text: cleanText,             // El texto mantiene su estructura original\n        images_extracted: images,    // Array de objetos { alt, data }\n        metadata: {\n            file_id: fileMeta.id,\n            file_title: fileMeta.title,\n            tipo_documento: \"RFQ_BASE\",\n            tipo_evaluacion: tipoEval,\n            processed_at: new Date().toISOString(),\n            original_length: content.length,\n            clean_length: cleanText.length,\n            images_count: images.length\n        }\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -82,14 +82,14 @@
       "typeVersion": 4.3,
       "position": [
         896,
-        2224
+        2032
       ],
       "retryOnFail": true
     },
     {
       "parameters": {
         "jsonMode": "expressionData",
-        "jsonData": "={{ $('Docling OCR RFQ').item.json.document.md_content }}",
+        "jsonData": "={{ $json.text }}",
         "options": {
           "metadata": {
             "metadataValues": [
@@ -185,7 +185,7 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1920,
+        1840,
         2448
       ],
       "id": "88634bdf-86f1-4bec-9b7f-8d08cb6b01f8",
@@ -199,7 +199,7 @@
     },
     {
       "parameters": {
-        "batchSize": 30,
+        "batchSize": 50,
         "options": {
           "reset": "={{ $json.reiniciar_bucle ? true : false }}"
         }
@@ -246,7 +246,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "# ERES UN EXTRACTOR DE REQUISITOS DE RFQ (Request for Quotation)\n\n## TU OBJETIVO\nAnalizar el documento RFQ y extraer los REQUISITOS ESPECÍFICOS que el cliente solicita para cada ítem.\nEstos requisitos serán usados posteriormente para comparar contra las ofertas de proveedores.\n\n---\n\n## MODOS DE EXTRACCIÓN\n\nDebes elegir UN SOLO MODO basado en la variable \"tipo_evaluacion_actual\".\n\n---\n\n### MODO A: REQUISITOS ECONÓMICOS\n**CONDICIÓN:** tipo_evaluacion_actual = \"Economical Evaluation\"\n\n**EXTRAER para cada ítem:**\n1. Unidad de medida requerida (horas, m², kg, lump sum, etc.)\n2. Cantidad estimada (si se especifica)\n3. Formato de cotización esperado (precio unitario, precio global, tarifa horaria)\n4. Condiciones comerciales (términos de pago, garantías, penalizaciones)\n5. Moneda requerida (EUR, USD, etc.)\n\n**FORMATO de rfq_requisito:**\n\"[Unidad]: [Cantidad si aplica] | Formato: [Tipo de cotización] | Condiciones: [Especiales]\"\n\n**Ejemplos:**\n- \"Lump Sum | Desglosar por fase Pre-FEED/FEED | Incluir backup horas-hombre | Moneda: EUR\"\n- \"Tarifa horaria | Categorías: Ing. Senior, Ing. Junior, Técnico | Mínimo 500 horas\"\n- \"Precio unitario por m² | Cantidad estimada: 15.000 m² | Incluir transporte\"\n\n---\n\n### MODO B: REQUISITOS TÉCNICOS\n**CONDICIÓN:** tipo_evaluacion_actual = \"Technical Evaluation\"\n\n**EXTRAER para cada ítem:**\n1. Especificaciones técnicas mínimas exigidas\n2. Normativas aplicables (ASME, API, ISO, UNE, etc.)\n3. Criterios de aceptación\n4. Metodología requerida\n5. Exclusiones explícitas mencionadas\n\n**FORMATO de rfq_requisito:**\n\"[Especificación técnica] | Norma: [Normativas] | Criterio: [Aceptación] | Método: [Si aplica]\"\n\n**Ejemplos:**\n- \"Diámetros 2\"-24\", P&IDs completos, isométricos | Norma: ASME B31.3, API 570 | Criterio: Aprobación cliente antes de fabricación\"\n- \"Análisis sísmico zona 4, factor importancia 1.5 | Norma: NCSE-02, Eurocódigo 8 | Criterio: Drift máximo 0.5%\"\n- \"Estudio geotécnico con 10 sondeos SPT mínimo | Norma: UNE-EN ISO 22476 | Profundidad: 30m mínimo\"\n\n---\n\n### MODO C: REQUISITOS DE DELIVERABLES (Pre-FEED / FEED)\n**CONDICIÓN:** tipo_evaluacion_actual IN (\"Pre-FEED Deliverables\", \"FEED Deliverables\")\n\n**EXTRAER para cada ítem:**\n1. Código de documento esperado (si existe en RFQ)\n2. Formato de entrega exigido (PDF, DWG, nativos, etc.)\n3. Nivel de detalle esperado\n4. Número de revisiones incluidas\n5. Plazo de entrega (si se especifica)\n\n**FORMATO de rfq_requisito:**\n\"Código: [Si existe] | Formato: [Tipos] | Detalle: [Nivel] | Revisiones: [Cantidad] | Plazo: [Semanas/Días]\"\n\n**Ejemplos:**\n- \"Código: PID-XXX | Formato: DWG + PDF firmado | Detalle: Para construcción | Revisiones: 3 incluidas | Plazo: Semana 8\"\n- \"Formato: Excel nativo + PDF | Detalle: Nivel AFE (-15%) | Revisiones: 2 incluidas\"\n- \"Código: MDR-FEED-001 | Formato: PDF controlado | Actualización: Semanal\"\n\n---\n\n## REGLAS DE EXTRACCIÓN\n\n### SI EL REQUISITO EXISTE EN LA RFQ:\n- Extrae TODA la información relevante\n- Sé específico con números, normas y condiciones\n- Incluye la referencia: \"Ref: Sección X, Pág Y, Tabla Z\"\n\n### SI EL ÍTEM APARECE PERO SIN REQUISITOS ESPECÍFICOS:\n- rfq_requisito: \"MENCIONADO SIN ESPECIFICACIÓN - [Contexto donde aparece]\"\n\n### SI EL ÍTEM NO ESTÁ EN LA RFQ:\n- rfq_requisito: \"NO ESPECIFICADO EN RFQ\"\n- NO inventes requisitos\n\n### SI LA INFORMACIÓN ES PARCIAL:\n- Extrae lo disponible\n- Indica qué falta: \"Pendiente definir: [aspecto]\"\n\n---\n\n## PROTOCOLO ANTI-ALUCINACIÓN\n\nANTES de escribir cualquier requisito, verifica:\n1. ¿Veo este texto EXACTO en el documento RFQ?\n2. ¿Puedo citar la frase original?\n3. ¿El requisito está claramente asociado a este ítem?\n\n**SI LA RESPUESTA ES NO A CUALQUIERA:** Usar \"NO ESPECIFICADO EN RFQ\"\n\n**NUNCA:**\n- Inventar normativas que no aparezcan\n- Asumir cantidades no especificadas\n- Inferir requisitos de ítems similares\n- Copiar requisitos genéricos si no están explícitos\n\n---\n\n## FORMATO DE SALIDA (JSON)\n\n```json\n[\n  {\n    \"id\": 101,\n    \"rfq_requisito\": \"Lump Sum | Desglosar Pre-FEED y FEED | Backup horas-hombre obligatorio | Moneda: EUR\",\n    \"referencia\": \"Sección 4.2, Tabla de Precios, Pág 15\"\n  },\n  {\n    \"id\": 102,\n    \"rfq_requisito\": \"NO ESPECIFICADO EN RFQ\",\n    \"referencia\": null\n  },\n  {\n    \"id\": 103,\n    \"rfq_requisito\": \"MENCIONADO SIN ESPECIFICACIÓN - Aparece en alcance general sin detalle\",\n    \"referencia\": \"Sección 2.1, Pág 8\"\n  }\n]\n```\n\n---\n\n## REGLA ABSOLUTA: PROCESAR TODOS LOS ÍTEMS\n\n**CRÍTICO:** El JSON de salida DEBE contener EXACTAMENTE el mismo número de ítems que recibiste.\n\n**VERIFICACIÓN FINAL:**\n1. Cuenta ítems de entrada\n2. Cuenta ítems de salida\n3. Si no coinciden → REVISA y completa\n\n---\n\n## INSTRUCCIONES DE EJECUCIÓN\n\n1. LEE el documento RFQ completo\n2. IDENTIFICA el modo (Económico, Técnico, Deliverables)\n3. Para CADA ítem:\n   a. BUSCA menciones en el texto\n   b. EXTRAE requisitos específicos si existen\n   c. APLICA el protocolo anti-alucinación\n   d. NUNCA omitas el ítem del JSON\n4. VERIFICA que el conteo de salida coincida con entrada\n5. FORMATEA como JSON válido\n\n**IMPORTANTE:** Estos requisitos se usarán para evaluar ofertas de proveedores. La precisión es CRÍTICA. Es mejor decir \"NO ESPECIFICADO\" que inventar."
+              "message": "=# ERES UN EXTRACTOR DE REQUISITOS DE RFQ (Request for Quotation)\n\n## TU OBJETIVO\nAnalizar el documento RFQ y extraer los REQUISITOS ESPECÍFICOS que el cliente solicita para cada ítem.\nEstos requisitos serán usados posteriormente para comparar contra las ofertas de proveedores.\nDebes responder siempre en castellano.\n\n---\n\n## MODOS DE EXTRACCIÓN\n\nDebes elegir UN SOLO MODO basado en la variable \"tipo_evaluacion_actual\". \n\n---\n\n### MODO A: REQUISITOS ECONÓMICOS\n**CONDICIÓN:** tipo_evaluacion_actual = \"Economical Evaluation\"\n\n**EXTRAER para cada ítem:**\n1. Unidad de medida requerida (horas, m², kg, lump sum, etc.)\n2. Cantidad estimada (si se especifica)\n3. Formato de cotización esperado (precio unitario, precio global, tarifa horaria)\n4. Condiciones comerciales (términos de pago, garantías, penalizaciones)\n5. Moneda requerida (EUR, USD, etc.)\n\n**FORMATO de rfq_requisito:**\n\"[Unidad]: [Cantidad si aplica] | Formato: [Tipo de cotización] | Condiciones: [Especiales]\"\n\n**Ejemplos:**\n- \"Lump Sum | Desglosar por fase Pre-FEED/FEED | Incluir backup horas-hombre | Moneda: EUR\"\n- \"Tarifa horaria | Categorías: Ing. Senior, Ing. Junior, Técnico | Mínimo 500 horas\"\n- \"Precio unitario por m² | Cantidad estimada: 15.000 m² | Incluir transporte\"\n\n---\n\n### MODO B: REQUISITOS TÉCNICOS\n**CONDICIÓN:** tipo_evaluacion_actual = \"Technical Evaluation\"\n\n**EXTRAER para cada ítem:**\n1. Especificaciones técnicas mínimas exigidas\n2. Normativas aplicables (ASME, API, ISO, UNE, etc.)\n3. Criterios de aceptación\n4. Metodología requerida\n5. Exclusiones explícitas mencionadas\n\n**FORMATO de rfq_requisito:**\n\"[Especificación técnica] | Norma: [Normativas] | Criterio: [Aceptación] | Método: [Si aplica]\"\n\n**Ejemplos:**\n- \"Diámetros 2\"-24\", P&IDs completos, isométricos | Norma: ASME B31.3, API 570 | Criterio: Aprobación cliente antes de fabricación\"\n- \"Análisis sísmico zona 4, factor importancia 1.5 | Norma: NCSE-02, Eurocódigo 8 | Criterio: Drift máximo 0.5%\"\n- \"Estudio geotécnico con 10 sondeos SPT mínimo | Norma: UNE-EN ISO 22476 | Profundidad: 30m mínimo\"\n\n---\n\n### MODO C: REQUISITOS DE DELIVERABLES (Pre-FEED / FEED)\n**CONDICIÓN:** tipo_evaluacion_actual IN (\"Pre-FEED Deliverables\", \"FEED Deliverables\")\n\n**EXTRAER para cada ítem:**\n1. Código de documento esperado (si existe en RFQ)\n2. Formato de entrega exigido (PDF, DWG, nativos, etc.)\n3. Nivel de detalle esperado\n4. Número de revisiones incluidas\n5. Plazo de entrega (si se especifica)\n\n**FORMATO de rfq_requisito:**\n\"Código: [Si existe] | Formato: [Tipos] | Detalle: [Nivel] | Revisiones: [Cantidad] | Plazo: [Semanas/Días]\"\n\n**Ejemplos:**\n- \"Código: PID-XXX | Formato: DWG + PDF firmado | Detalle: Para construcción | Revisiones: 3 incluidas | Plazo: Semana 8\"\n- \"Formato: Excel nativo + PDF | Detalle: Nivel AFE (-15%) | Revisiones: 2 incluidas\"\n- \"Código: MDR-FEED-001 | Formato: PDF controlado | Actualización: Semanal\"\n\n---\n\n## REGLAS DE EXTRACCIÓN\n\n### SI EL REQUISITO EXISTE EN LA RFQ:\n- Extrae TODA la información relevante\n- Sé específico con números, normas y condiciones\n- Incluye la referencia: \"Ref: Sección X, Pág Y, Tabla Z\"\n\n### SI EL ÍTEM APARECE PERO SIN REQUISITOS ESPECÍFICOS:\n- rfq_requisito: \"MENCIONADO SIN ESPECIFICACIÓN - [Contexto donde aparece]\"\n\n### SI EL ÍTEM NO ESTÁ EN LA RFQ:\n- rfq_requisito: \"NO ESPECIFICADO EN RFQ\"\n- NO inventes requisitos\n\n### SI LA INFORMACIÓN ES PARCIAL:\n- Extrae lo disponible\n- Indica qué falta: \"Pendiente definir: [aspecto]\"\n\n---\n\n## PROTOCOLO ANTI-ALUCINACIÓN\n\nANTES de escribir cualquier requisito, verifica:\n1. ¿Veo este texto EXACTO en el documento RFQ?\n2. ¿Puedo citar la frase original?\n3. ¿El requisito está claramente asociado a este ítem?\n\n**SI LA RESPUESTA ES NO A CUALQUIERA:** Usar \"NO ESPECIFICADO EN RFQ\"\n\n**NUNCA:**\n- Inventar normativas que no aparezcan\n- Asumir cantidades no especificadas\n- Inferir requisitos de ítems similares\n- Copiar requisitos genéricos si no están explícitos\n\n---\n\n## FORMATO DE SALIDA (JSON)\n\n```json\n[\n  {\n    \"id\": 101,\n    \"rfq_requisito\": \"Lump Sum | Desglosar Pre-FEED y FEED | Backup horas-hombre obligatorio | Moneda: EUR\",\n    \"referencia\": \"Sección 4.2, Tabla de Precios, Pág 15\"\n  },\n  {\n    \"id\": 102,\n    \"rfq_requisito\": \"NO ESPECIFICADO EN RFQ\",\n    \"referencia\": null\n  },\n  {\n    \"id\": 103,\n    \"rfq_requisito\": \"MENCIONADO SIN ESPECIFICACIÓN - Aparece en alcance general sin detalle\",\n    \"referencia\": \"Sección 2.1, Pág 8\"\n  }\n]\n```\n\n---\n\n## REGLA ABSOLUTA: PROCESAR TODOS LOS ÍTEMS\n\n**CRÍTICO:** El JSON de salida DEBE contener EXACTAMENTE el mismo número de ítems que recibiste.\n\n**VERIFICACIÓN FINAL:**\n1. Cuenta ítems de entrada\n2. Cuenta ítems de salida\n3. Si no coinciden → REVISA y completa\n\n---\n\n## INSTRUCCIONES DE EJECUCIÓN\n\n1. LEE el documento RFQ completo\n2. IDENTIFICA el modo (Económico, Técnico, Deliverables)\n3. Para CADA ítem:\n   a. BUSCA menciones en el texto\n   b. EXTRAE requisitos específicos si existen\n   c. APLICA el protocolo anti-alucinación\n   d. NUNCA omitas el ítem del JSON\n4. VERIFICA que el conteo de salida coincida con entrada\n5. FORMATEA como JSON válido\n\n**IMPORTANTE:** Estos requisitos se usarán para evaluar ofertas de proveedores. La precisión es CRÍTICA. Es mejor decir \"NO ESPECIFICADO\" que inventar."
             }
           ]
         },
@@ -338,8 +338,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        3840,
-        2400
+        3904,
+        2336
       ],
       "id": "7f3feb3e-a460-48bb-9400-2904cd6ced13",
       "name": "OpenRouter Chat Model RFQ",
@@ -518,7 +518,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### INPUT A ANALIZAR\nNombre archivo: {{ $json.fileName }}\nTexto (Inicio del documento): \n{{ $json.pages[0].text }}",
+        "text": "=### INPUT A ANALIZAR\nNombre archivo: {{ $json.fileName }}{{ $json.metadata.file_title }}\nTexto (Inicio del documento): \n{{ $json.pages[0].text }}{{ $json.text }}",
         "hasOutputParser": true,
         "messages": {
           "messageValues": [
@@ -844,7 +844,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "=Eres un Asistente Técnico de Compras experto en Licitaciones (RFQ).\nTu objetivo es ayudar al usuario a comparar requisitos técnicos contra las ofertas de los proveedores, basándote en dos fuentes de verdad.\n\n### TUS HERRAMIENTAS:\n1. `consultar_ofertas` (Vector Store): Úsala para leer el TEXTO ORIGINAL de los PDFs. Sirve para encontrar detalles, matices técnicos y contexto que no cabe en una tabla.\n2. `consultar_tabla_evaluacion` (Structured Data): Úsala para ver el RESUMEN FINAL. Aquí están los precios exactos detectados, los \"NO INCLUIDO\" y la comparación directa ítem por ítem.\n\n### PROTOCOLO DE RESPUESTA (Sigue este orden):\n\nCASO A: El usuario pregunta datos concretos (Precios, Cumplimiento, Status)\n1. Usa `consultar_tabla_evaluacion` primero.\n2. Si encuentras el dato (ej: \"Sacyr: 50.000 EUR\"), responde directamente.\n3. Si el dato en la tabla es ambiguo o nulo, usa `consultar_ofertas` para investigar en el documento original por qué no se encontró.\n\nCASO B: El usuario pregunta detalles técnicos o descripciones (Contexto)\n1. Usa `consultar_ofertas` directamente para extraer párrafos del manual o propuesta técnica.\n\nCASO C: Análisis de Brechas (Gap Analysis)\n1. Obtén el estado de `consultar_tabla_evaluacion`.\n2. Contrasta con la evidencia de `consultar_ofertas`.\n3. Genera una respuesta tipo: \"En la tabla figura como INCLUIDO, y según el documento técnico (Pág 45), se detalla el uso de bombas centrífugas...\"\n\n### REGLAS:\n- Si la tabla dice \"SIN VALORAR\" o \"NO COTIZADO\", infórmalo tal cual.\n- Cita siempre la fuente: \"(Fuente: Tabla de Evaluación)\" o \"(Fuente: Documento PDF de IDOM)\".\n- Sé conciso y técnico."
+          "systemMessage": "=Eres un Asistente Técnico de Compras experto en Licitaciones (RFQ).\nTu objetivo es ayudar al usuario a comparar requisitos técnicos contra las ofertas de los proveedores, basándote en dos fuentes de verdad.\n\n### TUS HERRAMIENTAS:\n1. `consultar_ofertas` (Vector Store): Úsala para leer el TEXTO ORIGINAL de los PDFs. Sirve para encontrar detalles, matices técnicos y contexto que no cabe en una tabla.\n2. `consultar_tabla_evaluacion` (Structured Data): Úsala para ver el RESUMEN FINAL. Aquí están los precios exactos detectados, los \"NO INCLUIDO\" y la comparación directa ítem por ítem.\n\n### PROTOCOLO DE RESPUESTA (Sigue este orden):\n\nCASO A: El usuario pregunta datos concretos (Precios, Cumplimiento, Status)\n1. Usa `consultar_tabla_evaluacion` primero.\n2. Si encuentras el dato (ej: \"Sacyr: 50.000 EUR\"), responde directamente.\n3. Si el dato en la tabla es ambiguo o nulo, usa `consultar_ofertas` para investigar en el documento original por qué no se encontró.\n\nCASO B: El usuario pregunta detalles técnicos o descripciones (Contexto)\n1. Usa `consultar_ofertas` directamente para extraer párrafos del manual o propuesta técnica.\n\nCASO C: Análisis de Brechas (Gap Analysis)\n1. Obtén el estado de `consultar_tabla_evaluacion`.\n2. Contrasta con la evidencia de `consultar_ofertas`.\n3. Genera una respuesta tipo: \"En la tabla figura como INCLUIDO, y según el documento técnico (Pág 45), se detalla el uso de bombas centrífugas...\"\n\n### REGLAS:\n- Si la tabla dice \"SIN VALORAR\" o \"NO COTIZADO\", infórmalo tal cual.\n- Cita siempre la fuente: \"(Fuente: Tabla de Evaluación)\" o \"(Fuente: Documento PDF de IDOM)\".\n- Sé conciso y técnico.\n- La respuesta debe ser en formato texto."
         }
       },
       "id": "64d0a9ed-7f5e-49ab-9d7b-51d0984eb070",
@@ -2822,8 +2822,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2672,
-        1248
+        2720,
+        1104
       ],
       "id": "6b5e55fd-1648-483e-a2f8-4ec102d99249",
       "name": "Mistral Cloud Chat Model",
@@ -2936,6 +2936,40 @@
       "id": "12817d6e-c8d9-49da-951b-091e5b67e24a",
       "name": "Webhook1",
       "webhookId": "014a6be2-a8d5-4dd3-85f2-ea5e7d0ba092"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        2224
+      ],
+      "id": "cbdf4698-0c48-4341-8edc-827b258b009a",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-32b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        512
+      ],
+      "id": "ca6a0e39-c000-4e65-90b5-722ab76bf6e1",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "FIDKJ20ohwstoZTe",
+          "name": "Groq account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -3348,13 +3382,7 @@
     },
     "OpenRouter Chat Model": {
       "ai_languageModel": [
-        [
-          {
-            "node": "RAG AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Embeddings OpenAI1": {
@@ -3874,16 +3902,32 @@
           }
         ]
       ]
+    },
+    "Extract from File1": {
+      "main": [
+        []
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RAG AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "availableInMCP": false,
+    "availableInMCP": true,
     "timeSavedMode": "fixed",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "3edf0f48-e61f-4bdc-8930-057ef58817d5",
+  "versionId": "b41258bf-2fd8-43c2-afb8-1a7eafe181d7",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1fc4900212c9d62621a09257b15453fd8c3a567221719830af6b072b6c697fd7"

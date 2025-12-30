@@ -147,3 +147,4 @@ Una vez que n8n esté funcionando en `http://localhost:5678`:
 
 **Estado actual:** Docker daemon no disponible. Usa las opciones 1-3 para resolver.
 
+
