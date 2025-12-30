@@ -7,11 +7,11 @@ export const API_CONFIG = {
   // Usar proxy en desarrollo para evitar CORS, URL directa en producción
   N8N_WEBHOOK_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/rfq')
-    : '/api/n8n/webhook-test/rfq',
+    : '/api/n8n/webhook/rfq',
   // URL del webhook de ingesta de RFQ base del cliente
   N8N_RFQ_INGESTA_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq')
-    : '/api/n8n/webhook-test/ingesta-rfq',
+    : '/api/n8n/webhook/ingesta-rfq',
   // URL del webhook de chat de n8n
   N8N_CHAT_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_CHAT_URL || 'http://localhost:5678/webhook/072a6322-4bb1-444b-bd82-5c1df6db623f/chat')
