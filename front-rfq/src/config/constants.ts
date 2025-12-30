@@ -5,7 +5,7 @@ import { Provider } from '../types/provider.types';
  */
 export const API_CONFIG = {
   // URL del webhook de ofertas de proveedores (siempre externo)
-  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/rfq',
+  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/ofertas-proveedores',
   // URL del webhook de ingesta de RFQ base del cliente (siempre externo)
   N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
   // URL del webhook de chat de n8n (siempre externo)
