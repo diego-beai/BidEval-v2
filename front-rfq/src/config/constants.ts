@@ -7,7 +7,7 @@ export const API_CONFIG = {
   // URL del webhook de ofertas de proveedores (siempre externo)
   N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/rfq',
   // URL del webhook de ingesta de RFQ base del cliente (siempre externo)
-  N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook/ingesta-rfq',
+  N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
   // URL del webhook de chat de n8n (siempre externo)
   N8N_CHAT_URL: import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/072a6322-4bb1-444b-bd82-5c1df6db623f/chat',
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '600000', 10), // 10 minutos por defecto
