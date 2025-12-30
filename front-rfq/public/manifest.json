@@ -1,0 +1,26 @@
+{
+  "name": "RFQ Processor - P2X",
+  "short_name": "RFQ Processor",
+  "description": "Procesador automático de RFQs con análisis de múltiples proveedores con IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070a0c",
+  "theme_color": "#12b5b0",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ]
+}

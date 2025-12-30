@@ -1,0 +1,37 @@
+{
+  "name": "rfq-processor-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Frontend for Propuesta processing with n8n workflow integration",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "optimize-images": "node optimize-images.js",
+    "clean-debug": "find src -name '*.ts' -o -name '*.tsx' -exec sed -i 's/console\\.log.*//g' {} \\; && find src -name '*.ts' -o -name '*.tsx' -exec sed -i 's/console\\.error.*//g' {} \\; && find src -name '*.ts' -o -name '*.tsx' -exec sed -i 's/console\\.warn.*//g' {} \\;",
+    "check-n8n": "node check-n8n.js"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.11.0",
+    "clsx": "^2.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-dropzone": "^14.2.3",
+    "xlsx": "^0.18.5",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "terser": "^5.44.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.11"
+  }
+}
