@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
+import { RfqBaseUploader } from './components/upload/RfqBaseUploader';
 import { FileUploadZone } from './components/upload/FileUploadZone';
 import { SelectedFileCard } from './components/upload/SelectedFileCard';
 import { ProcessingStatus } from './components/processing/ProcessingStatus';
@@ -7,9 +9,12 @@ import { Preloader } from './components/ui/Preloader';
 import { useRfqStore } from './stores/useRfqStore';
 import { useRfqProcessing } from './hooks/useRfqProcessing';
 
+type TabType = 'rfq' | 'propuestas';
+
 export default function App() {
-  const { selectedFiles, reset, isProcessing, results } = useRfqStore();
+  const { selectedFiles, reset, isProcessing, results, error, processingFileCount } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
+  const [activeTab, setActiveTab] = useState<TabType>('rfq');
 
   return (
     <AppLayout>
@@ -26,41 +31,68 @@ export default function App() {
         </div>
 
         <div className="form">
-          <div className="field">
-            <label className="label">Cargar Propuesta de Proveedor (PDF)</label>
-
-            <FileUploadZone />
-
-            <SelectedFileCard />
-
-            <p className="hint">
-              Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY
-            </p>
-          </div>
-
-          <div className="actions">
+          {/* Tabs */}
+          <div className="tabs">
             <button
-              onClick={handleUpload}
-              disabled={selectedFiles.length === 0 || isProcessing}
-              className="btn btnPrimary"
+              className={`tab ${activeTab === 'rfq' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('rfq')}
             >
-              {isProcessing
-                ? `Procesando ${selectedFiles.length} archivo${selectedFiles.length > 1 ? 's' : ''}...`
-                : `Procesar ${selectedFiles.length || ''} Propuesta${selectedFiles.length > 1 ? 's' : selectedFiles.length === 1 ? '' : 's'}`
-              }
+              RFQ de Referencia
             </button>
-
-            {(selectedFiles.length > 0 || results) && !isProcessing && (
-              <button
-                onClick={reset}
-                className="btn btnSecondary"
-              >
-                Reiniciar
-              </button>
-            )}
+            <button
+              className={`tab ${activeTab === 'propuestas' ? 'tab-active' : ''}`}
+              onClick={() => setActiveTab('propuestas')}
+            >
+              Propuestas de Proveedores
+            </button>
           </div>
 
-          <ProcessingStatus />
+          {/* Contenido de RFQ Base */}
+          {activeTab === 'rfq' && (
+            <RfqBaseUploader />
+          )}
+
+          {/* Contenido de Propuestas */}
+          {activeTab === 'propuestas' && (
+            <>
+              <div className="field">
+                <FileUploadZone />
+
+                <SelectedFileCard />
+
+                <p className="hint">
+                  Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY
+                </p>
+              </div>
+
+              <div className="actions">
+                <button
+                  onClick={handleUpload}
+                  disabled={selectedFiles.length === 0 || isProcessing}
+                  className={`btn ${error ? 'btnDanger' : 'btnPrimary'}`}
+                >
+                  {error
+                    ? 'Error'
+                    : isProcessing
+                    ? `Procesando ${processingFileCount} archivo${processingFileCount > 1 ? 's' : ''}...`
+                    : `Procesar ${selectedFiles.length || ''} Propuesta${selectedFiles.length > 1 ? 's' : selectedFiles.length === 1 ? '' : 's'}`
+                  }
+                </button>
+
+                {(selectedFiles.length > 0 || results) && !isProcessing && (
+                  <button
+                    onClick={reset}
+                    className="btn btnSecondary"
+                  >
+                    Reiniciar
+                  </button>
+                )}
+              </div>
+
+              <ProcessingStatus />
+            </>
+          )}
+
           <LazyResultsTable />
         </div>
       </div>

@@ -10,7 +10,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 3002,
     open: true,
     fs: {
       // Allow serving files from one level up to the project root

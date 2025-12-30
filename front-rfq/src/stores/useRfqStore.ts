@@ -4,6 +4,16 @@ import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/
 import { Provider } from '../types/provider.types';
 
 /**
+ * Información de la RFQ base del cliente
+ */
+interface RfqBaseInfo {
+  fileId: string;
+  fileName: string;
+  tiposProcesados: string[];
+  uploadedAt: Date;
+}
+
+/**
  * Estado global de la aplicación usando Zustand
  */
 interface RfqState {
@@ -13,8 +23,20 @@ interface RfqState {
   addFiles: (files: File[]) => void;
   removeFile: (index: number) => void;
 
+  // RFQ Base state
+  rfqBase: RfqBaseInfo | null;
+  isProcessingRfqBase: boolean;
+  rfqBaseError: string | null;
+  rfqBaseStatus: ProcessingStatus;
+  setRfqBase: (rfqBase: RfqBaseInfo) => void;
+  clearRfqBase: () => void;
+  startProcessingRfqBase: (fileCount: number) => void;
+  updateRfqBaseStatus: (status: Partial<ProcessingStatus>) => void;
+  setRfqBaseError: (error: string | null) => void;
+
   // Processing state
   isProcessing: boolean;
+  processingFileCount: number;
   status: ProcessingStatus;
 
   // Results state
@@ -74,6 +96,7 @@ function transformResults(items: RfqItem[]): RfqResult[] {
       item: String(item.descripcion_item || item.item || ''),
       fase: String(item.fase || ''),
       evaluation: String(item.Evaluation || ''),
+      rfq_requisito: item.rfq_requisito,
       evaluations,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
@@ -88,10 +111,15 @@ export const useRfqStore = create<RfqState>()(
     (set, get) => ({
       selectedFiles: [],
       isProcessing: false,
+      processingFileCount: 0,
       status: initialStatus,
       rawResults: null,
       results: null,
       error: null,
+      rfqBase: null,
+      isProcessingRfqBase: false,
+      rfqBaseError: null,
+      rfqBaseStatus: initialStatus,
 
       setSelectedFiles: (files) => set({ selectedFiles: files, error: null }),
 
@@ -106,10 +134,57 @@ export const useRfqStore = create<RfqState>()(
         set({ selectedFiles: current.filter((_, i) => i !== index) });
       },
 
+      // RFQ Base actions
+      setRfqBase: (rfqBase) => set({
+        rfqBase,
+        isProcessingRfqBase: false,
+        rfqBaseError: null,
+        rfqBaseStatus: {
+          stage: ProcessingStage.COMPLETED,
+          progress: 100,
+          message: '¡RFQ procesada con éxito!'
+        }
+      }),
+
+      clearRfqBase: () => set({
+        rfqBase: null,
+        rfqBaseError: null,
+        isProcessingRfqBase: false,
+        rfqBaseStatus: initialStatus
+      }),
+
+      startProcessingRfqBase: (fileCount) => set({
+        isProcessingRfqBase: true,
+        rfqBaseError: null,
+        rfqBaseStatus: {
+          stage: ProcessingStage.UPLOADING,
+          progress: 5,
+          message: `Subiendo ${fileCount} RFQ${fileCount > 1 ? 's' : ''} a n8n...`
+        }
+      }),
+
+      updateRfqBaseStatus: (statusUpdate) => {
+        const currentStatus = get().rfqBaseStatus;
+        set({
+          rfqBaseStatus: { ...currentStatus, ...statusUpdate }
+        });
+      },
+
+      setRfqBaseError: (error) => set({
+        rfqBaseError: error,
+        isProcessingRfqBase: false,
+        rfqBaseStatus: error ? {
+          stage: ProcessingStage.ERROR,
+          progress: 0,
+          message: error
+        } : initialStatus
+      }),
+
       startProcessing: () => {
         const fileCount = get().selectedFiles.length;
         set({
           isProcessing: true,
+          processingFileCount: fileCount,
           error: null,
           status: {
             stage: ProcessingStage.UPLOADING,
@@ -128,12 +203,13 @@ export const useRfqStore = create<RfqState>()(
 
       setResults: (rawResults) => {
         const transformedResults = transformResults(rawResults);
-        const fileCount = get().selectedFiles.length;
+        const fileCount = get().processingFileCount;
 
         set({
           rawResults,
           results: transformedResults,
           isProcessing: false,
+          processingFileCount: 0,
           status: {
             stage: ProcessingStage.COMPLETED,
             progress: 100,
@@ -145,6 +221,7 @@ export const useRfqStore = create<RfqState>()(
       setError: (error) => set({
         error,
         isProcessing: false,
+        processingFileCount: 0,
         status: {
           stage: ProcessingStage.ERROR,
           progress: 0,
@@ -155,6 +232,7 @@ export const useRfqStore = create<RfqState>()(
       reset: () => set({
         selectedFiles: [],
         isProcessing: false,
+        processingFileCount: 0,
         status: initialStatus,
         rawResults: null,
         results: null,

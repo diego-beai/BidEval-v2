@@ -32,6 +32,7 @@ export interface RfqItem {
   Evaluation: string;
   fase: string;
   descripcion_item: string;
+  rfq_requisito?: string; // Requisitos extraídos de la RFQ base
   // Columnas dinámicas por proveedor
   IDOM?: string;
   TECNICASREUNIDAS?: string;
@@ -63,6 +64,7 @@ export interface RfqResult {
   item: string;
   fase: string;
   evaluation: string;
+  rfq_requisito?: string; // Requisitos extraídos de la RFQ base
   evaluations: Partial<Record<Provider, ProviderEvaluation>>;
   createdAt?: string;
   updatedAt?: string;

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { Provider } from '../../types/provider.types';
 import { PROVIDER_COLORS, PROVIDER_DISPLAY_NAMES } from '../../config/constants';
@@ -7,8 +7,8 @@ import './ResultsTable.css';
 
 interface Filters {
   searchText: string;
-  evaluation: string;
-  fase: string;
+  selectedEvaluations: string[];
+  selectedFases: string[];
   selectedProviders: Provider[];
 }
 
@@ -29,21 +29,23 @@ export function ResultsTable() {
   // Estado de filtros
   const [filters, setFilters] = useState<Filters>({
     searchText: '',
-    evaluation: '',
-    fase: '',
+    selectedEvaluations: [],
+    selectedFases: [],
     selectedProviders: allProviders // Por defecto, todos seleccionados
   });
 
   // Estado para mostrar/ocultar filtros
   const [showFilters, setShowFilters] = useState(false);
 
-  // Estado para mostrar/ocultar dropdown de proveedores
+  // Estado para mostrar/ocultar dropdowns
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
+  const [showFaseDropdown, setShowFaseDropdown] = useState(false);
 
-  // Early return si no hay resultados
-  if (!results || results.length === 0) {
-    return null;
-  }
+  // Refs para detectar clics fuera de los dropdowns
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
+  const evaluationDropdownRef = useRef<HTMLDivElement>(null);
+  const faseDropdownRef = useRef<HTMLDivElement>(null);
 
   // Proveedores visibles (los seleccionados en el filtro)
   const visibleProviders = filters.selectedProviders.length > 0
@@ -72,19 +74,21 @@ export function ResultsTable() {
         }
       }
 
-      // Filtro por evaluación
-      if (filters.evaluation && result.evaluation !== filters.evaluation) {
+      // Filtro por evaluación (múltiples selecciones)
+      if (filters.selectedEvaluations.length > 0 &&
+          !filters.selectedEvaluations.includes(result.evaluation)) {
         return false;
       }
 
-      // Filtro por fase
-      if (filters.fase && result.fase !== filters.fase) {
+      // Filtro por fase (múltiples selecciones)
+      if (filters.selectedFases.length > 0 &&
+          !filters.selectedFases.includes(result.fase)) {
         return false;
       }
 
       return true;
     });
-  }, [results, filters.searchText, filters.evaluation, filters.fase]);
+  }, [results, filters.searchText, filters.selectedEvaluations, filters.selectedFases]);
 
   // Toggle selección de proveedor
   const toggleProvider = (provider: Provider) => {
@@ -108,12 +112,56 @@ export function ResultsTable() {
     }));
   };
 
+  // Toggle selección de evaluación
+  const toggleEvaluation = (evaluation: string) => {
+    setFilters(prev => {
+      const isSelected = prev.selectedEvaluations.includes(evaluation);
+      const newSelected = isSelected
+        ? prev.selectedEvaluations.filter(e => e !== evaluation)
+        : [...prev.selectedEvaluations, evaluation];
+
+      return { ...prev, selectedEvaluations: newSelected };
+    });
+  };
+
+  // Seleccionar/Deseleccionar todas las evaluaciones
+  const toggleAllEvaluations = () => {
+    setFilters(prev => ({
+      ...prev,
+      selectedEvaluations: prev.selectedEvaluations.length === uniqueEvaluations.length
+        ? []
+        : uniqueEvaluations
+    }));
+  };
+
+  // Toggle selección de fase
+  const toggleFase = (fase: string) => {
+    setFilters(prev => {
+      const isSelected = prev.selectedFases.includes(fase);
+      const newSelected = isSelected
+        ? prev.selectedFases.filter(f => f !== fase)
+        : [...prev.selectedFases, fase];
+
+      return { ...prev, selectedFases: newSelected };
+    });
+  };
+
+  // Seleccionar/Deseleccionar todas las fases
+  const toggleAllFases = () => {
+    setFilters(prev => ({
+      ...prev,
+      selectedFases: prev.selectedFases.length === uniqueFases.length
+        ? []
+        : uniqueFases
+    }));
+  };
+
   // Limpiar todos los filtros
   const clearFilters = () => {
     setFilters({
       searchText: '',
-      evaluation: '',
-      fase: '',
+      selectedEvaluations: [],
+      selectedFases: [],
       selectedProviders: allProviders
     });
   };
@@ -121,8 +169,8 @@ export function ResultsTable() {
   // Verificar si hay filtros activos
   const hasActiveFilters =
     filters.searchText ||
-    filters.evaluation ||
-    filters.fase ||
+    filters.selectedEvaluations.length > 0 ||
+    filters.selectedFases.length > 0 ||
     filters.selectedProviders.length !== allProviders.length;
 
   const handleExportCSV = () => {
@@ -135,6 +183,7 @@ export function ResultsTable() {
       'Evaluación',
       'Fase',
       'Descripción',
+      'Requisitos RFQ',
       ...visibleProviders.map(p => PROVIDER_DISPLAY_NAMES[p])
     ];
 
@@ -150,6 +199,7 @@ export function ResultsTable() {
         `"${result.evaluation.replace(/"/g, '""')}"`,
         `"${result.fase.replace(/"/g, '""')}"`,
         `"${result.item.replace(/"/g, '""')}"`,
+        `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`,
         ...providerValues.map(v => `"${v.replace(/"/g, '""')}"`)
       ];
     });
@@ -180,6 +230,7 @@ export function ResultsTable() {
       'Evaluación',
       'Fase',
       'Descripción',
+      'Requisitos RFQ',
       ...visibleProviders.map(p => PROVIDER_DISPLAY_NAMES[p])
     ];
 
@@ -195,6 +246,7 @@ export function ResultsTable() {
         result.evaluation,
         result.fase,
         result.item,
+        result.rfq_requisito || '-',
         ...providerValues
       ];
     });
@@ -209,6 +261,7 @@ export function ResultsTable() {
       { wch: 25 }, // Evaluación
       { wch: 15 }, // Fase
       { wch: 50 }, // Descripción
+      { wch: 40 }, // Requisitos RFQ
       ...visibleProviders.map(() => ({ wch: 20 })) // Proveedores visibles
     ];
 
@@ -219,6 +272,44 @@ export function ResultsTable() {
     // Descargar
     XLSX.writeFile(wb, `rfq-results-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
+
+  // Efecto para cerrar dropdowns al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Cerrar dropdown de proveedores
+      if (providerDropdownRef.current &&
+          !providerDropdownRef.current.contains(event.target as Node)) {
+        setShowProviderDropdown(false);
+      }
+
+      // Cerrar dropdown de evaluación
+      if (evaluationDropdownRef.current &&
+          !evaluationDropdownRef.current.contains(event.target as Node)) {
+        setShowEvaluationDropdown(false);
+      }
+
+      // Cerrar dropdown de fase
+      if (faseDropdownRef.current &&
+          !faseDropdownRef.current.contains(event.target as Node)) {
+        setShowFaseDropdown(false);
+      }
+    };
+
+    // Agregar listener solo si al menos un dropdown está abierto
+    if (showProviderDropdown || showEvaluationDropdown || showFaseDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProviderDropdown, showEvaluationDropdown, showFaseDropdown]);
+
+  // Early return si no hay resultados
+  if (!results || results.length === 0) {
+    return null;
+  }
 
   return (
     <div className="results-container">
@@ -258,38 +349,96 @@ export function ResultsTable() {
             </div>
 
             <div className="filter-item">
-              <label className="filter-label">Evaluación</label>
-              <select
-                className="filter-select"
-                value={filters.evaluation}
-                onChange={(e) => setFilters({ ...filters, evaluation: e.target.value })}
-              >
-                <option value="">Todas las evaluaciones</option>
-                {uniqueEvaluations.map(evalType => (
-                  <option key={evalType} value={evalType}>{evalType}</option>
-                ))}
-              </select>
+              <label className="filter-label">
+                Evaluación ({filters.selectedEvaluations.length}/{uniqueEvaluations.length})
+              </label>
+              <div className="provider-dropdown-container" ref={evaluationDropdownRef}>
+                <button
+                  type="button"
+                  className="provider-dropdown-btn"
+                  onClick={() => setShowEvaluationDropdown(!showEvaluationDropdown)}
+                >
+                  {filters.selectedEvaluations.length === 0
+                    ? 'Todas las evaluaciones'
+                    : filters.selectedEvaluations.length === uniqueEvaluations.length
+                    ? 'Todas las evaluaciones'
+                    : `${filters.selectedEvaluations.length} seleccionadas`}
+                  <span className="dropdown-arrow">{showEvaluationDropdown ? '▲' : '▼'}</span>
+                </button>
+
+                {showEvaluationDropdown && (
+                  <div className="provider-checkboxes">
+                    <label className="checkbox-item checkbox-all">
+                      <input
+                        type="checkbox"
+                        checked={filters.selectedEvaluations.length === uniqueEvaluations.length}
+                        onChange={toggleAllEvaluations}
+                      />
+                      <span>Todas</span>
+                    </label>
+                    {uniqueEvaluations.map(evalType => (
+                      <label key={evalType} className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          checked={filters.selectedEvaluations.includes(evalType)}
+                          onChange={() => toggleEvaluation(evalType)}
+                        />
+                        <span>{evalType}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="filter-item">
-              <label className="filter-label">Fase</label>
-              <select
-                className="filter-select"
-                value={filters.fase}
-                onChange={(e) => setFilters({ ...filters, fase: e.target.value })}
-              >
-                <option value="">Todas las fases</option>
-                {uniqueFases.map(fase => (
-                  <option key={fase} value={fase}>{fase}</option>
-                ))}
-              </select>
+              <label className="filter-label">
+                Fase ({filters.selectedFases.length}/{uniqueFases.length})
+              </label>
+              <div className="provider-dropdown-container" ref={faseDropdownRef}>
+                <button
+                  type="button"
+                  className="provider-dropdown-btn"
+                  onClick={() => setShowFaseDropdown(!showFaseDropdown)}
+                >
+                  {filters.selectedFases.length === 0
+                    ? 'Todas las fases'
+                    : filters.selectedFases.length === uniqueFases.length
+                    ? 'Todas las fases'
+                    : `${filters.selectedFases.length} seleccionadas`}
+                  <span className="dropdown-arrow">{showFaseDropdown ? '▲' : '▼'}</span>
+                </button>
+
+                {showFaseDropdown && (
+                  <div className="provider-checkboxes">
+                    <label className="checkbox-item checkbox-all">
+                      <input
+                        type="checkbox"
+                        checked={filters.selectedFases.length === uniqueFases.length}
+                        onChange={toggleAllFases}
+                      />
+                      <span>Todas</span>
+                    </label>
+                    {uniqueFases.map(fase => (
+                      <label key={fase} className="checkbox-item">
+                        <input
+                          type="checkbox"
+                          checked={filters.selectedFases.includes(fase)}
+                          onChange={() => toggleFase(fase)}
+                        />
+                        <span>{fase}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="filter-item provider-filter">
               <label className="filter-label">
                 Proveedores visibles ({filters.selectedProviders.length}/{allProviders.length})
               </label>
-              <div className="provider-dropdown-container">
+              <div className="provider-dropdown-container" ref={providerDropdownRef}>
                 <button
                   type="button"
                   className="provider-dropdown-btn"
@@ -345,6 +494,7 @@ export function ResultsTable() {
               <th className="col-evaluation">Evaluación</th>
               <th className="col-fase">Fase</th>
               <th className="col-item">Descripción del Ítem</th>
+              <th className="col-rfq-requisito">Requisitos RFQ</th>
               {visibleProviders.map(provider => (
                 <th
                   key={provider}
@@ -361,7 +511,7 @@ export function ResultsTable() {
           <tbody>
             {filteredResults.length === 0 ? (
               <tr>
-                <td colSpan={4 + visibleProviders.length} className="no-results">
+                <td colSpan={5 + visibleProviders.length} className="no-results">
                   No se encontraron resultados con los filtros aplicados
                 </td>
               </tr>
@@ -372,6 +522,9 @@ export function ResultsTable() {
                   <td className="col-evaluation">{result.evaluation}</td>
                   <td className="col-fase">{result.fase}</td>
                   <td className="col-item">{result.item}</td>
+                  <td className="col-rfq-requisito" title={result.rfq_requisito}>
+                    {result.rfq_requisito || '-'}
+                  </td>
                   {visibleProviders.map(provider => {
                     const evaluation = result.evaluations[provider];
                     const value = evaluation?.evaluation || 'Null';

@@ -131,6 +131,49 @@ body {
   justify-items: center;
 }
 
+/* Tabs */
+.tabs {
+  width: 100%;
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(18, 181, 176, 0.6);
+}
+
 .field {
   width: min(720px, 100%);
   display: grid;
@@ -148,15 +191,20 @@ body {
 
 .dropzone {
   width: 100%;
-  padding: 12px;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 32px 24px;
   border-radius: 16px;
   border: 1px dashed rgba(232, 238, 245, 0.18);
   background: rgba(255, 255, 255, 0.02);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  display: grid;
-  place-items: center;
-  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 180px;
   position: relative;
+  cursor: pointer;
 }
 
 .dropzone:hover {
@@ -171,12 +219,20 @@ body {
   box-shadow: 0 0 0 1px rgba(18, 181, 176, 0.18);
 }
 
+.dropzone::before {
+  content: '📄';
+  font-size: 64px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
 .dropzonePrompt {
   color: rgba(232, 238, 245, 0.62);
   font-size: 14px;
   font-weight: 600;
   text-align: center;
   user-select: none;
+  max-width: 280px;
 }
 
 .fileInput {
@@ -231,7 +287,7 @@ body {
   color: var(--muted2);
   font-size: 12px;
   width: 100%;
-  text-align: left;
+  text-align: center;
 }
 
 .actions {
@@ -252,6 +308,7 @@ body {
   cursor: pointer;
   transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
   user-select: none;
+  min-width: 140px;
 }
 
 .btn:active {
@@ -276,6 +333,16 @@ body {
 
 .btnSecondary:hover {
   border-color: rgba(18, 181, 176, 0.35);
+}
+
+.btnDanger {
+  background: var(--danger);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(255, 93, 93, 0.22);
+}
+
+.btnDanger:hover {
+  filter: brightness(1.1);
 }
 
 .btn:disabled {

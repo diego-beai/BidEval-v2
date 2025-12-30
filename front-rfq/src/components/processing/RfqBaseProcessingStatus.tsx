@@ -3,15 +3,15 @@ import { useRfqStore } from '../../stores/useRfqStore';
 import { ProcessingStage } from '../../types/rfq.types';
 import { Spinner } from '../ui/Spinner';
 
-export const ProcessingStatus = memo(function ProcessingStatus() {
-  const { status, isProcessing } = useRfqStore();
+export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
+  const { rfqBaseStatus, isProcessingRfqBase } = useRfqStore();
 
-  if (!isProcessing && status.stage === ProcessingStage.IDLE) {
+  if (!isProcessingRfqBase && rfqBaseStatus.stage === ProcessingStage.IDLE) {
     return null;
   }
 
-  const isError = status.stage === ProcessingStage.ERROR;
-  const isComplete = status.stage === ProcessingStage.COMPLETED;
+  const isError = rfqBaseStatus.stage === ProcessingStage.ERROR;
+  const isComplete = rfqBaseStatus.stage === ProcessingStage.COMPLETED;
 
   // No mostrar mensaje de error aquí, ya que se muestra en el botón
   if (isError) {
@@ -21,16 +21,16 @@ export const ProcessingStatus = memo(function ProcessingStatus() {
   return (
     <div style={{ marginTop: '24px', display: 'grid', gap: '16px', justifyItems: 'center' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-        {isProcessing && <Spinner />}
+        {isProcessingRfqBase && <Spinner />}
         <p
           className="status"
           data-variant={isComplete ? 'ok' : undefined}
         >
-          {status.message}
+          {rfqBaseStatus.message}
         </p>
       </div>
 
-      {isProcessing && (
+      {isProcessingRfqBase && (
         <div style={{ width: '100%', maxWidth: '480px' }}>
           <div
             style={{
@@ -45,7 +45,7 @@ export const ProcessingStatus = memo(function ProcessingStatus() {
                 height: '100%',
                 background: 'linear-gradient(90deg, var(--accent), var(--accent2))',
                 transition: 'width 0.3s ease',
-                width: `${status.progress}%`,
+                width: `${rfqBaseStatus.progress}%`,
                 borderRadius: '8px'
               }}
             />
@@ -58,7 +58,7 @@ export const ProcessingStatus = memo(function ProcessingStatus() {
               marginTop: '8px'
             }}
           >
-            {status.progress}% completado
+            {rfqBaseStatus.progress}% completado
           </p>
         </div>
       )}

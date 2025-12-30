@@ -46,8 +46,8 @@ export const FileUploadZone = memo(function FileUploadZone() {
       <input {...getInputProps()} />
       <p className="dropzonePrompt">
         {isDragActive
-          ? '📄 Suelta los archivos PDF aquí...'
-          : '📄 Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
+          ? 'Suelta los archivos PDF aquí...'
+          : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
       </p>
     </div>
   );

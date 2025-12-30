@@ -133,3 +133,77 @@ export async function uploadMultipleRfqFiles(files: File[]): Promise<RfqItem[]> 
     );
   }
 }
+
+/**
+ * Respuesta del webhook de ingesta de RFQ
+ */
+export interface RfqIngestaResponse {
+  success: boolean;
+  message: string;
+  file_id: string;
+  tipos_procesados: string[];
+}
+
+/**
+ * Sube el documento RFQ base del cliente al webhook de ingesta
+ * Este documento se procesa para extraer requisitos que se compararán con las ofertas
+ *
+ * @param file - Archivo PDF de la RFQ base
+ * @returns Información sobre la RFQ procesada
+ */
+export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
+  const fileId = generateFileId();
+  const fileTitle = file.name;
+
+  try {
+    // Convertir archivo a base64
+    const fileBase64 = await fileToBase64(file);
+
+    // Crear payload JSON
+    const payload = {
+      file_id: fileId,
+      file_title: fileTitle,
+      file_url: "",
+      file_binary: fileBase64
+    };
+
+    console.log('📤 Enviando RFQ base a n8n:', {
+      fileName: fileTitle,
+      fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL
+    });
+
+    const response = await fetchWithTimeout(
+      API_CONFIG.N8N_RFQ_INGESTA_URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      },
+      API_CONFIG.REQUEST_TIMEOUT
+    );
+
+    const data = await response.json() as RfqIngestaResponse;
+
+    if (!data.success) {
+      throw new ApiError(data.message || 'Error al procesar la RFQ base');
+    }
+
+    console.log('✅ RFQ base procesada exitosamente:', {
+      fileId: data.file_id,
+      tiposProcesados: data.tipos_procesados
+    });
+
+    return data;
+
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(
+      error instanceof Error ? error.message : 'Error desconocido al procesar la RFQ base'
+    );
+  }
+}

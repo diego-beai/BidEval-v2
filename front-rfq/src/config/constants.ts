@@ -8,6 +8,10 @@ export const API_CONFIG = {
   N8N_WEBHOOK_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/rfq')
     : '/api/n8n/webhook/rfq',
+  // URL del webhook de ingesta de RFQ base del cliente
+  N8N_RFQ_INGESTA_URL: import.meta.env.PROD
+    ? (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'http://localhost:5678/webhook-test/ingesta-rfq')
+    : '/api/n8n/webhook-test/ingesta-rfq',
   // URL del webhook de chat de n8n
   N8N_CHAT_URL: import.meta.env.PROD
     ? (import.meta.env.VITE_N8N_CHAT_URL || 'http://localhost:5678/webhook/072a6322-4bb1-444b-bd82-5c1df6db623f/chat')
