@@ -819,3 +819,127 @@ body {
     bottom: 16px;
   }
 }
+
+/* ============================================
+   FILE LIST MODAL
+   ============================================ */
+
+/* Modal Overlay */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
+.fileListModal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, 90vw);
+  max-height: 70vh;
+  background: linear-gradient(180deg, var(--card), var(--card2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow:
+    0 0 0 1px rgba(18, 181, 176, 0.18),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.25s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Modal Header */
+.fileListModalHeader {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(18, 181, 176, 0.05);
+  border-radius: var(--radius) var(--radius) 0 0;
+  flex-shrink: 0;
+}
+
+/* Modal Body */
+.fileListModalBody {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Modal Footer */
+.fileListModalFooter {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+/* Custom Scrollbar for Modal */
+.fileListModalBody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fileListModalBody::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.fileListModalBody::-webkit-scrollbar-thumb {
+  background: rgba(18, 181, 176, 0.4);
+  border-radius: 4px;
+}
+
+.fileListModalBody::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 181, 176, 0.6);
+}
+
+/* Responsive Modal */
+@media (max-width: 720px) {
+  .fileListModal {
+    width: 95vw;
+    max-height: 80vh;
+  }
+
+  .fileListModalHeader {
+    padding: 14px 16px;
+  }
+
+  .fileListModalBody {
+    padding: 12px;
+  }
+}

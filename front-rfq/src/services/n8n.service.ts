@@ -185,18 +185,36 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       API_CONFIG.REQUEST_TIMEOUT
     );
 
-    const data = await response.json() as RfqIngestaResponse;
+    const data = await response.json();
 
-    if (!data.success) {
-      throw new ApiError(data.message || 'Error al procesar la RFQ base');
-    }
-
-    console.log('✅ RFQ base procesada exitosamente:', {
-      fileId: data.file_id,
-      tiposProcesados: data.tipos_procesados
+    console.log('📥 Respuesta completa de n8n:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: data
     });
 
-    return data;
+    // Si la respuesta HTTP fue exitosa (200-299), procesar los datos
+    if (response.ok) {
+      // Normalizar la respuesta para que siempre tenga la estructura esperada
+      const normalizedData: RfqIngestaResponse = {
+        success: data.success !== false, // Si no está presente o es true, considerar exitoso
+        message: data.message || 'RFQ procesada correctamente',
+        file_id: data.file_id || fileId, // Usar el fileId generado si no viene en la respuesta
+        tipos_procesados: data.tipos_procesados || []
+      };
+
+      console.log('✅ RFQ base procesada exitosamente:', {
+        fileId: normalizedData.file_id,
+        tiposProcesados: normalizedData.tipos_procesados
+      });
+
+      return normalizedData;
+    }
+
+    // Si la respuesta HTTP no fue exitosa, lanzar error
+    throw new ApiError(
+      data.message || `Error del servidor (${response.status}): ${response.statusText}`
+    );
 
   } catch (error) {
     if (error instanceof ApiError) {

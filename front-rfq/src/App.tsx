@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { RfqBaseUploader } from './components/upload/RfqBaseUploader';
 import { FileUploadZone } from './components/upload/FileUploadZone';
-import { SelectedFileCard } from './components/upload/SelectedFileCard';
 import { ProcessingStatus } from './components/processing/ProcessingStatus';
 import { LazyResultsTable } from './components/results/ResultsTable.lazy';
 import { Preloader } from './components/ui/Preloader';
@@ -57,8 +56,6 @@ export default function App() {
             <>
               <div className="field">
                 <FileUploadZone />
-
-                <SelectedFileCard />
 
                 <p className="hint">
                   Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY

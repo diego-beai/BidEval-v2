@@ -13,9 +13,22 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
   const isError = rfqBaseStatus.stage === ProcessingStage.ERROR;
   const isComplete = rfqBaseStatus.stage === ProcessingStage.COMPLETED;
 
-  // No mostrar mensaje de error aquí, ya que se muestra en el botón
+  // Mostrar mensaje de error si existe
   if (isError) {
-    return null;
+    return (
+      <div style={{ marginTop: '24px', display: 'grid', gap: '16px', justifyItems: 'center' }}>
+        <p
+          className="status"
+          style={{
+            color: 'var(--danger)',
+            textAlign: 'center',
+            maxWidth: '600px'
+          }}
+        >
+          {rfqBaseStatus.message}
+        </p>
+      </div>
+    );
   }
 
   return (

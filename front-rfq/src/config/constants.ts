@@ -10,7 +10,7 @@ export const API_CONFIG = {
   N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
   // URL del webhook de chat de n8n (siempre externo)
   N8N_CHAT_URL: import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/072a6322-4bb1-444b-bd82-5c1df6db623f/chat',
-  REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '600000', 10), // 10 minutos por defecto
+  REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_FILE_TYPES: ['application/pdf'],
   ALLOWED_EXTENSIONS: ['.pdf']
