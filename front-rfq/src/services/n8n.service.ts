@@ -188,7 +188,7 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       fileName: fileTitle,
       fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
       endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
-      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s`
+      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s (hasta 30 min para procesamiento con IA)`
     });
 
     const startTime = Date.now();

@@ -78,8 +78,8 @@ Crear un archivo `.env` en la raíz del proyecto con:
 # URL del webhook de n8n (para producción - desarrollo usa proxy automático)
 VITE_N8N_WEBHOOK_URL=https://tu-dominio.com/webhook/rfq
 
-# Timeout en milisegundos (10 minutos por defecto)
-VITE_REQUEST_TIMEOUT=600000
+# Timeout en milisegundos (30 minutos por defecto - para procesamiento de PDFs largos)
+VITE_REQUEST_TIMEOUT=1800000
 ```
 
 > **Nota:** Para desarrollo local, no necesitas configurar nada. El proxy automático se encarga de las peticiones CORS. Solo configura estas variables para producción.

@@ -38,12 +38,13 @@ export async function fetchWithTimeout(
       console.error('⏱️ Timeout alcanzado:', {
         url,
         timeout: `${timeout / 1000}s`,
-        message: 'El servidor n8n no respondió a tiempo. El workflow podría estar procesándose en segundo plano.'
+        message: 'El servidor n8n no respondió dentro del tiempo límite. Los procesos de IA pueden tardar hasta 30 minutos.'
       });
       throw new ApiError(
         `Timeout: El servidor no respondió en ${timeout / 1000} segundos. ` +
-        `El procesamiento podría estar completándose en segundo plano. ` +
-        `Por favor, verifica n8n o intenta de nuevo.`
+        `Los procesos de procesamiento de PDFs con IA pueden tardar hasta 30 minutos. ` +
+        `El workflow podría estar completándose en segundo plano. ` +
+        `Por favor, verifica el estado en n8n o contacta al administrador si persiste el problema.`
       );
     }
 
