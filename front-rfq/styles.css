@@ -345,6 +345,21 @@ body {
   filter: brightness(1.1);
 }
 
+.btnReset {
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(18, 181, 176, 0.22);
+  font-weight: 600;
+  min-width: 200px;
+  padding: 14px 28px;
+  font-size: 15px;
+}
+
+.btnReset:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 12px 28px rgba(18, 181, 176, 0.32);
+}
+
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;

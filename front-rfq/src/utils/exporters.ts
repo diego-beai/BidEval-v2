@@ -17,9 +17,9 @@ export function exportToCSV(results: RfqResult[], fileName?: string): void {
   // Crear encabezados
   const headers = [
     'ID',
+    'Proyecto',
     'Evaluation',
     'Fase',
-    'Descripción Item',
     ...providers.map(p => PROVIDER_DISPLAY_NAMES[p] || p),
     'Created At',
     'Updated At'
@@ -29,9 +29,9 @@ export function exportToCSV(results: RfqResult[], fileName?: string): void {
   const rows = results.map(result => {
     const row = [
       result.id,
+      `"${result.projectName.replace(/"/g, '""')}"`, // Escapar comillas
       result.evaluation,
-      result.fase,
-      `"${result.item.replace(/"/g, '""')}"` // Escapar comillas
+      result.fase
     ];
 
     // Agregar evaluación de cada proveedor
@@ -81,9 +81,9 @@ export function exportToExcel(results: RfqResult[], fileName?: string): void {
   const data = results.map(result => {
     const row: Record<string, string | number> = {
       'ID': result.id,
+      'Proyecto': result.projectName,
       'Evaluation': result.evaluation,
-      'Fase': result.fase,
-      'Descripción Item': result.item
+      'Fase': result.fase
     };
 
     // Agregar evaluación de cada proveedor
@@ -107,10 +107,10 @@ export function exportToExcel(results: RfqResult[], fileName?: string): void {
   // Ajustar anchos de columnas
   const colWidths = [
     { wch: 8 },  // ID
-    { wch: 20 }, // Evaluation
+    { wch: 20 }, // Proyecto
+    { wch: 18 }, // Evaluation
     { wch: 12 }, // Fase
-    { wch: 50 }, // Descripción Item
-    ...providers.map(() => ({ wch: 35 })), // Proveedores
+    ...providers.map(() => ({ wch: 22 })), // Proveedores - ancho uniforme
     { wch: 20 }, // Created At
     { wch: 20 }  // Updated At
   ];

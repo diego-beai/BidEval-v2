@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/rfq.types';
 import { Provider } from '../types/provider.types';
+import { RfqMetadata } from '../components/upload/RfqMetadataForm';
 
 /**
  * Información de la RFQ base del cliente
@@ -22,6 +23,10 @@ interface RfqState {
   setSelectedFiles: (files: File[]) => void;
   addFiles: (files: File[]) => void;
   removeFile: (index: number) => void;
+
+  // RFQ Metadata state
+  rfqMetadata: RfqMetadata;
+  setRfqMetadata: (metadata: RfqMetadata) => void;
 
   // RFQ Base state
   rfqBase: RfqBaseInfo | null;
@@ -50,7 +55,7 @@ interface RfqState {
   startProcessing: () => void;
   updateStatus: (status: Partial<ProcessingStatus>) => void;
   setResults: (results: RfqItem[]) => void;
-  setError: (error: string) => void;
+  setError: (error: string | null) => void;
   reset: () => void;
 }
 
@@ -93,10 +98,10 @@ function transformResults(items: RfqItem[]): RfqResult[] {
 
     const result: RfqResult = {
       id: item.id,
-      item: String(item.descripcion_item || item.item || ''),
+      projectName: String(item.project_name || ''),
       fase: String(item.fase || ''),
-      evaluation: String(item.Evaluation || ''),
-      rfq_requisito: item.rfq_requisito,
+      evaluation: String(item.evaluation || ''),
+      rfq_requisito: item.requisito_rfq,
       evaluations,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
@@ -120,8 +125,15 @@ export const useRfqStore = create<RfqState>()(
       isProcessingRfqBase: false,
       rfqBaseError: null,
       rfqBaseStatus: initialStatus,
+      rfqMetadata: {
+        proyecto: '',
+        proveedor: '',
+        tipoEvaluacion: []
+      },
 
       setSelectedFiles: (files) => set({ selectedFiles: files, error: null }),
+
+      setRfqMetadata: (metadata) => set({ rfqMetadata: metadata }),
 
       addFiles: (files) => {
         const current = get().selectedFiles;
@@ -222,11 +234,11 @@ export const useRfqStore = create<RfqState>()(
         error,
         isProcessing: false,
         processingFileCount: 0,
-        status: {
+        status: error ? {
           stage: ProcessingStage.ERROR,
           progress: 0,
           message: error
-        }
+        } : initialStatus
       }),
 
       reset: () => set({
@@ -236,7 +248,12 @@ export const useRfqStore = create<RfqState>()(
         status: initialStatus,
         rawResults: null,
         results: null,
-        error: null
+        error: null,
+        rfqMetadata: {
+          proyecto: '',
+          proveedor: '',
+          tipoEvaluacion: []
+        }
       })
     }),
     { name: 'RfqStore' }

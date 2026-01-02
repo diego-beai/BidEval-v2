@@ -119,16 +119,7 @@ export function useRfqBaseProcessing() {
       if (error instanceof ApiError) {
         errorMessage = error.message;
       } else if (error instanceof Error) {
-        // Si el error contiene "HTTP 500" o "Internal Server Error", mostrar mensaje más amigable
-        if (error.message.includes('HTTP 500') || error.message.includes('Internal Server Error')) {
-          errorMessage = 'Error del servidor. Por favor, inténtalo de nuevo más tarde.';
-        } else if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
-          errorMessage = 'Tiempo de espera agotado. El procesamiento está tardando más de lo esperado.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
-        } else {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
 
       setRfqBaseError(errorMessage);

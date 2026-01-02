@@ -26,13 +26,15 @@ export interface ProcessingStatus {
 
 /**
  * Ítem individual de Propuesta desde n8n DataTable
+ * Nueva estructura: id, rfq_project_id, project_name, evaluation, fase, requisito_rfq, IDOM, SACYR, EA, SENER, TRESCA, WORLEY, TECNICASREUNIDAS
  */
 export interface RfqItem {
   id: number;
-  Evaluation: string;
+  rfq_project_id?: string;
+  project_name?: string;
+  evaluation: string;
   fase: string;
-  descripcion_item: string;
-  rfq_requisito?: string; // Requisitos extraídos de la RFQ base
+  requisito_rfq?: string; // Requisitos extraídos de la RFQ base
   // Columnas dinámicas por proveedor
   IDOM?: string;
   TECNICASREUNIDAS?: string;
@@ -61,7 +63,7 @@ export interface ProviderEvaluation {
  */
 export interface RfqResult {
   id: number;
-  item: string;
+  projectName: string;
   fase: string;
   evaluation: string;
   rfq_requisito?: string; // Requisitos extraídos de la RFQ base

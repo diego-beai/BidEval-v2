@@ -4,7 +4,6 @@ import { useRfqStore } from '../../stores/useRfqStore';
 import { useRfqBaseProcessing } from '../../hooks/useRfqBaseProcessing';
 import { API_CONFIG } from '../../config/constants';
 import { RfqBaseProcessingStatus } from '../processing/RfqBaseProcessingStatus';
-import { formatFileSize } from '../../utils/formatters';
 
 export function RfqBaseUploader() {
   const {
@@ -59,14 +58,11 @@ export function RfqBaseUploader() {
 
     const success = await handleRfqBaseUpload(selectedFiles);
 
-    // Solo limpiar archivos seleccionados si el procesamiento fue exitoso
+    // Solo limpiar archivos si el procesamiento fue exitoso
     if (success) {
       setSelectedFiles([]);
-      setProcessingFileCount(0);
-    } else {
-      // Si hubo error, mantener los archivos para poder reintentar
-      setProcessingFileCount(0);
     }
+    setProcessingFileCount(0);
   };
 
   const handleClear = () => {
@@ -80,14 +76,6 @@ export function RfqBaseUploader() {
   const handleCancelConfirm = () => {
     setShowConfirm(false);
     setSelectedFiles([]);
-  };
-
-  const handleRemoveFile = (index: number) => {
-    const newFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(newFiles);
-    if (newFiles.length === 0) {
-      setShowFileList(false);
-    }
   };
 
   // Si ya hay una RFQ cargada, mostrar info
@@ -181,87 +169,26 @@ export function RfqBaseUploader() {
           </p>
         </div>
 
-        {selectedFiles.length > 1 && (
-          <div style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-            <button
-              onClick={() => setShowFileList(true)}
-              className="btn btnSecondary"
-              style={{
-                minWidth: '140px',
-                fontSize: '12px',
-                padding: '8px 14px'
-              }}
-            >
-              Ver archivos ({selectedFiles.length})
-            </button>
-          </div>
-        )}
-
-        {showFileList && (
-          <>
-            <div
-              className="modalOverlay"
-              onClick={() => setShowFileList(false)}
-            />
-            <div className="fileListModal">
-              <div className="fileListModalHeader">
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                  Archivos Seleccionados ({selectedFiles.length})
-                </h3>
-                <button
-                  onClick={() => setShowFileList(false)}
-                  className="removeBtn"
-                  title="Cerrar"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="fileListModalBody">
-                {selectedFiles.map((file, index) => (
-                  <div key={`${file.name}-${index}`} className="selectedFile">
-                    <div>
-                      <div className="selectedFileName">
-                        {index + 1}. {file.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
-                        {formatFileSize(file.size)}
-                      </div>
-                    </div>
-                    <button
-                      className="removeBtn"
-                      onClick={() => handleRemoveFile(index)}
-                      title="Eliminar archivo"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="fileListModalFooter">
-                <button
-                  onClick={() => {
-                    setSelectedFiles([]);
-                    setRfqBaseError(null);
-                    setShowFileList(false);
-                  }}
-                  className="btn btnDanger"
-                  style={{
-                    width: '100%',
-                    fontSize: '13px',
-                    padding: '10px 16px'
-                  }}
-                >
-                  Borrar todos los archivos
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
         <p className="hint">
           La RFQ se procesará automáticamente para extraer requisitos que se compararán con las ofertas
         </p>
       </div>
+
+      {selectedFiles.length > 1 && (
+        <div style={{ width: '100%', marginTop: '12px', marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => setShowFileList(true)}
+            className="btn btnSecondary"
+            style={{
+              minWidth: '140px',
+              fontSize: '12px',
+              padding: '8px 14px'
+            }}
+          >
+            Ver archivos ({selectedFiles.length})
+          </button>
+        </div>
+      )}
 
       <div className="actions">
         <button
@@ -290,6 +217,72 @@ export function RfqBaseUploader() {
           </button>
         )}
       </div>
+
+      {showFileList && (
+        <>
+          <div
+            className="modalOverlay"
+            onClick={() => setShowFileList(false)}
+          />
+          <div className="fileListModal">
+            <div className="fileListModalHeader">
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
+                Archivos RFQ Seleccionados ({selectedFiles.length})
+              </h3>
+              <button
+                onClick={() => setShowFileList(false)}
+                className="removeBtn"
+                title="Cerrar"
+              >
+                ×
+              </button>
+            </div>
+            <div className="fileListModalBody">
+              {selectedFiles.map((file, index) => (
+                <div key={`${file.name}-${index}`} className="selectedFile">
+                  <div>
+                    <div className="selectedFileName">
+                      {index + 1}. {file.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                  <button
+                    className="removeBtn"
+                    onClick={() => {
+                      setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+                      if (selectedFiles.length === 2) {
+                        setShowFileList(false);
+                      }
+                    }}
+                    title="Eliminar archivo"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="fileListModalFooter">
+              <button
+                onClick={() => {
+                  setSelectedFiles([]);
+                  setRfqBaseError(null);
+                  setShowFileList(false);
+                }}
+                className="btn btnDanger"
+                style={{
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '10px 16px'
+                }}
+              >
+                Borrar todos los archivos
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <RfqBaseProcessingStatus />
     </>

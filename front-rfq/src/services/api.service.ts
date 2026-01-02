@@ -33,8 +33,32 @@ export async function fetchWithTimeout(
   } catch (error) {
     clearTimeout(timeoutId);
 
+    // Timeout error
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new ApiError('Request timeout - el procesamiento está tardando más de lo esperado');
+      console.error('⏱️ Timeout alcanzado:', {
+        url,
+        timeout: `${timeout / 1000}s`,
+        message: 'El servidor n8n no respondió a tiempo. El workflow podría estar procesándose en segundo plano.'
+      });
+      throw new ApiError(
+        `Timeout: El servidor no respondió en ${timeout / 1000} segundos. ` +
+        `El procesamiento podría estar completándose en segundo plano. ` +
+        `Por favor, verifica n8n o intenta de nuevo.`
+      );
+    }
+
+    // Network/Fetch errors
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase();
+      if (errorMsg.includes('failed to fetch') ||
+          errorMsg.includes('network') ||
+          errorMsg.includes('networkerror')) {
+        console.error('🌐 Error de conexión:', {
+          url,
+          error: error.message
+        });
+        throw new ApiError('Error de conexión. Verifica tu conexión a internet o que n8n esté accesible.');
+      }
     }
 
     throw error;

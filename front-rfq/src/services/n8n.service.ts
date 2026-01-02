@@ -36,7 +36,14 @@ function fileToBase64(file: File): Promise<string> {
  * El workflow n8n procesa el archivo y devuelve directamente los resultados,
  * por lo que esta función puede tardar varios minutos en completarse.
  */
-export async function uploadRfqFile(file: File): Promise<RfqItem[]> {
+export async function uploadRfqFile(
+  file: File,
+  additionalMetadata?: {
+    proyecto?: string;
+    proveedor?: string;
+    tipoEvaluacion?: string[];
+  }
+): Promise<RfqItem[]> {
   const fileId = generateFileId();
   const fileTitle = file.name;
 
@@ -55,7 +62,10 @@ export async function uploadRfqFile(file: File): Promise<RfqItem[]> {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
         fileSize: file.size,
-        fileId: fileId
+        fileId: fileId,
+        ...(additionalMetadata?.proyecto && { proyecto: additionalMetadata.proyecto }),
+        ...(additionalMetadata?.proveedor && { proveedor: additionalMetadata.proveedor }),
+        ...(additionalMetadata?.tipoEvaluacion && { tipoEvaluacion: additionalMetadata.tipoEvaluacion })
       }
     };
 
@@ -109,14 +119,21 @@ export async function uploadRfqFile(file: File): Promise<RfqItem[]> {
  * Procesa múltiples archivos en paralelo
  * Envía todas las peticiones simultáneamente y devuelve la última respuesta
  */
-export async function uploadMultipleRfqFiles(files: File[]): Promise<RfqItem[]> {
+export async function uploadMultipleRfqFiles(
+  files: File[],
+  additionalMetadata?: {
+    proyecto?: string;
+    proveedor?: string;
+    tipoEvaluacion?: string[];
+  }
+): Promise<RfqItem[]> {
   if (files.length === 0) {
     throw new ApiError('No hay archivos para procesar');
   }
 
   try {
-    // Enviar todas las peticiones en paralelo
-    const uploadPromises = files.map(file => uploadRfqFile(file));
+    // Enviar todas las peticiones en paralelo con la metadata
+    const uploadPromises = files.map(file => uploadRfqFile(file, additionalMetadata));
 
     // Esperar a que todas terminen
     const allResults = await Promise.all(uploadPromises);
@@ -170,8 +187,11 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
     console.log('📤 Enviando RFQ base a n8n:', {
       fileName: fileTitle,
       fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL
+      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
+      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s`
     });
+
+    const startTime = Date.now();
 
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_RFQ_INGESTA_URL,
@@ -185,11 +205,14 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       API_CONFIG.REQUEST_TIMEOUT
     );
 
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
     const data = await response.json();
 
     console.log('📥 Respuesta completa de n8n:', {
       status: response.status,
       statusText: response.statusText,
+      elapsedTime: `${elapsedTime}s`,
       data: data
     });
 
@@ -217,6 +240,13 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
     );
 
   } catch (error) {
+    console.error('❌ Error al procesar RFQ base:', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      fileName: fileTitle
+    });
+
     if (error instanceof ApiError) {
       throw error;
     }

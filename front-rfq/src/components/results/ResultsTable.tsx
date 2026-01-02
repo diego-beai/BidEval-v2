@@ -60,10 +60,10 @@ export function ResultsTable() {
   const filteredResults = useMemo(() => {
     if (!results) return [];
     return results.filter(result => {
-      // Filtro por texto de búsqueda (busca en descripción)
+      // Filtro por texto de búsqueda (busca en proyecto)
       if (filters.searchText) {
         const searchLower = filters.searchText.toLowerCase();
-        if (!result.item.toLowerCase().includes(searchLower)) {
+        if (!result.projectName.toLowerCase().includes(searchLower)) {
           return false;
         }
       }
@@ -174,9 +174,9 @@ export function ResultsTable() {
     // Crear headers con las columnas requeridas más proveedores
     const headers = [
       'ID',
+      'Proyecto',
       'Evaluación',
       'Fase',
-      'Descripción',
       'Requisito RFQ',
       ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
     ];
@@ -190,9 +190,9 @@ export function ResultsTable() {
 
       return [
         result.id,
+        `"${result.projectName.replace(/"/g, '""')}"`,
         `"${result.evaluation.replace(/"/g, '""')}"`,
         `"${result.fase.replace(/"/g, '""')}"`,
-        `"${result.item.replace(/"/g, '""')}"`,
         `"${(result.rfq_requisito || '-').replace(/"/g, '""')}"`,
         ...providerData
       ];
@@ -221,9 +221,9 @@ export function ResultsTable() {
     // Crear headers con las columnas requeridas más proveedores
     const headers = [
       'ID',
+      'Proyecto',
       'Evaluación',
       'Fase',
-      'Descripción',
       'Requisito RFQ',
       ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
     ];
@@ -237,9 +237,9 @@ export function ResultsTable() {
 
       return [
         result.id,
+        result.projectName,
         result.evaluation,
         result.fase,
-        result.item,
         result.rfq_requisito || '-',
         ...providerData
       ];
@@ -252,11 +252,11 @@ export function ResultsTable() {
     // Ajustar ancho de columnas
     const columnWidths = [
       { wch: 8 },  // ID
-      { wch: 25 }, // Evaluación
-      { wch: 15 }, // Fase
-      { wch: 50 }, // Descripción
+      { wch: 20 }, // Proyecto
+      { wch: 18 }, // Evaluación
+      { wch: 12 }, // Fase
       { wch: 40 }, // Requisito RFQ
-      ...providersToShow.map(() => ({ wch: 25 })) // Ancho para cada proveedor
+      ...providersToShow.map(() => ({ wch: 22 })) // Ancho uniforme para cada proveedor
     ];
     ws['!cols'] = columnWidths;
 
@@ -333,11 +333,11 @@ export function ResultsTable() {
         <div className="filters-section">
           <div className="filters-grid">
             <div className="filter-item">
-              <label className="filter-label">Buscar en descripción</label>
+              <label className="filter-label">Buscar en proyecto</label>
               <input
                 type="text"
                 className="filter-input"
-                placeholder="Buscar ítem..."
+                placeholder="Buscar proyecto..."
                 value={filters.searchText}
                 onChange={(e) => setFilters({ ...filters, searchText: e.target.value })}
               />
@@ -489,9 +489,9 @@ export function ResultsTable() {
           <thead>
             <tr>
               <th className="col-id">ID</th>
+              <th className="col-item">Proyecto</th>
               <th className="col-evaluation">Evaluación</th>
               <th className="col-fase">Fase</th>
-              <th className="col-item">Descripción del Ítem</th>
               <th className="col-rfq-requisito">Requisito RFQ</th>
               {providersToShow.map(provider => (
                 <th key={provider} className="col-provider">
@@ -511,9 +511,9 @@ export function ResultsTable() {
               filteredResults.map((result) => (
                 <tr key={result.id}>
                   <td className="col-id">{result.id}</td>
+                  <td className="col-item">{result.projectName}</td>
                   <td className="col-evaluation">{result.evaluation}</td>
                   <td className="col-fase">{result.fase}</td>
-                  <td className="col-item">{result.item}</td>
                   <td className="col-rfq-requisito" title={result.rfq_requisito}>
                     {result.rfq_requisito || '-'}
                   </td>

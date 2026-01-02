@@ -14,6 +14,7 @@ import { ProcessingStage } from '../types/rfq.types';
 export function useRfqProcessing() {
   const {
     selectedFiles,
+    rfqMetadata,
     isProcessing,
     startProcessing,
     updateStatus,
@@ -81,16 +82,26 @@ export function useRfqProcessing() {
   const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) {
       setError('No se han seleccionado archivos');
-      return;
+      return false;
+    }
+
+    // Validar que todos los campos de metadata estén completos
+    if (!rfqMetadata.proyecto || !rfqMetadata.proveedor || rfqMetadata.tipoEvaluacion.length === 0) {
+      setError('Por favor complete todos los campos: Proyecto, Proveedor y Tipos de Evaluación');
+      return false;
     }
 
     try {
       startProcessing();
       simulateProgress();
 
-      // Procesar todos los archivos en paralelo
+      // Procesar todos los archivos en paralelo con la metadata
       // La función uploadMultipleRfqFiles devuelve solo la ÚLTIMA respuesta
-      const results = await uploadMultipleRfqFiles(selectedFiles);
+      const results = await uploadMultipleRfqFiles(selectedFiles, {
+        proyecto: rfqMetadata.proyecto,
+        proveedor: rfqMetadata.proveedor,
+        tipoEvaluacion: rfqMetadata.tipoEvaluacion
+      });
 
       // Detener simulación de progreso
       clearProgressTimer();
@@ -98,27 +109,20 @@ export function useRfqProcessing() {
       // Guardar resultados (última respuesta con todos los datos actualizados)
       setResults(results);
 
+      return true;
     } catch (error) {
       clearProgressTimer();
 
       let errorMessage = 'Error desconocido al procesar los archivos';
 
       if (error instanceof Error) {
-        // Si el error contiene "HTTP 500" o "Internal Server Error", mostrar mensaje más amigable
-        if (error.message.includes('HTTP 500') || error.message.includes('Internal Server Error')) {
-          errorMessage = 'Error del servidor. Por favor, inténtalo de nuevo más tarde.';
-        } else if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
-          errorMessage = 'Tiempo de espera agotado. El procesamiento está tardando más de lo esperado.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
-        } else {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
 
       setError(errorMessage);
+      return false;
     }
-  }, [selectedFiles, startProcessing, simulateProgress, clearProgressTimer, setResults, setError]);
+  }, [selectedFiles, rfqMetadata, startProcessing, simulateProgress, clearProgressTimer, setResults, setError]);
 
   // Cleanup al desmontar
   useEffect(() => {

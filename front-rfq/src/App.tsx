@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { RfqBaseUploader } from './components/upload/RfqBaseUploader';
 import { FileUploadZone } from './components/upload/FileUploadZone';
+import { RfqMetadataForm } from './components/upload/RfqMetadataForm';
 import { ProcessingStatus } from './components/processing/ProcessingStatus';
 import { LazyResultsTable } from './components/results/ResultsTable.lazy';
 import { Preloader } from './components/ui/Preloader';
@@ -11,7 +12,7 @@ import { useRfqProcessing } from './hooks/useRfqProcessing';
 type TabType = 'rfq' | 'propuestas';
 
 export default function App() {
-  const { selectedFiles, reset, isProcessing, results, error, processingFileCount } = useRfqStore();
+  const { selectedFiles, reset, isProcessing, results, error, processingFileCount, rfqMetadata, setRfqMetadata } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
   const [activeTab, setActiveTab] = useState<TabType>('rfq');
 
@@ -54,43 +55,72 @@ export default function App() {
           {/* Contenido de Propuestas */}
           {activeTab === 'propuestas' && (
             <>
-              <div className="field">
-                <FileUploadZone />
+              {/* Mostrar zona de carga solo si no hay resultados */}
+              {!results && (
+                <>
+                  {/* Formulario de metadata */}
+                  <RfqMetadataForm
+                    metadata={rfqMetadata}
+                    onChange={setRfqMetadata}
+                    disabled={isProcessing}
+                  />
 
-                <p className="hint">
-                  Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY
-                </p>
-              </div>
+                  <div className="field">
+                    <FileUploadZone />
 
-              <div className="actions">
-                <button
-                  onClick={handleUpload}
-                  disabled={selectedFiles.length === 0 || isProcessing}
-                  className={`btn ${error ? 'btnDanger' : 'btnPrimary'}`}
-                >
-                  {error
-                    ? 'Error'
-                    : isProcessing
-                    ? `Procesando ${processingFileCount} archivo${processingFileCount > 1 ? 's' : ''}...`
-                    : `Procesar ${selectedFiles.length || ''} Propuesta${selectedFiles.length > 1 ? 's' : selectedFiles.length === 1 ? '' : 's'}`
-                  }
-                </button>
+                    <p className="hint">
+                      Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY
+                    </p>
+                  </div>
 
-                {(selectedFiles.length > 0 || results) && !isProcessing && (
-                  <button
-                    onClick={reset}
-                    className="btn btnSecondary"
-                  >
-                    Reiniciar
-                  </button>
-                )}
-              </div>
+                  <div className="actions">
+                    <button
+                      onClick={handleUpload}
+                      disabled={selectedFiles.length === 0 || isProcessing}
+                      className={`btn ${error ? 'btnDanger' : 'btnPrimary'}`}
+                    >
+                      {error
+                        ? 'Error'
+                        : isProcessing
+                        ? `Procesando ${processingFileCount} archivo${processingFileCount > 1 ? 's' : ''}...`
+                        : `Procesar ${selectedFiles.length || ''} Propuesta${selectedFiles.length > 1 ? 's' : selectedFiles.length === 1 ? '' : 's'}`
+                      }
+                    </button>
+
+                    {selectedFiles.length > 0 && !isProcessing && (
+                      <button
+                        onClick={reset}
+                        className="btn btnSecondary"
+                      >
+                        Reiniciar
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
 
               <ProcessingStatus />
+
+              {/* Mostrar resultados y botón reiniciar abajo */}
+              {results && (
+                <>
+                  <LazyResultsTable />
+
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px', paddingBottom: '24px' }}>
+                    <button
+                      onClick={reset}
+                      className="btn btnReset"
+                    >
+                      Reiniciar
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
 
-          <LazyResultsTable />
+          {/* Tabla solo visible fuera de propuestas o si no hay resultados */}
+          {activeTab !== 'propuestas' && <LazyResultsTable />}
         </div>
       </div>
     </AppLayout>
