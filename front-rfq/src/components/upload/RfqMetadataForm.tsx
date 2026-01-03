@@ -14,6 +14,11 @@ interface RfqMetadataFormProps {
   disabled?: boolean;
 }
 
+// Proyectos disponibles
+const AVAILABLE_PROJECTS = [
+  'Hydrogen Production Plant – La Zaida, Spain'
+];
+
 // Tipos de evaluación disponibles
 const EVALUATION_TYPES = [
   'Technical Evaluation',
@@ -23,12 +28,25 @@ const EVALUATION_TYPES = [
 ];
 
 export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMetadataFormProps) {
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
+  const [isCustomProject, setIsCustomProject] = useState(false);
 
   const providers = Object.values(Provider);
 
-  const handleProyectoChange = (value: string) => {
+  const handleProjectSelect = (project: string) => {
+    if (project === 'CUSTOM') {
+      setIsCustomProject(true);
+      onChange({ ...metadata, proyecto: '' });
+    } else {
+      setIsCustomProject(false);
+      onChange({ ...metadata, proyecto: project });
+    }
+    setShowProjectDropdown(false);
+  };
+
+  const handleCustomProjectChange = (value: string) => {
     onChange({ ...metadata, proyecto: value });
   };
 
@@ -67,14 +85,63 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
           <label className="metadata-label">
             Proyecto <span className="required">*</span>
           </label>
-          <input
-            type="text"
-            className="metadata-input"
-            placeholder="Ej: Proyecto H2 Verde"
-            value={metadata.proyecto}
-            onChange={(e) => handleProyectoChange(e.target.value)}
-            disabled={disabled}
-          />
+          {isCustomProject ? (
+            <input
+              type="text"
+              className="metadata-input"
+              placeholder="Escribir nombre del proyecto..."
+              value={metadata.proyecto}
+              onChange={(e) => handleCustomProjectChange(e.target.value)}
+              disabled={disabled}
+              autoFocus
+            />
+          ) : (
+            <div className="metadata-dropdown-container">
+              <button
+                type="button"
+                className={`metadata-dropdown-btn ${!metadata.proyecto ? 'placeholder' : ''}`}
+                onClick={() => !disabled && setShowProjectDropdown(!showProjectDropdown)}
+                disabled={disabled}
+              >
+                <span title={metadata.proyecto}>
+                  {metadata.proyecto || 'Seleccionar proyecto...'}
+                </span>
+                <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
+              </button>
+
+              {showProjectDropdown && (
+                <>
+                  <div
+                    className="dropdown-overlay"
+                    onClick={() => setShowProjectDropdown(false)}
+                  />
+                  <div className="metadata-dropdown-menu">
+                    {AVAILABLE_PROJECTS.map(project => (
+                      <button
+                        key={project}
+                        type="button"
+                        className={`dropdown-item ${metadata.proyecto === project ? 'selected' : ''}`}
+                        onClick={() => handleProjectSelect(project)}
+                      >
+                        {project}
+                        {metadata.proyecto === project && (
+                          <span className="check-icon">✓</span>
+                        )}
+                      </button>
+                    ))}
+                    <div className="dropdown-divider"></div>
+                    <button
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => handleProjectSelect('CUSTOM')}
+                    >
+                      Otro (personalizado)
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Campo Proveedor */}
