@@ -5,6 +5,7 @@ import { FileUploadZone } from './components/upload/FileUploadZone';
 import { RfqMetadataForm } from './components/upload/RfqMetadataForm';
 import { ProcessingStatus } from './components/processing/ProcessingStatus';
 import { LazyResultsTable } from './components/results/ResultsTable.lazy';
+import { WebhookTableViewer } from './components/results/WebhookTableViewer';
 import { Preloader } from './components/ui/Preloader';
 import { useRfqStore } from './stores/useRfqStore';
 import { useRfqProcessing } from './hooks/useRfqProcessing';
@@ -17,7 +18,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('rfq');
 
   return (
-    <AppLayout>
+    <AppLayout wideContent={<WebhookTableViewer />}>
       <Preloader />
       <div className="card">
         <div className="cardHeader">

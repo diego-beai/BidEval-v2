@@ -54,7 +54,8 @@ body {
 .page {
   flex: 1 1 auto;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   padding: 60px 18px;
 }
 
@@ -957,4 +958,75 @@ body {
   .fileListModalBody {
     padding: 12px;
   }
+}
+
+/* ===========================
+   WebhookTableViewer
+   =========================== */
+
+.webhook-table-viewer {
+  width: calc(100% - 100px);
+  margin: 24px auto 0;
+  max-width: 1920px;
+}
+
+/* Hacer la tabla más ancha cuando está dentro del webhook viewer */
+.webhook-table-viewer .results-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+.webhook-table-viewer .table-wrapper {
+  max-width: 100%;
+}
+
+.webhook-table-button-container {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.webhook-table-btn {
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: 1px solid rgba(18, 181, 176, 0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(18, 181, 176, 0.25);
+}
+
+.webhook-table-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  box-shadow: 0 6px 16px rgba(18, 181, 176, 0.35);
+  transform: translateY(-2px);
+}
+
+.webhook-table-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(18, 181, 176, 0.3);
+}
+
+.webhook-table-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.webhook-table-error {
+  margin: 20px auto;
+  padding: 16px 20px;
+  max-width: 600px;
+  background: rgba(255, 93, 93, 0.12);
+  border: 1px solid rgba(255, 93, 93, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.webhook-table-error p {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
 }
