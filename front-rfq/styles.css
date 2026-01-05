@@ -117,6 +117,30 @@ body {
   letter-spacing: -0.02em;
   font-size: 26px;
   line-height: 1.12;
+  background: linear-gradient(90deg, #ffffff 0%, #12b5b0 25%, #ffffff 50%, #12b5b0 75%, #ffffff 100%);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: titleColorShift 15s linear infinite;
+}
+
+@keyframes titleColorShift {
+  0% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: -100% 0%;
+  }
+  50% {
+    background-position: -200% 0%;
+  }
+  75% {
+    background-position: -300% 0%;
+  }
+  100% {
+    background-position: -400% 0%;
+  }
 }
 
 .desc {
