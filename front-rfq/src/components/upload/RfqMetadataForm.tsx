@@ -75,21 +75,21 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
   return (
     <div className="rfq-metadata-form">
       <div className="metadata-form-header">
-        <h4>Información de la Propuesta</h4>
-        <p className="metadata-form-hint">Complete los siguientes campos antes de procesar</p>
+        <h4>Proposal Information</h4>
+        <p className="metadata-form-hint">Please complete the following fields before processing</p>
       </div>
 
       <div className="metadata-form-grid">
         {/* Campo Proyecto */}
         <div className="metadata-field">
           <label className="metadata-label">
-            Proyecto <span className="required">*</span>
+            Project <span className="required">*</span>
           </label>
           {isCustomProject ? (
             <input
               type="text"
               className="metadata-input"
-              placeholder="Escribir nombre del proyecto..."
+              placeholder="Enter project name..."
               value={metadata.proyecto}
               onChange={(e) => handleCustomProjectChange(e.target.value)}
               disabled={disabled}
@@ -104,7 +104,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
                 disabled={disabled}
               >
                 <span title={metadata.proyecto}>
-                  {metadata.proyecto || 'Seleccionar proyecto...'}
+                  {metadata.proyecto || 'Select project...'}
                 </span>
                 <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
               </button>
@@ -135,7 +135,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
                       className="dropdown-item"
                       onClick={() => handleProjectSelect('CUSTOM')}
                     >
-                      Otro (personalizado)
+                      Other (Custom)
                     </button>
                   </div>
                 </>
@@ -147,7 +147,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
         {/* Campo Proveedor */}
         <div className="metadata-field">
           <label className="metadata-label">
-            Proveedor <span className="required">*</span>
+            Provider <span className="required">*</span>
           </label>
           <div className="metadata-dropdown-container">
             <button
@@ -158,7 +158,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
             >
               {metadata.proveedor
                 ? PROVIDER_DISPLAY_NAMES[metadata.proveedor]
-                : 'Seleccionar proveedor...'}
+                : 'Select provider...'}
               <span className="dropdown-arrow">{showProviderDropdown ? '▲' : '▼'}</span>
             </button>
 
@@ -191,7 +191,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
         {/* Campo Tipo de Evaluación */}
         <div className="metadata-field">
           <label className="metadata-label">
-            Tipos de Evaluación <span className="required">*</span>
+            Evaluation Types <span className="required">*</span>
           </label>
           <div className="metadata-dropdown-container">
             <button
@@ -202,10 +202,10 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
             >
               <span className="dropdown-btn-text">
                 {metadata.tipoEvaluacion.length === 0
-                  ? 'Seleccionar tipos...'
+                  ? 'Select types...'
                   : metadata.tipoEvaluacion.length === EVALUATION_TYPES.length
-                  ? 'Todos los tipos'
-                  : metadata.tipoEvaluacion.join(', ')}
+                    ? 'All types'
+                    : metadata.tipoEvaluacion.join(', ')}
               </span>
               <span className="dropdown-arrow">{showEvaluationDropdown ? '▲' : '▼'}</span>
             </button>
@@ -223,7 +223,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
                       checked={metadata.tipoEvaluacion.length === EVALUATION_TYPES.length}
                       onChange={toggleAllEvaluations}
                     />
-                    <span>Seleccionar todos</span>
+                    <span>Select all</span>
                   </label>
                   <div className="checkbox-divider"></div>
                   {EVALUATION_TYPES.map(evaluation => (
@@ -246,7 +246,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
       {(!metadata.proyecto || !metadata.proveedor || metadata.tipoEvaluacion.length === 0) && (
         <div className="metadata-form-warning">
           <span className="warning-icon">⚠</span>
-          Todos los campos son obligatorios
+          All fields are mandatory
         </div>
       )}
     </div>

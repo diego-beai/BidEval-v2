@@ -15,6 +15,14 @@ export default defineConfig({
     fs: {
       // Allow serving files from one level up to the project root
       allow: ['..']
+    },
+    proxy: {
+      '/api/n8n/chat': {
+        target: 'https://n8n.beaienergy.com/webhook/chat-rfq',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
     }
   },
   build: {

@@ -35,16 +35,16 @@ export async function fetchWithTimeout(
 
     // Timeout error
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('⏱️ Timeout alcanzado:', {
+      console.error('⏱️ Timeout reached:', {
         url,
         timeout: `${timeout / 1000}s`,
-        message: 'El servidor n8n no respondió dentro del tiempo límite. Los procesos de IA pueden tardar hasta 30 minutos.'
+        message: 'The n8n server did not respond within the limit. AI processes can take up to 30 minutes.'
       });
       throw new ApiError(
-        `Timeout: El servidor no respondió en ${timeout / 1000} segundos. ` +
-        `Los procesos de procesamiento de PDFs con IA pueden tardar hasta 30 minutos. ` +
-        `El workflow podría estar completándose en segundo plano. ` +
-        `Por favor, verifica el estado en n8n o contacta al administrador si persiste el problema.`
+        `Timeout: The server did not respond in ${timeout / 1000} seconds. ` +
+        `AI-powered PDF processing can take up to 30 minutes. ` +
+        `The workflow might still be completing in the background. ` +
+        `Please check the status in n8n or contact your administrator if the problem persists.`
       );
     }
 
@@ -52,13 +52,13 @@ export async function fetchWithTimeout(
     if (error instanceof Error) {
       const errorMsg = error.message.toLowerCase();
       if (errorMsg.includes('failed to fetch') ||
-          errorMsg.includes('network') ||
-          errorMsg.includes('networkerror')) {
-        console.error('🌐 Error de conexión:', {
+        errorMsg.includes('network') ||
+        errorMsg.includes('networkerror')) {
+        console.error('🌐 Connection error:', {
           url,
           error: error.message
         });
-        throw new ApiError('Error de conexión. Verifica tu conexión a internet o que n8n esté accesible.');
+        throw new ApiError('Connection error. Please check your internet connection or ensure n8n is accessible.');
       }
     }
 

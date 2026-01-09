@@ -14,6 +14,14 @@ interface RfqBaseInfo {
   uploadedAt: Date;
 }
 
+export interface TableFilters {
+  project_name: string;
+  evaluation: string[];
+  requisito_rfq: string[];
+  provider: string[];
+  rfqSearch: string;
+}
+
 /**
  * Estado global de la aplicación usando Zustand
  */
@@ -33,7 +41,10 @@ interface RfqState {
   isProcessingRfqBase: boolean;
   rfqBaseError: string | null;
   rfqBaseStatus: ProcessingStatus;
-  setRfqBase: (rfqBase: RfqBaseInfo) => void;
+  selectedRfqBaseFiles: File[];
+  setSelectedRfqBaseFiles: (files: File[]) => void;
+  clearSelectedRfqBaseFiles: () => void;
+  setRfqBase: (rfqBase: RfqBaseInfo, message?: string) => void;
   clearRfqBase: () => void;
   startProcessingRfqBase: (fileCount: number) => void;
   updateRfqBaseStatus: (status: Partial<ProcessingStatus>) => void;
@@ -52,17 +63,32 @@ interface RfqState {
   error: string | null;
 
   // Actions
-  startProcessing: () => void;
+  startProcessing: (simulate?: boolean) => void;
   updateStatus: (status: Partial<ProcessingStatus>) => void;
-  setResults: (results: RfqItem[]) => void;
+  setResults: (results: RfqItem[], message?: string) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+
+  // Table Action State
+  applyTableFilters: boolean;
+  setApplyTableFilters: (val: boolean) => void;
+  tableFilters: TableFilters;
+  setTableFilters: (filters: Partial<TableFilters> | ((prev: TableFilters) => TableFilters)) => void;
+
+  // Chat state
+  chatMessages: any[];
+  setChatMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
+
+  // Simulation internal
+  simulationInterval: number | null;
+  startSimulation: (stages: any[]) => void;
+  stopSimulation: () => void;
 }
 
 const initialStatus: ProcessingStatus = {
   stage: ProcessingStage.IDLE,
   progress: 0,
-  message: 'Esperando archivos...'
+  message: 'Waiting for files...'
 };
 
 /**
@@ -91,7 +117,7 @@ function transformResults(items: RfqItem[]): RfqResult[] {
         evaluations[enumValue] = {
           provider: enumValue,
           evaluation,
-          hasValue: evaluation !== 'NO COTIZADO' && evaluation !== 'SIN INFORMACIÓN'
+          hasValue: evaluation !== 'NOT QUOTED' && evaluation !== 'NO INFORMATION'
         };
       }
     });
@@ -125,6 +151,33 @@ export const useRfqStore = create<RfqState>()(
       isProcessingRfqBase: false,
       rfqBaseError: null,
       rfqBaseStatus: initialStatus,
+      selectedRfqBaseFiles: [],
+
+      applyTableFilters: false,
+      setApplyTableFilters: (val) => set({ applyTableFilters: val }),
+      tableFilters: {
+        project_name: '',
+        evaluation: [],
+        requisito_rfq: [],
+        provider: [],
+        rfqSearch: ''
+      },
+      setTableFilters: (filtersUpdate) => {
+        if (typeof filtersUpdate === 'function') {
+          set({ tableFilters: filtersUpdate(get().tableFilters) });
+        } else {
+          set({ tableFilters: { ...get().tableFilters, ...filtersUpdate } });
+        }
+      },
+
+      chatMessages: [],
+      setChatMessages: (messagesUpdater) => {
+        if (typeof messagesUpdater === 'function') {
+          set({ chatMessages: messagesUpdater(get().chatMessages) });
+        } else {
+          set({ chatMessages: messagesUpdater });
+        }
+      },
       rfqMetadata: {
         proyecto: '',
         proveedor: '',
@@ -137,7 +190,7 @@ export const useRfqStore = create<RfqState>()(
 
       addFiles: (files) => {
         const current = get().selectedFiles;
-        const newFiles = [...current, ...files].slice(0, 7); // Máximo 7 archivos
+        const newFiles = [...current, ...files].slice(0, 7); // Max 7 files
         set({ selectedFiles: newFiles, error: null });
       },
 
@@ -146,15 +199,21 @@ export const useRfqStore = create<RfqState>()(
         set({ selectedFiles: current.filter((_, i) => i !== index) });
       },
 
+      // RFQ Base file management
+      setSelectedRfqBaseFiles: (files) => set({ selectedRfqBaseFiles: files, rfqBaseError: null }),
+
+      clearSelectedRfqBaseFiles: () => set({ selectedRfqBaseFiles: [] }),
+
       // RFQ Base actions
-      setRfqBase: (rfqBase) => set({
+      setRfqBase: (rfqBase, message?: string) => set({
         rfqBase,
         isProcessingRfqBase: false,
         rfqBaseError: null,
+        selectedRfqBaseFiles: [],
         rfqBaseStatus: {
           stage: ProcessingStage.COMPLETED,
           progress: 100,
-          message: '¡RFQ procesada con éxito!'
+          message: message || 'Base RFQ processed successfully!'
         }
       }),
 
@@ -162,18 +221,28 @@ export const useRfqStore = create<RfqState>()(
         rfqBase: null,
         rfqBaseError: null,
         isProcessingRfqBase: false,
+        selectedRfqBaseFiles: [],
         rfqBaseStatus: initialStatus
       }),
 
-      startProcessingRfqBase: (fileCount) => set({
-        isProcessingRfqBase: true,
-        rfqBaseError: null,
-        rfqBaseStatus: {
-          stage: ProcessingStage.UPLOADING,
-          progress: 5,
-          message: `Subiendo ${fileCount} RFQ${fileCount > 1 ? 's' : ''} a n8n...`
-        }
-      }),
+      startProcessingRfqBase: (fileCount) => {
+        set({
+          isProcessingRfqBase: true,
+          rfqBaseError: null,
+          rfqBaseStatus: {
+            stage: ProcessingStage.UPLOADING,
+            progress: 5,
+            message: `Uploading ${fileCount} RFQ${fileCount > 1 ? 's' : ''} to n8n...`
+          }
+        });
+
+        get().startSimulation([
+          { threshold: 0.15, stage: ProcessingStage.OCR_PROCESSING, message: 'Extracting text from RFQ...' },
+          { threshold: 0.40, stage: ProcessingStage.CLASSIFYING, message: 'Analyzing RFQ structure...' },
+          { threshold: 0.70, stage: ProcessingStage.EMBEDDING, message: 'Indexing requirements...' },
+          { threshold: 0.90, stage: ProcessingStage.COMPLETED, message: 'Finalizing processing...' }
+        ]);
+      },
 
       updateRfqBaseStatus: (statusUpdate) => {
         const currentStatus = get().rfqBaseStatus;
@@ -192,7 +261,7 @@ export const useRfqStore = create<RfqState>()(
         } : initialStatus
       }),
 
-      startProcessing: () => {
+      startProcessing: (simulate = true) => {
         const fileCount = get().selectedFiles.length;
         set({
           isProcessing: true,
@@ -201,9 +270,19 @@ export const useRfqStore = create<RfqState>()(
           status: {
             stage: ProcessingStage.UPLOADING,
             progress: 5,
-            message: `Subiendo ${fileCount} archivo${fileCount > 1 ? 's' : ''} a n8n...`
+            message: `Uploading ${fileCount} file${fileCount > 1 ? 's' : ''} to n8n...`
           }
         });
+
+        if (simulate) {
+          get().startSimulation([
+            { threshold: 0.15, stage: ProcessingStage.OCR_PROCESSING, message: 'Extracting text from PDF...' },
+            { threshold: 0.30, stage: ProcessingStage.CLASSIFYING, message: 'Classifying provider and type...' },
+            { threshold: 0.50, stage: ProcessingStage.EMBEDDING, message: 'Generating vector embeddings...' },
+            { threshold: 0.70, stage: ProcessingStage.EVALUATING, message: 'Evaluating items with AI...' },
+            { threshold: 0.90, stage: ProcessingStage.EVALUATING, message: 'Finalizing evaluation...' }
+          ]);
+        }
       },
 
       updateStatus: (statusUpdate) => {
@@ -213,9 +292,11 @@ export const useRfqStore = create<RfqState>()(
         });
       },
 
-      setResults: (rawResults) => {
+      setResults: (rawResults: RfqItem[], message?: string) => {
         const transformedResults = transformResults(rawResults);
         const fileCount = get().processingFileCount;
+
+        get().stopSimulation();
 
         set({
           rawResults,
@@ -225,21 +306,81 @@ export const useRfqStore = create<RfqState>()(
           status: {
             stage: ProcessingStage.COMPLETED,
             progress: 100,
-            message: `¡Propuesta procesada! ${fileCount} ${fileCount === 1 ? 'propuesta procesada' : 'propuestas procesadas'}.`
+            message: message || `Proposal processed! ${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} completed.`
           }
         });
       },
 
-      setError: (error) => set({
-        error,
-        isProcessing: false,
-        processingFileCount: 0,
-        status: error ? {
-          stage: ProcessingStage.ERROR,
-          progress: 0,
-          message: error
-        } : initialStatus
-      }),
+      setError: (error) => {
+        get().stopSimulation();
+        set({
+          error,
+          isProcessing: false,
+          processingFileCount: 0,
+          status: error ? {
+            stage: ProcessingStage.ERROR,
+            progress: 0,
+            message: error
+          } : initialStatus
+        });
+      },
+
+      simulationInterval: null,
+
+      startSimulation: (stages) => {
+        get().stopSimulation(); // Clear any existing
+
+        const startTime = Date.now();
+        const estimatedTotalTime = 120000; // 2 minutes
+        let currentStageIndex = 0;
+
+        const interval = window.setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progressRatio = Math.min(elapsed / estimatedTotalTime, 0.95);
+          const progress = Math.floor(progressRatio * 100);
+
+          while (
+            currentStageIndex < stages.length - 1 &&
+            progressRatio > stages[currentStageIndex + 1].threshold
+          ) {
+            currentStageIndex++;
+          }
+
+          const currentStage = stages[currentStageIndex];
+
+          if (get().isProcessing) {
+            set((state) => ({
+              status: {
+                ...state.status,
+                progress,
+                stage: currentStage.stage,
+                message: currentStage.message
+              }
+            }));
+          }
+
+          if (get().isProcessingRfqBase) {
+            set((state) => ({
+              rfqBaseStatus: {
+                ...state.rfqBaseStatus,
+                progress,
+                stage: currentStage.stage,
+                message: currentStage.message
+              }
+            }));
+          }
+        }, 1000);
+
+        set({ simulationInterval: interval });
+      },
+
+      stopSimulation: () => {
+        const interval = get().simulationInterval;
+        if (interval) {
+          clearInterval(interval);
+          set({ simulationInterval: null });
+        }
+      },
 
       reset: () => set({
         selectedFiles: [],

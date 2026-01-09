@@ -32,12 +32,12 @@ export function useRfqBaseProcessing() {
     const estimatedTotalTime = 120000; // 2 minutos estimados
 
     const stages = [
-      { threshold: 0.10, stage: ProcessingStage.UPLOADING, message: 'Subiendo archivos RFQ a n8n...' },
-      { threshold: 0.25, stage: ProcessingStage.OCR_PROCESSING, message: 'Extrayendo texto de los PDFs...' },
-      { threshold: 0.50, stage: ProcessingStage.CLASSIFYING, message: 'Clasificando tipos de requisitos...' },
-      { threshold: 0.70, stage: ProcessingStage.EMBEDDING, message: 'Generando embeddings vectoriales...' },
-      { threshold: 0.85, stage: ProcessingStage.EVALUATING, message: 'Extrayendo requisitos con IA...' },
-      { threshold: 0.95, stage: ProcessingStage.EVALUATING, message: 'Finalizando procesamiento...' }
+      { threshold: 0.10, stage: ProcessingStage.UPLOADING, message: 'Uploading RFQ files to n8n...' },
+      { threshold: 0.25, stage: ProcessingStage.OCR_PROCESSING, message: 'Extracting text from PDFs...' },
+      { threshold: 0.50, stage: ProcessingStage.CLASSIFYING, message: 'Classifying requirement types...' },
+      { threshold: 0.70, stage: ProcessingStage.EMBEDDING, message: 'Generating vector embeddings...' },
+      { threshold: 0.85, stage: ProcessingStage.EVALUATING, message: 'Extracting requirements with IA...' },
+      { threshold: 0.95, stage: ProcessingStage.EVALUATING, message: 'Finalizing processing...' }
     ];
 
     let currentStageIndex = 0;
@@ -108,7 +108,7 @@ export function useRfqBaseProcessing() {
           : files[0].name,
         tiposProcesados: allTipos,
         uploadedAt: new Date()
-      });
+      }, lastResponse.message);
 
       return true;
     } catch (error) {

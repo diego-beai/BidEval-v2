@@ -4,7 +4,7 @@ import { useRfqStore } from '../../stores/useRfqStore';
 import { validateFile } from '../../utils/validators';
 import { formatFileSize } from '../../utils/formatters';
 
-export const FileUploadZone = memo(function FileUploadZone() {
+export const FileUploadZone = memo(function FileUploadZone({ compact = false }: { compact?: boolean }) {
   const { selectedFiles, addFiles, removeFile, setSelectedFiles, setError, isProcessing } = useRfqStore();
   const [showFileList, setShowFileList] = useState(false);
 
@@ -46,19 +46,22 @@ export const FileUploadZone = memo(function FileUploadZone() {
         {...getRootProps()}
         className="dropzone"
         data-drag={isDragActive ? '1' : '0'}
+        style={compact ? { padding: '24px', minHeight: 'auto' } : {}}
       >
         <input {...getInputProps()} />
 
-        <p className="dropzonePrompt">
+        <p className="dropzonePrompt" style={compact ? { fontSize: '0.9rem', margin: 0 } : {}}>
           {isProcessing
             ? 'Procesando propuestas... Esto puede tardar unos minutos'
             : selectedFiles.length > 0
-            ? selectedFiles.length > 1
-              ? `${selectedFiles.length} archivos seleccionados (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
-              : `${selectedFiles[0].name} (${(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
-            : isDragActive
-            ? 'Suelta los archivos PDF aquí...'
-            : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
+              ? selectedFiles.length > 1
+                ? `${selectedFiles.length} archivos seleccionados (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
+                : `${selectedFiles[0].name} (${(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
+              : isDragActive
+                ? 'Suelta los archivos PDF aquí...'
+                : compact
+                  ? 'Arrastra archivos PDF o haz clic para seleccionar'
+                  : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
         </p>
       </div>
 

@@ -1,0 +1,789 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -1920,
+                -272
+            ],
+            "id": "91aac418-12e7-42e3-b7bc-114bc91a91f5",
+            "name": "Mistral Cloud Chat Model2",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "deepseek-r1:14b",
+                "options": {
+                    "temperature": 0.1,
+                    "numCtx": 16384,
+                    "numPredict": 1024
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+            "typeVersion": 1,
+            "position": [
+                -3008,
+                -1520
+            ],
+            "id": "616aaab5-c54e-4c47-b5f8-e2dbb3a14d45",
+            "name": "Ollama Chat Model3",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsonSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"subject\": {\n      \"type\": \"string\",\n      \"description\": \"The email subject.\"\n    },\n    \"body\": {\n      \"type\": \"string\",\n      \"description\": \"The email body.\"\n    }\n  },\n  \"required\": [\"subject\", \"body\"]\n}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1,
+            "position": [
+                -2800,
+                -1400
+            ],
+            "id": "e4aca94d-1785-452f-8a03-9d06b00b0d3d",
+            "name": "Structured Output Parser"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### INPUT\n\n## PRROYECTO: {{ $('Edit Fields').first().json.project_name }}\n\n## PROVEEDOR: {{ $('Edit Fields').first().json.provider_name }}\n\n## TONO DEL MENSAJE REQUERIDO: {{ $('Edit Fields').first().json.tone }}\n\n## ISSUES: {{ JSON.stringify($json.issues, null, 2) }}\n\n\n\n",
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues that need to be addressed.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing:\n   - **Critical**: Iterate through the 'ISSUES' list provided in the input. Group them intelligently (e.g., by Phase or Evaluation Type) to make the email readable.\n   - For each issue, clearly mention the *Requirement* ('requirement' field) and the *Current Status* ('status' field).\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use clean line breaks (\\n) for readability in the JSON string.\n\n### OUTPUT FORMAT\nReturn **ONLY** a single valid JSON object. \n- **NO** <think> tags.\n- **NO** Markdown code blocks.\n- **NO** conversational text.\n\nSchema:\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here \\n\\n Point 1... \\n Point 2...\"\n}"
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -2000,
+                -496
+            ],
+            "id": "df093fe5-5155-43c5-a0c0-5668dd4ca287",
+            "name": "Basic LLM Chain"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "6d3a985e-7c5e-4c74-8b5e-407e4d8c83a9",
+                            "name": "project_name",
+                            "value": "={{ $json.body.project_name }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "2d3a985e-7c5e-4c74-8b5e-407e4d8c83a1",
+                            "name": "provider_name",
+                            "value": "={{ $json.body.provider_key }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "3d3a985e-7c5e-4c74-8b5e-407e4d8c83a2",
+                            "name": "tone",
+                            "value": "={{ $json.body.tone }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -3120,
+                -496
+            ],
+            "id": "662ed52f-92c8-4375-b9fd-b8d35cd81bc8",
+            "name": "Edit Fields"
+        },
+        {
+            "parameters": {
+                "numberInputs": 7
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3.2,
+            "position": [
+                -2448,
+                -576
+            ],
+            "id": "04031ccc-c5dc-4deb-8d97-00af4ea37025",
+            "name": "Merge2"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nconst issues = [];\n// 1. Get the target provider name from the initial webhook/edit fields\nconst providerKey = $('Edit Fields').first().json.provider_name;\n\n// 2. Iterate through all items fetched from the DB for this project\nfor (const item of items) {\n  const row = item.json;\n  \n  // 3. Get the value of the column corresponding to the provider\n  const val = row[providerKey] || '';\n  \n  if (typeof val === 'string') {\n    const upper = val.toUpperCase();\n    \n    // 4. Apply the OR filter\n    if (upper.includes('NO INCLUIDO') || \n        upper.includes('PARCIAL') || \n        upper.includes('NO CUMPLE') || \n        upper.includes('SIN INFORMACIÓN') || \n        upper.includes('NO COTIZADO') || \n        upper.includes('SIN COTIZACIÓN') ||\n        upper.includes('SIN VALOR DETECTADO')) {\n          \n          // 5. Add to issues list with valid schema from user sample\n          issues.push({\n            evaluation_type: row['evaluation'] || row['Evaluation'] || 'General',\n            phase: row['fase'] || 'N/A',\n            requirement: row['requisito_rfq'] || row['rfq_requisito'] || '',\n            status: val\n          });\n    }\n  }\n}\n\n// 6. Return the aggregated list of issues to the LLM\nreturn {\n  json: {\n    issues: issues,\n    count: issues.length\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2224,
+                -496
+            ],
+            "id": "95616f54-1ad4-4c24-bfaf-2bce5c79cdd2",
+            "name": "Filter and Aggregate Issues"
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "TECNICASREUNIDAS",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "id": "f3688704-f30f-4143-8008-ae6c1a06eea1"
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "c2c6726d-ea3f-4909-a535-6f402eef63b8",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "IDOM",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "a64d8e41-6f32-489d-bf60-3bd22c9c9374",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "SACYR",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "42a16d6b-db65-401d-abb0-f8ae9aefff12",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "EA",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "79599b4a-f8d0-4078-913a-2b40bea117c4",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "SENER",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "59b13bbc-96bb-4e22-8fde-5c2fb10c8675",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "TRESCA",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 3
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "d1601299-eed6-4754-b538-5e32d16a2a40",
+                                        "leftValue": "={{ $json.provider_name }}",
+                                        "rightValue": "WORLEY",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            }
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.4,
+            "position": [
+                -2896,
+                -592
+            ],
+            "id": "0ac5fa10-b3b9-4b38-8976-a587f801bf03",
+            "name": "Switch2"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "8dd0c8ae-0f63-4e79-a331-78d11fcb8617",
+            "name": "Get RFQ IDOM1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -880
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "af6bcbf2-aa1b-445e-904c-a937aea18d4b",
+            "name": "Get RFQ TR1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -1072
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "1169e534-2b0b-41ce-8cd5-9676a69ec7c3",
+            "name": "Get RFQ SACYR1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -688
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "0075a55e-03d7-46d5-b0ff-5891b8eef8c6",
+            "name": "Get RFQ EA1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -496
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "0da6e38a-1e28-45da-918e-1aa2fad0cfbd",
+            "name": "Get RFQ SENER1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -304
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "11378115-264a-48eb-9cd5-ac74b00a1aea",
+            "name": "Get RFQ TRESCA1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                -112
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_name }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "id": "5b37a037-1149-4c9b-8552-43b0bace06e6",
+            "name": "Get RFQ WORLEY1",
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1,
+            "position": [
+                -2672,
+                80
+            ]
+        },
+        {
+            "parameters": {
+                "content": "## Email en base datos faltantes\n",
+                "height": 1328,
+                "width": 2016,
+                "color": 6
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -3408,
+                -1088
+            ],
+            "id": "1264779a-5a9a-462e-87d1-3dd5f04b2d83",
+            "name": "Sticky Note2"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={\n  \"subject\": \"{{ $json.output.subject }}\",\n  \"body\": \"{{ $json.output.body }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1648,
+                -496
+            ],
+            "id": "6f057260-4a4c-4c3d-8a98-92ffd54a3d74",
+            "name": "Respond to Webhook3"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "mail",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -3344,
+                -496
+            ],
+            "id": "d81f7b49-78c4-45f5-baf3-e31f7a5f99cc",
+            "name": "Webhook3",
+            "webhookId": "b4d3f7cc-0697-40d9-85f0-83ed38a9feed"
+        }
+    ],
+    "connections": {
+        "Mistral Cloud Chat Model2": {
+            "ai_languageModel": []
+        },
+        "Ollama Chat Model3": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Basic LLM Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields": {
+            "main": [
+                [
+                    {
+                        "node": "Switch2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge2": {
+            "main": [
+                [
+                    {
+                        "node": "Filter and Aggregate Issues",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter and Aggregate Issues": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch2": {
+            "main": [
+                [
+                    {
+                        "node": "Get RFQ TR1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ IDOM1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ SACYR1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ EA1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ SENER1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ TRESCA1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get RFQ WORLEY1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get RFQ IDOM1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Get RFQ TR1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get RFQ SACYR1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 2
+                    }
+                ]
+            ]
+        },
+        "Get RFQ EA1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 3
+                    }
+                ]
+            ]
+        },
+        "Get RFQ SENER1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 4
+                    }
+                ]
+            ]
+        },
+        "Get RFQ TRESCA1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 5
+                    }
+                ]
+            ]
+        },
+        "Get RFQ WORLEY1": {
+            "main": [
+                [
+                    {
+                        "node": "Merge2",
+                        "type": "main",
+                        "index": 6
+                    }
+                ]
+            ]
+        },
+        "Webhook3": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

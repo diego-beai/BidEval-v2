@@ -1,0 +1,99 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "path": "tabla2",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -2064,
+                -1104
+            ],
+            "id": "3f7dc62c-e093-42f9-b704-1b3a19068351",
+            "name": "Webhook2",
+            "webhookId": "b4d3f7cc-0697-40d9-85f0-83ed38a9feed"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1",
+                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
+                },
+                "returnAll": true
+            },
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1.1,
+            "position": [
+                -1856,
+                -1104
+            ],
+            "id": "562a5402-2d8f-45e1-9292-9cccea04c601",
+            "name": "Get row(s)1"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1648,
+                -1104
+            ],
+            "id": "1eb87c78-99ce-40d4-9feb-1625c402da21",
+            "name": "Respond to Webhook2"
+        },
+        {
+            "parameters": {
+                "content": "## Ver Tabla desde el portal\n",
+                "height": 336,
+                "width": 896
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -2240,
+                -1216
+            ],
+            "id": "a29a6ada-e1ae-462a-af65-1864e2c764f6",
+            "name": "Sticky Note1"
+        }
+    ],
+    "connections": {
+        "Webhook2": {
+            "main": [
+                [
+                    {
+                        "node": "Get row(s)1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get row(s)1": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

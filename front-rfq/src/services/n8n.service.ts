@@ -2,6 +2,15 @@ import { API_CONFIG } from '../config/constants';
 import { fetchWithTimeout } from './api.service';
 import { ApiError, N8nWebhookResponse } from '../types/api.types';
 import { RfqItem } from '../types/rfq.types';
+import type { GenerateAuditPayload, GenerateAuditResponse } from '../types/qa.types';
+
+/**
+ * Multiple files processing result
+ */
+export interface RfqUploadResponse {
+  results: RfqItem[];
+  message?: string;
+}
 
 /**
  * Genera un ID único para el archivo
@@ -43,7 +52,7 @@ export async function uploadRfqFile(
     proveedor?: string;
     tipoEvaluacion?: string[];
   }
-): Promise<RfqItem[]> {
+): Promise<RfqUploadResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
 
@@ -87,14 +96,17 @@ export async function uploadRfqFile(
 
     // Si n8n devuelve un array directamente, úsalo
     if (Array.isArray(data)) {
-      return data as RfqItem[];
+      return { results: data as RfqItem[] };
     }
 
     // Si n8n devuelve un objeto con success y results
     const webhookResponse = data as N8nWebhookResponse;
 
     if (webhookResponse.success && webhookResponse.results) {
-      return webhookResponse.results;
+      return {
+        results: webhookResponse.results,
+        message: webhookResponse.message
+      };
     }
 
     // Si hay un error explícito
@@ -102,15 +114,15 @@ export async function uploadRfqFile(
       throw new ApiError(webhookResponse.error);
     }
 
-    // Si no hay resultados, lanzar error
-    throw new ApiError('No se recibieron resultados del servidor');
+    // If no results, throw error
+    throw new ApiError('No results received from server');
 
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
     }
     throw new ApiError(
-      error instanceof Error ? error.message : 'Error desconocido al procesar el archivo'
+      error instanceof Error ? error.message : 'Unknown error while processing file'
     );
   }
 }
@@ -126,9 +138,9 @@ export async function uploadMultipleRfqFiles(
     proveedor?: string;
     tipoEvaluacion?: string[];
   }
-): Promise<RfqItem[]> {
+): Promise<RfqUploadResponse> {
   if (files.length === 0) {
-    throw new ApiError('No hay archivos para procesar');
+    throw new ApiError('No files to process');
   }
 
   try {
@@ -146,7 +158,7 @@ export async function uploadMultipleRfqFiles(
       throw error;
     }
     throw new ApiError(
-      error instanceof Error ? error.message : 'Error al procesar archivos múltiples'
+      error instanceof Error ? error.message : 'Error processing multiple files'
     );
   }
 }
@@ -184,11 +196,11 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       file_binary: fileBase64
     };
 
-    console.log('📤 Enviando RFQ base a n8n:', {
+    console.log('📤 Sending base RFQ to n8n:', {
       fileName: fileTitle,
       fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
       endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
-      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s (hasta 30 min para procesamiento con IA)`
+      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s (up to 30 min for AI processing)`
     });
 
     const startTime = Date.now();
@@ -209,7 +221,7 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
 
     const data = await response.json();
 
-    console.log('📥 Respuesta completa de n8n:', {
+    console.log('📥 Complete response from n8n:', {
       status: response.status,
       statusText: response.statusText,
       elapsedTime: `${elapsedTime}s`,
@@ -220,13 +232,13 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
     if (response.ok) {
       // Normalizar la respuesta para que siempre tenga la estructura esperada
       const normalizedData: RfqIngestaResponse = {
-        success: data.success !== false, // Si no está presente o es true, considerar exitoso
-        message: data.message || 'RFQ procesada correctamente',
+        success: data.success !== false, // If not present or true, consider successful
+        message: data.message || 'RFQ processed successfully',
         file_id: data.file_id || fileId, // Usar el fileId generado si no viene en la respuesta
         tipos_procesados: data.tipos_procesados || []
       };
 
-      console.log('✅ RFQ base procesada exitosamente:', {
+      console.log('✅ Base RFQ processed successfully:', {
         fileId: normalizedData.file_id,
         tiposProcesados: normalizedData.tipos_procesados
       });
@@ -234,9 +246,9 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       return normalizedData;
     }
 
-    // Si la respuesta HTTP no fue exitosa, lanzar error
+    // If HTTP response was not successful, throw error
     throw new ApiError(
-      data.message || `Error del servidor (${response.status}): ${response.statusText}`
+      data.message || `Server error (${response.status}): ${response.statusText}`
     );
 
   } catch (error) {
@@ -251,7 +263,90 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       throw error;
     }
     throw new ApiError(
-      error instanceof Error ? error.message : 'Error desconocido al procesar la RFQ base'
+      error instanceof Error ? error.message : 'Unknown error while processing base RFQ'
+    );
+  }
+}
+
+/**
+ * Genera una auditoría técnica Q&A para un proyecto y proveedor específico
+ *
+ * Este webhook analiza las deficiencias detectadas en la oferta del proveedor,
+ * genera preguntas técnicas agrupadas por disciplina y las almacena en Supabase.
+ *
+ * @param payload - Objeto con project_id y provider
+ * @returns Información sobre las preguntas generadas
+ */
+export async function generateTechnicalAudit(
+  payload: GenerateAuditPayload
+): Promise<GenerateAuditResponse> {
+  try {
+    console.log('🔍 Generating technical audit:', {
+      projectId: payload.project_id,
+      provider: payload.provider,
+      endpoint: API_CONFIG.N8N_QA_AUDIT_URL
+    });
+
+    const startTime = Date.now();
+
+    const response = await fetchWithTimeout(
+      API_CONFIG.N8N_QA_AUDIT_URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      },
+      API_CONFIG.REQUEST_TIMEOUT
+    );
+
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    const data = await response.json();
+
+    console.log('📥 Audit generation response:', {
+      status: response.status,
+      statusText: response.statusText,
+      elapsedTime: `${elapsedTime}s`,
+      data: data
+    });
+
+    if (response.ok) {
+      // Si n8n devuelve el número de preguntas generadas
+      const auditResponse: GenerateAuditResponse = {
+        success: data.success !== false,
+        preguntas_generadas: Array.isArray(data) ? data.length : (data.preguntas_generadas || 0),
+        message: data.message || 'Technical audit generated successfully',
+        data: Array.isArray(data) ? data : (data.results || data.data || [])
+      };
+
+      console.log('✅ Technical audit generated:', {
+        questionsGenerated: auditResponse.preguntas_generadas,
+        message: auditResponse.message
+      });
+
+      return auditResponse;
+    }
+
+    // Si HTTP no fue exitoso, lanzar error
+    throw new ApiError(
+      data.message || `Server error (${response.status}): ${response.statusText}`
+    );
+
+  } catch (error) {
+    console.error('❌ Error generating technical audit:', {
+      error,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      payload
+    });
+
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(
+      error instanceof Error ? error.message : 'Unknown error while generating technical audit'
     );
   }
 }

@@ -1,0 +1,345 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "project_id",
+                            "name": "project_id",
+                            "value": "={{ $json.body.project_id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "provider",
+                            "name": "provider",
+                            "value": "={{ $json.body.provider }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -3120,
+                640
+            ],
+            "id": "666843b3-de2f-4c42-b1fc-eb501c06310e",
+            "name": "Set Params"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "dataTableId": {
+                    "__rl": true,
+                    "value": "hwY1VFb924Ptf1P6",
+                    "mode": "list",
+                    "cachedResultName": "Tabla-RFQ-v1"
+                },
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "keyValue": "={{ $json.project_id }}"
+                        }
+                    ]
+                },
+                "returnAll": true
+            },
+            "type": "n8n-nodes-base.dataTable",
+            "typeVersion": 1.1,
+            "position": [
+                -2912,
+                640
+            ],
+            "id": "f2fcb164-9dd3-4e23-b1fc-6ebefe7b1cae",
+            "name": "Read RFQ Data"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nconst provider = $(\"Set Params\").first().json.provider;\nconst allProviders = ['TECNICASREUNIDAS', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];\n\nconst results = [];\nfor (const item of items) {\n  const row = item.json;\n  \n  // Handle Score / Failsafe for columns\n  if (!row[provider]) {\n      continue; // Skip this row if provider column doesn't exist\n  }\n\n  const val = row[provider] || '';\n  let isDeficiency = false;\n\n  if (typeof val === 'string') {\n    const upper = val.toUpperCase();\n    // Criteria: \"No Incluido\", \"Parcial\" or Score < 8\n    if (upper.includes('NO INCLUIDO') || upper.includes('PARCIAL') || upper.includes('NOT INCLUDED') || upper.includes('PARTIAL')) {\n      isDeficiency = true;\n    } else {\n      const score = parseFloat(val);\n      if (!isNaN(score) && score < 8) {\n        isDeficiency = true;\n      }\n    }\n  }\n\n  if (isDeficiency) {\n    // Filter columns so LLM only sees current provider\n    const filteredRow = {};\n    for (const key in row) {\n      if (allProviders.includes(key) && key !== provider) {\n        continue;\n      }\n      filteredRow[key] = row[key];\n    }\n    results.push({ json: filteredRow });\n  }\n}\nreturn results;"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2688,
+                640
+            ],
+            "id": "3d4ae5ab-af2b-4eb5-ba57-60dd460c5618",
+            "name": "Filter Deficiencies"
+        },
+        {
+            "parameters": {
+                "aggregate": "aggregateAllItemData",
+                "destinationFieldName": "total_deficiencies",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.aggregate",
+            "typeVersion": 1,
+            "position": [
+                -2464,
+                640
+            ],
+            "id": "ac316eb7-c83b-4904-8ac8-4b83425d963a",
+            "name": "Consolidate Items"
+        },
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -2240,
+                864
+            ],
+            "id": "047fe3d4-5bfc-434d-b670-a4b08a52bf9c",
+            "name": "Mistral Model",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "output.questions",
+                "include": "allOtherFields",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.itemLists",
+            "typeVersion": 3.1,
+            "position": [
+                -1936,
+                640
+            ],
+            "id": "3567404f-4fd9-40e4-8a22-f7243767e4ea",
+            "name": "Split Questions"
+        },
+        {
+            "parameters": {
+                "tableId": "QA_PENDIENTE"
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -1776,
+                640
+            ],
+            "id": "0216e22b-f75c-41e8-89df-f2a5e0dc2662",
+            "name": "Supabase Storage",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            },
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": {\n            \"type\": \"string\",\n            \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\"]\n          },\n          \"question\": {\n            \"type\": \"string\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"High\", \"Medium\", \"Low\"]\n          }\n        },\n        \"required\": [\"discipline\", \"question\", \"importance\"]\n      }\n    }\n  },\n  \"required\": [\"questions\"]\n}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.3,
+            "position": [
+                -2032,
+                848
+            ],
+            "id": "6bf32b1f-0494-4588-ab61-c139e9c7b1e2",
+            "name": "Structured Output Parser"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### DEFICIENCIES DETECTED IN THE PROPOSAL FROM {{ $(\"Set Params\").first().json.provider }}\n\n{{ JSON.stringify($json.total_deficiencies, null, 2) }}\n\n### INSTRUCTIONS\nGenerate technical questions based on these deficiencies.\n\nImportant: Be specific. Mention the item number or the name of the requirement if relevant. Do not generate generic questions such as “Could you provide more details?”. Go straight to the technical point.",
+                "hasOutputParser": true,
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=# Technical Audit Instructions\n\nYou are a *technical engineering auditor*. Review the following list of deficiencies in the proposal from {{ $(\"Set Params\").first().json.provider }}. Your objective is to *group similar deficiencies* and *draft technical questions* for the supplier to answer. Classify each question into one of the following disciplines:\n\n* Electrical  \n* Mechanical  \n* Civil  \n* Process  \n* General  \n\n## Important\n* Be specific.  \n* Mention the item number or the name of the requirement if relevant.  \n* Do not generate generic questions such as *“Could you provide more details?”*.  \n* Go straight to the technical point."
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -2256,
+                640
+            ],
+            "id": "e4ade5f9-3ed4-4496-8f66-21cf50a07dcf",
+            "name": "Basic LLM Chain"
+        },
+        {
+            "parameters": {
+                "content": "## Q&A Generator",
+                "height": 800,
+                "width": 2016,
+                "color": 5
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -3408,
+                352
+            ],
+            "id": "7ccedc74-01d8-4ae7-a8ca-a20055ce52b6",
+            "name": "Sticky Note: Q&A Generator"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1584,
+                640
+            ],
+            "id": "2c69106d-7efa-4759-8670-242fdfd584b6",
+            "name": "Success Response"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "qa-audit-generator",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -3344,
+                640
+            ],
+            "id": "7e2bfa5e-8190-456a-ab9b-7b665fdd4c71",
+            "name": "Webhook Q&A",
+            "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
+        }
+    ],
+    "connections": {
+        "Set Params": {
+            "main": [
+                [
+                    {
+                        "node": "Read RFQ Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Read RFQ Data": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Deficiencies",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Deficiencies": {
+            "main": [
+                [
+                    {
+                        "node": "Consolidate Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Consolidate Items": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Questions": {
+            "main": [
+                [
+                    {
+                        "node": "Supabase Storage",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Supabase Storage": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Basic LLM Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Split Questions",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook Q&A": {
+            "main": [
+                [
+                    {
+                        "node": "Set Params",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

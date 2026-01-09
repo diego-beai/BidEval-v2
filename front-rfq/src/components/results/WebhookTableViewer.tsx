@@ -11,6 +11,7 @@ interface Filters {
   selectedEvaluations: string[];
   selectedFases: string[];
   selectedProviders: Provider[];
+  rfqRequisitoSearch: string;
 }
 
 /**
@@ -69,7 +70,8 @@ export function WebhookTableViewer() {
     searchText: '',
     selectedEvaluations: [],
     selectedFases: [],
-    selectedProviders: []
+    selectedProviders: [],
+    rfqRequisitoSearch: ''
   });
 
   // Estado para mostrar/ocultar filtros
@@ -79,11 +81,13 @@ export function WebhookTableViewer() {
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
   const [showFaseDropdown, setShowFaseDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
+  const [showRequisitoSuggestions, setShowRequisitoSuggestions] = useState(false);
 
   // Refs para detectar clics fuera de los dropdowns
   const evaluationDropdownRef = useRef<HTMLDivElement>(null);
   const faseDropdownRef = useRef<HTMLDivElement>(null);
   const providerDropdownRef = useRef<HTMLDivElement>(null);
+  const requisitoSuggestionsRef = useRef<HTMLDivElement>(null);
 
   // Función para cargar datos del webhook
   const loadTableData = async () => {
@@ -150,6 +154,26 @@ export function WebhookTableViewer() {
     return filters.selectedProviders.length > 0 ? filters.selectedProviders : allProviders;
   }, [filters.selectedProviders, allProviders]);
 
+  // Extraer requisitos únicos para autocompletar
+  const uniqueRequisitos = useMemo(() => {
+    if (!results) return [];
+    const requisitos = results
+      .map(r => r.rfq_requisito)
+      .filter((req): req is string => Boolean(req) && typeof req === 'string' && req.trim() !== '');
+    return Array.from(new Set(requisitos)).sort();
+  }, [results]);
+
+  // Filtrar sugerencias de requisitos basadas en el texto de búsqueda
+  const requisitoSuggestions = useMemo(() => {
+    if (!filters.rfqRequisitoSearch || filters.rfqRequisitoSearch.trim().length < 2) {
+      return [];
+    }
+    const searchLower = filters.rfqRequisitoSearch.toLowerCase();
+    return uniqueRequisitos
+      .filter(req => req.toLowerCase().includes(searchLower))
+      .slice(0, 10); // Limitar a 10 sugerencias
+  }, [filters.rfqRequisitoSearch, uniqueRequisitos]);
+
   // Filtrar resultados
   const filteredResults = useMemo(() => {
     if (!results) return [];
@@ -164,19 +188,27 @@ export function WebhookTableViewer() {
 
       // Filtro por evaluación
       if (filters.selectedEvaluations.length > 0 &&
-          !filters.selectedEvaluations.includes(result.evaluation)) {
+        !filters.selectedEvaluations.includes(result.evaluation)) {
         return false;
       }
 
       // Filtro por fase
       if (filters.selectedFases.length > 0 &&
-          !filters.selectedFases.includes(result.fase)) {
+        !filters.selectedFases.includes(result.fase)) {
         return false;
+      }
+
+      // Filtro por requisito RFQ
+      if (filters.rfqRequisitoSearch && filters.rfqRequisitoSearch.trim().length > 0) {
+        const searchLower = filters.rfqRequisitoSearch.toLowerCase();
+        if (!result.rfq_requisito || !result.rfq_requisito.toLowerCase().includes(searchLower)) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [results, filters.searchText, filters.selectedEvaluations, filters.selectedFases]);
+  }, [results, filters.searchText, filters.selectedEvaluations, filters.selectedFases, filters.rfqRequisitoSearch]);
 
   // Toggle selección de evaluación
   const toggleEvaluation = (evaluation: string) => {
@@ -250,8 +282,10 @@ export function WebhookTableViewer() {
       searchText: '',
       selectedEvaluations: [],
       selectedFases: [],
-      selectedProviders: []
+      selectedProviders: [],
+      rfqRequisitoSearch: ''
     });
+    setShowRequisitoSuggestions(false);
   };
 
   // Verificar si hay filtros activos
@@ -259,7 +293,8 @@ export function WebhookTableViewer() {
     filters.searchText ||
     filters.selectedEvaluations.length > 0 ||
     filters.selectedFases.length > 0 ||
-    filters.selectedProviders.length > 0;
+    filters.selectedProviders.length > 0 ||
+    filters.rfqRequisitoSearch;
 
   const handleExportCSV = () => {
     const dataToExport = filteredResults;
@@ -354,34 +389,39 @@ export function WebhookTableViewer() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (evaluationDropdownRef.current &&
-          !evaluationDropdownRef.current.contains(event.target as Node)) {
+        !evaluationDropdownRef.current.contains(event.target as Node)) {
         setShowEvaluationDropdown(false);
       }
 
       if (faseDropdownRef.current &&
-          !faseDropdownRef.current.contains(event.target as Node)) {
+        !faseDropdownRef.current.contains(event.target as Node)) {
         setShowFaseDropdown(false);
       }
 
       if (providerDropdownRef.current &&
-          !providerDropdownRef.current.contains(event.target as Node)) {
+        !providerDropdownRef.current.contains(event.target as Node)) {
         setShowProviderDropdown(false);
+      }
+
+      if (requisitoSuggestionsRef.current &&
+        !requisitoSuggestionsRef.current.contains(event.target as Node)) {
+        setShowRequisitoSuggestions(false);
       }
     };
 
-    if (showEvaluationDropdown || showFaseDropdown || showProviderDropdown) {
+    if (showEvaluationDropdown || showFaseDropdown || showProviderDropdown || showRequisitoSuggestions) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showEvaluationDropdown, showFaseDropdown, showProviderDropdown]);
+  }, [showEvaluationDropdown, showFaseDropdown, showProviderDropdown, showRequisitoSuggestions]);
 
   return (
     <div className="webhook-table-viewer">
       {/* Botón para mostrar/cargar tabla */}
-      <div className="webhook-table-button-container">
+      <div className="webhook-table-button-container" style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
         <button
           onClick={() => {
             if (!isVisible) {
@@ -390,7 +430,7 @@ export function WebhookTableViewer() {
               setIsVisible(false);
             }
           }}
-          className="webhook-table-btn"
+          className="btn btnSecondary"
           disabled={isLoading}
         >
           {isLoading ? 'Cargando...' : isVisible ? 'Ocultar tabla' : 'Ver tabla'}
@@ -455,8 +495,8 @@ export function WebhookTableViewer() {
                       {filters.selectedEvaluations.length === 0
                         ? 'Todas las evaluaciones'
                         : filters.selectedEvaluations.length === uniqueEvaluations.length
-                        ? 'Todas las evaluaciones'
-                        : `${filters.selectedEvaluations.length} seleccionadas`}
+                          ? 'Todas las evaluaciones'
+                          : `${filters.selectedEvaluations.length} seleccionadas`}
                       <span className="dropdown-arrow">{showEvaluationDropdown ? '▲' : '▼'}</span>
                     </button>
 
@@ -498,8 +538,8 @@ export function WebhookTableViewer() {
                       {filters.selectedFases.length === 0
                         ? 'Todas las fases'
                         : filters.selectedFases.length === uniqueFases.length
-                        ? 'Todas las fases'
-                        : `${filters.selectedFases.length} seleccionadas`}
+                          ? 'Todas las fases'
+                          : `${filters.selectedFases.length} seleccionadas`}
                       <span className="dropdown-arrow">{showFaseDropdown ? '▲' : '▼'}</span>
                     </button>
 
@@ -541,8 +581,8 @@ export function WebhookTableViewer() {
                       {filters.selectedProviders.length === 0
                         ? 'Todos los proveedores'
                         : filters.selectedProviders.length === allProviders.length
-                        ? 'Todos los proveedores'
-                        : `${filters.selectedProviders.length} seleccionados`}
+                          ? 'Todos los proveedores'
+                          : `${filters.selectedProviders.length} seleccionados`}
                       <span className="dropdown-arrow">{showProviderDropdown ? '▲' : '▼'}</span>
                     </button>
 
@@ -567,6 +607,117 @@ export function WebhookTableViewer() {
                           </label>
                         ))}
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="filter-item">
+                  <label className="filter-label">Buscar requisito RFQ</label>
+                  <div className="provider-dropdown-container" ref={requisitoSuggestionsRef} style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="filter-input"
+                      placeholder="Escribe para buscar (ej: modelo, sistema...)..."
+                      value={filters.rfqRequisitoSearch}
+                      onChange={(e) => {
+                        setFilters({ ...filters, rfqRequisitoSearch: e.target.value });
+                        if (e.target.value.trim().length >= 2) {
+                          setShowRequisitoSuggestions(true);
+                        } else {
+                          setShowRequisitoSuggestions(false);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (filters.rfqRequisitoSearch.trim().length >= 2 && requisitoSuggestions.length > 0) {
+                          setShowRequisitoSuggestions(true);
+                        }
+                      }}
+                    />
+
+                    {/* Sugerencias de autocompletar */}
+                    {showRequisitoSuggestions && requisitoSuggestions.length > 0 && (
+                      <div className="provider-checkboxes" style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        marginTop: '4px',
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        zIndex: 1000
+                      }}>
+                        {requisitoSuggestions.map((requisito, index) => (
+                          <div
+                            key={index}
+                            className="checkbox-item"
+                            style={{
+                              cursor: 'pointer',
+                              padding: '10px 12px',
+                              transition: 'background 0.2s ease'
+                            }}
+                            onClick={() => {
+                              setFilters({ ...filters, rfqRequisitoSearch: requisito });
+                              setShowRequisitoSuggestions(false);
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <span style={{ fontSize: '0.85rem' }}>{requisito}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Mensaje cuando no hay sugerencias pero hay búsqueda */}
+                    {showRequisitoSuggestions && filters.rfqRequisitoSearch.trim().length >= 2 && requisitoSuggestions.length === 0 && (
+                      <div className="provider-checkboxes" style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        marginTop: '4px',
+                        zIndex: 1000,
+                        padding: '12px',
+                        textAlign: 'center',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.85rem'
+                      }}>
+                        No se encontraron requisitos con "{filters.rfqRequisitoSearch}"
+                      </div>
+                    )}
+
+                    {/* Botón para limpiar búsqueda */}
+                    {filters.rfqRequisitoSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilters({ ...filters, rfqRequisitoSearch: '' });
+                          setShowRequisitoSuggestions(false);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '4px',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                     )}
                   </div>
                 </div>

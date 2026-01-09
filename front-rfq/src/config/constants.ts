@@ -9,9 +9,11 @@ export const API_CONFIG = {
   // URL del webhook de ingesta de RFQ base del cliente (siempre externo)
   N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
   // URL del webhook de chat de n8n (siempre externo)
-  N8N_CHAT_URL: import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/072a6322-4bb1-444b-bd82-5c1df6db623f/chat',
+  N8N_CHAT_URL: import.meta.env.DEV ? '/api/n8n/chat' : (import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/chat-rfq'),
   // URL del webhook para ver tabla adicional
   N8N_TABLA_URL: import.meta.env.VITE_N8N_TABLA_URL || 'https://n8n.beaienergy.com/webhook/tabla',
+  // URL del webhook para generar auditoría técnica Q&A
+  N8N_QA_AUDIT_URL: import.meta.env.VITE_N8N_QA_AUDIT_URL || 'https://n8n.beaienergy.com/webhook-test/qa-audit-generator',
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto (procesamiento de PDFs puede tardar hasta 30 min)
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_FILE_TYPES: ['application/pdf'],
