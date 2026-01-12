@@ -10,6 +10,7 @@
     position: relative;
     overflow: hidden;
     border-radius: var(--radius-lg);
+    animation: fadeInModule 0.4s ease-out;
 }
 
 /* Empty State / Welcome Screen */

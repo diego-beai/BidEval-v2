@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SidebarLayout.css';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useLanguageStore } from '../../stores/useLanguageStore';
+import { useActiveSessions } from '../../hooks/useActiveSessions';
+import { useSessionViewStore } from '../../stores/useSessionViewStore';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -12,8 +14,23 @@ interface SidebarLayoutProps {
 export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeView, onNavigate }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const { t, language, setLanguage } = useLanguageStore();
+    const activeSessions = useActiveSessions();
+    const markAsViewed = useSessionViewStore(state => state.markAsViewed);
 
     const toggleSidebar = () => setIsExpanded(!isExpanded);
+
+    // Marcar como visto cuando el usuario entra a una sección
+    useEffect(() => {
+        // Solo marcar como visto si es una de las secciones con sesiones
+        if (['chat', 'mail', 'upload'].includes(activeView)) {
+            markAsViewed(activeView);
+        }
+    }, [activeView, markAsViewed]);
+
+    // Check if a module has unread content (not just any content)
+    const hasActiveSession = (module: string): boolean => {
+        return activeSessions.some(s => s.module === module && s.hasUnreadContent);
+    };
 
     const keyMap: Record<string, string> = {
         'home': 'header.home',
@@ -25,16 +42,21 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         'mail': 'header.mail'
     };
 
-    const NavItem = ({ view, labelKey, icon }: { view: string, labelKey: string, icon: React.ReactNode }) => (
-        <button
-            className={`nav-item ${activeView === view ? 'active' : ''}`}
-            onClick={() => onNavigate(view)}
-            title={!isExpanded ? t(labelKey) : ''}
-        >
-            <div className="nav-icon">{icon}</div>
-            <span className="nav-label">{t(labelKey)}</span>
-        </button>
-    );
+    const NavItem = ({ view, labelKey, icon }: { view: string, labelKey: string, icon: React.ReactNode }) => {
+        const hasSession = hasActiveSession(view);
+
+        return (
+            <button
+                className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''}`}
+                onClick={() => onNavigate(view)}
+                title={!isExpanded ? t(labelKey) : ''}
+            >
+                <div className="nav-icon">{icon}</div>
+                <span className="nav-label">{t(labelKey)}</span>
+                {hasSession && <div className="session-indicator" title="Active session"></div>}
+            </button>
+        );
+    };
 
     return (
         <div className="app-container-sidebar">
@@ -42,7 +64,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
             <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
                     {/* Brand Logo or Text - Hidden when collapsed */}
-                    <div className="sidebar-brand">P2X RFQ</div>
+                    <div className="sidebar-brand">Bideval AI</div>
 
                     {/* Toggle Button */}
                     <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
@@ -82,7 +104,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     <NavItem
                         view="chat"
                         labelKey="nav.chat"
-                        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>}
+                        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
                     />
                     <NavItem
                         view="mail"

@@ -296,3 +296,29 @@ CREATE OR REPLACE TRIGGER trigger_update_overall_score
 --     ('SENER', 88.9, 8.8, 9.0, 8.5, 9.2, 4),
 --     ('TRESCA', 65.4, 6.5, 6.8, 6.0, 6.5, 4),
 --     ('WORLEY', 94.7, 9.4, 9.5, 9.8, 9.5, 4);
+
+
+
+create view public.ranking_proveedores as
+select
+  m.project_name,
+  r.provider_name,
+  count(r.id) as total_items_evaluados,
+  sum(r.score) as puntos_totales,
+  round(
+    sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
+    2
+  ) as cumplimiento_porcentual
+from
+  rfq_items_master m
+  join provider_responses r on m.id = r.requirement_id
+group by
+  m.project_name,
+  r.provider_name
+order by
+  (
+    round(
+      sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
+      2
+    )
+  ) desc;

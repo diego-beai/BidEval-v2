@@ -1,362 +1,388 @@
 {
-    "nodes": [
-        {
-            "parameters": {
-                "assignments": {
-                    "assignments": [
-                        {
-                            "id": "project_id",
-                            "name": "project_name",
-                            "value": "={{ $json.body.project_id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "provider",
-                            "name": "provider",
-                            "value": "={{ $json.body.provider }}",
-                            "type": "string"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 3.4,
-            "position": [
-                -3104,
-                656
-            ],
-            "id": "8f890d85-e9dd-406e-95b8-1e4ee8861606",
-            "name": "Set Params"
-        },
-        {
-            "parameters": {
-                "jsCode": "const items = $input.all();\nconst provider = $(\"Set Params\").first().json.provider;\nconst allProviders = ['TECNICASREUNIDAS', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];\n\nconst results = [];\nfor (const item of items) {\n  const row = item.json;\n  \n  // Handle Score / Failsafe for columns\n  if (!row[provider]) {\n      continue; // Skip this row if provider column doesn't exist\n  }\n\n  const val = row[provider] || '';\n  let isDeficiency = false;\n\n  if (typeof val === 'string') {\n    const upper = val.toUpperCase();\n    // Criteria: \"No Incluido\", \"Parcial\" or Score < 8\n    if (upper.includes('NO INCLUIDO') || upper.includes('PARCIAL') || upper.includes('NOT INCLUDED') || upper.includes('PARTIAL')) {\n      isDeficiency = true;\n    } else {\n      const score = parseFloat(val);\n      if (!isNaN(score) && score < 8) {\n        isDeficiency = true;\n      }\n    }\n  }\n\n  if (isDeficiency) {\n    // Filter columns so LLM only sees current provider\n    const filteredRow = {};\n    for (const key in row) {\n      if (allProviders.includes(key) && key !== provider) {\n        continue;\n      }\n      filteredRow[key] = row[key];\n    }\n    results.push({ json: filteredRow });\n  }\n}\nreturn results;"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -2704,
-                656
-            ],
-            "id": "d28c1cc0-ad56-4d15-9847-72d0eab44f6a",
-            "name": "Filter Deficiencies"
-        },
-        {
-            "parameters": {
-                "aggregate": "aggregateAllItemData",
-                "destinationFieldName": "total_deficiencies",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.aggregate",
-            "typeVersion": 1,
-            "position": [
-                -2480,
-                656
-            ],
-            "id": "341bfff1-1edd-4e50-a19f-e7c262b7acde",
-            "name": "Consolidate Items"
-        },
-        {
-            "parameters": {
-                "model": "mistral-large-latest",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-            "typeVersion": 1,
-            "position": [
-                -2288,
-                864
-            ],
-            "id": "e7178dcd-0b5f-4e7b-910d-accec1910190",
-            "name": "Mistral Model",
-            "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "fieldToSplitOut": "output.questions",
-                "include": "allOtherFields",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.itemLists",
-            "typeVersion": 3.1,
-            "position": [
-                -1952,
-                656
-            ],
-            "id": "adc358c9-25ac-40c8-ad38-b9012256935a",
-            "name": "Split Questions"
-        },
-        {
-            "parameters": {
-                "tableId": "qa_audit",
-                "fieldsUi": {
-                    "fieldValues": [
-                        {
-                            "fieldId": "question"
-                        },
-                        {
-                            "fieldId": "importance"
-                        },
-                        {
-                            "fieldId": "discipline"
-                        },
-                        {
-                            "fieldId": "status"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [
-                -1792,
-                656
-            ],
-            "id": "3fccd01b-4808-478d-a4f7-e8fd371164d4",
-            "name": "Supabase Storage",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "pI4CpdYLTiEEBmnz",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "content": "## Q&A Generator",
-                "height": 800,
-                "width": 2016,
-                "color": 5
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [
-                -3392,
-                368
-            ],
-            "id": "c33f6a44-7da9-4d97-8b44-db7db26c73e5",
-            "name": "Sticky Note: Q&A Generator"
-        },
-        {
-            "parameters": {
-                "respondWith": "allIncomingItems",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1.5,
-            "position": [
-                -1600,
-                656
-            ],
-            "id": "2a7a4ca0-386f-4d97-9dd6-c38741201efa",
-            "name": "Success Response"
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "qa-audit-generator",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -3328,
-                656
-            ],
-            "id": "af4b5ee1-3d2f-442f-9a35-f837d63b3ad1",
-            "name": "Webhook Q&A",
-            "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": {\n            \"type\": \"string\",\n            \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\"]\n          },\n          \"question\": {\n            \"type\": \"string\"\n          },\n          \"importance\": {\n            \"type\": \"string\",\n            \"enum\": [\"High\", \"Medium\", \"Low\"]\n          }\n        },\n        \"required\": [\"discipline\", \"question\", \"importance\"]\n      }\n    }\n  },\n  \"required\": [\"questions\"]\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                -2048,
-                864
-            ],
-            "id": "ad703593-b049-46d1-8ec6-e4ce71ac6ad7",
-            "name": "Structured Output Parser5"
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=### DEFICIENCIES DETECTED IN THE PROPOSAL FROM {{ $(\"Set Params\").first().json.provider }}\n\n{{ JSON.stringify($json.total_deficiencies, null, 2) }}\n\n### INSTRUCTIONS\nGenerate technical questions based on these deficiencies.\n\nImportant: Be specific. Mention the item number or the name of the requirement if relevant. Do not generate generic questions such as “Could you provide more details?”. Go straight to the technical point.",
-                "hasOutputParser": true,
-                "messages": {
-                    "messageValues": [
-                        {
-                            "message": "=# Technical Audit Instructions\n\nYou are a *technical engineering auditor*. Review the following list of deficiencies in the proposal from {{ $(\"Set Params\").first().json.provider }}. Your objective is to *group similar deficiencies* and *draft technical questions* for the supplier to answer. Classify each question into one of the following disciplines:\n\n* Electrical  \n* Mechanical  \n* Civil  \n* Process  \n* General  \n\n## Important\n* Be specific.  \n* Mention the item number or the name of the requirement if relevant.  \n* Do not generate generic questions such as *“Could you provide more details?”*.  \n* Go straight to the technical point."
-                        }
-                    ]
-                },
-                "batching": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.chainLlm",
-            "typeVersion": 1.8,
-            "position": [
-                -2272,
-                656
-            ],
-            "id": "0b6f1bc6-b0c5-4014-83de-e67d9f10349c",
-            "name": "Basic LLM Chain1"
-        },
-        {
-            "parameters": {
-                "operation": "getAll",
-                "tableId": "rfq_items_master",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "project_name",
-                            "condition": "eq",
-                            "keyValue": "={{ $json.project_id }}"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [
-                -2896,
-                656
-            ],
-            "id": "d89113f9-1dce-40d6-ba49-4d26362777e7",
-            "name": "Get many rows",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "pI4CpdYLTiEEBmnz",
-                    "name": "Supabase account"
-                }
-            }
-        }
-    ],
-    "connections": {
-        "Set Params": {
-            "main": [
-                [
-                    {
-                        "node": "Get many rows",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Filter Deficiencies": {
-            "main": [
-                [
-                    {
-                        "node": "Consolidate Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Consolidate Items": {
-            "main": [
-                [
-                    {
-                        "node": "Basic LLM Chain1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Mistral Model": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Basic LLM Chain1",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Split Questions": {
-            "main": [
-                [
-                    {
-                        "node": "Supabase Storage",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Supabase Storage": {
-            "main": [
-                [
-                    {
-                        "node": "Success Response",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Webhook Q&A": {
-            "main": [
-                [
-                    {
-                        "node": "Set Params",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser5": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "Basic LLM Chain1",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Basic LLM Chain1": {
-            "main": [
-                [
-                    {
-                        "node": "Split Questions",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Get many rows": {
-            "main": [
-                [
-                    {
-                        "node": "Filter Deficiencies",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-audit-generator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3152,
+        176
+      ],
+      "id": "91930f75-a6ab-4ec7-bf01-4e030239bc16",
+      "name": "Webhook Inbound",
+      "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
     },
-    "pinData": {},
-    "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "project_id",
+              "name": "project_id",
+              "value": "={{ $json.body.project_id }}",
+              "type": "string"
+            },
+            {
+              "id": "provider",
+              "name": "provider",
+              "value": "={{ $json.body.provider }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2928,
+        176
+      ],
+      "id": "8898c02b-7c7c-48a6-b336-1e8146fb37dc",
+      "name": "Set Input Params"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "provider_responses",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "provider_name",
+              "condition": "eq",
+              "keyValue": "={{ $json.provider }}"
+            },
+            {
+              "keyName": "evaluation_value",
+              "condition": "neq",
+              "keyValue": "INCLUIDO"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2720,
+        176
+      ],
+      "id": "be21957f-6fa1-4601-9f1b-b32e919284b5",
+      "name": "Fetch Missing Items",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "rfq_items_master",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.requirement_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2480,
+        176
+      ],
+      "id": "221ebb68-295b-466a-ac56-04d28c2e91e5",
+      "name": "Fetch Requirement Specs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "total_deficiencies",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -2288,
+        176
+      ],
+      "id": "da956236-77d2-4e09-b936-2d5cc6789fb2",
+      "name": "Consolidate Deficiencies"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Analyze & Classify**: For each deficiency, determine its specific engineering field.\n    - If it involves cables, power, or circuits -> **Electrical**\n    - If it involves machinery, pumps, or piping -> **Mechanical**\n    - If it involves structures, foundations, or concrete -> **Civil**\n    - If it involves workflows, chemical stages, or P&IDs -> **Process**\n    - Only if it is administrative or multi-disciplinary -> **General**\n2.  **Language**: All questions and text MUST be in English.\n3.  **Strictness**: Do not label everything as \"General\". Be as specific as possible.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"questions\": [\n    {\n      \"discipline\": \"Electrical\" | \"Mechanical\" | \"Civil\" | \"Process\" | \"General\",\n      \"question\": \"The specific question in English\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        -2096,
+        176
+      ],
+      "id": "9dbe5792-eda6-4032-ae24-0aa46ba4671c",
+      "name": "QA Generation Chain"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -2176,
+        384
+      ],
+      "id": "0989793e-01e7-4721-92dd-ccdc85cefa70",
+      "name": "Mistral Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\" },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1872,
+        384
+      ],
+      "id": "4e5961ce-a051-4147-9f5b-097110ebec16",
+      "name": "JSON Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.questions",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3.1,
+      "position": [
+        -1776,
+        176
+      ],
+      "id": "4f25bff8-c5f6-41f7-b2a5-5239522d36d0",
+      "name": "Split Questions List"
+    },
+    {
+      "parameters": {
+        "tableId": "qa_audit",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "question",
+              "fieldValue": "={{ $json['output.questions'].question }}"
+            },
+            {
+              "fieldId": "importance",
+              "fieldValue": "={{ $json['output.questions'].importance }}"
+            },
+            {
+              "fieldId": "discipline",
+              "fieldValue": "={{ $json['output.questions'].discipline }}"
+            },
+            {
+              "fieldId": "provider_name",
+              "fieldValue": "={{ $(\"Set Input Params\").first().json.provider }}"
+            },
+            {
+              "fieldId": "project_name",
+              "fieldValue": "={{ $(\"Set Input Params\").first().json.project_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1616,
+        176
+      ],
+      "id": "d02e0cec-e80c-4963-9c26-455f2d3c8f41",
+      "name": "Supabase Insert",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1408,
+        176
+      ],
+      "id": "a2d52ae8-b9e1-489e-903c-a8c24fd44173",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "content": "## Q&A",
+        "height": 656,
+        "width": 2048,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3248,
+        -48
+      ],
+      "id": "b1e78ee1-5f44-4f22-a27a-0e5c93866611",
+      "name": "Sticky Note1"
     }
+  ],
+  "connections": {
+    "Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "Set Input Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Params": {
+      "main": [
+        [
+          {
+            "node": "Fetch Missing Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Missing Items": {
+      "main": [
+        [
+          {
+            "node": "Fetch Requirement Specs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Requirement Specs": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Deficiencies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate Deficiencies": {
+      "main": [
+        [
+          {
+            "node": "QA Generation Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QA Generation Chain": {
+      "main": [
+        [
+          {
+            "node": "Split Questions List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "QA Generation Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "QA Generation Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Questions List": {
+      "main": [
+        [
+          {
+            "node": "Supabase Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Insert": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+  }
 }

@@ -121,6 +121,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         // Use provider ranking data if available
         if (providerRanking && providerRanking.length > 0) {
+            console.log('[HomeDashboard] Provider ranking data found:', providerRanking.length, 'providers');
+            console.log('[HomeDashboard] Sample ranking:', providerRanking[0]);
+            
+            // Debug: Mostrar todos los campos disponibles
+            if (providerRanking.length > 0) {
+                console.log('[HomeDashboard] Available fields in ranking:', Object.keys(providerRanking[0]));
+            }
+
             if (tableData && tableData.length > 0) {
                 tableData.forEach((item: any) => {
                     registerProviderType(item.Provider || item.provider, item.evaluation_type || item.evaluation);
@@ -133,34 +141,129 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 });
             }
 
+            const parseScore = (val: any): number | null => {
+                if (val === null || val === undefined || val === '') return null;
+                const n = typeof val === 'number' ? val : Number(String(val));
+                return Number.isFinite(n) ? n : null;
+            };
+
+            const clampScore = (score: number) => Math.max(0, Math.min(10, score));
+            const mergeScore = (prev: number | null, next: number | null) => {
+                if (next === null) return prev;
+                if (prev === null) return next;
+                return Math.max(prev, next);
+            };
+
+            // IMPORTANT: ranking_proveedores_por_tipo can return multiple rows per provider (one per project_name).
+            // If we don't aggregate, later rows overwrite earlier ones and some types appear as 0.
+            const aggregated: Record<string, {
+                technical: number | null;
+                economical: number | null;
+                preFeed: number | null;
+                feed: number | null;
+            }> = {};
+
             providerRanking.forEach((ranking: any) => {
                 const providerName = ranking.provider_name;
                 if (!providerName) return;
 
+                console.log('[HomeDashboard] Processing provider:', providerName);
                 const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(providerName))];
-                if (!normalizedProvider) return;
+                console.log('[HomeDashboard] Normalized provider:', normalizedProvider);
+                if (!normalizedProvider) {
+                    console.warn('[HomeDashboard] Provider not found in map:', providerName);
+                    return;
+                }
 
-                // Calculate score as cumplimiento_porcentual / 10
-                const cumplimientoPorcentual = Number(ranking.cumplimiento_porcentual);
-                const rawCumplimientoScore = Number.isFinite(cumplimientoPorcentual)
-                    ? (cumplimientoPorcentual > 100 ? (cumplimientoPorcentual / 100) : (cumplimientoPorcentual / 10))
-                    : 0;
-                const cumplimientoScore = Math.max(0, Math.min(10, Math.round(rawCumplimientoScore * 100) / 100));
+                if (!aggregated[normalizedProvider]) {
+                    aggregated[normalizedProvider] = {
+                        technical: null,
+                        economical: null,
+                        preFeed: null,
+                        feed: null
+                    };
+                }
 
-                const availableTypes = providerTypes[normalizedProvider];
-                const shouldApplyToType = (type: string) => {
-                    if (!availableTypes || availableTypes.size === 0) return true;
-                    return availableTypes.has(type);
-                };
+                aggregated[normalizedProvider].technical = mergeScore(
+                    aggregated[normalizedProvider].technical,
+                    parseScore(ranking.technical_score)
+                );
+                aggregated[normalizedProvider].economical = mergeScore(
+                    aggregated[normalizedProvider].economical,
+                    parseScore(ranking.economical_score)
+                );
+                aggregated[normalizedProvider].preFeed = mergeScore(
+                    aggregated[normalizedProvider].preFeed,
+                    parseScore(ranking.pre_feed_score)
+                );
+                aggregated[normalizedProvider].feed = mergeScore(
+                    aggregated[normalizedProvider].feed,
+                    parseScore(ranking.feed_score)
+                );
+            });
 
-                evaluations[normalizedProvider] = {
-                    'Technical Evaluation': shouldApplyToType('Technical Evaluation') ? cumplimientoScore : 0,
-                    'Economical Evaluation': shouldApplyToType('Economical Evaluation') ? cumplimientoScore : 0,
-                    'Pre-FEED Deliverables': shouldApplyToType('Pre-FEED Deliverables') ? cumplimientoScore : 0,
-                    'FEED Deliverables': shouldApplyToType('FEED Deliverables') ? cumplimientoScore : 0
+            Object.entries(aggregated).forEach(([provider, scores]) => {
+                evaluations[provider] = {
+                    'Technical Evaluation': scores.technical === null ? 0 : clampScore(scores.technical),
+                    'EA': scores.economical === null ? 0 : clampScore(scores.economical),
+                    'Pre-FEED Deliverables': scores.preFeed === null ? 0 : clampScore(scores.preFeed),
+                    'FEED Deliverables': scores.feed === null ? 0 : clampScore(scores.feed)
                 };
             });
+
+            // Reordenar los tipos de evaluación (columnas) según si tienen datos > 0
+            const reorderEvaluationTypes = (evaluations: any) => {
+                // Obtener todos los proveedores
+                const providers = Object.keys(evaluations);
+                
+                console.log('[HomeDashboard] Providers found:', providers);
+                console.log('[HomeDashboard] Current evaluations:', evaluations);
+                
+                // Calcular qué tipos tienen datos > 0 en CUALQUIER proveedor
+                const typeScores: { [key: string]: number } = {};
+                ['Technical Evaluation', 'EA', 'Pre-FEED Deliverables', 'FEED Deliverables'].forEach(type => {
+                    typeScores[type] = providers.reduce((sum, provider) => {
+                        // Solo sumar si el proveedor no es el mismo nombre que el tipo de evaluación
+                        if (provider === type) return sum;
+                        return sum + (evaluations[provider][type] || 0);
+                    }, 0);
+                });
+
+                console.log('[HomeDashboard] Type scores calculated:', typeScores);
+
+                // Ordenar tipos: primero los que tienen datos > 0, luego los que tienen 0
+                const sortedTypes = ['Technical Evaluation', 'EA', 'Pre-FEED Deliverables', 'FEED Deliverables'].sort((a, b) => {
+                    const scoreA = typeScores[a];
+                    const scoreB = typeScores[b];
+                    
+                    console.log(`[HomeDashboard] Comparing ${a} (${scoreA}) vs ${b} (${scoreB})`);
+                    
+                    if (scoreA > 0 && scoreB === 0) return -1; // A tiene datos, B no → A primero
+                    if (scoreA === 0 && scoreB > 0) return 1;  // A no tiene datos, B sí → B primero
+                    if (scoreA > 0 && scoreB > 0) return a.localeCompare(b); // Ambos tienen datos → alfabético
+                    return a.localeCompare(b); // Ambos sin datos → alfabético
+                });
+
+                console.log('[HomeDashboard] Sorted types:', sortedTypes);
+
+                // Reordenar las evaluaciones de cada proveedor según el nuevo orden
+                providers.forEach(provider => {
+                    const reordered: any = {};
+                    sortedTypes.forEach(type => {
+                        reordered[type] = evaluations[provider][type];
+                    });
+                    evaluations[provider] = reordered;
+                });
+
+                console.log('[HomeDashboard] Final evaluations after reordering:', evaluations);
+            };
+
+            reorderEvaluationTypes(evaluations);
         } else {
+            console.warn('[HomeDashboard] No provider ranking data available. Using fallback logic.');
+            console.log('[HomeDashboard] tableData length:', tableData?.length || 0);
+            console.log('[HomeDashboard] proposalEvaluations length:', proposalEvaluations?.length || 0);
+
             // Fallback to old logic if no ranking data
             // Count RFQ evaluations from tableData (rfq_items_master)
             if (tableData && tableData.length > 0) {
@@ -220,13 +323,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         return evaluations;
     }, [tableData, proposalEvaluations, providerRanking]);
 
-    // Count active providers (those with data)
-    const activeProvidersCount = useMemo(() => {
-        return Object.values(providerEvaluations).filter(evals =>
-            Object.values(evals).some(count => count > 0)
-        ).length;
-    }, [providerEvaluations]);
-
     // Generate recent activity from both tableData and proposalEvaluations
     const recentActivity = useMemo(() => {
         const activities: any[] = [];
@@ -284,7 +380,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 activities.push({
                     title: `Proposal evaluated - ${item.provider_name}`,
-                    desc: `${item.evaluation_type}: ${item.evaluation_value} (${item.score}/10)`,
+                    desc: `${item.requirement_text || item.evaluation_type || 'Requirement'}: ${item.evaluation_value} (${item.score}/10)`,
                     time: timeAgo,
                     type: 'success',
                     timestamp: date.getTime()
@@ -300,8 +396,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
     const [rfqCount, setRfqCount] = useState(0);
     const [evaluationTypes, setEvaluationTypes] = useState<Set<string>>(new Set());
+    const [providersCount, setProvidersCount] = useState(0);
 
-    // Fetch RFQ count from document_metadata
+    // Fetch RFQ count and providers count from document_metadata
     useEffect(() => {
         const fetchRfqCount = async () => {
             if (supabase) {
@@ -309,7 +406,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     console.log('Fetching RFQ documents from document_metadata...');
                     const { data: rfqDocuments, error: rfqError } = await supabase
                         .from('document_metadata')
-                        .select('id, title, project_name, evaluation_types, created_at')
+                        .select('id, title, project_name, evaluation_types, provider, created_at')
                         .eq('document_type', 'RFQ');
                     
                     console.log('RFQ query result:', { rfqDocuments, rfqError });
@@ -320,6 +417,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         
                         // Collect all evaluation types
                         const types = new Set<string>();
+                        // Collect all unique providers
+                        const providers = new Set<string>();
+                        
                         rfqDocuments.forEach((doc: any) => {
                             console.log('RFQ Document:', doc.title, 'Types:', doc.evaluation_types, 'Type of evaluation_types:', typeof doc.evaluation_types, 'Is Array:', Array.isArray(doc.evaluation_types));
                             if (doc.evaluation_types) {
@@ -343,10 +443,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                     }
                                 }
                             }
+                            
+                            // Add provider if exists
+                            if (doc.provider) {
+                                providers.add(doc.provider.trim());
+                            }
                         });
+                        
                         console.log('Final evaluation types found:', Array.from(types));
                         console.log('Total unique evaluation types:', types.size);
+                        console.log('Final providers found:', Array.from(providers));
+                        console.log('Total unique providers:', providers.size);
+                        
                         setEvaluationTypes(types);
+                        setProvidersCount(providers.size);
                     } else {
                         console.log('RFQ query error or no data:', rfqError);
                     }
@@ -498,10 +608,46 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 }}></div>
 
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h1 style={{ margin: '0 0 12px 0', fontSize: '2rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                        {t('home.hero.title')}
-                    </h1>
-                    <p style={{ margin: 0, opacity: 0.95, maxWidth: '650px', lineHeight: '1.6', fontSize: '1.05rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                        <div style={{
+                            width: '60px',
+                            height: '60px',
+                            background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.9))',
+                            borderRadius: '16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                            position: 'relative'
+                        }}>
+                            <div style={{
+                                fontSize: '1.5rem',
+                                fontWeight: 800,
+                                background: 'linear-gradient(135deg, var(--color-primary), #0d9488)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text'
+                            }}>
+                                AI
+                            </div>
+                        </div>
+                        <div>
+                            <h1 style={{ margin: '0', fontSize: '2.5rem', fontWeight: 800, textShadow: '0 2px 4px rgba(0,0,0,0.1)', letterSpacing: '-0.5px' }}>
+                                {t('home.hero.title')}
+                            </h1>
+                            <div style={{
+                                fontSize: '1.1rem',
+                                fontWeight: 500,
+                                opacity: 0.9,
+                                letterSpacing: '0.5px',
+                                textTransform: 'uppercase',
+                                marginTop: '4px'
+                            }}>
+                                {t('home.hero.subtitle')}
+                            </div>
+                        </div>
+                    </div>
+                    <p style={{ margin: '16px 0 0 0', opacity: 0.95, maxWidth: '650px', lineHeight: '1.6', fontSize: '1.05rem' }}>
                         {t('home.hero.desc')}
                     </p>
                     <div style={{ marginTop: '28px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -557,36 +703,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
 
             {/* Key Metrics Grid */}
-            {/* Temporary debug display */}
-            <div style={{ 
-                background: '#f0f0f0', 
-                padding: '10px', 
-                margin: '10px 0', 
-                borderRadius: '5px',
-                fontSize: '12px',
-                fontFamily: 'monospace'
-            }}>
-                DEBUG: evaluationTypes.size = {evaluationTypes.size}, 
-                types = [{Array.from(evaluationTypes).join(', ')}],
-                rfqCount = {rfqCount}
-            </div>
-            {/* Temporary test buttons */}
-            <div style={{ padding: '10px', margin: '10px 0' }}>
-                <button onClick={() => {
-                    const testTypes = new Set(['Technical Evaluation', 'Economical Evaluation', 'Pre-FEED Deliverables', 'FEED Deliverables']);
-                    setEvaluationTypes(testTypes);
-                    console.log('Set test types:', Array.from(testTypes));
-                }}>
-                    Set 4 Types (Test)
-                </button>
-                <button onClick={() => {
-                    console.log('Current evaluationTypes:', Array.from(evaluationTypes));
-                    console.log('Current rfqCount:', rfqCount);
-                }}>
-                    Log Current State
-                </button>
-            </div>
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+            <div style={{ width: '100%', marginBottom: '10px' }}>
+                <div className="stats-grid">
                 <DashboardCard
                     title="Total Processed"
                     value={dashboardMetrics.systemHealth.totalProcessed.toString()}
@@ -603,9 +721,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="var(--color-primary)"
                 />
                 <DashboardCard
-                    title="RFQs Procesadas"
+                    title="RFQs Processed"
                     value={dashboardMetrics.activeRfqs.toString()}
-                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% de cobertura`}
+                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% coverage`}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -638,6 +756,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     }
                     color="#10b981"
                 />
+                </div>
             </div>
 
             {/* Quick Stats Row */}
@@ -645,11 +764,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '20px',
-                padding: '24px',
+                padding: '8px',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-sm)'
+                boxShadow: 'var(--shadow-sm)',
+                marginBottom: '8px'
             }}>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
@@ -672,14 +792,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         Active Providers
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
-                        {activeProvidersCount}
+                        {providersCount}
                     </div>
                 </div>
             </div>
 
 
             {/* Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '16px', marginTop: '0px' }}>
                 <div className="card" style={{
                     padding: '28px',
                     display: 'flex',
@@ -691,10 +811,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <div>
                             <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                {t('home.chart.evaluations_by_provider')}
+                                Evaluations by Provider
                             </h3>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {t('home.chart.distribution')}
+                                Performance distribution
                             </span>
                         </div>
                         <div style={{
@@ -730,10 +850,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             if (!hasData) return null;
 
                             const evaluations = [
-                                { type: 'Technical', score: evals['Technical Evaluation'] || 0, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: evals['Economical Evaluation'] || 0, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: evals['Pre-FEED Deliverables'] || 0, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: evals['FEED Deliverables'] || 0, color: 'rgba(139, 92, 246, 0.8)' }
+                                { type: 'Technical', score: evals['Technical Evaluation'] || 0, color: '#12b5b0' },
+                                { type: 'EA', score: evals['EA'] || 0, color: '#f59e0b' },
+                                { type: 'Pre-FEED', score: evals['Pre-FEED Deliverables'] || 0, color: '#3b82f6' },
+                                { type: 'FEED', score: evals['FEED Deliverables'] || 0, color: '#8b5cf6' }
                             ];
 
                             return (
@@ -769,10 +889,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         gap: '16px',
                         justifyContent: 'center'
                     }}>
-                        <LegendItem color="rgba(20, 184, 166, 0.8)" label="Technical" />
-                        <LegendItem color="rgba(245, 158, 11, 0.8)" label="Economical" />
-                        <LegendItem color="rgba(59, 130, 246, 0.8)" label="Pre-FEED" />
-                        <LegendItem color="rgba(139, 92, 246, 0.8)" label="FEED" />
+                        <LegendItem color="#12b5b0" label="Technical" />
+                        <LegendItem color="#f59e0b" label="Economical" />
+                        <LegendItem color="#3b82f6" label="Pre-FEED" />
+                        <LegendItem color="#8b5cf6" label="FEED" />
                     </div>
                 </div>
 
@@ -852,35 +972,36 @@ const DashboardCard = ({ title, value, trend, icon, color, isPositiveTrend = tru
 
     return (
         <div
-            className="stat-card"
+            className="stat-card widget-card"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-surface)',
                 borderRadius: 'var(--radius-lg)',
-                padding: '24px',
+                border: `1px solid ${isHovered ? color : 'var(--border-color)'}`,
+                padding: '28px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 boxShadow: isHovered ? 'var(--shadow-md)' : 'var(--shadow-sm)',
                 position: 'relative',
                 overflow: 'hidden',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-                cursor: 'pointer'
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                transform: isHovered ? 'translateY(-2px)' : 'translateY(0)'
             }}
         >
-            {/* Decorative gradient background */}
+            {/* Subtle gradient overlay */}
             <div style={{
                 position: 'absolute',
                 top: 0,
                 right: 0,
-                width: '100px',
-                height: '100px',
-                background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
-                opacity: isHovered ? 1 : 0.5,
-                transition: 'opacity 0.3s'
+                width: '120px',
+                height: '120px',
+                background: `radial-gradient(circle, ${color}08 0%, transparent 70%)`,
+                opacity: isHovered ? 1 : 0.6,
+                transition: 'opacity 0.3s',
+                pointerEvents: 'none'
             }}></div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
@@ -896,9 +1017,9 @@ const DashboardCard = ({ title, value, trend, icon, color, isPositiveTrend = tru
                             {title}
                         </span>
                         <div style={{
-                            fontSize: '2.25rem',
+                            fontSize: '2rem',
                             fontWeight: 700,
-                            margin: '12px 0 4px 0',
+                            margin: '20px 0 8px 0',
                             color: 'var(--text-primary)',
                             lineHeight: 1
                         }}>
@@ -914,16 +1035,10 @@ const DashboardCard = ({ title, value, trend, icon, color, isPositiveTrend = tru
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        transform: isHovered ? 'scale(1.1) rotate(5deg)' : 'scale(1) rotate(0deg)',
-                        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                        backgroundColor: `${color}10`,
+                        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                        transition: 'transform 0.3s ease'
                     }}>
-                        <div style={{
-                            position: 'absolute',
-                            inset: 0,
-                            background: color,
-                            opacity: 0.12,
-                            borderRadius: 'inherit'
-                        }} />
                         <div style={{ position: 'relative', zIndex: 1, display: 'flex' }}>
                             {icon}
                         </div>
@@ -1099,7 +1214,7 @@ const StackedBar = ({ provider, evaluations }: {
                         left: '50%',
                         transform: 'translateX(-50%)',
                         backgroundColor: 'var(--bg-surface)',
-                        border: '1px solid var(--border-color)',
+                        border: `2px solid ${evaluations[hoveredIdx].color}`,
                         padding: '10px 14px',
                         borderRadius: '10px',
                         boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
@@ -1112,9 +1227,9 @@ const StackedBar = ({ provider, evaluations }: {
                             {evaluations[hoveredIdx].type}
                         </div>
                         <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                            {evaluations[hoveredIdx].score.toFixed(2)}/10
+                            {evaluations[hoveredIdx].score.toFixed(1)}/10
                         </div>
-                        <div style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '8px solid var(--border-color)' }}></div>
+                        <div style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: `8px solid ${evaluations[hoveredIdx].color}` }}></div>
                     </div>
                 )}
 
@@ -1124,29 +1239,50 @@ const StackedBar = ({ provider, evaluations }: {
                     display: 'flex',
                     flexDirection: 'column-reverse', // Stack from bottom
                     justifyContent: 'flex-start',
-                    borderRadius: '8px 8px 0 0',
+                    borderRadius: '14px 14px 0 0',
                     overflow: 'hidden',
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     transform: isBarHovered ? 'scaleX(1.1) translateY(-8px)' : 'scaleX(1)',
                     boxShadow: isBarHovered ? '0 12px 28px rgba(0,0,0,0.2)' : 'none',
                     background: 'transparent',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(4px)'
                 }}>
-                    {evaluations.map((ev, i) => (
-                        <div
-                            key={i}
-                            onMouseEnter={() => setHoveredIdx(i)}
-                            style={{
-                                height: `${(ev.score / maxPossible) * 100}%`,
-                                background: ev.color,
-                                opacity: hoveredIdx === null || hoveredIdx === i ? 1 : 0.4,
-                                transition: 'all 0.2s',
-                                borderTop: i < evaluations.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                                boxSizing: 'border-box'
-                            }}
-                        />
-                    ))}
+                    {(() => {
+                        const topIdx = (() => {
+                            for (let i = evaluations.length - 1; i >= 0; i--) {
+                                if ((Number(evaluations[i]?.score) || 0) > 0) return i;
+                            }
+                            return -1;
+                        })();
+
+                        return evaluations.map((ev, i) => {
+                        const isSegmentHovered = hoveredIdx === i;
+                        const shouldShowLabel = ev.score > 0 && (isBarHovered || isSegmentHovered);
+                        
+                        return (
+                            <div
+                                key={i}
+                                onMouseEnter={() => setHoveredIdx(i)}
+                                style={{
+                                    height: `${(ev.score / maxPossible) * 100}%`,
+                                    background: ev.color,
+                                    opacity: hoveredIdx === null || hoveredIdx === i ? 1 : 0.4,
+                                    transition: 'all 0.2s',
+                                    borderTop: i < evaluations.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
+                                    borderTopLeftRadius: i === topIdx ? '14px' : 0,
+                                    borderTopRightRadius: i === topIdx ? '14px' : 0,
+                                    boxSizing: 'border-box',
+                                    position: 'relative',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minHeight: shouldShowLabel ? '20px' : 'auto'
+                                }}
+                            >
+                            </div>
+                        );
+                        });
+                    })()}
                 </div>
             </div>
 

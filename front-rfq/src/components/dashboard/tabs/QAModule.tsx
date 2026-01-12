@@ -400,28 +400,28 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   };
 
   return (
-    <div className="qa-module">
+    <div className="module-container">
       {/* Main Header */}
-      <div className="qa-main-header">
-        <h1 className="qa-main-title">Q&A Management</h1>
-        <p className="qa-main-subtitle">
+      <div className="module-main-header">
+        <h1 className="module-main-title">Q&A Management</h1>
+        <p className="module-main-subtitle">
           Generate intelligent questions and manage technical audits
         </p>
       </div>
 
       {/* SECTION 1: TECHNICAL AUDIT GENERATOR */}
-      <div className="qa-section audit-generator-section">
-        <div className="section-header">
-          <div className="section-header-content">
+      <div className="module-section audit-generator-section">
+        <div className="module-section-header">
+          <div className="module-section-header-content">
             <Icons.Paper />
             <div>
-              <h2 className="section-title">Technical Audit Generator</h2>
-              <p className="section-subtitle">Generate AI-powered questions based on provider deficiencies</p>
+              <h2 className="module-section-title">Technical Audit Generator</h2>
+              <p className="module-section-subtitle">Generate AI-powered questions based on provider deficiencies</p>
             </div>
           </div>
         </div>
 
-        <div className="generator-form card">
+        <div className="generator-form module-card">
           <div className="form-grid">
             {/* Project Selector */}
             <div className="form-group">
@@ -499,15 +499,15 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             </div>
           </div>
 
-          <div className="generator-actions">
+          <div className="module-actions">
             <button
               onClick={handleGenerateAudit}
               disabled={isGenerating || !projectId || !selectedProvider}
-              className="btn btnPrimary qa-generate-btn"
+              className="module-btn-primary"
             >
               {isGenerating ? (
                 <>
-                  <span className="spinner"></span>
+                  <span className="module-spinner"></span>
                   Generating Audit...
                 </>
               ) : (
@@ -518,7 +518,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             {questions.some(q => q.estado === 'Approved') && (
               <button
                 onClick={handleExportExcel}
-                className="btn btnSecondary qa-export-btn"
+                className="module-btn-secondary"
                 title="Export approved questions to Excel"
               >
                 <Icons.Download />
@@ -528,8 +528,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           </div>
 
           {statusMessage && (
-            <div className={`qa-status-banner ${statusMessage.includes('Success') || statusMessage.includes('completed') ? 'success' : ''}`}>
-              {isGenerating && <span className="spinner"></span>}
+            <div className={`module-status-banner ${statusMessage.includes('Success') || statusMessage.includes('completed') ? 'success' : ''}`}>
+              {isGenerating && <span className="module-spinner"></span>}
               {statusMessage}
             </div>
           )}
@@ -537,21 +537,21 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       </div>
 
       {/* SECTION 2: QUESTIONS VIEWER & MANAGEMENT */}
-      <div className="qa-section questions-viewer-section">
-        <div className="section-header">
-          <div className="section-header-content">
+      <div className="module-section questions-viewer-section">
+        <div className="module-section-header">
+          <div className="module-section-header-content">
             <div>
-              <h2 className="section-title">Questions Management</h2>
-              <p className="section-subtitle">View and manage generated questions by discipline</p>
+              <h2 className="module-section-title">Questions Management</h2>
+              <p className="module-section-subtitle">View and manage generated questions by discipline</p>
             </div>
           </div>
 
-          <div className="section-header-actions">
+          <div className="module-section-header-actions">
             {/* Export All Questions Button */}
             {questions.length > 0 && (
               <button
                 onClick={handleExportAllQuestions}
-                className="btn btnSecondary qa-export-all-btn"
+                className="module-btn-primary"
                 title="Export all questions to Excel"
               >
                 <Icons.Download />
@@ -632,22 +632,22 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
         {/* Global Statistics */}
         {stats.total > 0 && (
-          <div className="qa-stats-grid">
-            <div className="stat-card">
-              <div className="stat-value">{stats.total}</div>
-              <div className="stat-label">Total Questions</div>
+          <div className="module-stats-grid">
+            <div className="module-stat-card">
+              <div className="module-stat-value">{stats.total}</div>
+              <div className="module-stat-label">Total Questions</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{stats.porEstado['Approved'] || 0}</div>
-              <div className="stat-label">Approved</div>
+            <div className="module-stat-card">
+              <div className="module-stat-value">{stats.porEstado['Approved'] || 0}</div>
+              <div className="module-stat-label">Approved</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{stats.porEstado['Pending'] || 0}</div>
-              <div className="stat-label">Pending</div>
+            <div className="module-stat-card">
+              <div className="module-stat-value">{stats.porEstado['Pending'] || 0}</div>
+              <div className="module-stat-label">Pending</div>
             </div>
-            <div className="stat-card">
-              <div className="stat-value">{stats.porImportancia?.['High'] || 0}</div>
-              <div className="stat-label">High Importance</div>
+            <div className="module-stat-card">
+              <div className="module-stat-value">{stats.porImportancia?.['High'] || 0}</div>
+              <div className="module-stat-label">High Importance</div>
             </div>
           </div>
         )}
@@ -882,12 +882,12 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
         {/* Empty State */}
         {
           !isLoading && questions.length === 0 && (
-            <div className="qa-empty">
-              <div className="empty-icon">
+            <div className="module-empty-state">
+              <div className="module-empty-icon">
                 <Icons.Paper />
               </div>
-              <h3>No questions generated</h3>
-              <p>Select a project and provider, then click "Generate Technical Audit"</p>
+              <h3 className="module-empty-title">No questions generated</h3>
+              <p className="module-empty-text">Select a project and provider, then click "Generate Technical Audit"</p>
             </div>
           )
         }

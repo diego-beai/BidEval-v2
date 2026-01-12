@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/rfq.types';
 import { Provider } from '../types/provider.types';
 import { RfqMetadata } from '../components/upload/RfqMetadataForm';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
+import { useSessionViewStore } from './useSessionViewStore';
 
 /**
  * Información de la RFQ base del cliente
@@ -158,7 +159,8 @@ function transformResults(items: RfqItem[]): RfqResult[] {
 
 export const useRfqStore = create<RfqState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       selectedFiles: [],
       isProcessing: false,
       processingFileCount: 0,
@@ -361,6 +363,9 @@ export const useRfqStore = create<RfqState>()(
             message: message || `Proposal processed! ${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} completed.`
           }
         });
+
+        // Notificar que hay contenido nuevo en rfq (upload/processing view)
+        useSessionViewStore.getState().updateContent('upload');
       },
 
       setError: (error) => {
@@ -797,20 +802,41 @@ export const useRfqStore = create<RfqState>()(
 
         try {
           const { data, error } = await supabase
-            .from('ranking_proveedores')
-            .select('*')
-            .order('cumplimiento_porcentual', { ascending: false, nullsFirst: false });
+            .from('ranking_proveedores_por_tipo')
+            .select('*');
 
           if (error) {
-            throw new Error(`Supabase error: ${error.message}`);
+            const { data: fallbackData, error: fallbackError } = await supabase
+              .from('ranking_proveedores')
+              .select('*')
+              .order('cumplimiento_porcentual', { ascending: false, nullsFirst: false });
+
+            if (fallbackError) {
+              throw new Error(`Supabase error: ${fallbackError.message}`);
+            }
+
+            set({ providerRanking: fallbackData || [] });
+            console.log('Provider ranking loaded (fallback):', fallbackData?.length, 'records');
+            if (!fallbackData || fallbackData.length === 0) {
+              console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores for the current client.');
+            } else {
+              console.log('Provider ranking sample (fallback):', fallbackData[0]);
+            }
+            return;
           }
 
-          set({ providerRanking: data || [] });
-          console.log('Provider ranking loaded:', data?.length, 'records');
-          if (!data || data.length === 0) {
-            console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores for the current client.');
+          const sorted = (data || []).slice().sort((a: any, b: any) => {
+            const aTotal = (Number(a.technical_score) || 0) + (Number(a.economical_score) || 0) + (Number(a.pre_feed_score) || 0) + (Number(a.feed_score) || 0);
+            const bTotal = (Number(b.technical_score) || 0) + (Number(b.economical_score) || 0) + (Number(b.pre_feed_score) || 0) + (Number(b.feed_score) || 0);
+            return bTotal - aTotal;
+          });
+
+          set({ providerRanking: sorted });
+          console.log('Provider ranking loaded (by type):', sorted.length, 'records');
+          if (sorted.length === 0) {
+            console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores_por_tipo for the current client.');
           } else {
-            console.log('Provider ranking sample:', data[0]);
+            console.log('Provider ranking sample (by type):', sorted[0]);
           }
         } catch (err: any) {
           console.error('Error fetching provider ranking:', err);
@@ -836,6 +862,14 @@ export const useRfqStore = create<RfqState>()(
         }
       })
     }),
+      {
+        name: 'rfq-storage',
+        partialize: (state) => ({
+          rfqMetadata: state.rfqMetadata,
+          tableFilters: state.tableFilters
+        })
+      }
+    ),
     { name: 'RfqStore' }
   )
 );

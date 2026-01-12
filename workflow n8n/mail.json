@@ -2,41 +2,22 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "webhook/mail",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [-3400, -400],
-      "id": "webhook-mail",
-      "name": "Webhook Mail"
-    },
-    {
-      "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "project-name",
+              "id": "6d3a985e-7c5e-4c74-8b5e-407e4d8c83a9",
               "name": "project_name",
               "value": "={{ $json.body.project_name }}",
               "type": "string"
             },
             {
-              "id": "provider-name",
-              "name": "provider_name", 
-              "value": "={{ $json.body.provider_name }}",
-              "type": "string"
-            },
-            {
-              "id": "provider-key",
-              "name": "provider_key",
+              "id": "2d3a985e-7c5e-4c74-8b5e-407e4d8c83a1",
+              "name": "provider_name",
               "value": "={{ $json.body.provider_key }}",
               "type": "string"
             },
             {
-              "id": "tone",
+              "id": "3d3a985e-7c5e-4c74-8b5e-407e4d8c83a2",
               "name": "tone",
               "value": "={{ $json.body.tone }}",
               "type": "string"
@@ -47,30 +28,126 @@
       },
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [-3160, -400],
-      "id": "extract-metadata",
-      "name": "Extract Metadata"
+      "position": [
+        -2720,
+        -768
+      ],
+      "id": "f539bc69-b8a7-434a-8580-1e5293d559e0",
+      "name": "Edit Fields"
     },
     {
       "parameters": {
-        "jsCode": "// Simple issue generation for testing\nconst providerKey = $('Extract Metadata').first().json.provider_key;\nconst projectName = $('Extract Metadata').first().json.project_name;\n\n// Mock issues based on provider\nconst mockIssues = {\n  'IDOM': [\n    {\n      evaluation_type: 'Technical',\n      phase: 'FEED',\n      requirement: 'Cooling System Design and Specification',\n      status: 'Partially included',\n      id: 'c6fb5e89-aac8-4e7d-aa47-8289acceb5d5'\n    },\n    {\n      evaluation_type: 'Commercial',\n      phase: 'Economic',\n      requirement: 'Operating and Maintenance Cost Estimate',\n      status: 'Not evaluated',\n      id: 'f74dc1a7-e45c-45b3-b610-98c25b45554d'\n    }\n  ],\n  'TECNICASREUNIDAS': [\n    {\n      evaluation_type: 'Technical',\n      phase: 'Process',\n      requirement: 'System Efficiency Guarantee',\n      status: 'No incluido',\n      id: 'tr-001'\n    }\n  ]\n};\n\nconst issues = mockIssues[providerKey] || [];\n\nreturn {\n  json: {\n    issues: issues,\n    count: issues.length,\n    provider: providerKey\n  }\n};"
+        "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      issuesFound.push({\n        requirement: row.requirement_id || 'Requisito no identificado',\n        status: status || 'VACÍO',\n        comment: row.comment || 'Sin comentarios adicionales'\n      });\n    }\n  }\n}\n\n// 3. Devolvemos un solo objeto con toda la info para el LLM\n// Esto evita el \"undefined\" porque el LLM recibirá estos campos directamente\nreturn {\n  issues: issuesFound,\n  total_count: issuesFound.length,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-2920, -400],
-      "id": "generate-issues",
-      "name": "Generate Issues"
+      "position": [
+        -2272,
+        -768
+      ],
+      "id": "8c1616cb-7389-4634-8aaa-bfbd4059832a",
+      "name": "Filter and Aggregate Issues"
     },
     {
       "parameters": {
-        "model": "deepseek-r1:14b",
+        "content": "## Email en base datos faltantes\n",
+        "height": 864,
+        "width": 2016,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3232,
+        -1056
+      ],
+      "id": "b3c0b3b6-fd03-4e0c-aef8-e653638e5694",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mail",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2944,
+        -768
+      ],
+      "id": "969b5546-0213-4cfc-af6e-57c5c529e6ee",
+      "name": "Webhook3",
+      "webhookId": "e5929c60-27f5-441b-88a7-c01dae141abe",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "provider_responses",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "provider_name",
+              "condition": "eq",
+              "keyValue": "={{ $json.provider_name }}"
+            }
+          ]
+        }
+      },
+      "id": "18a8dc24-8c44-452b-9066-44ed41fab18c",
+      "name": "Get Offers",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -2496,
+        -768
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "ministral-8b-latest",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        -544
+      ],
+      "id": "70babbf1-b944-4135-9c77-765ccfe20f74",
+      "name": "Mistral Cloud Chat Model2",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3:14b",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
-      "position": [-2680, -400],
-      "id": "ollama-model",
-      "name": "Ollama Model",
+      "position": [
+        -1680,
+        -544
+      ],
+      "id": "e48109b0-fbf2-42a8-a3d8-7eceed6af3c0",
+      "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
           "id": "oS2Qqti9oVfsm8XZ",
@@ -81,11 +158,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Generate professional email for project: {{ $('Extract Metadata').first().json.project_name }}\nProvider: {{ $('Extract Metadata').first().json.provider_name }}\nTone: {{ $('Extract Metadata').first().json.tone }}\n\nIssues: {{ JSON.stringify($('Generate Issues').first().json.issues, null, 2) }}\n\nReturn ONLY JSON: {\"subject\": \"...\", \"body\": \"...\"}",
+        "text": "=### INPUT\n\n## PRROYECTO: {{ $('Edit Fields').first().json.project_name }}\n\n## PROVEEDOR: {{ $('Edit Fields').first().json.provider_name }}\n\n## TONO DEL MENSAJE REQUERIDO: {{ $('Edit Fields').first().json.tone }}\n\n## ISSUES: {{ JSON.stringify($json.issues, null, 2) }}\n\n\n\n### FINAL INSTRUCTIONS\nReturn ONLY the JSON object. Do NOT think out loud. Do NOT include any text before or after the JSON.\n",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are an expert Senior Project Engineer. Generate professional emails addressing proposal issues."
+              "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues that need to be addressed.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing:\n   - **Critical**: Iterate through the 'ISSUES' list provided in the input. Group them intelligently (e.g., by Phase or Evaluation Type) to make the email readable.\n   - For each issue, clearly mention the *Requirement* ('requirement' field) and the *Current Status* ('status' field).\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use clean line breaks (\\n) for readability in the JSON string.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any conversational text, explanations, reasoning, thoughts, or technical notes.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n\n### SCHEMA\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here \\n\\n Point 1... \\n Point 2...\"\n}"
             }
           ]
         },
@@ -93,83 +170,89 @@
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
-      "position": [-2440, -400],
-      "id": "generate-email",
-      "name": "Generate Email"
+      "position": [
+        -2048,
+        -768
+      ],
+      "id": "bb1fc506-a116-43da-93a5-f82f309d78b9",
+      "name": "Basic LLM Chain"
     },
     {
       "parameters": {
-        "jsCode": "// Clean LLM response and return proper JSON\nconst response = $input.first().json;\n\nlet subject = 'Proposal Clarifications Required';\nlet body = '';\n\n// Extract from output field if exists\nif (response.output) {\n  try {\n    const parsed = typeof response.output === 'string' ? JSON.parse(response.output) : response.output;\n    subject = parsed.subject || subject;\n    body = parsed.body || '';\n  } catch (e) {\n    body = response.output || '';\n  }\n} else {\n  // Direct response\n  subject = response.subject || subject;\n  body = response.body || '';\n}\n\nreturn {\n  json: {\n    subject: subject.trim(),\n    body: body.trim()\n  }\n};"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [-2200, -400],
-      "id": "clean-response",
-      "name": "Clean Response"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}",
+        "respondWith": "allIncomingItems",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [-1960, -400],
-      "id": "webhook-response",
-      "name": "Response"
+      "position": [
+        -1696,
+        -768
+      ],
+      "id": "009a3688-d4bb-46e2-9c83-695519810cd9",
+      "name": "Respond to Webhook3"
     }
   ],
   "connections": {
-    "Webhook Mail": {
+    "Edit Fields": {
       "main": [
         [
           {
-            "node": "Extract Metadata",
+            "node": "Get Offers",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Extract Metadata": {
+    "Filter and Aggregate Issues": {
       "main": [
         [
           {
-            "node": "Generate Issues",
+            "node": "Basic LLM Chain",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Issues": {
+    "Webhook3": {
       "main": [
         [
           {
-            "node": "Generate Email",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate Email": {
+    "Get Offers": {
       "main": [
         [
           {
-            "node": "Clean Response",
+            "node": "Filter and Aggregate Issues",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Clean Response": {
+    "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
       "main": [
         [
           {
-            "node": "Response",
+            "node": "Respond to Webhook3",
             "type": "main",
             "index": 0
           }
@@ -180,6 +263,6 @@
   "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "mail-workflow-fixed"
+    "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
   }
 }

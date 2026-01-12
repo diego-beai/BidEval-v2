@@ -1,480 +1,388 @@
 {
-    "nodes": [
-        {
-            "parameters": {
-                "content": "## Chat con RFQs - Optimizado",
-                "height": 832,
-                "width": 2016,
-                "color": 3
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [
-                -3408,
-                -2080
-            ],
-            "id": "68ab35b7-ab18-48ba-a8b8-b7cdba8d533f",
-            "name": "Sticky Note4"
-        },
-        {
-            "parameters": {
-                "options": {}
-            },
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1.5,
-            "position": [
-                -1616,
-                -1872
-            ],
-            "id": "e7d77f14-48b5-4acd-947c-737bdcec64b8",
-            "name": "Respond to Webhook5"
-        },
-        {
-            "parameters": {
-                "model": "llama3.2:3b",
-                "options": {
-                    "temperature": 0.2,
-                    "numCtx": 16384,
-                    "numPredict": 512
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-            "typeVersion": 1,
-            "position": [
-                -3072,
-                -1488
-            ],
-            "id": "0f9c0216-72fe-46d2-9da6-6e05b4286133",
-            "name": "Ollama Chat Model3",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Consulta la tabla de evaluación. OBLIGATORIO: Debes generar el argumento 'nombre_requisito' con una palabra clave (ej: '3D model', 'Pricing') basada en la pregunta.",
-                "operation": "executeQuery",
-                "query": "SELECT * FROM rfq_items_master WHERE requisito_rfq ILIKE '%' || $1 || '%';",
-                "options": {
-                    "queryReplacement": "={{ $fromAI('nombre_requisito') }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -2800,
-                -1488
-            ],
-            "id": "13d232fb-3908-4643-9d9a-9e6f30f43655",
-            "name": "consultar_tabla_evaluacion",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "mistral-large-latest",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-            "typeVersion": 1,
-            "position": [
-                -3040,
-                -1648
-            ],
-            "id": "cb0da63d-bca4-4580-ae95-7d5726832587",
-            "name": "Mistral Cloud Chat Model1",
-            "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "chat-rfq",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -3232,
-                -1872
-            ],
-            "id": "a560f202-de15-4f1f-9169-1a3fba4d6240",
-            "name": "Webhook1",
-            "webhookId": "chat-rfq"
-        },
-        {
-            "parameters": {
-                "sessionIdType": "customKey",
-                "sessionKey": "={{ $json.body.sessionId }}"
-            },
-            "id": "c4f50ed0-e6f8-443b-82da-7fb5505fccca",
-            "name": "Postgres Chat Memory",
-            "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
-            "typeVersion": 1,
-            "position": [
-                -2912,
-                -1648
-            ],
-            "notesInFlow": false,
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Use this tool to fetch all available documents, including the table schema if the file is a CSV or Excel file.",
-                "operation": "select",
-                "schema": {
-                    "__rl": true,
-                    "mode": "list",
-                    "value": "public"
-                },
-                "table": {
-                    "__rl": true,
-                    "value": "document_metadata",
-                    "mode": "list",
-                    "cachedResultName": "document_metadata"
-                },
-                "returnAll": true,
-                "options": {}
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -2656,
-                -1648
-            ],
-            "id": "d1a6a079-fbb5-46e1-8400-df93a10bb665",
-            "name": "List Documents",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Given a file ID, fetches the text from the document.",
-                "operation": "executeQuery",
-                "query": "SELECT \n    string_agg(content, ' ') as document_text\nFROM documents\n  WHERE metadata->>'file_id' = $1\nGROUP BY metadata->>'file_id';",
-                "options": {
-                    "queryReplacement": "={{ $fromAI('file_id') }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -2528,
-                -1648
-            ],
-            "id": "6d321665-ba6d-49ea-8ba7-f3b2ce9f582e",
-            "name": "Get File Contents",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Run a SQL query - use this to query from the document_rows table once you know the file ID you are querying. dataset_id is the file_id and you are always using the row_data for filtering, which is a jsonb field that has all the keys from the file schema given in the document_metadata table.\n\nExample query:\n\nSELECT AVG((row_data->>'revenue')::numeric)\nFROM document_rows\nWHERE dataset_id = '123';\n\nExample query 2:\n\nSELECT \n    row_data->>'category' as category,\n    SUM((row_data->>'sales')::numeric) as total_sales\nFROM dataset_rows\nWHERE dataset_id = '123'\nGROUP BY row_data->>'category';",
-                "operation": "executeQuery",
-                "query": "{{ $fromAI('sql_query') }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -2400,
-                -1648
-            ],
-            "id": "fa5304ba-57b1-45d2-a6c6-e1d9f11981e3",
-            "name": "Query Document Rows",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "mode": "retrieve-as-tool",
-                "toolName": "documents",
-                "toolDescription": "Use RAG to look up information in the knowledgebase.",
-                "tableName": {
-                    "__rl": true,
-                    "value": "proposals",
-                    "mode": "list",
-                    "cachedResultName": "proposals"
-                },
-                "topK": 10,
-                "options": {
-                    "queryName": "match_proposals"
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-            "typeVersion": 1,
-            "position": [
-                -2256,
-                -1648
-            ],
-            "id": "0541bf13-ad49-4179-97f8-76ca0f786a45",
-            "name": "consultar_ofertas",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "pI4CpdYLTiEEBmnz",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "qwen3-embedding:8b"
-            },
-            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-            "typeVersion": 1,
-            "position": [
-                -2192,
-                -1440
-            ],
-            "id": "7a6e0f1f-ebeb-4979-833e-309571aecabd",
-            "name": "Embeddings Ollama2",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            },
-            "disabled": true
-        },
-        {
-            "parameters": {
-                "model": "qwen3-embedding:8b"
-            },
-            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-            "typeVersion": 1,
-            "position": [
-                -1904,
-                -1440
-            ],
-            "id": "3e4b9771-0a3e-4e3d-b4e8-f75e63173f72",
-            "name": "Embeddings Ollama",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            },
-            "disabled": true
-        },
-        {
-            "parameters": {
-                "mode": "retrieve-as-tool",
-                "toolName": "documents",
-                "toolDescription": "Use RAG to look up information in the knowledgebase.",
-                "tableName": {
-                    "__rl": true,
-                    "value": "rfq",
-                    "mode": "list",
-                    "cachedResultName": "rfq"
-                },
-                "topK": 10,
-                "options": {
-                    "queryName": "match_rfq"
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-            "typeVersion": 1,
-            "position": [
-                -1984,
-                -1648
-            ],
-            "id": "9961d04c-68b8-4712-a262-5ed76177455c",
-            "name": "consultar_rfqs",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "pI4CpdYLTiEEBmnz",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "={{ $json.body.chatInput }}",
-                "options": {
-                    "systemMessage": "=Eres un asistente experto en analizar ofertas de proveedores (IDOM, SACYR, TR, EA, SENER, TRESCA, WORLEY).\n\nTu tarea es responder preguntas sobre el cumplimiento de requisitos de estos proveedores basándote en la tabla de evaluación.\n\nINSTRUCCIONES:\n1. Usa ALWAYS la herramienta **consultar_tabla_evaluacion** para obtener datos reales.\n2. Busca el requisito específico (ej: '3D model', 'Pricing', 'Schedule').\n3. Localiza la columna del proveedor por el que preguntan.\n4. Responde de forma natural y directa (máximo 3 líneas).\n\nEjemplo:\nUsuario: \"¿Qué dice SENER del modelo 3d?\"\nHerramienta devuelve: { \"requisito_rfq\": \"3D model\", \"SENER\": \"INCLUIDO - IFC | Ref: 4.2\" }\nTu respuesta: \"SENER incluye el modelo 3D en formato IFC, según la sección 4.2 de su propuesta.\"\n\nSi no mencionan proveedor, menciona qué dicen los más relevantes.\nSi no encuentras el requisito, pide una descripción más específica."
-                }
-            },
-            "id": "ce5675c3-bff2-4baf-b4ce-ab84c8366a13",
-            "name": "Chat AI Agent",
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 1.6,
-            "position": [
-                -2672,
-                -1872
-            ]
-        }
-    ],
-    "connections": {
-        "consultar_tabla_evaluacion": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Mistral Cloud Chat Model1": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Webhook1": {
-            "main": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Postgres Chat Memory": {
-            "ai_memory": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_memory",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "List Documents": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Get File Contents": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Query Document Rows": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "consultar_ofertas": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Embeddings Ollama2": {
-            "ai_embedding": [
-                [
-                    {
-                        "node": "consultar_ofertas",
-                        "type": "ai_embedding",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Embeddings Ollama": {
-            "ai_embedding": [
-                [
-                    {
-                        "node": "consultar_rfqs",
-                        "type": "ai_embedding",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "consultar_rfqs": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Chat AI Agent": {
-            "main": [
-                [
-                    {
-                        "node": "Respond to Webhook5",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Chat con RFQs - Optimizado",
+        "height": 832,
+        "width": 2016,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3232,
+        -2032
+      ],
+      "id": "103f97ca-d884-4233-9813-28b869d6627d",
+      "name": "Sticky Note4"
     },
-    "pinData": {},
-    "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1616,
+        -1856
+      ],
+      "id": "ecbb8d1a-0cd3-445c-9976-294e504246c5",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:3b",
+        "options": {
+          "temperature": 0.2,
+          "numCtx": 16384,
+          "numPredict": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -2896,
+        -1424
+      ],
+      "id": "4dda43eb-7996-4e47-b310-c69d91cf5193",
+      "name": "Ollama Chat Model3",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Consulta la tabla de evaluación. OBLIGATORIO: Debes generar el argumento 'nombre_requisito' con una palabra clave (ej: '3D model', 'Pricing') basada en la pregunta.",
+        "operation": "executeQuery",
+        "query": "SELECT * FROM rfq_items_master WHERE requisito_rfq ILIKE '%' || $1 || '%';",
+        "options": {
+          "queryReplacement": "={{ $fromAI('nombre_requisito') }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -2592,
+        -1456
+      ],
+      "id": "de29d694-9355-4a10-8461-16785ce887f8",
+      "name": "consultar_tabla_evaluacion",
+      "credentials": {
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -2656,
+        -1632
+      ],
+      "id": "5a3aba3e-f8c3-4223-8aab-6dad16a022a1",
+      "name": "Mistral Cloud Chat Model1",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-rfq",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2896,
+        -1856
+      ],
+      "id": "07729c7f-c0d6-43ee-8d26-2b256d8c83e1",
+      "name": "Webhook1",
+      "webhookId": "chat-rfq"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.sessionId }}"
+      },
+      "id": "fcdfa0c3-af6f-42e5-9001-6e195abc014f",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1,
+      "position": [
+        -2528,
+        -1632
+      ],
+      "notesInFlow": false,
+      "credentials": {
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to fetch all available documents, including the table schema if the file is a CSV or Excel file.",
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "document_metadata",
+          "mode": "list",
+          "cachedResultName": "document_metadata"
+        },
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        -2400,
+        -1456
+      ],
+      "id": "c436c527-e314-4ecc-8c1b-bd4c673aa533",
+      "name": "List Documents",
+      "credentials": {
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        -1424
+      ],
+      "id": "fc09e693-eec5-4a3c-a230-96cdab8bcee4",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -1904,
+        -1424
+      ],
+      "id": "4af3d6a0-773f-44ac-9322-949d55f79b7e",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "options": {
+          "systemMessage": "=Eres un asistente experto en analizar ofertas de proveedores (IDOM, SACYR, TR, EA, SENER, TRESCA, WORLEY).\n\nTu tarea es responder preguntas sobre el cumplimiento de requisitos de estos proveedores basándote en la tabla de evaluación y documentos adjuntos.\n\nINSTRUCCIONES:\n1. Si necesitas datos estructurados de cumplimiento, usa **consultar_tabla_evaluacion**.\n2. Si necesitas detalles narrativos o texto de las propuestas de los proveedores, usa **consultar_ofertas_proveedores**.\n3. Si necesitas ver los requisitos originales del cliente, usa **consultar_documentos_rfq**.\n4. Responde de forma natural y directa (máximo 3 líneas)."
+        }
+      },
+      "id": "c294a48b-b935-4ad9-ab2b-b363f6271588",
+      "name": "Chat AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        -2464,
+        -1856
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "consultar_ofertas_proveedores",
+        "toolDescription": "Utiliza esta herramienta para buscar información detallada dentro de las propuestas técnicas de los proveedores.",
+        "tableName": {
+          "__rl": true,
+          "value": "proposals",
+          "mode": "list",
+          "cachedResultName": "proposals"
+        },
+        "topK": 10,
+        "options": {
+          "queryName": "match_proposals"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -2272,
+        -1632
+      ],
+      "id": "c109c951-dbd6-41da-baa4-9da6ad6047f7",
+      "name": "Revisar-ofertas",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "consultar_documentos_rfq",
+        "toolDescription": "Utiliza esta herramienta para buscar información en los documentos originales de la petición de oferta (RFQ).",
+        "tableName": {
+          "__rl": true,
+          "value": "rfq",
+          "mode": "list",
+          "cachedResultName": "rfq"
+        },
+        "topK": 10,
+        "options": {
+          "queryName": "match_rfq"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        -1632
+      ],
+      "id": "051bdaa0-3a97-45bf-b19a-302a856bfec2",
+      "name": "Revisar RFQs",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
     }
+  ],
+  "connections": {
+    "Mistral Cloud Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Revisar-ofertas",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Revisar RFQs",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar-ofertas": {
+      "ai_tool": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar RFQs": {
+      "ai_tool": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+  }
 }

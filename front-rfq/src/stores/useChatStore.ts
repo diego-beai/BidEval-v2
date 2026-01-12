@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatMessage, ChatRole, ChatStatus } from '../types/chat.types';
 import { sendChatMessage } from '../services/chat.service';
+import { useSessionViewStore } from './useSessionViewStore';
 
 /**
  * Estado del chat
@@ -97,6 +98,9 @@ export const useChatStore = create<ChatState>()(
               // Incrementar unread si el chat está cerrado
               unreadCount: currentState.isOpen ? state.unreadCount : state.unreadCount + 1
             }));
+
+            // Notificar que hay contenido nuevo en el chat
+            useSessionViewStore.getState().updateContent('chat');
 
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';

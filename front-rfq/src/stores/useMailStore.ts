@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
+import { useSessionViewStore } from './useSessionViewStore';
 
 // Interface Issue removed as it was unused
 
@@ -36,7 +37,8 @@ interface MailState {
 
 export const useMailStore = create<MailState>()(
     devtools(
-        (set) => ({
+        persist(
+            (set) => ({
             subject: '',
             body: '',
             isGenerating: false,
@@ -145,6 +147,9 @@ export const useMailStore = create<MailState>()(
                         error: null
                     });
 
+                    // Notificar que hay contenido nuevo en mail
+                    useSessionViewStore.getState().updateContent('mail');
+
                 } catch (error) {
                     console.error('Error generating mail:', error);
                     set({
@@ -155,6 +160,15 @@ export const useMailStore = create<MailState>()(
                 }
             }
         }),
-        { name: 'MailStore' }
-    )
+        {
+            name: 'mail-storage',
+            partialize: (state) => ({
+                subject: state.subject,
+                body: state.body,
+                hasGenerated: state.hasGenerated
+            })
+        }
+    ),
+    { name: 'MailStore' }
+  )
 );

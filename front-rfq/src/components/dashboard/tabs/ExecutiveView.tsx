@@ -455,20 +455,6 @@ export const ExecutiveView: React.FC = () => {
                             {t('executive.radar.subtitle')}
                         </div>
                     </div>
-                    <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '12px',
-                        background: 'var(--color-primary)20',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--color-primary)'
-                    }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                    </div>
                 </div>
                 <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -555,9 +541,6 @@ export const ExecutiveView: React.FC = () => {
                 animation: 'fadeInUp 0.5s ease-out 0.2s backwards'
             }}>
                 <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                     marginBottom: '24px'
                 }}>
                     <div>
@@ -571,22 +554,6 @@ export const ExecutiveView: React.FC = () => {
                         }}>
                             {t('executive.bar.subtitle')}
                         </div>
-                    </div>
-                    <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '12px',
-                        background: 'var(--color-cyan)20',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--color-cyan)'
-                    }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="12" y1="20" x2="12" y2="10"></line>
-                            <line x1="18" y1="20" x2="18" y2="4"></line>
-                            <line x1="6" y1="20" x2="6" y2="16"></line>
-                        </svg>
                     </div>
                 </div>
                 <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
@@ -680,9 +647,6 @@ export const ExecutiveView: React.FC = () => {
                 animation: 'fadeInUp 0.5s ease-out 0.3s backwards'
             }}>
                 <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                     marginBottom: '24px'
                 }}>
                     <div>
@@ -696,21 +660,6 @@ export const ExecutiveView: React.FC = () => {
                         }}>
                             Scoring impact by category
                         </div>
-                    </div>
-                    <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '12px',
-                        background: 'var(--color-success)20',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--color-success)'
-                    }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                        </svg>
                     </div>
                 </div>
                 <div style={{ flex: 1, width: '100%', minHeight: '350px', display: 'flex', alignItems: 'center' }}>
