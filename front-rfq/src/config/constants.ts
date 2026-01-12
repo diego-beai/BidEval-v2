@@ -4,16 +4,18 @@ import { Provider } from '../types/provider.types';
  * Configuración de API y endpoints
  */
 export const API_CONFIG = {
-  // URL del webhook de ofertas de proveedores (siempre externo)
-  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/ofertas-proveedores',
-  // URL del webhook de ingesta de RFQ base del cliente (siempre externo)
-  N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
-  // URL del webhook de chat de n8n (siempre externo)
-  N8N_CHAT_URL: import.meta.env.DEV ? '/api/n8n/chat' : (import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/chat-rfq'),
-  // URL del webhook para ver tabla adicional
-  N8N_TABLA_URL: import.meta.env.VITE_N8N_TABLA_URL || 'https://n8n.beaienergy.com/webhook/tabla',
-  // URL del webhook para generar auditoría técnica Q&A
-  N8N_QA_AUDIT_URL: import.meta.env.VITE_N8N_QA_AUDIT_URL || 'https://n8n.beaienergy.com/webhook-test/qa-audit-generator',
+  // URL del webhook de ofertas de proveedores (usa proxy en desarrollo)
+  N8N_WEBHOOK_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/ofertas-proveedores' : (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook-test/ofertas-proveedores'),
+  // URL del webhook de ingesta de RFQ base del cliente (usa proxy en desarrollo)
+  N8N_RFQ_INGESTA_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq' : (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq'),
+  // URL del webhook de chat de n8n (usa proxy en desarrollo)
+  N8N_CHAT_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/chat-rfq' : (import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/chat-rfq'),
+  // URL del webhook para ver tabla adicional (usa proxy en desarrollo)
+  N8N_TABLA_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/tabla' : (import.meta.env.VITE_N8N_TABLA_URL || 'https://n8n.beaienergy.com/webhook/tabla'),
+  // URL del webhook para el generador de correos (usa proxy en desarrollo)
+  N8N_MAIL_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/mail' : (import.meta.env.VITE_N8N_MAIL_URL || 'https://n8n.beaienergy.com/webhook-test/mail'),
+  // URL del webhook para generar auditoría técnica Q&A (usa proxy en desarrollo)
+  N8N_QA_AUDIT_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/qa-audit-generator' : (import.meta.env.VITE_N8N_QA_AUDIT_URL || 'https://n8n.beaienergy.com/webhook-test/qa-audit-generator'),
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto (procesamiento de PDFs puede tardar hasta 30 min)
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_FILE_TYPES: ['application/pdf'],

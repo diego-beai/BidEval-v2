@@ -23,6 +23,42 @@ export default defineConfig({
         secure: false,
         rewrite: () => '',
       },
+      '/api/n8n/tabla': {
+        target: 'https://n8n.beaienergy.com/webhook/tabla',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/ofertas': {
+        target: 'https://n8n.beaienergy.com/webhook-test/ofertas-proveedores',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/ingesta-rfq': {
+        target: 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/mail': {
+        target: 'https://n8n.beaienergy.com/webhook-test/mail',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/qa-audit': {
+        target: 'https://n8n.beaienergy.com/webhook-test/qa-audit-generator',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/proposals': {
+        target: 'https://n8n.beaienergy.com/webhook-test/proposals-evaluations',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
     }
   },
   build: {

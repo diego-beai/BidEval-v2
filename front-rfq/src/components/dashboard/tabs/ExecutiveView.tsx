@@ -92,10 +92,10 @@ export const ExecutiveView: React.FC = () => {
     };
 
     return (
-        <div className="executive-layout">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
             {/* Top Section: Winner & Stats */}
-            <div style={{ gridColumn: '1 / -1', marginBottom: '32px' }}>
+            <div>
                 <div style={{
                     background: 'linear-gradient(135deg, var(--color-primary), var(--color-cyan))',
                     borderRadius: 'var(--radius-lg)',
@@ -425,8 +425,10 @@ export const ExecutiveView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Radar Chart */}
-            <div className="widget-card" style={{
+            {/* Charts Row - 3 gráficos en fila */}
+            <div className="charts-row-container">
+                {/* Radar Chart */}
+                <div className="widget-card" style={{
                 minHeight: '480px',
                 display: 'flex',
                 flexDirection: 'column',
@@ -788,6 +790,7 @@ export const ExecutiveView: React.FC = () => {
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
+            </div>
             </div>
         </div>
     );

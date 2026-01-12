@@ -3,6 +3,9 @@ import { devtools } from 'zustand/middleware';
 import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/rfq.types';
 import { Provider } from '../types/provider.types';
 import { RfqMetadata } from '../components/upload/RfqMetadataForm';
+import { API_CONFIG } from '../config/constants';
+import { supabase } from '../lib/supabase';
+import { useToastStore } from './useToastStore';
 
 /**
  * Información de la RFQ base del cliente
@@ -16,8 +19,8 @@ interface RfqBaseInfo {
 
 export interface TableFilters {
   project_name: string;
-  evaluation: string[];
-  requisito_rfq: string[];
+  evaluation_type: string[];
+  phase: string[];
   provider: string[];
   rfqSearch: string;
 }
@@ -58,6 +61,12 @@ interface RfqState {
   // Results state
   rawResults: RfqItem[] | null;
   results: RfqResult[] | null;
+  // Table data from webhook
+  tableData: any[];
+  proposalEvaluations: any[];
+  pivotTableData: any[];
+  providerRanking: any[];
+  projects: string[];
 
   // Error state
   error: string | null;
@@ -68,6 +77,16 @@ interface RfqState {
   setResults: (results: RfqItem[], message?: string) => void;
   setError: (error: string | null) => void;
   reset: () => void;
+
+  // Dashboard Actions
+  fetchProjects: () => Promise<void>;
+  fetchAllData: () => Promise<void>;
+  fetchAllTableData: () => Promise<void>;
+  fetchDataByProject: (projectName: string) => Promise<void>;
+  fetchProposalEvaluations: () => Promise<void>;
+  refreshProposalEvaluations: () => Promise<void>;
+  fetchPivotTableData: () => Promise<void>;
+  fetchProviderRanking: () => Promise<void>;
 
   // Table Action State
   applyTableFilters: boolean;
@@ -146,6 +165,11 @@ export const useRfqStore = create<RfqState>()(
       status: initialStatus,
       rawResults: null,
       results: null,
+      tableData: [],
+      proposalEvaluations: [],
+      pivotTableData: [],
+      providerRanking: [],
+      projects: [],
       error: null,
       rfqBase: null,
       isProcessingRfqBase: false,
@@ -157,8 +181,8 @@ export const useRfqStore = create<RfqState>()(
       setApplyTableFilters: (val) => set({ applyTableFilters: val }),
       tableFilters: {
         project_name: '',
-        evaluation: [],
-        requisito_rfq: [],
+        evaluation_type: [],
+        phase: [],
         provider: [],
         rfqSearch: ''
       },
@@ -205,17 +229,24 @@ export const useRfqStore = create<RfqState>()(
       clearSelectedRfqBaseFiles: () => set({ selectedRfqBaseFiles: [] }),
 
       // RFQ Base actions
-      setRfqBase: (rfqBase, message?: string) => set({
-        rfqBase,
-        isProcessingRfqBase: false,
-        rfqBaseError: null,
-        selectedRfqBaseFiles: [],
-        rfqBaseStatus: {
-          stage: ProcessingStage.COMPLETED,
-          progress: 100,
-          message: message || 'Base RFQ processed successfully!'
-        }
-      }),
+      setRfqBase: (rfqBase, message?: string) => {
+        // Agregar notificación toast de éxito para RFQ base
+        const { addToast } = useToastStore.getState();
+        const toastMessage = `✅ Base RFQ processed successfully!\n📄 ${rfqBase.fileName}\n🏷️ Types: ${rfqBase.tiposProcesados.join(', ')}`;
+        addToast(toastMessage, 'success');
+
+        set({
+          rfqBase,
+          isProcessingRfqBase: false,
+          rfqBaseError: null,
+          selectedRfqBaseFiles: [],
+          rfqBaseStatus: {
+            stage: ProcessingStage.COMPLETED,
+            progress: 100,
+            message: message || 'Base RFQ processed successfully!'
+          }
+        });
+      },
 
       clearRfqBase: () => set({
         rfqBase: null,
@@ -251,15 +282,21 @@ export const useRfqStore = create<RfqState>()(
         });
       },
 
-      setRfqBaseError: (error) => set({
-        rfqBaseError: error,
-        isProcessingRfqBase: false,
-        rfqBaseStatus: error ? {
-          stage: ProcessingStage.ERROR,
-          progress: 0,
-          message: error
-        } : initialStatus
-      }),
+      setRfqBaseError: (error) => {
+        // Agregar notificación toast de error para RFQ base
+        const { addToast } = useToastStore.getState();
+        addToast(`❌ RFQ Base processing failed: ${error}`, 'error');
+
+        set({
+          rfqBaseError: error,
+          isProcessingRfqBase: false,
+          rfqBaseStatus: error ? {
+            stage: ProcessingStage.ERROR,
+            progress: 0,
+            message: error
+          } : initialStatus
+        });
+      },
 
       startProcessing: (simulate = true) => {
         const fileCount = get().selectedFiles.length;
@@ -298,6 +335,21 @@ export const useRfqStore = create<RfqState>()(
 
         get().stopSimulation();
 
+        // Agregar notificación toast de éxito
+        const { addToast } = useToastStore.getState();
+        const evaluationTypes = [...new Set(transformedResults.map(r => r.evaluation))];
+        const providers = [...new Set(transformedResults.flatMap(r => Object.keys(r.evaluations)))];
+        
+        let toastMessage = `✅ ${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} processed successfully!`;
+        if (evaluationTypes.length > 0) {
+          toastMessage += `\n📊 Evaluation types: ${evaluationTypes.join(', ')}`;
+        }
+        if (providers.length > 0) {
+          toastMessage += `\n🏢 Providers: ${providers.length} evaluated`;
+        }
+        
+        addToast(toastMessage, 'success');
+
         set({
           rawResults,
           results: transformedResults,
@@ -313,6 +365,11 @@ export const useRfqStore = create<RfqState>()(
 
       setError: (error) => {
         get().stopSimulation();
+        
+        // Agregar notificación toast de error
+        const { addToast } = useToastStore.getState();
+        addToast(`❌ Processing failed: ${error}`, 'error');
+
         set({
           error,
           isProcessing: false,
@@ -323,6 +380,356 @@ export const useRfqStore = create<RfqState>()(
             message: error
           } : initialStatus
         });
+      },
+
+      fetchAllTableData: async () => {
+        set({ isProcessing: true, error: null });
+        try {
+          // El webhook de n8n simplemente devuelve todos los datos de rfq_items_master
+          // No procesa parámetros, solo hace getAll de Supabase
+          const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
+            method: 'GET', // Cambiar a GET ya que el webhook no procesa body
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            // Procesar datos para extraer proyectos únicos
+            const projectNames = data.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
+            const projectList = [...new Set(projectNames)];
+            set({ projects: projectList });
+
+            // Guardar todos los datos en tableData
+            set({ tableData: data });
+            console.log('Table data loaded from n8n:', data.length, 'items');
+          } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        } catch (err: any) {
+          console.error('Error fetching table data from n8n:', err);
+          // Si falla n8n, intentar usar Supabase directamente
+          if (supabase) {
+            try {
+              console.log('Attempting fallback to direct Supabase connection...');
+              const { data: fallbackData, error: fallbackError } = await supabase
+                .from('rfq_items_master')
+                .select('*')
+                .limit(1000);
+
+              if (fallbackError) {
+                throw new Error(`Supabase fallback failed: ${fallbackError.message}`);
+              }
+
+              const projectNames = fallbackData?.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[] || [];
+              const projectList = [...new Set(projectNames)];
+              
+              set({ 
+                tableData: fallbackData || [], 
+                projects: projectList,
+                error: null 
+              });
+              console.log('Fallback successful: loaded', fallbackData?.length, 'items from Supabase');
+            } catch (fallbackErr: any) {
+              console.error('Supabase fallback also failed:', fallbackErr);
+              get().setError(`Connection failed: Both n8n and Supabase unavailable. ${err.message}`);
+            }
+          } else {
+            get().setError(`Connection failed: n8n unavailable and Supabase not configured. ${err.message}`);
+          }
+        } finally {
+          set({ isProcessing: false });
+        }
+      },
+
+        fetchProposalEvaluations: async () => {
+        set({ isProcessing: true, error: null });
+        try {
+          // Intentar obtener datos de provider_responses desde Supabase
+          if (supabase) {
+            try {
+              // Obtener todas las evaluaciones de proveedores
+              const { data: responsesData, error: responsesError } = await supabase
+                .from('provider_responses')
+                .select(`
+                  id,
+                  requirement_id,
+                  provider_name,
+                  evaluation_value,
+                  comment,
+                  score,
+                  file_id,
+                  updated_at
+                `)
+                .order('updated_at', { ascending: false });
+
+              if (responsesError) {
+                throw new Error(`Supabase error fetching responses: ${responsesError.message}`);
+              }
+
+              // Usar los datos ya cargados en tableData si están disponibles
+              const rfqData = get().tableData || [];
+              const rfqMap = new Map();
+              rfqData.forEach((rfq: any) => {
+                rfqMap.set(rfq.id, rfq);
+              });
+
+              // Transformar los datos para que tengan la estructura esperada
+              const transformedData = (responsesData as any)?.map((item: any) => {
+                const rfqInfo = rfqMap.get(item.requirement_id);
+
+                return {
+                  id: item.id,
+                  requirement_id: item.requirement_id,
+                  provider_name: item.provider_name,
+                  evaluation_value: item.evaluation_value,
+                  comment: item.comment,
+                  score: item.score,
+                  file_id: item.file_id,
+                  updated_at: item.updated_at,
+                  project_name: rfqInfo?.project_name || '',
+                  evaluation_type: rfqInfo?.evaluation_type,
+                  phase: rfqInfo?.phase,
+                  requirement_text: rfqInfo?.requirement_text,
+                  file_title: '',
+                  document_type: 'PROPOSAL'
+                };
+              }) || [];
+
+              set({ proposalEvaluations: transformedData });
+              console.log('Proposal evaluations loaded from Supabase:', transformedData.length, 'items');
+              return;
+            } catch (supabaseError: any) {
+              console.warn('Supabase connection failed, using fallback:', supabaseError.message);
+            }
+          }
+
+          // Fallback: usar datos mock si no hay conexión a Supabase
+          console.log('Using mock data for proposal evaluations (no Supabase connection)');
+          const mockData = [
+            {
+              id: 'mock-1',
+              requirement_id: 'mock-req-1',
+              provider_name: 'TECNICASREUNIDAS',
+              evaluation_value: '8.5/10',
+              comment: 'Good technical solution',
+              score: 8.5,
+              file_id: 'mock-file-1',
+              updated_at: new Date().toISOString(),
+              project_name: 'Hydrogen Production Plant – La Zaida, Spain',
+              evaluation_type: 'Technical',
+              phase: 'FEED',
+              requirement_text: 'System Efficiency (BOP)',
+              file_title: 'TR_Proposal.pdf',
+              document_type: 'PROPOSAL'
+            },
+            {
+              id: 'mock-2',
+              requirement_id: 'mock-req-2',
+              provider_name: 'IDOM',
+              evaluation_value: '9.0/10',
+              comment: 'Excellent efficiency',
+              score: 9.0,
+              file_id: 'mock-file-2',
+              updated_at: new Date().toISOString(),
+              project_name: 'Hydrogen Production Plant – La Zaida, Spain',
+              evaluation_type: 'Technical',
+              phase: 'FEED',
+              requirement_text: 'System Efficiency (BOP)',
+              file_title: 'IDOM_Proposal.pdf',
+              document_type: 'PROPOSAL'
+            }
+          ];
+
+          set({ proposalEvaluations: mockData });
+          console.log('Proposal evaluations loaded from mock data:', mockData.length, 'items');
+        } catch (err: any) {
+          console.error('Error fetching proposal evaluations:', err);
+          get().setError(err.message || 'Error loading proposal evaluations');
+        } finally {
+          set({ isProcessing: false });
+        }
+      },
+
+      refreshProposalEvaluations: async () => {
+        if (!supabase) {
+          console.error('Supabase not configured');
+          return;
+        }
+
+        try {
+          // Obtener todas las evaluaciones de proveedores
+          const { data: responsesData, error: responsesError } = await supabase
+            .from('provider_responses')
+            .select(`
+              id,
+              requirement_id,
+              provider_name,
+              evaluation_value,
+              comment,
+              score,
+              file_id,
+              updated_at
+            `)
+            .order('updated_at', { ascending: false });
+
+          if (responsesError) {
+            throw new Error(`Supabase error refreshing responses: ${responsesError.message}`);
+          }
+
+          // Obtener información de rfq_items_master para todos los requisitos
+          const requirementIds = [...new Set((responsesData as any)?.map((item: any) => item.requirement_id).filter(Boolean) || [])];
+          const { data: rfqData, error: rfqError } = await supabase
+            .from('rfq_items_master')
+            .select('id, evaluation_type, phase, requirement_text')
+            .in('id', requirementIds);
+
+          if (rfqError) {
+            throw new Error(`Supabase error refreshing RFQ data: ${rfqError.message}`);
+          }
+
+          // Crear mapa de RFQ items
+          const rfqMap = new Map();
+          (rfqData as any)?.forEach((rfq: any) => {
+            rfqMap.set(rfq.id, rfq);
+          });
+
+          // Transformar los datos para que tengan la estructura esperada
+          const transformedData = (responsesData as any)?.map((item: any) => {
+            const rfqInfo = rfqMap.get(item.requirement_id);
+
+            return {
+              id: item.id,
+              requirement_id: item.requirement_id,
+              provider_name: item.provider_name,
+              evaluation_value: item.evaluation_value,
+              comment: item.comment,
+              score: item.score,
+              file_id: item.file_id,
+              updated_at: item.updated_at,
+              project_name: '', // No tenemos esta información sin hacer queries adicionales
+              evaluation_type: rfqInfo?.evaluation_type,
+              phase: rfqInfo?.phase,
+              requirement_text: rfqInfo?.requirement_text,
+              file_title: '', // No tenemos esta información
+              document_type: 'PROPOSAL' // Asumimos que son propuestas
+            };
+          }) || [];
+
+          set({ proposalEvaluations: transformedData });
+          console.log('Proposal evaluations refreshed:', transformedData.length, 'items');
+        } catch (err: any) {
+          console.error('Error refreshing proposal evaluations:', err);
+        }
+      },
+
+      fetchPivotTableData: async () => {
+        if (!supabase) {
+          console.error('Supabase not configured');
+          return;
+        }
+
+        set({ isProcessing: true, error: null });
+
+        try {
+          // Obtener todas las evaluaciones de proveedores con su información de RFQ
+          const { data: responsesData, error: responsesError } = await supabase
+            .from('provider_responses')
+            .select(`
+              requirement_id,
+              provider_name,
+              evaluation_value,
+              comment,
+              rfq_items_master (
+                id,
+                project_name,
+                evaluation_type,
+                phase,
+                requirement_text,
+                created_at
+              )
+            `)
+            .order('updated_at', { ascending: false });
+
+          if (responsesError) {
+            throw new Error(`Supabase error fetching responses: ${responsesError.message}`);
+          }
+
+          // Filtrar solo evaluaciones que tienen información de RFQ completa
+          const validResponses = (responsesData as any)?.filter((response: any) =>
+            response.rfq_items_master
+          ) || [];
+
+          // Crear mapa de requisitos únicos con sus evaluaciones
+          const requirementsMap = new Map();
+
+          validResponses.forEach((response: any) => {
+            const rfq = response.rfq_items_master;
+            const reqId = rfq.id;
+
+            if (!requirementsMap.has(reqId)) {
+              requirementsMap.set(reqId, {
+                id: reqId,
+                project_name: rfq.project_name,
+                evaluation_type: rfq.evaluation_type,
+                phase: rfq.phase,
+                requirement_text: rfq.requirement_text,
+                created_at: rfq.created_at,
+                evaluations: {}
+              });
+            }
+
+            // Agregar evaluación del proveedor
+            const providerKey = response.provider_name;
+            const evaluationText = response.evaluation_value && response.comment
+              ? `${response.evaluation_value} - ${response.comment}`
+              : response.evaluation_value || response.comment || '';
+
+            requirementsMap.get(reqId).evaluations[providerKey] = evaluationText;
+          });
+
+          // Convertir a array
+          const pivotData = Array.from(requirementsMap.values()).map((req: any) => ({
+            id: req.id,
+            project_name: req.project_name,
+            evaluation_type: req.evaluation_type,
+            phase: req.phase,
+            requirement_text: req.requirement_text,
+            created_at: req.created_at,
+            ...req.evaluations // Expandir las evaluaciones de proveedores como columnas
+          }));
+
+          const projectNames = pivotData
+            .map((item: any) => item.project_name)
+            .filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
+          const projectList = [...new Set(projectNames)];
+
+          set({ pivotTableData: pivotData, projects: projectList });
+          console.log('Pivot table data loaded:', pivotData.length, 'requirements');
+
+        } catch (err: any) {
+          console.error('Error fetching pivot table data:', err);
+          get().setError(err.message || 'Error loading pivot table data');
+        } finally {
+          set({ isProcessing: false });
+        }
+      },
+
+      // Método obsoleto - mantener por compatibilidad pero usar fetchAllTableData
+      fetchProjects: async () => {
+        await get().fetchAllTableData();
+      },
+
+      // Método obsoleto - mantener por compatibilidad pero usar fetchAllTableData con filtrado cliente
+      fetchDataByProject: async (_projectName: string) => {
+        // Primero obtener todos los datos
+        await get().fetchAllTableData();
+        // El filtrado se hará del lado del cliente en el componente
+      },
+
+      // Método obsoleto - mantener por compatibilidad
+      fetchAllData: async () => {
+        await get().fetchAllTableData();
       },
 
       simulationInterval: null,
@@ -382,6 +789,34 @@ export const useRfqStore = create<RfqState>()(
         }
       },
 
+      fetchProviderRanking: async () => {
+        if (!supabase) {
+          console.error('Supabase not configured');
+          return;
+        }
+
+        try {
+          const { data, error } = await supabase
+            .from('ranking_proveedores')
+            .select('*')
+            .order('cumplimiento_porcentual', { ascending: false, nullsFirst: false });
+
+          if (error) {
+            throw new Error(`Supabase error: ${error.message}`);
+          }
+
+          set({ providerRanking: data || [] });
+          console.log('Provider ranking loaded:', data?.length, 'records');
+          if (!data || data.length === 0) {
+            console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores for the current client.');
+          } else {
+            console.log('Provider ranking sample:', data[0]);
+          }
+        } catch (err: any) {
+          console.error('Error fetching provider ranking:', err);
+        }
+      },
+
       reset: () => set({
         selectedFiles: [],
         isProcessing: false,
@@ -389,6 +824,10 @@ export const useRfqStore = create<RfqState>()(
         status: initialStatus,
         rawResults: null,
         results: null,
+        tableData: [],
+        proposalEvaluations: [],
+        pivotTableData: [],
+        providerRanking: [],
         error: null,
         rfqMetadata: {
           proyecto: '',

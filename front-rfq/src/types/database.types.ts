@@ -13,6 +13,32 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      projects: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          description?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       QA_PENDIENTE: {
         Row: {
           id: string
@@ -54,9 +80,65 @@ export interface Database {
           notas_internas?: string | null
         }
       }
+      ranking_proveedores: {
+        Row: {
+          id: string
+          provider_name: string
+          project_id: string | null
+          cumplimiento_porcentual: number | null
+          technical_score: number | null
+          economical_score: number | null
+          pre_feed_score: number | null
+          feed_score: number | null
+          overall_score: number | null
+          evaluation_count: number
+          last_updated: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider_name: string
+          project_id?: string | null
+          cumplimiento_porcentual?: number | null
+          technical_score?: number | null
+          economical_score?: number | null
+          pre_feed_score?: number | null
+          feed_score?: number | null
+          overall_score?: number | null
+          evaluation_count?: number
+          last_updated?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider_name?: string
+          project_id?: string | null
+          cumplimiento_porcentual?: number | null
+          technical_score?: number | null
+          economical_score?: number | null
+          pre_feed_score?: number | null
+          feed_score?: number | null
+          overall_score?: number | null
+          evaluation_count?: number
+          last_updated?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
-      [_ in never]: never
+      v_projects_with_stats: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          description?: string | null
+          created_at: string
+          updated_at: string
+          document_count: number
+          requirement_count: number
+          qa_count: number
+        }
+      }
     }
     Functions: {
       [_ in never]: never
@@ -69,6 +151,6 @@ export interface Database {
   }
 }
 
-export type Disciplina = 'Eléctrica' | 'Mecánica' | 'Civil' | 'Proceso' | 'General'
-export type EstadoPregunta = 'Borrador' | 'Pendiente' | 'Aprobada' | 'Enviada' | 'Respondida' | 'Descartada'
-export type Importancia = 'Alta' | 'Media' | 'Baja'
+export type Disciplina = 'Electrical' | 'Mechanical' | 'Civil' | 'Process' | 'General' | 'Cost'
+export type EstadoPregunta = 'Draft' | 'Pending' | 'Approved' | 'Sent' | 'Answered' | 'Discarded'
+export type Importancia = 'High' | 'Medium' | 'Low'

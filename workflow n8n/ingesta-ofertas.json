@@ -1,2724 +1,1381 @@
 {
-    "nodes": [
-        {
-            "parameters": {
-                "jsCode": "// Esto borra cualquier dato residual del loop y dispara el siguiente nodo 1 sola vez\nreturn [{}];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -320,
-                -1952
-            ],
-            "id": "19747220-31da-4f6c-9b91-1aa4a928d014",
-            "name": "Reset de valores"
-        },
-        {
-            "parameters": {
-                "operation": "get",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "returnAll": true
-            },
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1.1,
-            "position": [
-                -80,
-                -1952
-            ],
-            "id": "2b262425-0365-48c4-89a5-73107c92c135",
-            "name": "Get row(s)"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Generate Stable ID + Detectar Modo (NOMBRES CORRECTOS)\n// =============================================\n\nfunction simpleHash(str) {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    const char = str.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  return Math.abs(hash).toString(16).padStart(16, '0').substring(0, 16);\n}\n\nconst body = $json.body;\n\n// CAMPOS EXISTENTES\nconst originalFileId = body.file_id || \"unknown\";\nconst fileTitle = body.file_title || \"unknown.pdf\";\nconst fileBinary = body.file_binary || \"\";\nconst fileUrl = body.file_url || \"unknown\";\n\n// ✅ EXTRAER METADATA DEL USUARIO (NOMBRES CORRECTOS)\nconst metadata = body.metadata || {};\nconst rfqProjectId = metadata.proyect_name || null;        // ← proyect_name\nconst userProveedor = metadata.proveedor || null;          // ← proveedor\nconst userTipoEval = metadata.evaluation || null;          // ← evaluation (Array)\n\n// ✅ DETERMINAR MODO DE OPERACIÓN\nlet modoOperacion = \"CLASIFICADOR\"; // Por defecto\nlet datosCompletos = false;\n\n// Verificar si tiene datos suficientes para VALIDACIÓN\nif (userProveedor && userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0) {\n    modoOperacion = \"VALIDADOR\";\n    datosCompletos = true;\n} else if (userProveedor || (userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0)) {\n    modoOperacion = \"HIBRIDO\"; // Tiene algunos datos pero no todos\n}\n\n// Generar ID estable del archivo\nconst normalizedTitle = fileTitle.toLowerCase().trim();\nconst stableId = simpleHash(normalizedTitle);\n\n// LOGGING\nconsole.log(\"=== ANÁLISIS DE METADATA ===\");\nconsole.log(`Modo Operación: ${modoOperacion}`);\nconsole.log(`RFQ Project Name: ${rfqProjectId || 'No especificado'}`);\nconsole.log(`Proveedor (Usuario): ${userProveedor || 'No especificado'}`);\nconsole.log(`Evaluation (Usuario): ${JSON.stringify(userTipoEval) || 'No especificado'}`);\nconsole.log(`Datos Completos: ${datosCompletos}`);\nconsole.log(`Original ID: ${originalFileId}`);\nconsole.log(`Nombre archivo: ${fileTitle}`);\nconsole.log(`ID ESTABLE generado: ${stableId}`);\n\n// RETORNO\nreturn {\n  json: {\n    // Datos directos en raíz\n    file_id: stableId,\n    file_id_original: originalFileId,\n    file_title: fileTitle,\n    file_binary: fileBinary,\n    file_url: fileUrl,\n    \n    rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n    user_proveedor: userProveedor,\n    user_tipo_evaluacion: userTipoEval,\n    modo_operacion: modoOperacion,\n    datos_usuario_completos: datosCompletos,\n    \n    // Mantener body completo\n    body: {\n      ...body,\n      file_id: stableId,\n      file_id_original: originalFileId,\n      rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n      user_proveedor: userProveedor,\n      user_tipo_evaluacion: userTipoEval,\n      modo_operacion: modoOperacion,\n      datos_usuario_completos: datosCompletos\n    }\n  }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -672,
-                -912
-            ],
-            "id": "d9eebe8b-cd93-4944-9d18-b3bf3ae7c1ae",
-            "name": "Code in JavaScript1"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1104,
-                -1024
-            ],
-            "id": "cb468c4a-7b95-4e88-8559-2dfe9021bafd",
-            "name": "Base64 a Binary1"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                96,
-                -912
-            ],
-            "id": "ca7f8a68-3e47-420a-89fe-14a06f4d1976",
-            "name": "Base64 a Binary"
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "06112853-3271-42d6-92e1-0e38835a67a9",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -912,
-                -912
-            ],
-            "id": "a8e084ea-9a6a-4e2f-a8d9-18c92765cd82",
-            "name": "Webhook",
-            "webhookId": "06112853-3271-42d6-92e1-0e38835a67a9"
-        },
-        {
-            "parameters": {
-                "respondWith": "allIncomingItems",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1.5,
-            "position": [
-                192,
-                -1952
-            ],
-            "id": "7b684bb9-9da3-4d05-9d69-ac24c140ba4f",
-            "name": "Respond to Webhook"
-        },
-        {
-            "parameters": {
-                "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n    json: {\n        ...item.json, // Mantiene todos los datos originales (incluido tipo_evaluacion)\n        \n        // Aquí está la corrección: Usamos dos puntos, no el igual.\n        reiniciar_bucle: true \n    }\n}));\n"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                112,
-                -1744
-            ],
-            "id": "8c0b8383-01a0-4fbe-88be-8be6a3204735",
-            "name": "Reset Items"
-        },
-        {
-            "parameters": {},
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [
-                1776,
-                -912
-            ],
-            "id": "7a5937bd-f705-4571-8be7-7b5e896baf39",
-            "name": "Merge1"
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"proveedor_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa proveedora (Ej: SACYR, IDOM, etc.)\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"Technical Evaluation\",\n          \"Economical Evaluation\",\n          \"Pre-FEED Deliverables\",\n          \"FEED Deliverables\"\n        ]\n      },\n      \"description\": \"Lista de tipos de oferta detectados en el documento.\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\",\n      \"description\": \"Breve explicación de por qué se eligieron esos tipos.\"\n    }\n  },\n  \"required\": [\n    \"proveedor_detectado\",\n    \"tipos_detectados\"\n  ]\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                2624,
-                -512
-            ],
-            "id": "77f95133-4281-4e02-9597-53400732ad23",
-            "name": "Structured Output Parser"
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://unlaconic-ardelle-pretenceful.ngrok-free.dev/v1/convert/file",
-                "sendBody": true,
-                "contentType": "multipart-form-data",
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "parameterType": "formBinaryData",
-                            "name": "files",
-                            "inputDataFieldName": "data"
-                        }
-                    ]
-                },
-                "options": {
-                    "timeout": 300000
-                }
-            },
-            "id": "1b6e2722-4a35-4927-85d9-1ce04edfad1c",
-            "name": "Docling OCR",
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.3,
-            "position": [
-                1312,
-                -1120
-            ],
-            "retryOnFail": true
-        },
-        {
-            "parameters": {
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitInBatches",
-            "typeVersion": 3,
-            "position": [
-                -496,
-                -1696
-            ],
-            "id": "d5fa3cd2-a00c-43dd-8b0c-cd480d65b818",
-            "name": "Loop Over Items1"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Expandir por Tipo de Evaluación (v2 - Valida Metadatos)\n// =============================================\n\n// 1. RECUPERAR TEXTO Y CONTENIDO BASE\nlet fullText = \"\";\nlet totalPages = 1;\ntry {\n    const mergeData = $('Merge1').first().json;\n    fullText = (mergeData.pages && mergeData.pages[0]) \n        ? mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\") \n        : (mergeData.text || \"\");\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.error(\"❌ Error leyendo Merge1\");\n}\n\n// 2. RECUPERAR DATOS VALIDADOS PRIORITARIAMENTE\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet projectName = \"proyecto_sin_especificar\";\n\ntry {\n    let llmNode = null;\n    try { llmNode = $('Validador de Ofertas').first().json; } catch(e) {}\n    if (!llmNode) { try { llmNode = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json; } catch(e) {} }\n\n    if (llmNode) {\n        const data = llmNode.output || llmNode;\n        proveedor = data.proveedor_detectado || proveedor;\n        tipoEval = data.tipos_detectados || tipoEval;\n        // El proyecto también puede venir del validador si se detectó\n        if (data.proyecto_detectado) projectName = data.proyecto_detectado;\n    }\n} catch (e) {\n    console.log(\"⚠️ Falló lectura de LLM, intentando fallbacks...\");\n}\n\n// 3. FALLBACK A SET FILE ID (Si el LLM no dio datos)\nlet fileId = \"unknown\";\ntry {\n    const fileData = $('Set File ID').first().json;\n    fileId = fileData.file_id || \"unknown\";\n    if (proveedor === \"OTROS\") proveedor = fileData.proveedor || \"OTROS\";\n    if (projectName === \"proyecto_sin_especificar\") projectName = fileData.proyect_name || \"proyecto_sin_especificar\";\n} catch (e) {}\n\n// 4. NORMALIZAR TIPOS\nif (!Array.isArray(tipoEval)) tipoEval = [tipoEval];\ntipoEval = tipoEval.filter(t => t && t.trim() !== \"\");\nif (tipoEval.length === 0) tipoEval = [\"Technical Evaluation\"];\n\n// 5. GENERAR FILAS\nreturn tipoEval.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion_actual: tipo,\n        proveedor_detectado: proveedor,\n        proyecto_nombre: projectName,\n        texto_oferta_completo: fullText,\n        indice_actual: idx + 1,\n        total_tipos: tipoEval.length,\n        file_id: fileId\n    }\n}));"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -832,
-                -1616
-            ],
-            "id": "e69de903-4fd7-4e6a-818b-3ea0ce54e907",
-            "name": "Expandir por Tipo de Evaluación"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Format for Vectorstore (FINAL v2)\n// =============================================\n\n// 1. RECUPERAR CONTENIDO (Instrucción explícita)\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. RECUPERAR CLASIFICACIÓN O VALIDACIÓN\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\n\ntry {\n    // Intentamos leer del validador primero, si no, del clasificador\n    let llmData;\n    try {\n        llmData = $('Validador de Ofertas').first().json;\n    } catch (e) {\n        llmData = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json;\n    }\n\n    const output = llmData.output || llmData;\n\n    if (output.proveedor_detectado) proveedor = output.proveedor_detectado;\n    if (output.proyecto_detectado) proyecto = output.proyecto_detectado;\n    \n    if (output.tipos_detectados) {\n        tipoEval = Array.isArray(output.tipos_detectados) \n            ? output.tipos_detectados \n            : [output.tipos_detectados];\n    }\n} catch (e) {\n    console.log(\"⚠️ Error leyendo clasificación/validación LLM, usando defaults.\");\n}\n\n// 3. RECUPERAR METADATOS DEL ARCHIVO Y FALLBACKS\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id;\n    fileTitle = fileNode.file_title;\n    if (!proyecto) proyecto = fileNode.proyect_name;\n} catch(e) {}\n\n// 4. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                2816,
-                -928
-            ],
-            "id": "688f52c9-cce1-4854-a69a-05286252f94e",
-            "name": "Format for Vectorstore"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
-            },
-            "id": "a15f5eba-14cc-46ed-9da5-67ba594584c2",
-            "name": "Preparar Texto de Muestra",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1968,
-                -912
-            ]
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Aggregate OCR Pages (CORREGIDO)\n// =============================================\n\nconst items = $input.all();\nlet fullText = \"\";\nlet pagesArray = [];\n\n// OPCIÓN A: Si Tesseract devuelve múltiples items (1 por página)\nif (items.length > 1) {\n  items.forEach((item, idx) => {\n    const pageText = item.json.text || \"\";\n    fullText += pageText + \"\\n\\n\";\n    \n    // Construimos array compatible con vectorstore\n    pagesArray.push({\n      text: pageText,\n      pageNumber: idx + 1\n    });\n  });\n}\n// OPCIÓN B: Si Tesseract devuelve un solo item con todo el texto\nelse if (items.length === 1) {\n  fullText = items[0].json.text || \"\";\n  pagesArray = [{\n    text: fullText,\n    pageNumber: 1\n  }];\n}\n\n// RECUPERAR METADATOS ORIGINALES (CRÍTICO)\nlet fileId, fileName, proveedor;\ntry {\n  fileId = $('Set File ID').first().json.file_id;\n  fileName = $('Set File ID').first().json.file_title;\n  proveedor = $('Identificar Proveedor').first().json.proveedor_detectado;\n} catch (e) {\n  console.error(\"⚠️ No se pudieron recuperar metadatos:\", e.message);\n  fileId = \"unknown\";\n  fileName = \"unknown\";\n  proveedor = \"OTROS\";\n}\n\nconsole.log(`🔄 OCR Agregado: ${items.length} páginas → ${fullText.length} caracteres`);\n\n// ESTRUCTURA COMPATIBLE CON VECTORSTORE\nreturn {\n  json: {\n    pages: pagesArray, // ← Array de páginas (requerido por Default Data Loader)\n    text: fullText, // ← Texto completo (backup)\n    \n    // Metadatos críticos\n    file_id: fileId,\n    file_title: fileName,\n    proveedor: proveedor,\n    \n    // Marca de origen\n    origen_datos: \"OCR_TESSERACT\",\n    ocr_pages_processed: items.length,\n    ocr_total_chars: fullText.length\n  }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1520,
-                -1024
-            ],
-            "id": "6dc92c69-1a82-4fc5-b16f-84c3d66bcce8",
-            "name": "Aggregate OCR Pages"
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": true,
-                        "leftValue": "",
-                        "typeValidation": "strict",
-                        "version": 3
-                    },
-                    "conditions": [
-                        {
-                            "id": "57b9c551-9997-4ed5-8ddd-f80c108a177c",
-                            "leftValue": "={{ $json.needsOCR }}",
-                            "rightValue": "",
-                            "operator": {
-                                "type": "boolean",
-                                "operation": "true",
-                                "singleValue": true
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2.3,
-            "position": [
-                880,
-                -912
-            ],
-            "id": "bbdb49bf-eb87-492e-a65e-406d1baa2b26",
-            "name": "¿Necesita OCR?"
-        },
-        {
-            "parameters": {
-                "operation": "pdf",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.extractFromFile",
-            "typeVersion": 1.1,
-            "position": [
-                320,
-                -912
-            ],
-            "id": "db9e2a3a-3148-49cd-b186-97aabd319e10",
-            "name": "Extract from File"
-        },
-        {
-            "parameters": {
-                "jsCode": "// =============================================\n// NODO: Validar Contenido PDF (FIX PAGINACIÓN)\n// =============================================\n\nconst input = $input.first().json;\n\n// Variables de inicialización\nlet pages = [];\nlet totalChars = 0;\nlet hasTablesDetected = false;\n\n// --- 1. PROCESAMIENTO DEL TEXTO ---\n\n// CASO A: Viene desglosado por páginas (Array)\nif (input.pages && Array.isArray(input.pages) && input.pages.length > 0) {\n  pages = input.pages;\n  pages.forEach(page => {\n    const text = page.text || page.pageContent || \"\";\n    totalChars += text.length;\n    // Detección simple de tablas\n    if ((text.match(/\\s{4,}/g) || []).length > 5) hasTablesDetected = true;\n  });\n\n// CASO B: Viene todo el texto junto (String) - ESTE ES TU CASO ACTUAL\n} else if (input.text && typeof input.text === 'string') {\n  const text = input.text;\n  totalChars = text.length;\n  // Creamos una \"página única\" contenedora para no romper el flujo\n  pages = [{ text: text, pageNumber: 1 }];\n  \n  // Detectar tablas en el texto completo\n  if ((text.match(/\\s{4,}/g) || []).length > 20) hasTablesDetected = true;\n  \n} else {\n  // CASO C: Vacío\n  pages = [];\n}\n\n// --- 2. CÁLCULO DE PÁGINAS REALES (FIX CRÍTICO) ---\n\n// Intentamos leer el metadato 'numpages' que se ve en tu captura\nlet realPageCount = input.numpages || input.numPages || input.numberOfPages || 0;\n\n// Si no existe el metadato, usamos la longitud del array (fallback)\nif (!realPageCount || realPageCount === 0) {\n    realPageCount = pages.length;\n}\n\n// Si sigue siendo 1 pero el texto es enorme (>10k chars), estimamos\nif (realPageCount <= 1 && totalChars > 10000) {\n    // Estimación conservadora: 3000 caracteres por página técnica\n    realPageCount = Math.ceil(totalChars / 3000);\n}\n\n// Evitar división por cero\nrealPageCount = Math.max(1, realPageCount);\n\n\n// --- 3. MÉTRICAS FINALES ---\n\nconst avgCharsPerPage = totalChars / realPageCount;\n\n// CRITERIO: ¿Necesita OCR?\n// Si hay texto (< 100 chars/pag) es probable que sea escaneado.\nconst needsOCR = avgCharsPerPage < 100; \n\n// Metadatos\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n  const metaNode = $('Set File ID').first().json;\n  fileId = metaNode.file_id;\n  fileTitle = metaNode.file_title;\n} catch (e) {}\n\n// --- LOGGING ---\nconsole.log(`📄 Análisis: ${fileTitle}`);\nconsole.log(`   ├─ Páginas (Metadato): ${input.numpages}`); \nconsole.log(`   ├─ Páginas (Usadas): ${realPageCount}`);\nconsole.log(`   ├─ Caracteres Totales: ${totalChars}`);\nconsole.log(`   ├─ Promedio/Pág: ${Math.round(avgCharsPerPage)}`);\n\nreturn {\n  json: {\n    // Métricas corregidas\n    totalPages: realPageCount, // Ahora dirá 235\n    totalChars: totalChars,\n    avgCharsPerPage: Math.round(avgCharsPerPage), // Ahora será un número razonable (~2800)\n    hasTables: hasTablesDetected,\n    needsOCR: needsOCR,\n    \n    // Contenido\n    pages: pages, \n    \n    // Metadatos\n    fileId: fileId,\n    fileName: fileTitle\n  }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                592,
-                -912
-            ],
-            "id": "14982f2a-fe13-400a-9e0f-3f6f0e57a666",
-            "name": "Validar Contenido PDF"
-        },
-        {
-            "parameters": {
-                "mode": "insert",
-                "tableName": {
-                    "__rl": true,
-                    "value": "documents_768",
-                    "mode": "list",
-                    "cachedResultName": "documents_768"
-                },
-                "options": {
-                    "queryName": "match_documents_768"
-                }
-            },
-            "id": "a9113612-fdf3-4aef-8f4b-64729814d999",
-            "name": "Insert into Supabase Vectorstore",
-            "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-            "typeVersion": 1,
-            "position": [
-                2992,
-                -928
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "get",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "matchType": "allConditions",
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "evaluation",
-                            "keyValue": "={{ $json.tipo_evaluacion_actual }}"
-                        },
-                        {
-                            "keyName": "project_name",
-                            "keyValue": "={{ $('Set File ID').item.json.proyect_name }}"
-                        }
-                    ]
-                },
-                "returnAll": true
-            },
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                -192,
-                -1744
-            ],
-            "id": "5933195a-4696-4271-b042-3e920aaa617f",
-            "name": "Get RFQ Items"
-        },
-        {
-            "parameters": {
-                "chunkSize": 1500,
-                "chunkOverlap": 200,
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
-            "typeVersion": 1,
-            "position": [
-                3040,
-                -496
-            ],
-            "id": "c890f9d6-073c-4e2d-b4da-bbb4552d3578",
-            "name": "Recursive Character Text Splitter"
-        },
-        {
-            "parameters": {
-                "jsonMode": "expressionData",
-                "jsonData": "={{ $json.text }}",
-                "options": {
-                    "metadata": {
-                        "metadataValues": [
-                            {
-                                "name": "file_id",
-                                "value": "={{ $json.metadata.file_id }}"
-                            },
-                            {
-                                "name": "file_title",
-                                "value": "={{ $json.metadata.file_title }}"
-                            },
-                            {
-                                "name": "tipo_evaluacion",
-                                "value": "={{ $json.metadata.tipo_evaluacion }}"
-                            },
-                            {
-                                "name": "proveedor",
-                                "value": "={{ $json.metadata.proveedor }}"
-                            },
-                            {
-                                "name": "project_name",
-                                "value": "={{ $json.metadata.project_name }}"
-                            }
-                        ]
-                    }
-                }
-            },
-            "id": "5e977dbb-636a-4379-8828-11504fd3cba1",
-            "name": "Default Data Loader",
-            "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
-            "typeVersion": 1,
-            "position": [
-                3136,
-                -656
-            ]
-        },
-        {
-            "parameters": {
-                "assignments": {
-                    "assignments": [
-                        {
-                            "id": "10646eae-ae46-4327-a4dc-9987c2d76173",
-                            "name": "file_id",
-                            "value": "={{ $json.body.file_id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "77d782de-169d-4a46-8a8e-a3831c04d90f",
-                            "name": "file_title",
-                            "value": "={{ $json.body.file_title }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "9bde4d7f-e4f3-4ebd-9338-dce1350f9eab",
-                            "name": "file_url",
-                            "value": "={{ $json.body.file_url }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "b1dbe9b9-248a-4593-a769-a085b34e0810",
-                            "name": "file_binary",
-                            "value": "={{ $json.body.file_binary }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "74d93dce-cddc-4947-ae19-88bc5cacd146",
-                            "name": "file_metadata",
-                            "value": "={{ $json.body.metadata }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "5e43f8d4-b48e-4188-89c8-3723f184dbeb",
-                            "name": "proyect_name",
-                            "value": "={{ $json.body.metadata.proyecto }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "1093ebc6-8dd8-4c5d-b146-b6f01b069be6",
-                            "name": "proveedor",
-                            "value": "={{ $json.body.user_proveedor }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "6e0e6e2a-9b88-403e-aa0a-da0eecccd3f9",
-                            "name": "evaluation",
-                            "value": "={{ $json.body.metadata.tipoEvaluacion }}",
-                            "type": "array"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "id": "226894ac-7b4c-4065-8a24-cd1084d8094e",
-            "name": "Set File ID",
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 3.4,
-            "position": [
-                -480,
-                -912
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "delete",
-                "tableId": "documents_768",
-                "filterType": "string",
-                "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
-            },
-            "id": "725d5831-6930-4f1e-a073-a3bc363b586d",
-            "name": "Delete Old Doc Rows",
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [
-                -288,
-                -912
-            ],
-            "alwaysOutputData": true,
-            "disabled": true
-        },
-        {
-            "parameters": {
-                "operation": "upsert",
-                "schema": {
-                    "__rl": true,
-                    "mode": "list",
-                    "value": "public"
-                },
-                "table": {
-                    "__rl": true,
-                    "value": "document_metadata",
-                    "mode": "list",
-                    "cachedResultName": "document_metadata"
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "id": "={{ $('Set File ID').item.json.file_id }}",
-                        "title": "={{ $('Set File ID').item.json.file_title }}",
-                        "url": "={{ $('Set File ID').item.json.file_url }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "id",
-                            "displayName": "id",
-                            "required": true,
-                            "defaultMatch": true,
-                            "display": true,
-                            "type": "string",
-                            "canBeUsedToMatch": true
-                        },
-                        {
-                            "id": "title",
-                            "displayName": "title",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "canBeUsedToMatch": false
-                        },
-                        {
-                            "id": "url",
-                            "displayName": "url",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "canBeUsedToMatch": false
-                        },
-                        {
-                            "id": "created_at",
-                            "displayName": "created_at",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "dateTime",
-                            "canBeUsedToMatch": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "schema",
-                            "displayName": "schema",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "canBeUsedToMatch": false,
-                            "removed": false
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.postgres",
-            "typeVersion": 2.5,
-            "position": [
-                -80,
-                -912
-            ],
-            "id": "5160b9ae-0645-4b5a-812c-659255916e86",
-            "name": "Insert Document Metadata",
-            "executeOnce": true,
-            "disabled": true
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "WORLEY": "={{ $('Parsear y Preparar Update').item.json.WORLEY }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "f98fb7ee-ee54-4206-97e8-d3f432751cdd",
-            "name": "Update RFQ WORLEY",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -864
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "TRESCA": "={{ $('Parsear y Preparar Update').item.json.TRESCA }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "rfq_requisito",
-                            "displayName": "rfq_requisito",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "ee691266-81ee-4023-8ed8-36cd3253b4d0",
-            "name": "Update RFQ TRESCA",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -1072
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "SENER": "={{ $('Parsear y Preparar Update').item.json.SENER }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "abf88307-83c9-4096-bd9a-8536aa26c1f5",
-            "name": "Update RFQ SENER",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -1264
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "EA": "={{ $('Parsear y Preparar Update').item.json.EA }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "8c9ed89e-b2b8-4d6a-95d0-df6c14641c35",
-            "name": "Update RFQ EA",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -1456
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "SACYR": "={{ $('Parsear y Preparar Update').item.json.SACYR }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "402da302-031e-49f2-8d79-ed516f46671c",
-            "name": "Update RFQ SACYR",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -1632
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "IDOM": "={{ $('Parsear y Preparar Update').item.json.IDOM }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "044a117f-7664-44f8-ad7d-625b375d0c77",
-            "name": "Update RFQ IDOM",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -1824
-            ]
-        },
-        {
-            "parameters": {
-                "operation": "update",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/hwY1VFb924Ptf1P6"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyValue": "={{ $json.id }}"
-                        }
-                    ]
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "TECNICASREUNIDAS": "={{ $('Parsear y Preparar Update').item.json.TECNICASREUNIDAS }}"
-                    },
-                    "matchingColumns": [
-                        "id"
-                    ],
-                    "schema": [
-                        {
-                            "id": "Evaluation",
-                            "displayName": "Evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "descripcion_item",
-                            "displayName": "descripcion_item",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "id": "752c7339-962a-4de2-821a-88d180d7a613",
-            "name": "Update RFQ TR",
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1,
-            "position": [
-                3472,
-                -2016
-            ]
-        },
-        {
-            "parameters": {
-                "rules": {
-                    "values": [
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "TECNICASREUNIDAS",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals"
-                                        },
-                                        "id": "f3688704-f30f-4143-8008-ae6c1a06eea1"
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "c2c6726d-ea3f-4909-a535-6f402eef63b8",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "IDOM",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "a64d8e41-6f32-489d-bf60-3bd22c9c9374",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "SACYR",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "42a16d6b-db65-401d-abb0-f8ae9aefff12",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "EA",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals",
-                                            "name": "filter.operator.equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "79599b4a-f8d0-4078-913a-2b40bea117c4",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "SENER",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals",
-                                            "name": "filter.operator.equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "59b13bbc-96bb-4e22-8fde-5c2fb10c8675",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "TRESCA",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals",
-                                            "name": "filter.operator.equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "d1601299-eed6-4754-b538-5e32d16a2a40",
-                                        "leftValue": "={{ $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado }}",
-                                        "rightValue": "WORLEY",
-                                        "operator": {
-                                            "type": "string",
-                                            "operation": "equals",
-                                            "name": "filter.operator.equals"
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            }
-                        }
-                    ]
-                },
-                "options": {
-                    "fallbackOutput": "extra"
-                }
-            },
-            "type": "n8n-nodes-base.switch",
-            "typeVersion": 3.4,
-            "position": [
-                3072,
-                -1536
-            ],
-            "id": "48904144-e871-43a4-82dd-c57e34cfbd7b",
-            "name": "Switch"
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=### REQUISITO RFQ:\n{{ $json.requisito_rfq }}\n\n### CONTEXTO RECUPERADO (Vectores):\n{{ $json.context }}\n\n---\n### TAREA:\nDada la información recuperada, determina si el proveedor CUMPLE con el requisito.\n\n### FORMATO DE SALIDA (JSON):\n[\n  {\n    \"id\": \"{{ $json.id }}\",\n    \"cumple\": \"[PRECIO | TARIFA | INCLUIDO | NO INCLUIDO]\",\n    \"gap_analysis\": \"[EVIDENCIA ENCONTRADA EN CONTEXTO]\"\n  }\n]\n\nResponde SOLO con el JSON.",
-                "messages": {
-                    "messageValues": [
-                        {
-                            "message": "=Eres un auditor experto. Analiza el contexto y extrae el cumplimiento o precio exacto."
-                        }
-                    ]
-                },
-                "batching": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.chainLlm",
-            "typeVersion": 1.7,
-            "position": [
-                1344,
-                -1664
-            ],
-            "id": "b6789535-6b77-4663-ab7f-31a152a2de48",
-            "name": "LLM Chain"
-        },
-        {
-            "parameters": {
-                "jsCode": "// 1. Obtener la respuesta del LLM\nconst llmResponse = $input.first().json;\nlet outputItem = null;\n\n// Parse response\nlet raw = llmResponse.output || llmResponse;\nif (typeof raw === 'string') {\n   try {\n      const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n      const start = clean.indexOf('['); const end = clean.lastIndexOf(']');\n      if(start>=0 && end>=0) raw = JSON.parse(clean.substring(start, end+1));\n   } catch(e) {}\n}\n\nif (Array.isArray(raw) && raw.length > 0) outputItem = raw[0];\nelse outputItem = raw;\n\n// Fallback values\nconst cumple = outputItem?.cumple || \"ERROR ANALISIS\";\nconst gap = outputItem?.gap_analysis || \"Check logs\";\nconst resultado = `${cumple} - ${gap}`;\n\n// Get Provider and ID\nlet provider = \"OTROS\";\ntry { provider = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado; } catch(e){}\n\n// ID from Loop (since Retriever eats the ID from main json, we fetch from Loop)\nlet itemId = null;\ntry { itemId = $('Loop Over Items').item.json.id; } catch(e){}\n\nreturn {\n  json: {\n    id: itemId,\n    [provider]: resultado\n  }\n};"
-            },
-            "id": "ad92b4f5-9463-4428-98cf-6e3a0d75086b",
-            "name": "Parsear y Preparar Update",
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1872,
-                -1664
-            ]
-        },
-        {
-            "parameters": {
-                "numberInputs": 7
-            },
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [
-                3872,
-                -1536
-            ],
-            "id": "a0b32bae-f2d6-4589-9729-a62a1e743aaf",
-            "name": "Merge"
-        },
-        {
-            "parameters": {
-                "options": {
-                    "reset": "={{ $json.reiniciar_bucle ? true : false }}"
-                }
-            },
-            "type": "n8n-nodes-base.splitInBatches",
-            "typeVersion": 3,
-            "position": [
-                512,
-                -1664
-            ],
-            "id": "baca54fe-ea58-4935-a6f1-3edeee89f3d3",
-            "name": "Loop Over Items"
-        },
-        {
-            "parameters": {
-                "content": "### Ingesta de Ofertas de Proveedores",
-                "height": 1776,
-                "width": 5232,
-                "color": 5
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [
-                -1056,
-                -2112
-            ],
-            "id": "8b4bf3e1-5659-406f-9497-bfb24bd2ff14",
-            "name": "Sticky Note5"
-        },
-        {
-            "parameters": {
-                "model": "mistral:7b",
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmOllama",
-            "typeVersion": 1,
-            "position": [
-                2384,
-                -512
-            ],
-            "id": "e0defda6-9e32-4cff-a984-a13a909e13f3",
-            "name": "Ollama Model",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "qwen3:14b",
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmOllama",
-            "typeVersion": 1,
-            "position": [
-                1296,
-                -1488
-            ],
-            "id": "e2408d68-1fcf-4fcc-920f-7223539157cd",
-            "name": "Ollama Model1",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": true,
-                        "leftValue": "",
-                        "typeValidation": "strict",
-                        "version": 3
-                    },
-                    "conditions": [
-                        {
-                            "id": "267128b5-e2c0-44ae-9973-7f18dffe292e",
-                            "leftValue": "={{ $('Set File ID').item.json.proveedor }}",
-                            "rightValue": "",
-                            "operator": {
-                                "type": "string",
-                                "operation": "notEmpty",
-                                "singleValue": true
-                            }
-                        },
-                        {
-                            "id": "a9d65ff4-430e-45db-8ca8-6078e5ee32fa",
-                            "leftValue": "={{ $('Set File ID').item.json.evaluation[0] }}",
-                            "rightValue": "",
-                            "operator": {
-                                "type": "string",
-                                "operation": "notEmpty",
-                                "singleValue": true
-                            }
-                        },
-                        {
-                            "id": "d5c265e7-00e5-42f4-95ad-4eca1e3ef530",
-                            "leftValue": "={{ $('Set File ID').item.json.proyect_name }}",
-                            "rightValue": "",
-                            "operator": {
-                                "type": "string",
-                                "operation": "notEmpty",
-                                "singleValue": true
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2.3,
-            "position": [
-                2160,
-                -912
-            ],
-            "id": "2e5e7c23-1905-4cf9-88ad-907653e4ac8f",
-            "name": "If"
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\",\n        \"description\": \"ID numérico del ítem evaluado\"\n      },\n      \"cumple\": {\n        \"type\": \"string\",\n        \"description\": \"Estado de cumplimiento. Para económico: precio con moneda, SIN VALORAR, o NO COTIZADO. Para técnico: INCLUIDO, NO INCLUIDO, PARCIAL, o SIN INFORMACIÓN\"\n      },\n      \"gap_analysis\": {\n        \"type\": \"string\",\n        \"description\": \"Cita textual breve del documento con referencia de ubicación\"\n      }\n    },\n    \"required\": [\"id\", \"cumple\", \"gap_analysis\"]\n  }\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                1504,
-                -1504
-            ],
-            "id": "86bba86e-f048-4f92-ae51-8705ae074a36",
-            "name": "Structured Output Parser3"
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=### CLASIFICACIÓN TÉCNICA Y COMERCIAL (RFQ)\n\n### DOCUMENTO DE MUESTRA (Primeras 2 páginas):\n{{ $json.texto_muestra }}\n\n---\n### TAREA DE CLASIFICACIÓN:\nIdentifica proyecto, proveedor y tipos de evaluación. \n\n**REGLA DE ORO DE NOMENCLATURA:**\nDebes traducir los títulos del documento a estos nombres exactos:\n- **\"Commercial Proposal\" / \"Oferta Económica\"** → DEBE SER `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\"** → DEBE SER `Technical Evaluation`.\n- **Listas de documentos** → `Pre-FEED Deliverables` o `FEED Deliverables` (según contexto).\n\n#### REQUISITOS:\n1. **PROVEEDOR**: Debe ser uno de: IDOM, SENER, TRESCA, SACYR, TECNICASREUNIDAS, EA, WORLEY.\n2. **TIPOS**: El array `tipos_detectados` solo puede contener los nombres canónicos arriba mencionados.\n\n---\n### FORMATO DE SALIDA (JSON):\n{\n  \"modo_usado\": \"CLASIFICADOR\",\n  \"proyecto_detectado\": \"Nombre\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"Justificación: 'Commercial Proposal' detectado -> Economical Evaluation mapeada.\"\n}",
-                "hasOutputParser": true,
-                "messages": {
-                    "messageValues": [
-                        {
-                            "message": "Identifica al proveedor y los tipos de evaluación presentes en el documento basándote solo en las primeras páginas."
-                        }
-                    ]
-                },
-                "batching": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.chainLlm",
-            "typeVersion": 1.8,
-            "position": [
-                2432,
-                -720
-            ],
-            "id": "d8614576-48f6-4a9a-8d24-dd3d48d48fdd",
-            "name": "Clasificador de Tipo de Evaluacion y Proveedor"
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"modo_usado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_valido\": {\n      \"type\": \"boolean\"\n    },\n    \"proyecto_nota\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_valido\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el proveedor detectado es distinto al que el usuario seleccionó.\"\n    },\n    \"proveedor_nota\": {\n      \"type\": \"string\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Array con los tipos que realmente tienen evidencia en el doc.\"\n    },\n    \"tipos_validados\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el tipo seleccionado por el usuario no tiene evidencia clara en el PDF.\"\n    },\n    \"tipos_nota\": {\n      \"type\": \"string\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"proyecto_detectado\",\n    \"proyecto_valido\",\n    \"proveedor_detectado\",\n    \"proveedor_valido\",\n    \"tipos_validados\",\n    \"razonamiento\"\n  ]\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                2624,
-                -912
-            ],
-            "id": "c4d1cd55-478a-4c3a-9988-8506db6b63dd",
-            "name": "Structured Output Parser4"
-        },
-        {
-            "parameters": {
-                "model": "mistral:7b",
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
-            "typeVersion": 1,
-            "position": [
-                2384,
-                -912
-            ],
-            "id": "4d0e2858-4cb3-4fc8-a027-c27374f1e666",
-            "name": "Ollama Chat Model1",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=### AUDITORÍA DE DOCUMENTO: VALIDACIÓN CRUZADA\n\n**[1. SELECCIÓN MANUAL DEL USUARIO]**\n- Proyecto: \"{{ $('Set File ID').item.json.proyect_name }}\"\n- Proveedor: \"{{ $('Set File ID').item.json.proveedor }}\"\n- Tipo de Evaluación: \"{{ $('Set File ID').item.json.evaluation }}\"\n- Nombre Archivo: \"{{ $('Set File ID').item.json.file_title }}\"\n\n---\n**[2. EVIDENCIA REAL DEL PDF (Texto extraído)]**\n{{ $json.texto_muestra }}\n\n---\n### INSTRUCCIONES DE MAPEADO Y VALIDACIÓN:\n\n#### REGLA 1: SINÓNIMOS Y TIPOS CANÓNICOS\nSolo puedes usar estos 4 nombres exactos. Mapea la evidencia así:\n- **\"Commercial Proposal\" / \"Oferta Económica\" / \"Price Schedule\"** → DEBE SER `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\" / \"Metodología\"** → DEBE SER `Technical Evaluation`.\n- **\"Technical & Economical Proposal\"** → DEBE INCLUIR AMBOS: `Technical Evaluation` Y `Economical Evaluation`.\n- **Listas de planos** → `Pre-FEED Deliverables` o `FEED Deliverables`.\n\n#### REGLA 2: EL TÍTULO Y NOMBRE DE ARCHIVO SON DECISIVOS\n- Analiza el **Nombre Archivo** y el **Título** del documento. Si dicen \"Oferta Técnica\" o \"Technical Proposal\", el tipo es `Technical Evaluation`.\n- **IMPORTANTE:** NO agregues otros tipos por menciones menores. Ejemplo: Si un documento técnico menciona \"precios estimados\", NO agregues `Economical Evaluation`. Solo agrégalo si ves una TABLA DE PRECIOS completa.\n- Sé conservador: ante la duda, guíate por el Nombre del Archivo.\n\n#### REGLA 3: BALANCEO DE INTENCIÓN\n- Si el PDF es mixto pero el usuario ha seleccionado uno de los tipos válidos presentes, marca `tipos_validados: true`.\n\n### FORMATO DE SALIDA (JSON ÚNICO):\n{\n  \"modo_usado\": \"VALIDADOR\",\n  \"proyecto_detectado\": \"Nombre Real\",\n  \"proyecto_valido\": true | false,\n  \"proyecto_nota\": \"Resumen\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"proveedor_valido\": true | false,\n  \"proveedor_nota\": \"Explicación\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"],\n  \"tipos_validados\": true | false,\n  \"tipos_nota\": \"Explica por qué validaste o rechazaste los tipos.\",\n  \"razonamiento\": \"Menciona el Nombre del Archivo y el Título encontrado.\"\n}",
-                "hasOutputParser": true,
-                "messages": {
-                    "messageValues": [
-                        {
-                            "message": "=Actúa como un validador estricto. Si hay discrepancias flagrantes entre la sugerencia del usuario y el contenido real del PDF, prioriza el contenido del PDF y marca la validación como falsa y reporta el proveedor/tipo correcto.\n\nProveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY"
-                        }
-                    ]
-                },
-                "batching": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.chainLlm",
-            "typeVersion": 1.8,
-            "position": [
-                2432,
-                -1104
-            ],
-            "id": "ac4a48d3-e89a-401a-a5ff-12ef56d07e9f",
-            "name": "Validador de Ofertas"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Obtener todos los fragmentos recuperados por Supabase\nconst docs = $input.all();\nlet context = \"\";\n\n// Concatenar el contenido de los vectores\nif (docs.length > 0) {\n    context = docs.map(d => d.json.pageContent || d.json.content || \"\").join(\"\\n\\n---\" + \"\\n\\n\");\n} else {\n    context = \"SIN INFORMACIÓN RELEVANTE ENCONTRADA EN LA BASE DE DATOS.\";\n}\n\n// Recuperar el requisito original del Loop\nlet requisito = \"\";\nlet id = \"\";\nlet queryOriginal = \"\";\n\ntry {\n    const loopItem = $('Loop Over Items').item.json;\n    requisito = loopItem.requisito_rfq || loopItem.requisito;\n    id = loopItem.item_id || loopItem.id;\n} catch(e) {\n    // Fallback por si acaso\n    if (docs.length > 0 && docs[0].json.query) queryOriginal = docs[0].json.query;\n    requisito = queryOriginal || \"ERROR RECUPERANDO REQUISITO\";\n}\n\nreturn {\n    json: {\n        context: context,\n        requisito_rfq: requisito,\n        id: id\n    }\n};"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                1120,
-                -1664
-            ],
-            "id": "0160b976-a1cc-4d24-8a26-7995bb21ab36",
-            "name": "Aggregate Context"
-        },
-        {
-            "parameters": {
-                "mode": "load",
-                "tableName": {
-                    "__rl": true,
-                    "mode": "list",
-                    "value": ""
-                },
-                "topK": 5,
-                "options": {
-                    "metadata": {
-                        "metadataValues": [
-                            {
-                                "name": "file_id",
-                                "value": "={{ $('Loop Over Items').item.json.file_id || $json.file_id }}"
-                            },
-                            {
-                                "name": "project_name"
-                            },
-                            {
-                                "name": "proveedor"
-                            },
-                            {
-                                "name": "evaluation"
-                            }
-                        ]
-                    }
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-            "typeVersion": 1.3,
-            "position": [
-                768,
-                -1664
-            ],
-            "id": "5a7140a8-b1be-4dab-9aa8-de6134f4f4b6",
-            "name": "Supabase Vector Store"
-        },
-        {
-            "parameters": {
-                "model": "qwen3-embedding:8b"
-            },
-            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-            "typeVersion": 1,
-            "position": [
-                2928,
-                -688
-            ],
-            "id": "f3a47e1e-ec4d-4690-99fd-052be5e43b57",
-            "name": "Embeddings Ollama3",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "qwen3-embedding:8b"
-            },
-            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-            "typeVersion": 1,
-            "position": [
-                736,
-                -1472
-            ],
-            "id": "b75ca6dd-a630-4e41-97e7-59c9e03ed6a4",
-            "name": "Embeddings Ollama4",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        }
-    ],
-    "connections": {
-        "Reset de valores": {
-            "main": [
-                [
-                    {
-                        "node": "Get row(s)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Get row(s)": {
-            "main": [
-                [
-                    {
-                        "node": "Respond to Webhook",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Code in JavaScript1": {
-            "main": [
-                [
-                    {
-                        "node": "Set File ID",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Base64 a Binary1": {
-            "main": [
-                [
-                    {
-                        "node": "Docling OCR",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Base64 a Binary": {
-            "main": [
-                [
-                    {
-                        "node": "Extract from File",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Webhook": {
-            "main": [
-                [
-                    {
-                        "node": "Code in JavaScript1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Reset Items": {
-            "main": [
-                [
-                    {
-                        "node": "Loop Over Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Merge1": {
-            "main": [
-                [
-                    {
-                        "node": "Preparar Texto de Muestra",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "Clasificador de Tipo de Evaluacion y Proveedor",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Docling OCR": {
-            "main": [
-                [
-                    {
-                        "node": "Aggregate OCR Pages",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Loop Over Items1": {
-            "main": [
-                [
-                    {
-                        "node": "Get RFQ Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Reset de valores",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Expandir por Tipo de Evaluación": {
-            "main": [
-                [
-                    {
-                        "node": "Loop Over Items1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Format for Vectorstore": {
-            "main": [
-                [
-                    {
-                        "node": "Insert into Supabase Vectorstore",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Preparar Texto de Muestra": {
-            "main": [
-                [
-                    {
-                        "node": "If",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Aggregate OCR Pages": {
-            "main": [
-                [
-                    {
-                        "node": "Merge1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "¿Necesita OCR?": {
-            "main": [
-                [
-                    {
-                        "node": "Base64 a Binary1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Merge1",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Extract from File": {
-            "main": [
-                [
-                    {
-                        "node": "Validar Contenido PDF",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Validar Contenido PDF": {
-            "main": [
-                [
-                    {
-                        "node": "¿Necesita OCR?",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Insert into Supabase Vectorstore": {
-            "main": [
-                [
-                    {
-                        "node": "Expandir por Tipo de Evaluación",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Get RFQ Items": {
-            "main": [
-                [
-                    {
-                        "node": "Reset Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Recursive Character Text Splitter": {
-            "ai_textSplitter": [
-                [
-                    {
-                        "node": "Default Data Loader",
-                        "type": "ai_textSplitter",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Default Data Loader": {
-            "ai_document": [
-                [
-                    {
-                        "node": "Insert into Supabase Vectorstore",
-                        "type": "ai_document",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Set File ID": {
-            "main": [
-                [
-                    {
-                        "node": "Delete Old Doc Rows",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Delete Old Doc Rows": {
-            "main": [
-                [
-                    {
-                        "node": "Insert Document Metadata",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Insert Document Metadata": {
-            "main": [
-                [
-                    {
-                        "node": "Base64 a Binary",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Update RFQ WORLEY": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 6
-                    }
-                ]
-            ]
-        },
-        "Update RFQ TRESCA": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 5
-                    }
-                ]
-            ]
-        },
-        "Update RFQ SENER": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 4
-                    }
-                ]
-            ]
-        },
-        "Update RFQ EA": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 3
-                    }
-                ]
-            ]
-        },
-        "Update RFQ SACYR": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 2
-                    }
-                ]
-            ]
-        },
-        "Update RFQ IDOM": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Update RFQ TR": {
-            "main": [
-                [
-                    {
-                        "node": "Merge",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Switch": {
-            "main": [
-                [
-                    {
-                        "node": "Update RFQ TR",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ IDOM",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ SACYR",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ EA",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ SENER",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ TRESCA",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Update RFQ WORLEY",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "LLM Chain": {
-            "main": [
-                [
-                    {
-                        "node": "Parsear y Preparar Update",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Parsear y Preparar Update": {
-            "main": [
-                [
-                    {
-                        "node": "Switch",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Merge": {
-            "main": [
-                [
-                    {
-                        "node": "Loop Over Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Loop Over Items": {
-            "main": [
-                [],
-                [
-                    {
-                        "node": "Loop Over Items1",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Supabase Vector Store",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Ollama Model": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Clasificador de Tipo de Evaluacion y Proveedor",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Ollama Model1": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "LLM Chain",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "If": {
-            "main": [
-                [
-                    {
-                        "node": "Validador de Ofertas",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Clasificador de Tipo de Evaluacion y Proveedor",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Clasificador de Tipo de Evaluacion y Proveedor": {
-            "main": [
-                [
-                    {
-                        "node": "Format for Vectorstore",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser4": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "Validador de Ofertas",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Ollama Chat Model1": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Validador de Ofertas",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Validador de Ofertas": {
-            "main": [
-                [
-                    {
-                        "node": "Format for Vectorstore",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Aggregate Context": {
-            "main": [
-                [
-                    {
-                        "node": "LLM Chain",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Supabase Vector Store": {
-            "main": [
-                [
-                    {
-                        "node": "Aggregate Context",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Embeddings Ollama3": {
-            "ai_embedding": [
-                [
-                    {
-                        "node": "Insert into Supabase Vectorstore",
-                        "type": "ai_embedding",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Embeddings Ollama4": {
-            "ai_embedding": [
-                [
-                    {
-                        "node": "Supabase Vector Store",
-                        "type": "ai_embedding",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Generate Stable ID + Detectar Modo (NOMBRES CORRECTOS)\n// =============================================\n\nfunction simpleHash(str) {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    const char = str.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  return Math.abs(hash).toString(16).padStart(16, '0').substring(0, 16);\n}\n\nconst body = $json.body;\n\n// CAMPOS EXISTENTES\nconst originalFileId = body.file_id || \"unknown\";\nconst fileTitle = body.file_title || \"unknown.pdf\";\nconst fileBinary = body.file_binary || \"\";\nconst fileUrl = body.file_url || \"unknown\";\n\n// ✅ EXTRAER METADATA DEL USUARIO (NOMBRES CORRECTOS)\nconst metadata = body.metadata || {};\nconst rfqProjectId = metadata.proyect_name || null;        // ← proyect_name\nconst userProveedor = metadata.proveedor || null;          // ← proveedor\nconst userTipoEval = metadata.evaluation || null;          // ← evaluation (Array)\n\n// ✅ DETERMINAR MODO DE OPERACIÓN\nlet modoOperacion = \"CLASIFICADOR\"; // Por defecto\nlet datosCompletos = false;\n\n// Verificar si tiene datos suficientes para VALIDACIÓN\nif (userProveedor && userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0) {\n    modoOperacion = \"VALIDADOR\";\n    datosCompletos = true;\n} else if (userProveedor || (userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0)) {\n    modoOperacion = \"HIBRIDO\"; // Tiene algunos datos pero no todos\n}\n\n// Generar ID estable del archivo\nconst normalizedTitle = fileTitle.toLowerCase().trim();\nconst stableId = simpleHash(normalizedTitle);\n\n// LOGGING\nconsole.log(\"=== ANÁLISIS DE METADATA ===\");\nconsole.log(`Modo Operación: ${modoOperacion}`);\nconsole.log(`RFQ Project Name: ${rfqProjectId || 'No especificado'}`);\nconsole.log(`Proveedor (Usuario): ${userProveedor || 'No especificado'}`);\nconsole.log(`Evaluation (Usuario): ${JSON.stringify(userTipoEval) || 'No especificado'}`);\nconsole.log(`Datos Completos: ${datosCompletos}`);\nconsole.log(`Original ID: ${originalFileId}`);\nconsole.log(`Nombre archivo: ${fileTitle}`);\nconsole.log(`ID ESTABLE generado: ${stableId}`);\n\n// RETORNO\nreturn {\n  json: {\n    // Datos directos en raíz\n    file_id: stableId,\n    file_id_original: originalFileId,\n    file_title: fileTitle,\n    file_binary: fileBinary,\n    file_url: fileUrl,\n    \n    rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n    user_proveedor: userProveedor,\n    user_tipo_evaluacion: userTipoEval,\n    modo_operacion: modoOperacion,\n    datos_usuario_completos: datosCompletos,\n    \n    // Mantener body completo\n    body: {\n      ...body,\n      file_id: stableId,\n      file_id_original: originalFileId,\n      rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n      user_proveedor: userProveedor,\n      user_tipo_evaluacion: userTipoEval,\n      modo_operacion: modoOperacion,\n      datos_usuario_completos: datosCompletos\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -944
+      ],
+      "id": "c0db53e1-3e24-4ca2-93ec-5e5f8e8a5613",
+      "name": "Code in JavaScript1"
     },
-    "pinData": {},
-    "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -1056
+      ],
+      "id": "ffd9b6be-df7c-4462-b13f-7ae03c2beb7d",
+      "name": "Base64 a Binary1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        -944
+      ],
+      "id": "d11772ed-348b-4f3c-be93-79e42573593c",
+      "name": "Base64 a Binary"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ofertas-proveedores",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -864,
+        -944
+      ],
+      "id": "bc1aebd6-b607-43d4-b87b-1bf9256a6829",
+      "name": "Webhook",
+      "webhookId": "a002f7af-bec0-47d3-99c2-9c7d1f508f2c"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -32,
+        -1984
+      ],
+      "id": "9eca1a78-fad0-4e50-958d-3af24a050248",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n    json: {\n        ...item.json, // Mantiene todos los datos originales (incluido tipo_evaluacion)\n        \n        // Aquí está la corrección: Usamos dos puntos, no el igual.\n        reiniciar_bucle: true \n    }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        -1776
+      ],
+      "id": "319afb49-e080-4685-99ff-cd0cc2652a12",
+      "name": "Reset Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1824,
+        -944
+      ],
+      "id": "1c2ef983-a665-4ae8-bf7c-e4ca02f14a7a",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"proveedor_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa proveedora (Ej: SACYR, IDOM, etc.)\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"Technical Evaluation\",\n          \"Economical Evaluation\",\n          \"Pre-FEED Deliverables\",\n          \"FEED Deliverables\"\n        ]\n      },\n      \"description\": \"Lista de tipos de oferta detectados en el documento.\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\",\n      \"description\": \"Breve explicación de por qué se eligieron esos tipos.\"\n    }\n  },\n  \"required\": [\n    \"proveedor_detectado\",\n    \"tipos_detectados\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2672,
+        -528
+      ],
+      "id": "4c0cec06-be58-4f2f-acd8-8c2a98ed266c",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://unlaconic-ardelle-pretenceful.ngrok-free.dev/v1/convert/file",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "32a0e72e-cd84-46f5-b2c8-88b1667ea116",
+      "name": "Docling OCR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1360,
+        -1152
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -480,
+        -1728
+      ],
+      "id": "c674dbfa-6826-4385-878f-64a176366d22",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Expandir por Tipo de Evaluación (v2 - Valida Metadatos)\n// =============================================\n\n// 1. RECUPERAR TEXTO Y CONTENIDO BASE\nlet fullText = \"\";\nlet totalPages = 1;\ntry {\n    const mergeData = $('Merge1').first().json;\n    fullText = (mergeData.pages && mergeData.pages[0]) \n        ? mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\") \n        : (mergeData.text || \"\");\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.error(\"❌ Error leyendo Merge1\");\n}\n\n// 2. RECUPERAR DATOS VALIDADOS PRIORITARIAMENTE\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet projectName = \"proyecto_sin_especificar\";\n\ntry {\n    let llmNode = null;\n    try { llmNode = $('Validador de Ofertas').first().json; } catch(e) {}\n    if (!llmNode) { try { llmNode = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json; } catch(e) {} }\n\n    if (llmNode) {\n        const data = llmNode.output || llmNode;\n        proveedor = data.proveedor_detectado || proveedor;\n        tipoEval = data.tipos_detectados || tipoEval;\n        // El proyecto también puede venir del validador si se detectó\n        if (data.proyecto_detectado) projectName = data.proyecto_detectado;\n    }\n} catch (e) {\n    console.log(\"⚠️ Falló lectura de LLM, intentando fallbacks...\");\n}\n\n// 3. FALLBACK A SET FILE ID (Si el LLM no dio datos)\nlet fileId = \"unknown\";\ntry {\n    const fileData = $('Set File ID').first().json;\n    fileId = fileData.file_id || \"unknown\";\n    if (proveedor === \"OTROS\") proveedor = fileData.proveedor || \"OTROS\";\n    if (projectName === \"proyecto_sin_especificar\") projectName = fileData.proyect_name || \"proyecto_sin_especificar\";\n} catch (e) {}\n\n// 4. NORMALIZAR TIPOS\nif (!Array.isArray(tipoEval)) tipoEval = [tipoEval];\ntipoEval = tipoEval.filter(t => t && t.trim() !== \"\");\nif (tipoEval.length === 0) tipoEval = [\"Technical Evaluation\"];\n\n// 5. GENERAR FILAS\nreturn tipoEval.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion_actual: tipo,\n        proveedor_detectado: proveedor,\n        proyecto_nombre: projectName,\n        texto_oferta_completo: fullText,\n        indice_actual: idx + 1,\n        total_tipos: tipoEval.length,\n        file_id: fileId\n    }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -784,
+        -1648
+      ],
+      "id": "e4ea3db1-45e6-41c3-9bd4-f74f717b6482",
+      "name": "Expandir por Tipo de Evaluación"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Format for Vectorstore (FINAL v2)\n// =============================================\n\n// 1. RECUPERAR CONTENIDO (Instrucción explícita)\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. RECUPERAR CLASIFICACIÓN O VALIDACIÓN\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\n\ntry {\n    // Intentamos leer del validador primero, si no, del clasificador\n    let llmData;\n    try {\n        llmData = $('Validador de Ofertas').first().json;\n    } catch (e) {\n        llmData = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json;\n    }\n\n    const output = llmData.output || llmData;\n\n    if (output.proveedor_detectado) proveedor = output.proveedor_detectado;\n    if (output.proyecto_detectado) proyecto = output.proyecto_detectado;\n    \n    if (output.tipos_detectados) {\n        tipoEval = Array.isArray(output.tipos_detectados) \n            ? output.tipos_detectados \n            : [output.tipos_detectados];\n    }\n} catch (e) {\n    console.log(\"⚠️ Error leyendo clasificación/validación LLM, usando defaults.\");\n}\n\n// 3. RECUPERAR METADATOS DEL ARCHIVO Y FALLBACKS\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id;\n    fileTitle = fileNode.file_title;\n    if (!proyecto) proyecto = fileNode.proyect_name;\n} catch(e) {}\n\n// 4. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2864,
+        -960
+      ],
+      "id": "f9c6d28e-a7f3-444a-9daa-f1baf74c18e3",
+      "name": "Format for Vectorstore"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
+      },
+      "id": "a3507e43-ad99-40e8-bc99-434be3476d35",
+      "name": "Preparar Texto de Muestra",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        -944
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Aggregate OCR Pages (CORREGIDO)\n// =============================================\n\nconst items = $input.all();\nlet fullText = \"\";\nlet pagesArray = [];\n\n// OPCIÓN A: Si Tesseract devuelve múltiples items (1 por página)\nif (items.length > 1) {\n  items.forEach((item, idx) => {\n    const pageText = item.json.text || \"\";\n    fullText += pageText + \"\\n\\n\";\n    \n    // Construimos array compatible con vectorstore\n    pagesArray.push({\n      text: pageText,\n      pageNumber: idx + 1\n    });\n  });\n}\n// OPCIÓN B: Si Tesseract devuelve un solo item con todo el texto\nelse if (items.length === 1) {\n  fullText = items[0].json.text || \"\";\n  pagesArray = [{\n    text: fullText,\n    pageNumber: 1\n  }];\n}\n\n// RECUPERAR METADATOS ORIGINALES (CRÍTICO)\nlet fileId, fileName, proveedor;\ntry {\n  fileId = $('Set File ID').first().json.file_id;\n  fileName = $('Set File ID').first().json.file_title;\n  proveedor = $('Identificar Proveedor').first().json.proveedor_detectado;\n} catch (e) {\n  console.error(\"⚠️ No se pudieron recuperar metadatos:\", e.message);\n  fileId = \"unknown\";\n  fileName = \"unknown\";\n  proveedor = \"OTROS\";\n}\n\nconsole.log(`🔄 OCR Agregado: ${items.length} páginas → ${fullText.length} caracteres`);\n\n// ESTRUCTURA COMPATIBLE CON VECTORSTORE\nreturn {\n  json: {\n    pages: pagesArray, // ← Array de páginas (requerido por Default Data Loader)\n    text: fullText, // ← Texto completo (backup)\n    \n    // Metadatos críticos\n    file_id: fileId,\n    file_title: fileName,\n    proveedor: proveedor,\n    \n    // Marca de origen\n    origen_datos: \"OCR_TESSERACT\",\n    ocr_pages_processed: items.length,\n    ocr_total_chars: fullText.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -1056
+      ],
+      "id": "468c9a0a-c172-4232-85ab-f48c10381055",
+      "name": "Aggregate OCR Pages"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "57b9c551-9997-4ed5-8ddd-f80c108a177c",
+              "leftValue": "={{ $json.needsOCR }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        -944
+      ],
+      "id": "545db1c8-151f-40b7-a4a8-8330ae1441e6",
+      "name": "¿Necesita OCR?"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        368,
+        -944
+      ],
+      "id": "911ea489-24e2-4638-acd0-44bd13c46faf",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Validar Contenido PDF (FIX PAGINACIÓN)\n// =============================================\n\nconst input = $input.first().json;\n\n// Variables de inicialización\nlet pages = [];\nlet totalChars = 0;\nlet hasTablesDetected = false;\n\n// --- 1. PROCESAMIENTO DEL TEXTO ---\n\n// CASO A: Viene desglosado por páginas (Array)\nif (input.pages && Array.isArray(input.pages) && input.pages.length > 0) {\n  pages = input.pages;\n  pages.forEach(page => {\n    const text = page.text || page.pageContent || \"\";\n    totalChars += text.length;\n    // Detección simple de tablas\n    if ((text.match(/\\s{4,}/g) || []).length > 5) hasTablesDetected = true;\n  });\n\n// CASO B: Viene todo el texto junto (String) - ESTE ES TU CASO ACTUAL\n} else if (input.text && typeof input.text === 'string') {\n  const text = input.text;\n  totalChars = text.length;\n  // Creamos una \"página única\" contenedora para no romper el flujo\n  pages = [{ text: text, pageNumber: 1 }];\n  \n  // Detectar tablas en el texto completo\n  if ((text.match(/\\s{4,}/g) || []).length > 20) hasTablesDetected = true;\n  \n} else {\n  // CASO C: Vacío\n  pages = [];\n}\n\n// --- 2. CÁLCULO DE PÁGINAS REALES (FIX CRÍTICO) ---\n\n// Intentamos leer el metadato 'numpages' que se ve en tu captura\nlet realPageCount = input.numpages || input.numPages || input.numberOfPages || 0;\n\n// Si no existe el metadato, usamos la longitud del array (fallback)\nif (!realPageCount || realPageCount === 0) {\n    realPageCount = pages.length;\n}\n\n// Si sigue siendo 1 pero el texto es enorme (>10k chars), estimamos\nif (realPageCount <= 1 && totalChars > 10000) {\n    // Estimación conservadora: 3000 caracteres por página técnica\n    realPageCount = Math.ceil(totalChars / 3000);\n}\n\n// Evitar división por cero\nrealPageCount = Math.max(1, realPageCount);\n\n\n// --- 3. MÉTRICAS FINALES ---\n\nconst avgCharsPerPage = totalChars / realPageCount;\n\n// CRITERIO: ¿Necesita OCR?\n// Si hay texto (< 100 chars/pag) es probable que sea escaneado.\nconst needsOCR = avgCharsPerPage < 100; \n\n// Metadatos\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n  const metaNode = $('Set File ID').first().json;\n  fileId = metaNode.file_id;\n  fileTitle = metaNode.file_title;\n} catch (e) {}\n\n// --- LOGGING ---\nconsole.log(`📄 Análisis: ${fileTitle}`);\nconsole.log(`   ├─ Páginas (Metadato): ${input.numpages}`); \nconsole.log(`   ├─ Páginas (Usadas): ${realPageCount}`);\nconsole.log(`   ├─ Caracteres Totales: ${totalChars}`);\nconsole.log(`   ├─ Promedio/Pág: ${Math.round(avgCharsPerPage)}`);\n\nreturn {\n  json: {\n    // Métricas corregidas\n    totalPages: realPageCount, // Ahora dirá 235\n    totalChars: totalChars,\n    avgCharsPerPage: Math.round(avgCharsPerPage), // Ahora será un número razonable (~2800)\n    hasTables: hasTablesDetected,\n    needsOCR: needsOCR,\n    \n    // Contenido\n    pages: pages, \n    \n    // Metadatos\n    fileId: fileId,\n    fileName: fileTitle\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -944
+      ],
+      "id": "384d6688-e61d-499f-8255-3cb950b56b09",
+      "name": "Validar Contenido PDF"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "proposals",
+          "mode": "list",
+          "cachedResultName": "proposals"
+        },
+        "options": {
+          "queryName": "match_proposals"
+        }
+      },
+      "id": "9535aa99-ea73-4318-b084-e7a169b73200",
+      "name": "Insert into Supabase Vectorstore",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        -960
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        -496
+      ],
+      "id": "54cd67fe-e82b-4081-8135-2d79c89d71c4",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $json.metadata.file_id }}"
+              },
+              {
+                "name": "file_title",
+                "value": "={{ $json.metadata.file_title }}"
+              },
+              {
+                "name": "tipo_evaluacion",
+                "value": "={{ $json.metadata.tipo_evaluacion }}"
+              },
+              {
+                "name": "proveedor",
+                "value": "={{ $json.metadata.proveedor }}"
+              },
+              {
+                "name": "project_name",
+                "value": "={{ $json.metadata.project_name }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e8e4dc6d-94af-4535-8d73-c5eb26f930a3",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        3184,
+        -672
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10646eae-ae46-4327-a4dc-9987c2d76173",
+              "name": "file_id",
+              "value": "={{ $json.body.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "77d782de-169d-4a46-8a8e-a3831c04d90f",
+              "name": "file_title",
+              "value": "={{ $json.body.file_title }}",
+              "type": "string"
+            },
+            {
+              "id": "9bde4d7f-e4f3-4ebd-9338-dce1350f9eab",
+              "name": "file_url",
+              "value": "={{ $json.body.file_url }}",
+              "type": "string"
+            },
+            {
+              "id": "b1dbe9b9-248a-4593-a769-a085b34e0810",
+              "name": "file_binary",
+              "value": "={{ $json.body.file_binary }}",
+              "type": "string"
+            },
+            {
+              "id": "74d93dce-cddc-4947-ae19-88bc5cacd146",
+              "name": "file_metadata",
+              "value": "={{ $json.body.metadata }}",
+              "type": "string"
+            },
+            {
+              "id": "5e43f8d4-b48e-4188-89c8-3723f184dbeb",
+              "name": "proyect_name",
+              "value": "={{ $json.body.metadata.proyecto }}",
+              "type": "string"
+            },
+            {
+              "id": "1093ebc6-8dd8-4c5d-b146-b6f01b069be6",
+              "name": "proveedor",
+              "value": "={{ $json.body.user_proveedor }}",
+              "type": "string"
+            },
+            {
+              "id": "6e0e6e2a-9b88-403e-aa0a-da0eecccd3f9",
+              "name": "evaluation",
+              "value": "={{ $json.body.metadata.tipoEvaluacion }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4fe7ce2e-3833-4ed4-a927-523acb59ebab",
+      "name": "Set File ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        -944
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "proposals",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
+      },
+      "id": "98017e4a-6e39-4170-a5e5-d349f9412b75",
+      "name": "Delete Old Doc Rows",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        -944
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "document_metadata",
+          "mode": "list",
+          "cachedResultName": "document_metadata"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Set File ID').item.json.file_id }}",
+            "title": "={{ $('Set File ID').item.json.file_title }}",
+            "project_name": "={{ $('Set File ID').item.json.proyect_name }}\n",
+            "evaluation_types": "={{ $('Set File ID').item.json.evaluation }}",
+            "document_type": "PROPOSAL",
+            "provider": "={{ $('Set File ID').item.json.proveedor }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "project_name",
+              "displayName": "project_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "document_type",
+              "displayName": "document_type",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "provider",
+              "displayName": "provider",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "evaluation_types",
+              "displayName": "evaluation_types",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "array",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -32,
+        -944
+      ],
+      "id": "9626fadd-3f3e-4614-9806-e7b3ec16397c",
+      "name": "Insert Document Metadata",
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### REQUISITO RFQ:\n{{ $json.requisito_rfq }}\n\n### TEXTO COMPLETO DE LA OFERTA:\n{{ $json.context }}\n\n---\n### TAREA:\nAnaliza el texto completo de la oferta y determina el cumplimiento del proveedor respecto al requisito.\n\n### CRITERIOS DE EVALUACIÓN:\n\n#### Para Evaluaciones Técnicas:\n- **INCLUIDO** (10 pts): Cumplimiento total explícito del requisito\n- **INCLUIDO CON SALVEDADES** (8 pts): Cumple pero con condiciones menores documentadas\n- **PARCIALMENTE INCLUIDO** (6 pts): Cumple solo parte del requisito\n- **NO INCLUIDO CON ALTERNATIVA** (3 pts): No cumple pero propone solución alternativa\n- **NO INCLUIDO** (0 pts): No cumple y no propone alternativa\n- **SIN INFORMACIÓN** (0 pts): El documento no menciona este requisito\n\n#### Para Evaluaciones Económicas:\n- **PRECIO COMPETITIVO** (10 pts): Precio cotizado claro y dentro del rango esperado\n- **PRECIO ALTO** (7 pts): Precio cotizado pero por encima del mercado\n- **TARIFA HORARIA** (5 pts): Solo indica tarifa por hora sin total\n- **SIN VALORAR** (3 pts): Menciona el item pero no da precio\n- **NO COTIZADO** (0 pts): No aparece en la oferta económica\n\n### INSTRUCCIONES ESPECIALES:\n1. **Cita exacta**: En gap_analysis, incluye la cita textual del documento que sustenta tu evaluación\n2. **Ubicación**: Si es posible, menciona la página o sección donde encontraste la información\n3. **Conservador**: Si hay duda, prefiere puntuaciones más bajas y marca como \"SIN INFORMACIÓN\"\n4. **Evidencia clara**: Solo asigna puntuaciones altas si hay evidencia explícita en el contexto\n\n### FORMATO DE SALIDA (JSON):\n[\n  {\n    \"id\": \"{{ $json.id }}\",\n    \"cumple\": \"[INCLUIDO | INCLUIDO CON SALVEDADES | PARCIALMENTE INCLUIDO | NO INCLUIDO CON ALTERNATIVA | NO INCLUIDO | SIN INFORMACIÓN | PRECIO COMPETITIVO | PRECIO ALTO | TARIFA HORARIA | SIN VALORAR | NO COTIZADO]\",\n    \"gap_analysis\": \"[CITA TEXTUAL del documento con ubicación (ej: 'Página 15: El proveedor indica...')]. Si no hay información: 'No se encontró mención de este requisito en el texto de la oferta.'\",\n    \"score\": [0-10]\n  }\n]\n\nResponde SOLO con el JSON. No agregues explicaciones fuera del JSON.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Eres un auditor técnico-comercial experto especializado en evaluación de ofertas industriales.\n\nTu rol es:\n1. Analizar ofertas técnicas y comerciales con precisión\n2. Buscar evidencia textual específica en los documentos\n3. Ser objetivo y conservador: ante la duda, puntuar bajo\n4. Documentar cada evaluación con citas textuales del documento\n\nNO inventes información. Si no encuentras evidencia clara, márcalo como \"SIN INFORMACIÓN\" con score 0."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1712,
+        -1696
+      ],
+      "id": "41fdc774-ffb4-4e29-af9a-58f7fd0ff9b9",
+      "name": "LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (CON VALIDACIÓN DE FK)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  // Si no podemos obtener la lista válida, no procesamos nada\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    // El LLM Chain devuelve el resultado en el campo 'text' o 'output'\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    // Limpiar el texto: remover code blocks de markdown\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    // Extraer el JSON del texto\n    let parsedData = null;\n\n    try {\n      // Buscar el JSON array en el texto\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        // Intentar parsear directamente\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    // Extraer el primer elemento del array (o el objeto si no es array)\n    let outputItem = null;\n    if (Array.isArray(parsedData) && parsedData.length > 0) {\n      outputItem = parsedData[0];\n    } else if (typeof parsedData === 'object' && parsedData !== null) {\n      outputItem = parsedData;\n    } else {\n      console.warn(`⚠️ Item ${i}: Formato de datos no reconocido`);\n      continue;\n    }\n\n    // Extraer valores del análisis\n    const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n    const gap = outputItem?.gap_analysis || outputItem?.gap_analysis || \"Check logs\";\n    const score = outputItem?.score !== undefined ? outputItem.score : 0;\n    const requirementId = outputItem?.id || null;\n\n    // Validar que score esté en rango 0-10\n    const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n    // VALIDACIÓN CRÍTICA: Verificar que el requirement_id existe en la base de datos\n    if (!requirementId) {\n      console.error(`❌ Item ${i}: No se encontró ID del requisito en la respuesta del LLM`);\n      continue;\n    }\n\n    if (!validRequirements.includes(requirementId)) {\n      console.error(`❌ Item ${i}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n      console.error(`   Requisitos válidos disponibles:`, validRequirements.slice(0, 5), '...');\n      continue;\n    }\n\n    console.log(`✅ Item ${i}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n    // Preparar resultado para Upsert\n    resultados.push({\n      json: {\n        requirement_id: requirementId,\n        provider_name: providerName,\n        evaluation_value: cumple,\n        comment: gap,\n        score: validatedScore\n      }\n    });\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    // Continuar con el siguiente item\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente (con FK válidas)`);\n\n// 5. Retornar todos los resultados\nreturn resultados;"
+      },
+      "id": "fc8b23bd-b337-465f-bb91-a4251630fa91",
+      "name": "Parsear y Preparar Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -1696
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 25,
+        "options": {
+          "reset": "={{ $json.reiniciar_bucle ? true : false }}"
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        768,
+        -1712
+      ],
+      "id": "bb382908-447b-4125-9c55-def7eda52b7d",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "### Ingesta de Ofertas de Proveedores",
+        "height": 1744,
+        "width": 4608,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -2064
+      ],
+      "id": "1a210583-cb38-4dfc-a88f-1ff3e3544a13",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "model": "mistral:7b",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        -528
+      ],
+      "id": "4fda3e32-7878-47db-9d13-888cca124ca5",
+      "name": "Ollama Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3:14b",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmOllama",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        -1520
+      ],
+      "id": "18e015ff-092d-4b15-8959-a7987778329d",
+      "name": "Ollama Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "267128b5-e2c0-44ae-9973-7f18dffe292e",
+              "leftValue": "={{ $('Set File ID').item.json.proveedor }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "a9d65ff4-430e-45db-8ca8-6078e5ee32fa",
+              "leftValue": "={{ $('Set File ID').item.json.evaluation[0] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "d5c265e7-00e5-42f4-95ad-4eca1e3ef530",
+              "leftValue": "={{ $('Set File ID').item.json.proyect_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2208,
+        -944
+      ],
+      "id": "1829359f-f2aa-4d83-a4d7-b0c2152332fe",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\",\n        \"description\": \"ID numérico del ítem evaluado\"\n      },\n      \"cumple\": {\n        \"type\": \"string\",\n        \"description\": \"Estado de cumplimiento según criterios específicos. Técnico: INCLUIDO, INCLUIDO CON SALVEDADES, PARCIALMENTE INCLUIDO, NO INCLUIDO CON ALTERNATIVA, NO INCLUIDO, SIN INFORMACIÓN. Económico: PRECIO COMPETITIVO, PRECIO ALTO, TARIFA HORARIA, SIN VALORAR, NO COTIZADO\",\n        \"enum\": [\"INCLUIDO\", \"INCLUIDO CON SALVEDADES\", \"PARCIALMENTE INCLUIDO\", \"NO INCLUIDO CON ALTERNATIVA\", \"NO INCLUIDO\", \"SIN INFORMACIÓN\", \"PRECIO COMPETITIVO\", \"PRECIO ALTO\", \"TARIFA HORARIA\", \"SIN VALORAR\", \"NO COTIZADO\"]\n      },\n      \"gap_analysis\": {\n        \"type\": \"string\",\n        \"description\": \"Cita textual del documento con ubicación exacta (página/sección) que sustenta la evaluación\"\n      },\n      \"score\": {\n        \"type\": \"integer\",\n        \"description\": \"Puntuación de 0 a 10 según cumplimiento del requisito\",\n        \"minimum\": 0,\n        \"maximum\": 10\n      }\n    },\n    \"required\": [\"id\", \"cumple\", \"gap_analysis\", \"score\"]\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1936,
+        -1520
+      ],
+      "id": "1c159441-f018-4be0-8202-692b80012299",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### CLASIFICACIÓN TÉCNICA Y COMERCIAL (RFQ)\n\n### DOCUMENTO DE MUESTRA (Primeras 2 páginas):\n{{ $json.texto_muestra }}\n\n---\n### TAREA DE CLASIFICACIÓN:\nIdentifica proyecto, proveedor y tipos de evaluación. \n\n**REGLA DE ORO DE NOMENCLATURA:**\nDebes traducir los títulos del documento a estos nombres exactos:\n- **\"Commercial Proposal\" / \"Oferta Económica\"** → DEBE SER `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\"** → DEBE SER `Technical Evaluation`.\n- **Listas de documentos** → `Pre-FEED Deliverables` o `FEED Deliverables` (según contexto).\n\n#### REQUISITOS:\n1. **PROVEEDOR**: Debe ser uno de: IDOM, SENER, TRESCA, SACYR, TECNICASREUNIDAS, EA, WORLEY.\n2. **TIPOS**: El array `tipos_detectados` solo puede contener los nombres canónicos arriba mencionados.\n\n---\n### FORMATO DE SALIDA (JSON):\n{\n  \"modo_usado\": \"CLASIFICADOR\",\n  \"proyecto_detectado\": \"Nombre\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"Justificación: 'Commercial Proposal' detectado -> Economical Evaluation mapeada.\"\n}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Identifica al proveedor y los tipos de evaluación presentes en el documento basándote solo en las primeras páginas."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        2480,
+        -736
+      ],
+      "id": "3a8a1624-2595-4bbe-862f-5a5603c1347a",
+      "name": "Clasificador de Tipo de Evaluacion y Proveedor"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"modo_usado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_valido\": {\n      \"type\": \"boolean\"\n    },\n    \"proyecto_nota\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_valido\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el proveedor detectado es distinto al que el usuario seleccionó.\"\n    },\n    \"proveedor_nota\": {\n      \"type\": \"string\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Array con los tipos que realmente tienen evidencia en el doc.\"\n    },\n    \"tipos_validados\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el tipo seleccionado por el usuario no tiene evidencia clara en el PDF.\"\n    },\n    \"tipos_nota\": {\n      \"type\": \"string\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"proyecto_detectado\",\n    \"proyecto_valido\",\n    \"proveedor_detectado\",\n    \"proveedor_valido\",\n    \"tipos_validados\",\n    \"razonamiento\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2672,
+        -944
+      ],
+      "id": "e0738792-105c-4523-b0fa-818f8c45a230",
+      "name": "Structured Output Parser4"
+    },
+    {
+      "parameters": {
+        "model": "mistral:7b",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        -944
+      ],
+      "id": "7ff18266-fcff-449d-a2aa-c36bf9a7a726",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### AUDITORÍA DE DOCUMENTO: VALIDACIÓN CRUZADA\n\n**[1. SELECCIÓN MANUAL DEL USUARIO]**\n- Proyecto: \"{{ $('Set File ID').item.json.proyect_name }}\"\n- Proveedor: \"{{ $('Set File ID').item.json.proveedor }}\"\n- Tipo de Evaluación: \"{{ $('Set File ID').item.json.evaluation }}\"\n- Nombre Archivo: \"{{ $('Set File ID').item.json.file_title }}\"\n\n---\n**[2. EVIDENCIA REAL DEL PDF (Texto extraído)]**\n{{ $json.texto_muestra }}\n\n---\n### INSTRUCCIONES DE MAPEADO Y VALIDACIÓN:\n\n#### REGLA 1: SINÓNIMOS Y TIPOS CANÓNICOS\nSolo puedes usar estos 4 nombres exactos. Mapea la evidencia así:\n- **\"Commercial Proposal\" / \"Oferta Económica\" / \"Price Schedule\"** → DEBE SER `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\" / \"Metodología\"** → DEBE SER `Technical Evaluation`.\n- **\"Technical & Economical Proposal\"** → DEBE INCLUIR AMBOS: `Technical Evaluation` Y `Economical Evaluation`.\n- **Listas de planos** → `Pre-FEED Deliverables` o `FEED Deliverables`.\n\n#### REGLA 2: EL TÍTULO Y NOMBRE DE ARCHIVO SON DECISIVOS\n- Analiza el **Nombre Archivo** y el **Título** del documento. Si dicen \"Oferta Técnica\" o \"Technical Proposal\", el tipo es `Technical Evaluation`.\n- **IMPORTANTE:** NO agregues otros tipos por menciones menores. Ejemplo: Si un documento técnico menciona \"precios estimados\", NO agregues `Economical Evaluation`. Solo agrégalo si ves una TABLA DE PRECIOS completa.\n- Sé conservador: ante la duda, guíate por el Nombre del Archivo.\n\n#### REGLA 3: BALANCEO DE INTENCIÓN\n- Si el PDF es mixto pero el usuario ha seleccionado uno de los tipos válidos presentes, marca `tipos_validados: true`.\n\n### FORMATO DE SALIDA (JSON ÚNICO):\n{\n  \"modo_usado\": \"VALIDADOR\",\n  \"proyecto_detectado\": \"Nombre Real\",\n  \"proyecto_valido\": true | false,\n  \"proyecto_nota\": \"Resumen\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"proveedor_valido\": true | false,\n  \"proveedor_nota\": \"Explicación\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"],\n  \"tipos_validados\": true | false,\n  \"tipos_nota\": \"Explica por qué validaste o rechazaste los tipos.\",\n  \"razonamiento\": \"Menciona el Nombre del Archivo y el Título encontrado.\"\n}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Actúa como un validador estricto. Si hay discrepancias flagrantes entre la sugerencia del usuario y el contenido real del PDF, prioriza el contenido del PDF y marca la validación como falsa y reporta el proveedor/tipo correcto.\n\nProveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        2480,
+        -1136
+      ],
+      "id": "0f769675-5789-4088-a89c-0d46a348c46d",
+      "name": "Validador de Ofertas"
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        2976,
+        -704
+      ],
+      "id": "0052760c-e214-4da1-b752-7b6c378d58d1",
+      "name": "Embeddings Ollama3",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "provider_responses",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "provider_name",
+              "fieldValue": "={{ $json.provider_name }}"
+            },
+            {
+              "fieldId": "evaluation_value",
+              "fieldValue": "={{ $json.evaluation_value }}"
+            },
+            {
+              "fieldId": "comment",
+              "fieldValue": "={{ $json.comment }}"
+            },
+            {
+              "fieldId": "score",
+              "fieldValue": "={{ $json.score }}"
+            },
+            {
+              "fieldId": "requirement_id",
+              "fieldValue": "={{ $json.requirement_id }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "file_id",
+              "fieldValue": "={{ $('Set File ID').first().json.file_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        -1504
+      ],
+      "id": "729b06c9-ed93-48e2-8c48-3e21bad5e13c",
+      "name": "Upsert Provider Response",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "rfq_items_master",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "evaluation_type",
+              "condition": "eq",
+              "keyValue": "={{ $json.tipo_evaluacion_actual }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        -1776
+      ],
+      "id": "78080c19-9686-442d-8594-8e043c2b72b0",
+      "name": "Get many rows1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Requisito + Texto Completo de Oferta\n// Procesa TODOS los requisitos del loop\n// =============================================\n\n// 1. Obtener TODOS los requisitos del loop\nconst allItems = $input.all();\nconsole.log(`📋 Procesando ${allItems.length} requisitos del loop`);\n\n// 2. Obtener el texto completo de la oferta del nodo Merge1 (una sola vez)\nlet textoCompletoOferta = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    \n    // El Merge1 puede tener el texto en diferentes formatos\n    if (mergeData.pages && Array.isArray(mergeData.pages) && mergeData.pages.length > 0) {\n        // Si tiene páginas, unimos todas las páginas (texto completo)\n        textoCompletoOferta = mergeData.pages.map(p => p.text || \"\").join(\"\\n\\n\");\n        totalPages = mergeData.pages.length;\n    } else if (mergeData.text) {\n        // Si tiene texto directo\n        textoCompletoOferta = mergeData.text;\n        totalPages = mergeData.totalPages || 1;\n    } else {\n        // Buscar cualquier propiedad que contenga texto largo\n        for (const key in mergeData) {\n            const value = mergeData[key];\n            if (typeof value === 'string' && value.length > 100) {\n                textoCompletoOferta = value;\n                break;\n            }\n        }\n    }\n    \n    console.log(`✅ Texto de oferta recuperado: ${textoCompletoOferta.length} caracteres, ${totalPages} páginas`);\n} catch (e) {\n    console.error(\"❌ Error obteniendo texto completo de Merge1:\", e.message);\n    textoCompletoOferta = \"ERROR: No se pudo recuperar el texto completo de la oferta.\";\n}\n\n// 3. Validar que tenemos datos mínimos\nif (!textoCompletoOferta || textoCompletoOferta.trim().length === 0) {\n    console.warn(\"⚠️ El texto de la oferta está vacío\");\n    textoCompletoOferta = \"SIN TEXTO DISPONIBLE EN LA OFERTA.\";\n}\n\n// 4. Procesar CADA requisito y combinarlo con el texto completo de la oferta\n// El LLM Chain espera: requisito_rfq, context, id\nreturn allItems.map(item => {\n    const currentItem = item.json || item;\n    const requisitoId = currentItem.id || \"\";\n    // El campo correcto de Supabase es 'requirement_text'\n    const requisitoTexto = currentItem.requirement_text || currentItem.requisito_rfq || currentItem.text || currentItem.description || \"NO ESPECIFICADO EN RFQ\";\n    \n    console.log(`📋 Procesando requisito ID: ${requisitoId} - ${requisitoTexto.substring(0, 50)}...`);\n    \n    return {\n        json: {\n            id: requisitoId,\n            requisito_rfq: requisitoTexto,\n            context: textoCompletoOferta,\n            // Metadatos adicionales para debugging\n            total_pages: totalPages,\n            texto_length: textoCompletoOferta.length,\n            // Mantener otros campos del requisito por si acaso\n            project_name: currentItem.project_name,\n            evaluation_type: currentItem.evaluation_type,\n            phase: currentItem.phase\n        }\n    };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -1696
+      ],
+      "id": "e7b44b53-5bc0-4ce5-b7e6-6571dc562333",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        -1520
+      ],
+      "id": "42ace741-eac3-4e22-8116-8ef251241a9d",
+      "name": "Mistral Cloud Chat Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
     }
+  ],
+  "connections": {
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Set File ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 a Binary1": {
+      "main": [
+        [
+          {
+            "node": "Docling OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 a Binary": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reset Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Preparar Texto de Muestra",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Docling OCR": {
+      "main": [
+        [
+          {
+            "node": "Aggregate OCR Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get many rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expandir por Tipo de Evaluación": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Vectorstore": {
+      "main": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Texto de Muestra": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate OCR Pages": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Necesita OCR?": {
+      "main": [
+        [
+          {
+            "node": "Base64 a Binary1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Validar Contenido PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Contenido PDF": {
+      "main": [
+        [
+          {
+            "node": "¿Necesita OCR?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into Supabase Vectorstore": {
+      "main": [
+        [
+          {
+            "node": "Expandir por Tipo de Evaluación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set File ID": {
+      "main": [
+        [
+          {
+            "node": "Delete Old Doc Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Doc Rows": {
+      "main": [
+        [
+          {
+            "node": "Insert Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Document Metadata": {
+      "main": [
+        [
+          {
+            "node": "Base64 a Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Parsear y Preparar Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear y Preparar Update": {
+      "main": [
+        [
+          {
+            "node": "Upsert Provider Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Validador de Ofertas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificador de Tipo de Evaluacion y Proveedor": {
+      "main": [
+        [
+          {
+            "node": "Format for Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser4": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Validador de Ofertas",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Validador de Ofertas",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validador de Ofertas": {
+      "main": [
+        [
+          {
+            "node": "Format for Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Provider Response": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "Reset Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+  }
 }

@@ -28,6 +28,7 @@ const EVALUATION_TYPES = [
 ];
 
 export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMetadataFormProps) {
+
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);

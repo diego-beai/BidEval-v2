@@ -303,14 +303,32 @@ export async function generateTechnicalAudit(
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    const data = await response.json();
-
+    // Verificar si la respuesta tiene contenido antes de parsear JSON
+    const responseText = await response.text();
+    
     console.log('📥 Audit generation response:', {
       status: response.status,
       statusText: response.statusText,
       elapsedTime: `${elapsedTime}s`,
-      data: data
+      responseLength: responseText.length,
+      responsePreview: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
     });
+
+    // Si la respuesta está vacía o no es JSON válido
+    if (!responseText.trim()) {
+      throw new ApiError('El servidor devolvió una respuesta vacía. El workflow puede estar teniendo problemas.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', {
+        parseError,
+        responseText: responseText.substring(0, 500)
+      });
+      throw new ApiError('La respuesta del servidor no es JSON válido. El workflow puede tener un error interno.');
+    }
 
     if (response.ok) {
       // Si n8n devuelve el número de preguntas generadas
@@ -329,24 +347,41 @@ export async function generateTechnicalAudit(
       return auditResponse;
     }
 
-    // Si HTTP no fue exitoso, lanzar error
-    throw new ApiError(
-      data.message || `Server error (${response.status}): ${response.statusText}`
-    );
+    // Si HTTP no fue exitoso, lanzar error con más detalles
+    const errorMessage = data?.message || data?.error || `Server error (${response.status}): ${response.statusText}`;
+    throw new ApiError(errorMessage);
 
   } catch (error) {
     console.error('❌ Error generating technical audit:', {
       error,
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
-      payload
+      payload,
+      endpoint: API_CONFIG.N8N_QA_AUDIT_URL,
+      isDev: import.meta.env.DEV
     });
 
     if (error instanceof ApiError) {
+      // Mejorar mensajes de error según el código HTTP
+      if (error.statusCode === 404) {
+        const isDev = import.meta.env.DEV;
+        const message = isDev
+          ? 'El endpoint del webhook no está disponible. Asegúrate de que el servidor de desarrollo está corriendo (npm run dev) y que el proxy está configurado correctamente.'
+          : 'El webhook de auditoría técnica no está disponible. Verifica que el workflow esté activo en n8n.';
+        throw new ApiError(message, 404);
+      }
+      
+      if (error.statusCode === 500) {
+        const message = import.meta.env.DEV
+          ? 'Error interno del servidor (500). Verifica la consola de n8n para ver los detalles del error en el workflow.'
+          : 'Error interno del servidor. Contacta al administrador del sistema.';
+        throw new ApiError(message, 500);
+      }
+      
       throw error;
     }
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Unknown error while generating technical audit'
-    );
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error while generating technical audit';
+    throw new ApiError(errorMessage);
   }
 }

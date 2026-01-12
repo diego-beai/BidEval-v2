@@ -38,15 +38,27 @@ Frontend web para el procesamiento automático de RFQs (Request for Quotations) 
    ```
 
 2. **Configurar variables de entorno**:
-   Copia el archivo `.env.example` a `.env.local` y ajusta la URL del webhook:
+   Copia el archivo `.env.example` a `.env.local` y configura las credenciales:
    ```bash
    cp .env.example .env.local
    ```
 
    Edita `.env.local`:
    ```env
-   VITE_N8N_WEBHOOK_URL=http://localhost:5678/webhook-test/rfq
+   # Configuración de Supabase (requerida para gráficos persistentes)
+   VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+   VITE_SUPABASE_ANON_KEY=tu_clave_anonima_aqui
+
+   # Configuración de n8n (opcional)
+   VITE_N8N_WEBHOOK_URL=https://n8n.beaienergy.com/webhook/tabla
    ```
+
+   **🔑 Obtener credenciales de Supabase:**
+   1. Ve a [https://supabase.com/dashboard](https://supabase.com/dashboard)
+   2. Selecciona tu proyecto
+   3. Ve a Settings → API
+   4. Copia la "Project URL" para `VITE_SUPABASE_URL`
+   5. Copia la "anon public" key para `VITE_SUPABASE_ANON_KEY`
 
 3. **Iniciar servidor de desarrollo**:
    ```bash

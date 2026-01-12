@@ -6,7 +6,7 @@ import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useChatStore } from '../../stores/useChatStore';
 
 export const ChatPage: React.FC = () => {
-    const { messages, sendMessage, status, error: chatError } = useChatStore();
+    const { messages, sendMessage, status } = useChatStore();
     const { t } = useLanguageStore();
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);

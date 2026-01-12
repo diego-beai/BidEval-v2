@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQAStore } from '../../../stores/useQAStore';
+import { useToastStore } from '../../../stores/useToastStore';
 import { generateTechnicalAudit } from '../../../services/n8n.service';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
 import './QAModule.css';
@@ -83,7 +84,7 @@ const Icons = {
   )
 };
 
-export const QAModule: React.FC = () => {
+export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialProjectId = '' }) => {
   const {
     questions,
     isLoading,
@@ -102,11 +103,13 @@ export const QAModule: React.FC = () => {
     setStatusMessage,
     getGroupedByDisciplina,
     getStats,
-    subscribeToChanges,
-    unsubscribeFromChanges
+    subscribeToChanges
+    // unsubscribeFromChanges - not used currently
   } = useQAStore();
 
-  const [projectId, setProjectId] = useState<string>('');
+  const { addToast } = useToastStore();
+
+  const [projectId, setProjectId] = useState<string>(initialProjectId);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [addingToDisciplina, setAddingToDisciplina] = useState<string | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
@@ -122,14 +125,21 @@ export const QAModule: React.FC = () => {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    if (projectId) {
+    // Update projectId when initialProjectId changes
+    if (initialProjectId !== projectId) {
+      setProjectId(initialProjectId);
+    }
+  }, [initialProjectId]);
+
+  useEffect(() => {
+    // Only load questions if there is a valid projectId
+    if (projectId && projectId.trim()) {
       loadQuestions(projectId);
       subscribeToChanges(projectId);
+    } else if (!projectId) {
+      // Only clear state when there's no project selected
+      setQuestions([]);
     }
-
-    return () => {
-      unsubscribeFromChanges();
-    };
   }, [projectId]);
 
   const handleProjectSelect = (project: string) => {
@@ -147,17 +157,17 @@ export const QAModule: React.FC = () => {
     setProjectId(value);
   };
 
-  // Excel Export
+  // Excel Export - Approved Questions Only
   const handleExportExcel = async () => {
     try {
       // Import dynamic to avoid bundle bloat
       const XLSX = await import('xlsx');
 
       // Filter only approved questions or all? User said "las que le demos a aprobar"
-      const approvedQuestions = questions.filter(q => q.estado === 'Aprobada');
+      const approvedQuestions = questions.filter(q => q.estado === 'Approved');
 
       if (approvedQuestions.length === 0) {
-        alert('No approved questions to export. Please approve some questions first.');
+        addToast('No approved questions to export. Please approve some questions first.', 'warning');
         return;
       }
 
@@ -176,15 +186,49 @@ export const QAModule: React.FC = () => {
 
       const fileName = `Technical_Audit_${selectedProvider || 'P2X'}_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
+      addToast('Technical audit exported successfully to Excel', 'success');
     } catch (err) {
       console.error('Error exporting to Excel:', err);
-      alert('Error exporting to Excel');
+      addToast('Error exporting to Excel', 'error');
+    }
+  };
+
+  // Excel Export - All Questions
+  const handleExportAllQuestions = async () => {
+    try {
+      const XLSX = await import('xlsx');
+
+      if (questions.length === 0) {
+        addToast('No questions to export', 'warning');
+        return;
+      }
+
+      const exportData = questions.map(q => ({
+        'Discipline': q.disciplina || q.discipline,
+        'Importance': q.importancia || q.importance,
+        'Question': q.pregunta_texto || q.question,
+        'Provider': q.proveedor || q.provider_name,
+        'Status': q.estado || q.status,
+        'Project': q.project_name || q.project_id,
+        'Created At': new Date(q.created_at).toLocaleDateString()
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'All Questions');
+
+      const fileName = `All_Questions_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      addToast(`${questions.length} questions exported successfully to Excel`, 'success');
+    } catch (err) {
+      console.error('Error exporting to Excel:', err);
+      addToast('Error exporting to Excel', 'error');
     }
   };
 
   const handleGenerateAudit = async () => {
     if (!projectId || !selectedProvider) {
-      alert('Please select a project and a provider');
+      addToast('Please select a project and a provider', 'warning');
       return;
     }
 
@@ -203,31 +247,42 @@ export const QAModule: React.FC = () => {
           // n8n now returns English keys: discipline, question, importance
           const qData = item["output.questions"] || item?.output?.questions || item;
 
-          // Map English disciplines to Spanish ones for the DB/Types
+          // Map English disciplines to English ones for the DB/Types
           const disciplineMapping: Record<string, Disciplina> = {
-            'Electrical': 'Eléctrica',
-            'Mechanical': 'Mecánica',
+            'Electrical': 'Electrical',
+            'Mechanical': 'Mechanical',
             'Civil': 'Civil',
-            'Process': 'Proceso',
-            'General': 'General'
+            'Process': 'Process',
+            'General': 'General',
+            'Cost': 'Cost'
           };
 
-          // Map English importance to Spanish ones
+          // Map English importance to English ones
           const importanceMapping: Record<string, Importancia> = {
-            'High': 'Alta',
-            'Medium': 'Media',
-            'Low': 'Baja'
+            'High': 'High',
+            'Medium': 'Medium',
+            'Low': 'Low'
           };
+
+          const discipline = disciplineMapping[qData.discipline] || 'General';
+          const importance = importanceMapping[qData.importance] || 'Media';
 
           return {
-            id: `temp-${Date.now()}-${index}`,
+            id: `qa-${Date.now()}-${index}`,
             created_at: new Date().toISOString(),
+            project_name: projectId,
+            provider_name: selectedProvider,
+            discipline,
+            question: qData.question,
+            status: 'Draft',
+            importance,
+            // Alias for frontend compatibility
             project_id: projectId,
             proveedor: selectedProvider,
-            disciplina: disciplineMapping[qData.discipline] || qData.disciplina || 'General',
-            pregunta_texto: qData.question || qData.pregunta || qData.pregunta_texto || '',
-            estado: 'Borrador',
-            importancia: importanceMapping[qData.importance] || qData.importancia || 'Media'
+            disciplina: discipline,
+            pregunta_texto: qData.question,
+            estado: 'Draft',
+            importancia: importance
           };
         });
 
@@ -235,8 +290,10 @@ export const QAModule: React.FC = () => {
         setQuestions([...newQuestions, ...questions]);
 
         setStatusMessage(`Success! ${result.preguntas_generadas} questions generated and displayed.`);
+        addToast(`${result.preguntas_generadas} technical audit questions generated successfully`, 'success');
       } else {
         setStatusMessage(`Warning: ${result.message || 'The process finished with no results.'}`);
+        addToast(result.message || 'The process finished with no results.', 'warning');
       }
 
       // Clear message after a longer delay
@@ -244,7 +301,7 @@ export const QAModule: React.FC = () => {
     } catch (err) {
       console.error('Error generating audit:', err);
       setStatusMessage(null);
-      alert(err instanceof Error ? err.message : 'Error generating technical audit');
+      addToast(err instanceof Error ? err.message : 'Error generating technical audit', 'error');
     } finally {
       setGenerating(false);
     }
@@ -253,22 +310,29 @@ export const QAModule: React.FC = () => {
   const handleAddManualQuestion = async (disciplina: string) => {
     const text = newQuestionTexts[disciplina]?.trim();
     if (!text || !projectId || !selectedProvider) {
-      alert('Please enter a question and ensure project/provider are selected');
+      addToast('Please enter a question and ensure project/provider are selected', 'warning');
       return;
     }
 
     try {
       await createQuestion({
+        project_name: projectId,
+        provider_name: selectedProvider,
+        discipline: disciplina as Disciplina,
+        question: text,
+        status: 'Draft',
+        importance: 'Medium',
+        // Alias for compatibility
         project_id: projectId,
         proveedor: selectedProvider,
         disciplina: disciplina as Disciplina,
         pregunta_texto: text,
-        estado: 'Borrador',
-        importancia: 'Media'
+        estado: 'Draft',
+        importancia: 'Medium'
       });
 
       // Reset text
-      setNewQuestionTexts(prev => ({ ...prev, [disciplina]: '' }));
+      setNewQuestionTexts(prev => ({ ...prev, [disciplina || '']: '' }));
       setAddingToDisciplina(null);
     } catch (err) {
       console.error('Error adding question:', err);
@@ -278,7 +342,7 @@ export const QAModule: React.FC = () => {
 
   const handleEditQuestion = (question: QAQuestion) => {
     setEditingQuestion(question.id);
-    setEditedText(question.pregunta_texto);
+    setEditedText(question.pregunta_texto || question.question || '');
   };
 
   const handleSaveQuestion = async (questionId: string) => {
@@ -303,21 +367,21 @@ export const QAModule: React.FC = () => {
 
   const getImportanciaClass = (importancia?: Importancia | null) => {
     switch (importancia) {
-      case 'Alta': return 'importancia-alta';
-      case 'Media': return 'importancia-media';
-      case 'Baja': return 'importancia-baja';
+      case 'High': return 'importancia-alta';
+      case 'Medium': return 'importancia-media';
+      case 'Low': return 'importancia-baja';
       default: return '';
     }
   };
 
   const getEstadoClass = (estado: EstadoPregunta) => {
     switch (estado) {
-      case 'Borrador': return 'estado-borrador';
-      case 'Pendiente': return 'estado-pendiente';
-      case 'Aprobada': return 'estado-aprobada';
-      case 'Enviada': return 'estado-enviada';
-      case 'Respondida': return 'estado-respondida';
-      case 'Descartada': return 'estado-descartada';
+      case 'Draft': return 'estado-borrador';
+      case 'Pending': return 'estado-pendiente';
+      case 'Approved': return 'estado-aprobada';
+      case 'Sent': return 'estado-enviada';
+      case 'Answered': return 'estado-respondida';
+      case 'Discarded': return 'estado-descartada';
       default: return '';
     }
   };
@@ -327,245 +391,293 @@ export const QAModule: React.FC = () => {
 
   // Discipline name mapping
   const disciplineMap: Record<string, string> = {
-    'Eléctrica': 'Electrical',
-    'Mecánica': 'Mechanical',
+    'Electrical': 'Electrical',
+    'Mechanical': 'Mechanical',
     'Civil': 'Civil',
-    'Proceso': 'Process',
-    'General': 'General'
+    'Process': 'Process',
+    'General': 'General',
+    'Cost': 'Cost'
   };
 
   return (
     <div className="qa-module">
-      {/* Header */}
-      <div className="qa-header">
-        <div className="qa-header-content">
-          <h1 className="qa-title">Q&A & Technical Audit</h1>
-          <p className="qa-subtitle">
-            Automated technical question management by discipline
-          </p>
+      {/* Main Header */}
+      <div className="qa-main-header">
+        <h1 className="qa-main-title">Q&A Management</h1>
+        <p className="qa-main-subtitle">
+          Generate intelligent questions and manage technical audits
+        </p>
+      </div>
+
+      {/* SECTION 1: TECHNICAL AUDIT GENERATOR */}
+      <div className="qa-section audit-generator-section">
+        <div className="section-header">
+          <div className="section-header-content">
+            <Icons.Paper />
+            <div>
+              <h2 className="section-title">Technical Audit Generator</h2>
+              <p className="section-subtitle">Generate AI-powered questions based on provider deficiencies</p>
+            </div>
+          </div>
         </div>
 
-        <div className="qa-header-actions">
-          {/* Project Selector */}
-          <div className="qa-project-selector-group">
-            <div className="qa-dropdown-container">
-              <button
-                type="button"
-                className={`qa-dropdown-btn ${!projectId || isCustomProject ? 'placeholder' : ''}`}
-                onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+        <div className="generator-form card">
+          <div className="form-grid">
+            {/* Project Selector */}
+            <div className="form-group">
+              <label className="form-label">Project</label>
+              <div className="qa-dropdown-container">
+                <button
+                  type="button"
+                  className={`qa-dropdown-btn ${!projectId || isCustomProject ? 'placeholder' : ''}`}
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                >
+                  <span title={isCustomProject ? 'Custom Project' : projectId}>
+                    {isCustomProject ? 'Custom Project' : (projectId || 'Select project...')}
+                  </span>
+                  <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
+                </button>
+
+                {showProjectDropdown && (
+                  <>
+                    <div
+                      className="dropdown-overlay"
+                      onClick={() => setShowProjectDropdown(false)}
+                    />
+                    <div className="qa-dropdown-menu">
+                      {AVAILABLE_PROJECTS.map(project => (
+                        <button
+                          key={project}
+                          type="button"
+                          className={`dropdown-item ${projectId === project && !isCustomProject ? 'selected' : ''}`}
+                          onClick={() => handleProjectSelect(project)}
+                        >
+                          {project}
+                          {projectId === project && !isCustomProject && (
+                            <span className="check-icon">✓</span>
+                          )}
+                        </button>
+                      ))}
+                      <div className="dropdown-divider"></div>
+                      <button
+                        type="button"
+                        className={`dropdown-item ${isCustomProject ? 'selected' : ''}`}
+                        onClick={() => handleProjectSelect('CUSTOM')}
+                      >
+                        {isCustomProject ? 'Custom (Selected)' : 'Other (Custom)'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {isCustomProject && (
+                <input
+                  type="text"
+                  className="qa-input custom-project-input"
+                  placeholder="Enter custom project name..."
+                  value={projectId}
+                  onChange={(e) => handleCustomProjectChange(e.target.value)}
+                  autoFocus
+                />
+              )}
+            </div>
+
+            {/* Provider Selector */}
+            <div className="form-group">
+              <label className="form-label">Provider</label>
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value)}
+                className="qa-select"
               >
-                <span title={isCustomProject ? 'Custom Project' : projectId}>
-                  {isCustomProject ? 'Custom Project' : (projectId || 'Select project...')}
-                </span>
-                <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
+                <option value="">Select Provider</option>
+                {availableProviders.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="generator-actions">
+            <button
+              onClick={handleGenerateAudit}
+              disabled={isGenerating || !projectId || !selectedProvider}
+              className="btn btnPrimary qa-generate-btn"
+            >
+              {isGenerating ? (
+                <>
+                  <span className="spinner"></span>
+                  Generating Audit...
+                </>
+              ) : (
+                'Generate Technical Audit'
+              )}
+            </button>
+
+            {questions.some(q => q.estado === 'Approved') && (
+              <button
+                onClick={handleExportExcel}
+                className="btn btnSecondary qa-export-btn"
+                title="Export approved questions to Excel"
+              >
+                <Icons.Download />
+                Export to Excel
+              </button>
+            )}
+          </div>
+
+          {statusMessage && (
+            <div className={`qa-status-banner ${statusMessage.includes('Success') || statusMessage.includes('completed') ? 'success' : ''}`}>
+              {isGenerating && <span className="spinner"></span>}
+              {statusMessage}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 2: QUESTIONS VIEWER & MANAGEMENT */}
+      <div className="qa-section questions-viewer-section">
+        <div className="section-header">
+          <div className="section-header-content">
+            <div>
+              <h2 className="section-title">Questions Management</h2>
+              <p className="section-subtitle">View and manage generated questions by discipline</p>
+            </div>
+          </div>
+
+          <div className="section-header-actions">
+            {/* Export All Questions Button */}
+            {questions.length > 0 && (
+              <button
+                onClick={handleExportAllQuestions}
+                className="btn btnSecondary qa-export-all-btn"
+                title="Export all questions to Excel"
+              >
+                <Icons.Download />
+                Export All Questions
+              </button>
+            )}
+
+            {/* Filters Toggle Button */}
+            <div className="qa-filters-wrapper">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`btn btnSecondary qa-filter-toggle-btn ${showFilters ? 'active' : ''}`}
+              >
+                <Icons.Filter />
+                Filters
+                {Object.values(filters).some(v => v !== null) && <span className="filter-dot" />}
               </button>
 
-              {showProjectDropdown && (
+              {showFilters && (
                 <>
-                  <div
-                    className="dropdown-overlay"
-                    onClick={() => setShowProjectDropdown(false)}
-                  />
-                  <div className="qa-dropdown-menu">
-                    {AVAILABLE_PROJECTS.map(project => (
-                      <button
-                        key={project}
-                        type="button"
-                        className={`dropdown-item ${projectId === project && !isCustomProject ? 'selected' : ''}`}
-                        onClick={() => handleProjectSelect(project)}
+                  <div className="dropdown-overlay" onClick={() => setShowFilters(false)} />
+                  <div className="qa-filters-menu card">
+                    <div className="filter-menu-header">
+                      <h4>Search Filters</h4>
+                      <button onClick={clearFilters} className="text-btn btn-sm">Clear All</button>
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Provider</label>
+                      <select
+                        value={filters.proveedor || ''}
+                        onChange={(e) => setFilters({ proveedor: e.target.value || null })}
+                        className="filter-select"
                       >
-                        {project}
-                        {projectId === project && !isCustomProject && (
-                          <span className="check-icon">✓</span>
-                        )}
-                      </button>
-                    ))}
-                    <div className="dropdown-divider"></div>
-                    <button
-                      type="button"
-                      className={`dropdown-item ${isCustomProject ? 'selected' : ''}`}
-                      onClick={() => handleProjectSelect('CUSTOM')}
-                    >
-                      {isCustomProject ? 'Custom (Selected)' : 'Other (Custom)'}
-                    </button>
+                        <option value="">All Providers</option>
+                        {availableProviders.map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Status</label>
+                      <select
+                        value={filters.estado || ''}
+                        onChange={(e) => setFilters({ estado: e.target.value as EstadoPregunta || null })}
+                        className="filter-select"
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="Draft">Draft</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Sent">Sent</option>
+                        <option value="Answered">Answered</option>
+                        <option value="Discarded">Discarded</option>
+                      </select>
+                    </div>
+
+                    <div className="filter-group">
+                      <label>Importance</label>
+                      <select
+                        value={filters.importancia || ''}
+                        onChange={(e) => setFilters({ importancia: e.target.value as Importancia || null })}
+                        className="filter-select"
+                      >
+                        <option value="">All Importances</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </select>
+                    </div>
                   </div>
                 </>
               )}
             </div>
-
-            {isCustomProject && (
-              <input
-                type="text"
-                className="qa-input custom-project-input"
-                placeholder="Enter custom project name..."
-                value={projectId}
-                onChange={(e) => handleCustomProjectChange(e.target.value)}
-                autoFocus
-              />
-            )}
           </div>
+        </div>
 
-          <div className="qa-provider-selector-group">
-            <select
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
-              className="qa-select"
-            >
-              <option value="">Select Provider</option>
-              {availableProviders.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+        {/* Global Statistics */}
+        {stats.total > 0 && (
+          <div className="qa-stats-grid">
+            <div className="stat-card">
+              <div className="stat-value">{stats.total}</div>
+              <div className="stat-label">Total Questions</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.porEstado['Approved'] || 0}</div>
+              <div className="stat-label">Approved</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.porEstado['Pending'] || 0}</div>
+              <div className="stat-label">Pending</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.porImportancia?.['High'] || 0}</div>
+              <div className="stat-label">High Importance</div>
+            </div>
           </div>
+        )}
 
-          <button
-            onClick={handleGenerateAudit}
-            disabled={isGenerating || !projectId || !selectedProvider}
-            className="btn btnPrimary qa-generate-btn"
-          >
-            {isGenerating ? (
-              <>
-                <span className="spinner"></span>
-                Generating...
-              </>
-            ) : (
-              'Generate Technical Audit'
-            )}
-          </button>
-
-          {/* Export Button */}
-          {questions.some(q => q.estado === 'Aprobada') && (
-            <button
-              onClick={handleExportExcel}
-              className="btn btnSecondary qa-export-btn"
-              title="Export approved questions to Excel"
-            >
-              <Icons.Download />
-              Export
-            </button>
-          )}
-
-          {/* Filters Toggle Button */}
-          <div className="qa-filters-wrapper">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`btn btnSecondary qa-filter-toggle-btn ${showFilters ? 'active' : ''}`}
-            >
-              <Icons.Filter />
-              Filters
-              {Object.values(filters).some(v => v !== null) && <span className="filter-dot" />}
-            </button>
-
-            {showFilters && (
-              <>
-                <div className="dropdown-overlay" onClick={() => setShowFilters(false)} />
-                <div className="qa-filters-menu card">
-                  <div className="filter-menu-header">
-                    <h4>Search Filters</h4>
-                    <button onClick={clearFilters} className="text-btn btn-sm">Clear All</button>
-                  </div>
-
-                  <div className="filter-group">
-                    <label>Provider</label>
-                    <select
-                      value={filters.proveedor || ''}
-                      onChange={(e) => setFilters({ proveedor: e.target.value || null })}
-                      className="filter-select"
-                    >
-                      <option value="">All Providers</option>
-                      {availableProviders.map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="filter-group">
-                    <label>Status</label>
-                    <select
-                      value={filters.estado || ''}
-                      onChange={(e) => setFilters({ estado: e.target.value as EstadoPregunta || null })}
-                      className="filter-select"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="Borrador">Draft</option>
-                      <option value="Pendiente">Pending</option>
-                      <option value="Aprobada">Approved</option>
-                      <option value="Enviada">Sent</option>
-                      <option value="Respondida">Answered</option>
-                      <option value="Descartada">Discarded</option>
-                    </select>
-                  </div>
-
-                  <div className="filter-group">
-                    <label>Importance</label>
-                    <select
-                      value={filters.importancia || ''}
-                      onChange={(e) => setFilters({ importancia: e.target.value as Importancia || null })}
-                      className="filter-select"
-                    >
-                      <option value="">All Importances</option>
-                      <option value="Alta">High</option>
-                      <option value="Media">Medium</option>
-                      <option value="Baja">Low</option>
-                    </select>
-                  </div>
+        {/* Error Display */}
+        {
+          error && (
+            <div className="qa-error">
+              <Icons.Error /> {error}
+              {error.includes('Q&A table is not configured') && (
+                <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
+                  Please run the setup_qa_table.sql script in Supabase
                 </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-      {/* Status Messages */}
-      {statusMessage && (
-        <div className={`qa-status-banner ${statusMessage.includes('Success') || statusMessage.includes('completed') ? 'success' : ''}`}>
-          {isGenerating && <span className="spinner"></span>}
-          {statusMessage}
-        </div>
-      )}
+              )}
+            </div>
+          )
+        }
 
-      {/* Global Statistics */}
-      {stats.total > 0 && (
-        <div className="qa-stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{stats.total}</div>
-            <div className="stat-label">Total Questions</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.porEstado['Aprobada'] || 0}</div>
-            <div className="stat-label">Approved</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.porEstado['Pendiente'] || 0}</div>
-            <div className="stat-label">Pending</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.porImportancia?.['Alta'] || 0}</div>
-            <div className="stat-label">High Importance</div>
-          </div>
-        </div>
-      )}
+        {/* Loading State */}
+        {
+          isLoading && (
+            <div className="qa-loading">
+              <span className="spinner"></span>
+              Loading questions...
+            </div>
+          )
+        }
 
-      {/* Error Display */}
-      {
-        error && (
-          <div className="qa-error">
-            <Icons.Error /> {error}
-          </div>
-        )
-      }
-
-      {/* Loading State */}
-      {
-        isLoading && (
-          <div className="qa-loading">
-            <span className="spinner"></span>
-            Loading questions...
-          </div>
-        )
-      }
-
-      {/* Disciplines View */}
-      <div className="qa-disciplinas-container">
+        {/* Disciplines View */}
+        <div className="qa-disciplinas-container">
         {groupedQuestions.map((group) => (
           <div key={group.disciplina} className="disciplina-group card">
             {/* Discipline Header */}
@@ -603,18 +715,18 @@ export const QAModule: React.FC = () => {
                     {/* Question Header */}
                     <div className="question-header">
                       <div className="question-meta">
-                        <span className={`badge ${getEstadoClass(question.estado)}`}>
-                          {question.estado}
+                        <span className={`badge ${getEstadoClass(question.estado || question.status)}`}>
+                          {question.estado || question.status}
                         </span>
-                        {question.importancia && (
-                          <span className={`badge ${getImportanciaClass(question.importancia)}`}>
-                            {question.importancia}
+                        {(question.importancia || question.importance) && (
+                          <span className={`badge ${getImportanciaClass(question.importancia || question.importance)}`}>
+                            {question.importancia || question.importance}
                           </span>
                         )}
-                        <span className="question-provider">{question.proveedor}</span>
+                        <span className="question-provider">{question.proveedor || question.provider_name}</span>
                       </div>
                       <div className="question-actions-top">
-                        {question.estado === 'Borrador' && (
+                        {(question.estado || question.status) === 'Draft' && (
                           <button
                             onClick={() => handleDeleteQuestion(question.id)}
                             className="icon-btn icon-btn-danger"
@@ -636,15 +748,15 @@ export const QAModule: React.FC = () => {
                           rows={4}
                         />
                       ) : (
-                        <p className="question-text">{question.pregunta_texto}</p>
+                        <p className="question-text">{question.pregunta_texto || question.question}</p>
                       )}
                     </div>
 
                     {/* Provider Response */}
-                    {question.respuesta_proveedor && (
+                    {(question.respuesta_proveedor || question.response) && (
                       <div className="question-response">
                         <strong>Response:</strong>
-                        <p>{question.respuesta_proveedor}</p>
+                        <p>{question.respuesta_proveedor || question.response}</p>
                         <small>Answered on {new Date(question.fecha_respuesta || '').toLocaleDateString()}</small>
                       </div>
                     )}
@@ -676,7 +788,7 @@ export const QAModule: React.FC = () => {
                         </>
                       ) : (
                         <>
-                          {question.estado === 'Borrador' && (
+                          {(question.estado || question.status) === 'Draft' && (
                             <>
                               <button
                                 onClick={() => handleEditQuestion(question)}
@@ -685,33 +797,33 @@ export const QAModule: React.FC = () => {
                                 <Icons.Edit /> Edit
                               </button>
                               <button
-                                onClick={() => handleUpdateStatus(question.id, 'Aprobada')}
+                                onClick={() => handleUpdateStatus(question.id, 'Approved')}
                                 className="btn btnPrimary btn-sm"
                               >
                                 <Icons.Approve /> Approve
                               </button>
                               <button
-                                onClick={() => handleUpdateStatus(question.id, 'Descartada')}
+                                onClick={() => handleUpdateStatus(question.id, 'Discarded')}
                                 className="btn btnDanger btn-sm"
                               >
                                 <Icons.Discard /> Discard
                               </button>
                             </>
                           )}
-                          {question.estado === 'Aprobada' && (
+                          {(question.estado || question.status) === 'Approved' && (
                             <button
-                              onClick={() => handleUpdateStatus(question.id, 'Enviada')}
+                              onClick={() => handleUpdateStatus(question.id, 'Sent')}
                               className="btn btnPrimary btn-sm"
                             >
                               <Icons.Send /> Send
                             </button>
                           )}
-                          {question.estado === 'Enviada' && (
-                            <span className="status-message">
-                              Question sent to provider
-                            </span>
+                          {(question.estado || question.status) === 'Sent' && (
+                            <span className="question-text">
+                          {question.pregunta_texto || question.question}
+                        </span>
                           )}
-                          {question.estado === 'Respondida' && (
+                          {(question.estado || question.status) === 'Answered' && (
                             <span className="status-message success">
                               Question answered
                             </span>
@@ -765,20 +877,21 @@ export const QAModule: React.FC = () => {
             )}
           </div>
         ))}
-      </div>
+        </div>
 
-      {/* Empty State */}
-      {
-        !isLoading && questions.length === 0 && (
-          <div className="qa-empty">
-            <div className="empty-icon">
-              <Icons.Paper />
+        {/* Empty State */}
+        {
+          !isLoading && questions.length === 0 && (
+            <div className="qa-empty">
+              <div className="empty-icon">
+                <Icons.Paper />
+              </div>
+              <h3>No questions generated</h3>
+              <p>Select a project and provider, then click "Generate Technical Audit"</p>
             </div>
-            <h3>No questions generated</h3>
-            <p>Select a project and provider, then click "Generate Technical Audit"</p>
-          </div>
-        )
-      }
-    </div >
+          )
+        }
+      </div>
+    </div>
   );
 };

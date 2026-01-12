@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type {
-  QAQuestion,
-  QAFilters,
-  DisciplinaGroup,
-  Disciplina,
-  EstadoPregunta,
-  Importancia
+import {
+  type QAQuestion,
+  type QAFilters,
+  type DisciplinaGroup,
+  type Disciplina,
+  type EstadoPregunta,
+  type Importancia
 } from '../types/qa.types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -64,6 +64,31 @@ const initialFilters: QAFilters = {
   importancia: null,
 };
 
+// Function to map from qa_audit table to frontend format
+function mapQAAuditToQAQuestion(dbItem: any): QAQuestion {
+  return {
+    id: dbItem.id,
+    created_at: dbItem.created_at,
+    project_name: dbItem.project_name || dbItem.project_id,
+    provider_name: dbItem.provider_name || dbItem.proveedor,
+    discipline: dbItem.discipline || dbItem.disciplina,
+    question: dbItem.question || dbItem.pregunta_texto,
+    status: dbItem.status || dbItem.estado,
+    importance: dbItem.importance || dbItem.importancia,
+    response: dbItem.response || dbItem.respuesta_proveedor,
+    // Alias for frontend compatibility
+    project_id: dbItem.project_name || dbItem.project_id,
+    proveedor: dbItem.provider_name || dbItem.proveedor,
+    disciplina: dbItem.discipline || dbItem.disciplina,
+    pregunta_texto: dbItem.question || dbItem.pregunta_texto,
+    estado: dbItem.status || dbItem.estado,
+    importancia: dbItem.importance || dbItem.importancia,
+    respuesta_proveedor: dbItem.response || dbItem.respuesta_proveedor,
+    fecha_respuesta: dbItem.fecha_respuesta,
+    notas_internas: dbItem.notas_internas,
+  };
+}
+
 export const useQAStore = create<QAState>((set, get) => ({
   // Estado inicial
   questions: [],
@@ -91,23 +116,71 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
 
     try {
+      // Asegurar que el project_id está correctamente codificado para URL
+      const encodedProjectId = projectId.trim();
+      
+        console.log('📋 Loading Q&A questions from Supabase:', {
+        projectId: encodedProjectId,
+        table: 'qa_audit',
+        hasCredentials: isSupabaseConfigured()
+      });
+      
       const { data, error } = await supabase!
-        .from('QA_PENDIENTE')
+        .from('qa_audit')
         .select('*')
-        .eq('project_id', projectId)
+        .eq('project_name', encodedProjectId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          table: 'qa_audit',
+          projectId: encodedProjectId
+        });
+        
+        // If it's a 404 error or table not found, show clearer message
+        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+          console.warn('⚠️ The qa_audit table does not exist in Supabase. Check the database structure.');
+          set({
+            questions: [],
+            isLoading: false,
+            error: 'The Q&A table is not configured. Contact the administrator.'
+          });
+          return;
+        }
+        
+        throw error;
+      }
 
       set({
-        questions: (data || []) as QAQuestion[],
-        isLoading: false
+        questions: (data || []).map((item: any) => mapQAAuditToQAQuestion(item)),
+        isLoading: false,
+        error: null
       });
     } catch (error) {
       console.error('Error loading Q&A questions:', error);
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown error loading questions';
+      
+      // If it's a 404 error, the table may not exist or have no permissions
+      if (error instanceof Error && (error.message.includes('404') || error.message.includes('does not exist'))) {
+        console.warn('⚠️ qa_audit table not found or no permissions. Verify it exists in Supabase and you have the correct permissions.');
+        set({
+          error: 'The Q&A table is not available. Contact the administrator.',
+          isLoading: false,
+          questions: []
+        });
+        return;
+      }
+      
       set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
-        isLoading: false
+        error: errorMessage,
+        isLoading: false,
+        questions: []
       });
     }
   },
@@ -122,9 +195,18 @@ export const useQAStore = create<QAState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
+      const currentProjectId = get().selectedProjectId;
       const { data, error } = await (supabase!
-        .from('QA_PENDIENTE') as any)
-        .insert([question])
+        .from('qa_audit') as any)
+        .insert([{
+          project_id: question.project_id || currentProjectId,
+          proveedor: question.proveedor || question.provider_name,
+          disciplina: question.disciplina || question.discipline,
+          pregunta_texto: question.pregunta_texto || question.question,
+          estado: question.estado || question.status || 'Draft',
+          importancia: question.importancia || question.importance || 'Medium',
+          created_at: new Date().toISOString()
+        }])
         .select()
         .single();
 
@@ -137,7 +219,7 @@ export const useQAStore = create<QAState>((set, get) => ({
     } catch (error) {
       console.error('Error creating question:', error);
       set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
       });
     }
@@ -154,8 +236,17 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     try {
       const { data, error } = await (supabase!
-        .from('QA_PENDIENTE') as any)
-        .update(updates)
+        .from('qa_audit') as any)
+        .update({
+          proveedor: updates.proveedor || updates.provider_name,
+          disciplina: updates.disciplina || updates.discipline,
+          pregunta_texto: updates.pregunta_texto || updates.question,
+          estado: updates.estado || updates.status,
+          importancia: updates.importancia || updates.importance,
+          respuesta_proveedor: updates.respuesta_proveedor || updates.response,
+          fecha_respuesta: updates.fecha_respuesta,
+          notas_internas: updates.notas_internas
+        })
         .eq('id', id)
         .select()
         .single();
@@ -164,14 +255,14 @@ export const useQAStore = create<QAState>((set, get) => ({
 
       set(state => ({
         questions: state.questions.map(q =>
-          q.id === id ? { ...q, ...(data as any) } : q
+          q.id === id ? { ...q, ...data } : q
         ),
         isLoading: false
       }));
     } catch (error) {
       console.error('Error updating question:', error);
       set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
       });
     }
@@ -188,7 +279,7 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     try {
       const { error } = await supabase!
-        .from('QA_PENDIENTE')
+        .from('qa_audit')
         .delete()
         .eq('id', id);
 
@@ -201,7 +292,7 @@ export const useQAStore = create<QAState>((set, get) => ({
     } catch (error) {
       console.error('Error deleting question:', error);
       set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
       });
     }
@@ -218,8 +309,8 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     try {
       const { error } = await (supabase!
-        .from('QA_PENDIENTE') as any)
-        .update({ estado })
+        .from('qa_audit') as any)
+        .update({ estado: estado })
         .in('id', ids);
 
       if (error) throw error;
@@ -233,7 +324,7 @@ export const useQAStore = create<QAState>((set, get) => ({
     } catch (error) {
       console.error('Error bulk updating questions:', error);
       set({
-        error: error instanceof Error ? error.message : 'Error desconocido',
+        error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
       });
     }
@@ -269,10 +360,10 @@ export const useQAStore = create<QAState>((set, get) => ({
     const { questions, filters } = get();
 
     return questions.filter(q => {
-      if (filters.proveedor && q.proveedor !== filters.proveedor) return false;
-      if (filters.disciplina && q.disciplina !== filters.disciplina) return false;
-      if (filters.estado && q.estado !== filters.estado) return false;
-      if (filters.importancia && q.importancia !== filters.importancia) return false;
+      if (filters.proveedor && (q.proveedor || q.provider_name) !== filters.proveedor) return false;
+      if (filters.disciplina && (q.disciplina || q.discipline) !== filters.disciplina) return false;
+      if (filters.estado && (q.estado || q.status) !== filters.estado) return false;
+      if (filters.importancia && (q.importancia || q.importance) !== filters.importancia) return false;
       return true;
     });
   },
@@ -280,22 +371,22 @@ export const useQAStore = create<QAState>((set, get) => ({
   // Agrupar por disciplina
   getGroupedByDisciplina: () => {
     const filteredQuestions = get().getFilteredQuestions();
-    const disciplinas: Disciplina[] = ['Eléctrica', 'Mecánica', 'Civil', 'Proceso', 'General'];
+    const disciplinas: Disciplina[] = ['Electrical', 'Mechanical', 'Civil', 'Process', 'General', 'Cost'];
 
     return disciplinas.map(disciplina => {
-      const preguntas = filteredQuestions.filter(q => q.disciplina === disciplina);
+      const preguntas = filteredQuestions.filter(q => (q.disciplina || q.discipline) === disciplina);
 
       return {
         disciplina,
         preguntas,
         stats: {
           total: preguntas.length,
-          borradores: preguntas.filter(q => q.estado === 'Borrador').length,
-          aprobadas: preguntas.filter(q => q.estado === 'Aprobada').length,
-          pendientes: preguntas.filter(q => q.estado === 'Pendiente').length,
-          alta: preguntas.filter(q => q.importancia === 'Alta').length,
-          media: preguntas.filter(q => q.importancia === 'Media').length,
-          baja: preguntas.filter(q => q.importancia === 'Baja').length,
+          borradores: preguntas.filter(q => (q.estado || q.status) === 'Draft').length,
+          aprobadas: preguntas.filter(q => (q.estado || q.status) === 'Approved').length,
+          pendientes: preguntas.filter(q => (q.estado || q.status) === 'Pending').length,
+          alta: preguntas.filter(q => (q.importancia || q.importance) === 'High').length,
+          media: preguntas.filter(q => (q.importancia || q.importance) === 'Medium').length,
+          baja: preguntas.filter(q => (q.importancia || q.importance) === 'Low').length,
         }
       };
     });
@@ -305,23 +396,23 @@ export const useQAStore = create<QAState>((set, get) => ({
   getStats: () => {
     const questions = get().getFilteredQuestions();
 
-    const estados: EstadoPregunta[] = ['Borrador', 'Pendiente', 'Aprobada', 'Enviada', 'Respondida', 'Descartada'];
-    const disciplinas: Disciplina[] = ['Eléctrica', 'Mecánica', 'Civil', 'Proceso', 'General'];
-    const importancias: Importancia[] = ['Alta', 'Media', 'Baja'];
+    const estados: EstadoPregunta[] = ['Draft', 'Pending', 'Approved', 'Sent', 'Answered', 'Discarded'];
+    const disciplinas: Disciplina[] = ['Electrical', 'Mechanical', 'Civil', 'Process', 'General', 'Cost'];
+    const importancias: Importancia[] = ['High', 'Medium', 'Low'];
 
     return {
       total: questions.length,
       porEstado: estados.reduce((acc, estado) => ({
         ...acc,
-        [estado]: questions.filter(q => q.estado === estado).length
+        [estado]: questions.filter(q => (q.estado || q.status) === estado).length
       }), {} as Record<EstadoPregunta, number>),
       porDisciplina: disciplinas.reduce((acc, disciplina) => ({
         ...acc,
-        [disciplina]: questions.filter(q => q.disciplina === disciplina).length
+        [disciplina]: questions.filter(q => (q.disciplina || q.discipline) === disciplina).length
       }), {} as Record<Disciplina, number>),
       porImportancia: importancias.reduce((acc, importancia) => ({
         ...acc,
-        [importancia]: questions.filter(q => q.importancia === importancia).length
+        [importancia]: questions.filter(q => (q.importancia || q.importance) === importancia).length
       }), {} as Record<Importancia, number>),
     };
   },
@@ -333,24 +424,24 @@ export const useQAStore = create<QAState>((set, get) => ({
       return;
     }
 
-    const channel = supabase!
-      .channel('qa-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'QA_PENDIENTE',
-          filter: `project_id=eq.${projectId}`
-        },
-        (payload) => {
-          console.log('Q&A change received:', payload);
+      const channel = supabase!
+        .channel('qa-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'qa_audit',
+            filter: `project_name=eq.${projectId}`
+          },
+          (payload) => {
+            console.log('Q&A change received:', payload);
 
-          // Recargar preguntas cuando hay cambios
-          get().loadQuestions(projectId);
-        }
-      )
-      .subscribe();
+            // Reload questions when there are changes
+            get().loadQuestions(projectId);
+          }
+        )
+        .subscribe();
 
     set({ realtimeChannel: channel });
   },

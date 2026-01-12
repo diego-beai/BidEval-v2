@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { API_CONFIG } from '../config/constants';
 
 // Interface Issue removed as it was unused
 
@@ -79,7 +80,7 @@ export const useMailStore = create<MailState>()(
                 set({ isGenerating: true, error: null, hasGenerated: false });
 
                 try {
-                    const response = await fetch('https://n8n.beaienergy.com/webhook-test/mail', {
+                    const response = await fetch(API_CONFIG.N8N_MAIL_URL, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -91,26 +92,50 @@ export const useMailStore = create<MailState>()(
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
 
-                    const text = await response.text();
-                    let data;
-                    try {
-                        data = JSON.parse(text);
-                    } catch (e) {
-                        // Fallback if response is not valid JSON (e.g. n8n workflow finished without outputting JSON)
-                        // Check if the text looks like success or failure
-                        console.warn("Received non-JSON response:", text);
-                        if (text && text.length > 0) {
-                            // Try to treat it as raw body if it looks like a string, or simple success
-                            data = { subject: 'Draft Generated (Raw)', body: text };
+                    const data = await response.json();
+                    
+                    // Handle the new webhook output structure: [{ text: "```json\n{...}\n```" }]
+                    let finalSubject = '';
+                    let finalBody = '';
+                    
+                    if (Array.isArray(data) && data.length > 0 && data[0].text) {
+                        // Extract JSON from the text field (remove ```json wrapper if present)
+                        let jsonString = data[0].text;
+                        
+                        console.log('Raw text from webhook:', jsonString);
+                        
+                        // Remove all variations of json wrapper
+                        jsonString = jsonString
+                            .replace(/^```json\s*\n?/, '')  // Remove starting ```json
+                            .replace(/```\s*$/, '')          // Remove ending ```
+                            .trim();                        // Remove whitespace
+                        
+                        console.log('Cleaned JSON string:', jsonString);
+                        
+                        // Check if it looks like JSON (starts with { and ends with })
+                        if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                            try {
+                                const parsedJson = JSON.parse(jsonString);
+                                finalSubject = parsedJson.subject || '';
+                                finalBody = parsedJson.body || '';
+                                console.log('Successfully parsed - Subject:', finalSubject);
+                                console.log('Successfully parsed - Body length:', finalBody.length);
+                            } catch (parseError) {
+                                console.warn('JSON parse failed, using raw text:', parseError);
+                                finalSubject = 'Draft Generated';
+                                finalBody = data[0].text;
+                            }
                         } else {
-                            throw new Error("Empty response from server");
+                            console.warn('Text does not look like JSON, using raw text');
+                            finalSubject = 'Draft Generated';
+                            finalBody = data[0].text;
                         }
+                    } else {
+                        // Fallback for other response formats
+                        const result = Array.isArray(data) ? data[0] : data;
+                        finalSubject = result?.subject || result?.output?.subject || 'Draft Generated';
+                        finalBody = result?.body || result?.output?.body || JSON.stringify(result, null, 2);
                     }
-
-                    // Handle array response and nested output field from n8n
-                    const result = Array.isArray(data) ? data[0] : data;
-                    const finalSubject = result?.subject || result?.output?.subject || '';
-                    const finalBody = result?.body || result?.output?.body || '';
 
                     set({
                         subject: finalSubject,

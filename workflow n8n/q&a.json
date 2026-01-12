@@ -6,7 +6,7 @@
                     "assignments": [
                         {
                             "id": "project_id",
-                            "name": "project_id",
+                            "name": "project_name",
                             "value": "={{ $json.body.project_id }}",
                             "type": "string"
                         },
@@ -23,39 +23,11 @@
             "type": "n8n-nodes-base.set",
             "typeVersion": 3.4,
             "position": [
-                -3120,
-                640
+                -3104,
+                656
             ],
-            "id": "666843b3-de2f-4c42-b1fc-eb501c06310e",
+            "id": "8f890d85-e9dd-406e-95b8-1e4ee8861606",
             "name": "Set Params"
-        },
-        {
-            "parameters": {
-                "operation": "get",
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "hwY1VFb924Ptf1P6",
-                    "mode": "list",
-                    "cachedResultName": "Tabla-RFQ-v1"
-                },
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "project_name",
-                            "keyValue": "={{ $json.project_id }}"
-                        }
-                    ]
-                },
-                "returnAll": true
-            },
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1.1,
-            "position": [
-                -2912,
-                640
-            ],
-            "id": "f2fcb164-9dd3-4e23-b1fc-6ebefe7b1cae",
-            "name": "Read RFQ Data"
         },
         {
             "parameters": {
@@ -64,10 +36,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -2688,
-                640
+                -2704,
+                656
             ],
-            "id": "3d4ae5ab-af2b-4eb5-ba57-60dd460c5618",
+            "id": "d28c1cc0-ad56-4d15-9847-72d0eab44f6a",
             "name": "Filter Deficiencies"
         },
         {
@@ -79,10 +51,10 @@
             "type": "n8n-nodes-base.aggregate",
             "typeVersion": 1,
             "position": [
-                -2464,
-                640
+                -2480,
+                656
             ],
-            "id": "ac316eb7-c83b-4904-8ac8-4b83425d963a",
+            "id": "341bfff1-1edd-4e50-a19f-e7c262b7acde",
             "name": "Consolidate Items"
         },
         {
@@ -93,10 +65,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
             "typeVersion": 1,
             "position": [
-                -2240,
+                -2288,
                 864
             ],
-            "id": "047fe3d4-5bfc-434d-b670-a4b08a52bf9c",
+            "id": "e7178dcd-0b5f-4e7b-910d-accec1910190",
             "name": "Mistral Model",
             "credentials": {
                 "mistralCloudApi": {
@@ -114,31 +86,93 @@
             "type": "n8n-nodes-base.itemLists",
             "typeVersion": 3.1,
             "position": [
-                -1936,
-                640
+                -1952,
+                656
             ],
-            "id": "3567404f-4fd9-40e4-8a22-f7243767e4ea",
+            "id": "adc358c9-25ac-40c8-ad38-b9012256935a",
             "name": "Split Questions"
         },
         {
             "parameters": {
-                "tableId": "QA_PENDIENTE"
+                "tableId": "qa_audit",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "question"
+                        },
+                        {
+                            "fieldId": "importance"
+                        },
+                        {
+                            "fieldId": "discipline"
+                        },
+                        {
+                            "fieldId": "status"
+                        }
+                    ]
+                }
             },
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -1776,
-                640
+                -1792,
+                656
             ],
-            "id": "0216e22b-f75c-41e8-89df-f2a5e0dc2662",
+            "id": "3fccd01b-4808-478d-a4f7-e8fd371164d4",
             "name": "Supabase Storage",
             "credentials": {
                 "supabaseApi": {
                     "id": "pI4CpdYLTiEEBmnz",
                     "name": "Supabase account"
                 }
+            }
+        },
+        {
+            "parameters": {
+                "content": "## Q&A Generator",
+                "height": 800,
+                "width": 2016,
+                "color": 5
             },
-            "disabled": true
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -3392,
+                368
+            ],
+            "id": "c33f6a44-7da9-4d97-8b44-db7db26c73e5",
+            "name": "Sticky Note: Q&A Generator"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1600,
+                656
+            ],
+            "id": "2a7a4ca0-386f-4d97-9dd6-c38741201efa",
+            "name": "Success Response"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "qa-audit-generator",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -3328,
+                656
+            ],
+            "id": "af4b5ee1-3d2f-442f-9a35-f837d63b3ad1",
+            "name": "Webhook Q&A",
+            "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
         },
         {
             "parameters": {
@@ -148,11 +182,11 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -2032,
-                848
+                -2048,
+                864
             ],
-            "id": "6bf32b1f-0494-4588-ab61-c139e9c7b1e2",
-            "name": "Structured Output Parser"
+            "id": "ad703593-b049-46d1-8ec6-e4ce71ac6ad7",
+            "name": "Structured Output Parser5"
         },
         {
             "parameters": {
@@ -171,58 +205,41 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.8,
             "position": [
-                -2256,
-                640
+                -2272,
+                656
             ],
-            "id": "e4ade5f9-3ed4-4496-8f66-21cf50a07dcf",
-            "name": "Basic LLM Chain"
+            "id": "0b6f1bc6-b0c5-4014-83de-e67d9f10349c",
+            "name": "Basic LLM Chain1"
         },
         {
             "parameters": {
-                "content": "## Q&A Generator",
-                "height": 800,
-                "width": 2016,
-                "color": 5
+                "operation": "getAll",
+                "tableId": "rfq_items_master",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_name",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.project_id }}"
+                        }
+                    ]
+                }
             },
-            "type": "n8n-nodes-base.stickyNote",
+            "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -3408,
-                352
+                -2896,
+                656
             ],
-            "id": "7ccedc74-01d8-4ae7-a8ca-a20055ce52b6",
-            "name": "Sticky Note: Q&A Generator"
-        },
-        {
-            "parameters": {
-                "respondWith": "allIncomingItems",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.respondToWebhook",
-            "typeVersion": 1.5,
-            "position": [
-                -1584,
-                640
-            ],
-            "id": "2c69106d-7efa-4759-8670-242fdfd584b6",
-            "name": "Success Response"
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "qa-audit-generator",
-                "responseMode": "responseNode",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -3344,
-                640
-            ],
-            "id": "7e2bfa5e-8190-456a-ab9b-7b665fdd4c71",
-            "name": "Webhook Q&A",
-            "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
+            "id": "d89113f9-1dce-40d6-ba49-4d26362777e7",
+            "name": "Get many rows",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
         }
     ],
     "connections": {
@@ -230,18 +247,7 @@
             "main": [
                 [
                     {
-                        "node": "Read RFQ Data",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Read RFQ Data": {
-            "main": [
-                [
-                    {
-                        "node": "Filter Deficiencies",
+                        "node": "Get many rows",
                         "type": "main",
                         "index": 0
                     }
@@ -263,7 +269,7 @@
             "main": [
                 [
                     {
-                        "node": "Basic LLM Chain",
+                        "node": "Basic LLM Chain1",
                         "type": "main",
                         "index": 0
                     }
@@ -274,7 +280,7 @@
             "ai_languageModel": [
                 [
                     {
-                        "node": "Basic LLM Chain",
+                        "node": "Basic LLM Chain1",
                         "type": "ai_languageModel",
                         "index": 0
                     }
@@ -303,18 +309,29 @@
                 ]
             ]
         },
-        "Structured Output Parser": {
+        "Webhook Q&A": {
+            "main": [
+                [
+                    {
+                        "node": "Set Params",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser5": {
             "ai_outputParser": [
                 [
                     {
-                        "node": "Basic LLM Chain",
+                        "node": "Basic LLM Chain1",
                         "type": "ai_outputParser",
                         "index": 0
                     }
                 ]
             ]
         },
-        "Basic LLM Chain": {
+        "Basic LLM Chain1": {
             "main": [
                 [
                     {
@@ -325,11 +342,11 @@
                 ]
             ]
         },
-        "Webhook Q&A": {
+        "Get many rows": {
             "main": [
                 [
                     {
-                        "node": "Set Params",
+                        "node": "Filter Deficiencies",
                         "type": "main",
                         "index": 0
                     }

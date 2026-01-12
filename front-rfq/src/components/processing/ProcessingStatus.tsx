@@ -4,7 +4,7 @@ import { ProcessingStage } from '../../types/rfq.types';
 import { Spinner } from '../ui/Spinner';
 
 export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }: { onViewResults?: () => void }) {
-  const { status, isProcessing } = useRfqStore();
+  const { status, isProcessing, results } = useRfqStore();
 
   if (!isProcessing && status.stage === ProcessingStage.IDLE) {
     return null;
@@ -97,6 +97,27 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
             }}>
               Please wait while we process your request...
             </p>
+          )}
+
+          {isComplete && results && results.length > 0 && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px 16px',
+              background: 'rgba(18, 181, 176, 0.1)',
+              border: '1px solid var(--color-cyan)',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              color: 'var(--text-primary)'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-cyan)' }}>
+                📋 Processing Summary
+              </div>
+              <div style={{ lineHeight: '1.4' }}>
+                • {results.length} evaluation{results.length !== 1 ? 's' : ''} processed<br/>
+                • {Object.keys(results[0]?.evaluations || {}).length} provider{Object.keys(results[0]?.evaluations || {}).length !== 1 ? 's' : ''} evaluated<br/>
+                • Ready for analysis in Results table
+              </div>
+            </div>
           )}
 
           {isComplete && onViewResults && (

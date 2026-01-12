@@ -4,7 +4,7 @@ import { ProcessingStage } from '../../types/rfq.types';
 import { Spinner } from '../ui/Spinner';
 
 export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
-  const { rfqBaseStatus, isProcessingRfqBase } = useRfqStore();
+  const { rfqBaseStatus, isProcessingRfqBase, rfqBase } = useRfqStore();
 
   if (!isProcessingRfqBase && rfqBaseStatus.stage === ProcessingStage.IDLE) {
     return null;
@@ -147,6 +147,27 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
             }}>
               Estamos procesando tu RFQ base...
             </p>
+          )}
+
+          {isComplete && rfqBase && (
+            <div style={{
+              marginTop: '12px',
+              padding: '12px 16px',
+              background: 'rgba(18, 181, 176, 0.1)',
+              border: '1px solid var(--color-cyan)',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              color: 'var(--text-primary)'
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-cyan)' }}>
+                📋 RFQ Base Summary
+              </div>
+              <div style={{ lineHeight: '1.4' }}>
+                • File: {rfqBase.fileName}<br/>
+                • Types processed: {rfqBase.tiposProcesados.join(', ')}<br/>
+                • Ready for proposal evaluation
+              </div>
+            </div>
           )}
         </div>
 

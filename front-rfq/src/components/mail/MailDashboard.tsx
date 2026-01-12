@@ -23,7 +23,7 @@ export const MailDashboard = () => {
     } = useMailStore();
 
     // Local UI State
-    const [viewMode, setViewMode] = useState<'markdown' | 'preview'>('markdown');
+    const [viewMode, setViewMode] = useState<'markdown' | 'preview'>('preview');
     const [fontSize, setFontSize] = useState(16);
 
     // Metadata State (Context/Provider/Tone) selection remains local as it drives the generation

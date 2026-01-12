@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 import { RfqBaseUploader } from './components/upload/RfqBaseUploader';
 import { FileUploadZone } from './components/upload/FileUploadZone';
@@ -14,17 +14,17 @@ import { ChatPage } from './components/chat/ChatPage';
 import { MailDashboard } from './components/mail/MailDashboard';
 import { useLanguageStore } from './stores/useLanguageStore';
 import { ProgressRing } from './components/charts/ProgressRing';
-import { ProviderProgressGrid } from './components/charts/ProviderProgressGrid';
+import { ProviderProgressGrid, ProviderEvaluationData } from './components/charts/ProviderProgressGrid';
 import { Provider } from './types/provider.types';
 import { QAModule } from './components/dashboard/tabs/QAModule';
 import { useDashboardStore } from './stores/useDashboardStore';
-import { useEffect } from 'react';
+import { ToastContainer } from './components/common/ToastContainer';
 
 
 type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
 
 export default function App() {
-  const { selectedFiles, reset, isProcessing, error, processingFileCount, rfqMetadata, setRfqMetadata, setApplyTableFilters, results } = useRfqStore();
+  const { selectedFiles, reset, isProcessing, error, processingFileCount, rfqMetadata, setRfqMetadata, setApplyTableFilters, results, refreshProposalEvaluations } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
   const [activeView, setActiveView] = useState<ViewType>(() => {
     const saved = localStorage.getItem('activeView') as ViewType;
@@ -45,6 +45,18 @@ export default function App() {
   }, [activeView, loadDashboardData]);
   const [uploadTab, setUploadTab] = useState<'rfq' | 'propuestas'>('rfq');
   const { t } = useLanguageStore();
+  const [selectedProviderData, setSelectedProviderData] = useState<ProviderEvaluationData | null>(null);
+
+  // Refresh proposal evaluations periodically when in proposals upload tab
+  useEffect(() => {
+    if (activeView === 'upload' && uploadTab === 'propuestas') {
+      const refreshInterval = setInterval(() => {
+        refreshProposalEvaluations();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(refreshInterval);
+    }
+  }, [activeView, uploadTab, refreshProposalEvaluations]);
 
   // Calcular el progreso del proveedor seleccionado
   const selectedProviderProgress = useMemo(() => {
@@ -268,12 +280,55 @@ export default function App() {
                     </div>
 
                     <ProgressRing
-                      progress={selectedProviderProgress.progress}
+                      progress={selectedProviderData?.progress || selectedProviderProgress.progress}
                       size="large"
                       color="#12b5b0"
                       showPercentage={true}
                     />
 
+                    {/* Evaluation Types Breakdown */}
+                    {selectedProviderData && (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: '12px',
+                        width: '100%',
+                        maxWidth: '320px'
+                      }}>
+                        {Object.entries(selectedProviderData.evaluations).map(([evalType, hasEvaluation]) => (
+                          <div
+                            key={evalType}
+                            style={{
+                              textAlign: 'center',
+                              padding: '12px',
+                              background: hasEvaluation ? 'rgba(18, 181, 176, 0.1)' : 'var(--bg-surface)',
+                              borderRadius: 'var(--radius-md)',
+                              border: hasEvaluation ? '2px solid #12b5b0' : '1px solid var(--border-color)',
+                              opacity: hasEvaluation ? 1 : 0.6
+                            }}
+                          >
+                            <div style={{
+                              fontSize: '1.1rem',
+                              fontWeight: 700,
+                              color: hasEvaluation ? '#12b5b0' : 'var(--text-secondary)',
+                              marginBottom: '4px'
+                            }}>
+                              {hasEvaluation ? '✓' : '○'}
+                            </div>
+                            <div style={{
+                              fontSize: '0.7rem',
+                              color: hasEvaluation ? 'var(--text-primary)' : 'var(--text-secondary)',
+                              fontWeight: hasEvaluation ? 600 : 400,
+                              lineHeight: '1.2'
+                            }}>
+                              {evalType.replace(' Evaluation', '').replace(' Deliverables', '')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Completed/Remaining Summary */}
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: '1fr 1fr',
@@ -289,7 +344,7 @@ export default function App() {
                         border: '1px solid var(--border-color)'
                       }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {selectedProviderProgress.count}
+                          {selectedProviderData?.count || selectedProviderProgress.count}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                           Completed
@@ -303,7 +358,7 @@ export default function App() {
                         border: '1px solid var(--border-color)'
                       }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                          {4 - selectedProviderProgress.count}
+                          {4 - (selectedProviderData?.count || selectedProviderProgress.count)}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                           Remaining
@@ -369,6 +424,7 @@ export default function App() {
                 onProviderClick={(provider) => {
                   setRfqMetadata({ ...rfqMetadata, proveedor: provider });
                 }}
+                onProviderDataChange={setSelectedProviderData}
               />
             </div>
 
@@ -412,7 +468,7 @@ export default function App() {
 
         {activeView === 'qa' && (
           <div style={{ padding: '24px', overflow: 'auto', height: 'calc(100vh - 140px)' }}>
-            <QAModule />
+            <QAModule projectId={rfqMetadata.proyecto || 'Hydrogen Production Plant – La Zaida, Spain'} />
           </div>
         )}
 
@@ -423,6 +479,7 @@ export default function App() {
         {activeView === 'mail' && <MailDashboard />}
 
       </SidebarLayout>
+      <ToastContainer />
     </>
   );
 }

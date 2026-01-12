@@ -44,13 +44,19 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
     <>
       <div
         {...getRootProps()}
-        className="dropzone"
+        className={`dropzone dropzone--centered ${compact ? 'dropzone--compact' : ''}`}
         data-drag={isDragActive ? '1' : '0'}
-        style={compact ? { padding: '24px', minHeight: 'auto' } : {}}
       >
         <input {...getInputProps()} />
 
-        <p className="dropzonePrompt" style={compact ? { fontSize: '0.9rem', margin: 0 } : {}}>
+        <div className="dropzoneIcon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(18, 181, 176, 0.8)" strokeWidth="2">
+            <path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"></path>
+            <path d="M16 16l-4-4-4 4"></path>
+          </svg>
+        </div>
+
+        <p className={`dropzonePrompt ${compact ? 'dropzonePrompt--compact' : ''}`}>
           {isProcessing
             ? 'Procesando propuestas... Esto puede tardar unos minutos'
             : selectedFiles.length > 0
@@ -63,6 +69,12 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
                   ? 'Arrastra archivos PDF o haz clic para seleccionar'
                   : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
         </p>
+
+        {selectedFiles.length > 0 && (
+          <p className="dropzoneSubtext">
+            {(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total
+          </p>
+        )}
       </div>
 
       {selectedFiles.length > 1 && (

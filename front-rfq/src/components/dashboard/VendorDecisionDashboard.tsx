@@ -5,12 +5,12 @@ import { ScoringMatrix } from './tabs/ScoringMatrix';
 import { ExecutiveView } from './tabs/ExecutiveView';
 import './Dashboard.css';
 
-type DashboardTab = 'scoring' | 'executive';
+type DashboardTab = 'executive' | 'scoring';
 
 export const VendorDecisionDashboard: React.FC = () => {
     const { loadDashboardData, data, isLoading } = useDashboardStore();
     const { t } = useLanguageStore();
-    const [activeTab, setActiveTab] = useState<DashboardTab>('scoring');
+    const [activeTab, setActiveTab] = useState<DashboardTab>('executive');
 
     useEffect(() => {
         loadDashboardData();
@@ -28,22 +28,22 @@ export const VendorDecisionDashboard: React.FC = () => {
         <div className="dashboard-container">
             <div className="dashboard-tabs">
                 <button
-                    className={`dashboard-tab ${activeTab === 'scoring' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('scoring')}
-                >
-                    {t('dashboard.tab.scoring')}
-                </button>
-                <button
                     className={`dashboard-tab ${activeTab === 'executive' ? 'active' : ''}`}
                     onClick={() => setActiveTab('executive')}
                 >
                     {t('dashboard.tab.executive')}
                 </button>
+                <button
+                    className={`dashboard-tab ${activeTab === 'scoring' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('scoring')}
+                >
+                    {t('dashboard.tab.scoring')}
+                </button>
             </div>
 
             <div className="fade-in">
-                {activeTab === 'scoring' && <ScoringMatrix />}
                 {activeTab === 'executive' && <ExecutiveView />}
+                {activeTab === 'scoring' && <ScoringMatrix />}
             </div>
         </div>
     );

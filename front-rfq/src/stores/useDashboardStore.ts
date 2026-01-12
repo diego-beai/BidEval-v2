@@ -1,17 +1,36 @@
 import { create } from 'zustand';
 import { DashboardData, DashboardProvider, DashboardRequirement } from '../types/dashboard';
 import { Provider } from '../types/provider.types';
+import { API_CONFIG } from '../config/constants';
+import { supabase } from '../lib/supabase';
 
 interface DashboardState {
     data: DashboardData | null;
+    metrics: {
+        total_items: number;
+        total_projects: number;
+        updated_today: number;
+    } | null;
+    totalProposals: number;
+    proposalsThisWeek: number;
+    proposalsGrowthPercentage: number;
     isLoading: boolean;
-    activeProviderId: string | null; // For Clarification View
+    activeProviderId: string | null;
+    lastUpdated: Date | null;
+    isRealtimeEnabled: boolean;
+    realtimeInterval: number; // in milliseconds
 
     // Actions
     loadDashboardData: () => Promise<void>;
+    fetchMetrics: () => Promise<void>;
+    fetchProposalsCount: () => Promise<void>;
     updateScore: (providerId: string, reqId: string, score: number) => void;
     updateQuestionStatus: (providerId: string, reqId: string, status: 'approved' | 'resolved') => void;
     setActiveProvider: (id: string) => void;
+    startRealtimeUpdates: () => void;
+    stopRealtimeUpdates: () => void;
+    setRealtimeEnabled: (enabled: boolean) => void;
+    setRealtimeInterval: (interval: number) => void;
 }
 
 // Mock Data Generator
@@ -178,12 +197,131 @@ const generateMockData = (): DashboardData => {
     };
 };
 
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>((set, get) => ({
     data: null,
+    metrics: null,
+    totalProposals: 0,
+    proposalsThisWeek: 0,
+    proposalsGrowthPercentage: 0,
     isLoading: false,
     activeProviderId: null,
+    lastUpdated: null,
+    isRealtimeEnabled: true,
+    realtimeInterval: 30000, // 30 seconds default
+
+    fetchMetrics: async () => {
+        try {
+            const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const metrics = Array.isArray(data) ? data[0] : (data.data ? data.data[0] : data);
+                set({
+                    metrics,
+                    lastUpdated: new Date()
+                });
+            }
+        } catch (err) {
+            console.error('Error fetching metrics:', err);
+        }
+    },
+
+    fetchProposalsCount: async () => {
+        try {
+            if (!supabase) {
+                console.warn('Supabase not configured, using default count');
+                set({
+                    totalProposals: 0,
+                    proposalsThisWeek: 0,
+                    proposalsGrowthPercentage: 0
+                });
+                return;
+            }
+
+            // Calcular fechas
+            const now = new Date();
+            const startOfThisWeek = new Date(now);
+            startOfThisWeek.setDate(now.getDate() - now.getDay()); // Domingo de esta semana
+            startOfThisWeek.setHours(0, 0, 0, 0);
+
+            const startOfLastWeek = new Date(startOfThisWeek);
+            startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+            // Contar total de propuestas (document_type = 'PROPOSAL')
+            const { count: totalCount, error: totalError } = await supabase
+                .from('document_metadata')
+                .select('*', { count: 'exact', head: true })
+                .eq('document_type', 'PROPOSAL');
+
+            if (totalError) {
+                console.error('Error fetching total proposals count:', totalError);
+                set({
+                    totalProposals: 0,
+                    proposalsThisWeek: 0,
+                    proposalsGrowthPercentage: 0
+                });
+                return;
+            }
+
+            // Contar propuestas de esta semana
+            const { count: thisWeekCount, error: thisWeekError } = await supabase
+                .from('document_metadata')
+                .select('*', { count: 'exact', head: true })
+                .eq('document_type', 'PROPOSAL')
+                .gte('created_at', startOfThisWeek.toISOString());
+
+            if (thisWeekError) {
+                console.error('Error fetching this week proposals:', thisWeekError);
+            }
+
+            // Contar propuestas de la semana pasada
+            const { count: lastWeekCount, error: lastWeekError } = await supabase
+                .from('document_metadata')
+                .select('*', { count: 'exact', head: true })
+                .eq('document_type', 'PROPOSAL')
+                .gte('created_at', startOfLastWeek.toISOString())
+                .lt('created_at', startOfThisWeek.toISOString());
+
+            if (lastWeekError) {
+                console.error('Error fetching last week proposals:', lastWeekError);
+            }
+
+            // Calcular porcentaje de crecimiento
+            const thisWeek = thisWeekCount || 0;
+            const lastWeek = lastWeekCount || 0;
+            let growthPercentage = 0;
+
+            if (lastWeek > 0) {
+                growthPercentage = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+            } else if (thisWeek > 0) {
+                growthPercentage = 100; // Si no había nada la semana pasada y ahora hay, es 100% de crecimiento
+            }
+
+            set({
+                totalProposals: totalCount || 0,
+                proposalsThisWeek: thisWeek,
+                proposalsGrowthPercentage: growthPercentage
+            });
+        } catch (err) {
+            console.error('Error fetching proposals count:', err);
+            set({
+                totalProposals: 0,
+                proposalsThisWeek: 0,
+                proposalsGrowthPercentage: 0
+            });
+        }
+    },
 
     loadDashboardData: async () => {
+        set({ isLoading: true });
+        // Stop any existing realtime updates during initial load
+        get().stopRealtimeUpdates();
+        await Promise.all([
+            get().fetchMetrics(),
+            get().fetchProposalsCount()
+        ]);
         const mockData = generateMockData();
         set({
             data: mockData,
@@ -241,4 +379,50 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     },
 
     setActiveProvider: (id) => set({ activeProviderId: id }),
+
+    startRealtimeUpdates: () => {
+        const { isRealtimeEnabled, realtimeInterval } = get();
+        if (isRealtimeEnabled) return;
+
+        // Start polling immediately
+        get().fetchMetrics();
+        get().fetchProposalsCount();
+
+        // Set up interval for continuous updates
+        const interval = setInterval(() => {
+            get().fetchMetrics();
+            get().fetchProposalsCount();
+        }, realtimeInterval);
+
+        // Store interval reference (we'll need to clean this up)
+        (window as any).__dashboardRealtimeInterval = interval;
+        set({ isRealtimeEnabled: true });
+    },
+
+    stopRealtimeUpdates: () => {
+        const interval = (window as any).__dashboardRealtimeInterval;
+        if (interval) {
+            clearInterval(interval);
+            (window as any).__dashboardRealtimeInterval = null;
+        }
+        set({ isRealtimeEnabled: false });
+    },
+
+    setRealtimeEnabled: (enabled: boolean) => {
+        if (enabled) {
+            get().startRealtimeUpdates();
+        } else {
+            get().stopRealtimeUpdates();
+        }
+    },
+
+    setRealtimeInterval: (interval: number) => {
+        set({ realtimeInterval: interval });
+        // If currently running, restart with new interval
+        if (get().isRealtimeEnabled) {
+            get().stopRealtimeUpdates();
+            get().startRealtimeUpdates();
+        }
+    },
 }));
+

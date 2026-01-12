@@ -3,17 +3,17 @@
         {
             "parameters": {
                 "content": "### Ingesta de RFQ, actualización de requisitos",
-                "height": 1312,
-                "width": 4374,
+                "height": 1280,
+                "width": 4390,
                 "color": 4
             },
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                -1072,
-                -160
+                -1040,
+                -96
             ],
-            "id": "bfdf8893-bb37-4608-84ce-47b87c14b568",
+            "id": "56de3e20-fa52-4503-9dfb-9b69cbe4ef5b",
             "name": "Sticky Note"
         },
         {
@@ -26,12 +26,12 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -976,
-                304
+                -928,
+                112
             ],
-            "id": "beaf82fd-6243-4fe5-b891-bc78d95e1eae",
+            "id": "bfe2dba2-2d68-4763-98e0-1f38cfc5d572",
             "name": "Webhook RFQ",
-            "webhookId": "4efdd77c-0a9c-4c26-9da3-2bdb83fca209"
+            "webhookId": "ce591645-290f-46ab-a153-0dca369b1ebd"
         },
         {
             "parameters": {
@@ -40,10 +40,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -80,
-                304
+                192,
+                112
             ],
-            "id": "faf1d3bd-759a-4cb5-a654-2f12364fefe7",
+            "id": "3e7ec79b-c2b3-4374-b029-44d34a94c47e",
             "name": "Preparar Texto1"
         },
         {
@@ -63,10 +63,10 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.8,
             "position": [
-                144,
-                304
+                -112,
+                336
             ],
-            "id": "b3ec5086-0bf8-400a-829e-f1dbf1059402",
+            "id": "e4795a85-e4d9-4719-8d46-5d160fc0e5d2",
             "name": "Clasificador de Tipos1"
         },
         {
@@ -79,10 +79,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                144,
-                528
+                -224,
+                560
             ],
-            "id": "60236992-4930-43df-9b11-02789b24569f",
+            "id": "02929bd7-efee-4521-8558-2870eb9b6889",
             "name": "Ollama Clasificador1",
             "credentials": {
                 "ollamaApi": {
@@ -99,10 +99,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                272,
-                528
+                112,
+                560
             ],
-            "id": "d2250586-13ed-450f-a963-c3529a8ce5b2",
+            "id": "fa985154-a2e8-4cad-879d-d69f83320cfb",
             "name": "Output Parser1"
         },
         {
@@ -112,10 +112,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                880,
-                304
+                928,
+                336
             ],
-            "id": "8f53d39b-806c-4e33-a264-64fcd7dfb731",
+            "id": "37af36c5-0992-4a73-bbaa-abd23a61a8fc",
             "name": "Expandir por Tipo1"
         },
         {
@@ -125,10 +125,10 @@
             "type": "n8n-nodes-base.splitInBatches",
             "typeVersion": 3,
             "position": [
-                1088,
-                320
+                1136,
+                352
             ],
-            "id": "aa2bf564-1133-41cd-ac35-ea548b3d0666",
+            "id": "9421f155-a52d-4024-858b-dc9a7dc13643",
             "name": "Loop por Tipo1"
         },
         {
@@ -138,10 +138,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                2608,
-                224
+                2656,
+                256
             ],
-            "id": "80289444-c6a9-4246-b849-aefafc2fc7fb",
+            "id": "1df31db2-7f59-40fd-b688-ee43675bdb3b",
             "name": "Parsear Items1"
         },
         {
@@ -151,10 +151,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                3072,
-                432
+                3184,
+                448
             ],
-            "id": "1d9956ca-fe06-4820-96c4-fdc707f30bc9",
+            "id": "a24562b6-7105-4a89-9e2f-0b8aab9a2fb5",
             "name": "Agregar Resultados1"
         },
         {
@@ -164,10 +164,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                2096,
-                -64
+                2144,
+                -32
             ],
-            "id": "77e6833f-92de-4d61-a3bf-74311eb7630d",
+            "id": "49cf1dee-b912-444f-b642-c119cd883f11",
             "name": "Resumen Final1"
         },
         {
@@ -179,23 +179,23 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1.5,
             "position": [
-                2384,
-                -64
+                2432,
+                -32
             ],
-            "id": "fd1925e1-6249-4049-9e99-928031482ad6",
+            "id": "510bf024-2e73-4f83-b175-fa0cead128f2",
             "name": "Respond Success1"
         },
         {
             "parameters": {
-                "jsCode": "// =============================================\n// NODO: Base64 a Binary\n// =============================================\n\nconst inputData = $json;\nconst base64Data = inputData.file_binary;\n\nif (!base64Data || base64Data === \"\") {\n    throw new Error(\"❌ CRÍTICO: 'file_binary' está vacío\");\n}\n\nconst binaryData = Buffer.from(base64Data, 'base64');\n\nconsole.log(`✅ PDF convertido: ${binaryData.length} bytes`);\n\nreturn {\n    json: {\n        rfq_project_id: inputData.rfq_project_id,\n        rfq_document_id: inputData.rfq_document_id,\n        project_name: inputData.project_name,\n        file_title: inputData.file_title\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'rfq.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
+                "jsCode": "// =============================================\n// NODO: Base64 a Binary\n// =============================================\n\n// Recuperar metadatos del inicio del flujo (Generate IDs1)\nlet inputData = {};\ntry {\n    inputData = $('Generate IDs1').first().json;\n} catch (e) {\n    inputData = $json; // Fallback\n}\n\nconst base64Data = inputData.file_binary;\n\nif (!base64Data || base64Data === \"\") {\n    throw new Error(\"❌ CRÍTICO: 'file_binary' está vacío\");\n}\n\nconst binaryData = Buffer.from(base64Data, 'base64');\n\nconsole.log(`✅ PDF convertido: ${binaryData.length} bytes`);\n\nreturn {\n    json: {\n        rfq_project_id: inputData.rfq_project_id || \"unknown\",\n        rfq_document_id: inputData.rfq_document_id || \"unknown\",\n        project_name: inputData.project_name || \"Sin Nombre\",\n        file_title: inputData.file_title || \"document.pdf\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'rfq.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
             },
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -528,
-                304
+                -256,
+                112
             ],
-            "id": "ce600cb8-a764-4b4d-a683-5a24a5f67075",
+            "id": "1a130cb9-11fa-41f1-a5b9-c55336e0392d",
             "name": "Base64 a Binary3"
         },
         {
@@ -206,10 +206,10 @@
             "type": "n8n-nodes-base.extractFromFile",
             "typeVersion": 1.1,
             "position": [
-                -304,
-                304
+                -32,
+                112
             ],
-            "id": "8da72b1e-b1d0-4e26-8448-38b416579bcd",
+            "id": "ce269298-5282-4d15-906c-379d6c08c574",
             "name": "Extract from File3"
         },
         {
@@ -219,10 +219,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -752,
-                304
+                -704,
+                112
             ],
-            "id": "2bc0c301-8d0c-4212-be52-88aedc759a0b",
+            "id": "557cf115-e659-4b30-979c-4f542e8fdd39",
             "name": "Generate IDs1"
         },
         {
@@ -280,10 +280,10 @@
             "type": "n8n-nodes-base.switch",
             "typeVersion": 3.4,
             "position": [
-                1984,
-                432
+                2032,
+                464
             ],
-            "id": "6e6f9109-1b36-43b3-ae0f-b69d72b1f4a4",
+            "id": "38ce9e0e-f27e-48fa-bff9-6345ed0e1bdc",
             "name": "Switch1"
         },
         {
@@ -297,10 +297,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                2208,
-                864
+                2256,
+                896
             ],
-            "id": "3267c94f-d45e-4b89-8bae-10bb8d0e1d27",
+            "id": "8a55ef4c-b687-4818-90ad-4c1385d69436",
             "name": "Ollama Extractor2",
             "credentials": {
                 "ollamaApi": {
@@ -325,10 +325,10 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.7,
             "position": [
-                2256,
-                640
+                2304,
+                672
             ],
-            "id": "2691936a-b6fe-4593-b875-2ff7abc6bd19",
+            "id": "c5efe4d6-bda4-461a-bd7b-014a114026d2",
             "name": "LLM Extractor - Deliverables"
         },
         {
@@ -347,10 +347,10 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.7,
             "position": [
-                2256,
-                224
+                2304,
+                256
             ],
-            "id": "5a1ef88d-8849-4a4e-932f-4224c28ac672",
+            "id": "c5b1bd00-780b-497a-83f8-354ac537c84f",
             "name": "LLM Extractor Tech-Econ"
         },
         {
@@ -360,155 +360,11 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                2608,
-                640
+                2656,
+                672
             ],
-            "id": "9940f74a-05bf-46aa-94ac-5d619bfee9ae",
+            "id": "0b4abb49-65b3-4fa5-9583-d671e07b1a1a",
             "name": "Parsear deliverables"
-        },
-        {
-            "parameters": {
-                "dataTableId": {
-                    "__rl": true,
-                    "value": "KPHuqZb3nUk74c3J",
-                    "mode": "list",
-                    "cachedResultName": "Prueba",
-                    "cachedResultUrl": "/projects/YoqFb1alZvPQmuNs/datatables/KPHuqZb3nUk74c3J"
-                },
-                "columns": {
-                    "mappingMode": "defineBelow",
-                    "value": {
-                        "fase": "={{ $json.fase }}",
-                        "project_name": "={{ $json.project_name }}",
-                        "evaluation": "={{ $json.evaluation }}",
-                        "requisito_rfq": "={{ $json.requisito_rfq }}"
-                    },
-                    "matchingColumns": [],
-                    "schema": [
-                        {
-                            "id": "project_name",
-                            "displayName": "project_name",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "evaluation",
-                            "displayName": "evaluation",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "fase",
-                            "displayName": "fase",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "requisito_rfq",
-                            "displayName": "requisito_rfq",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": false
-                        },
-                        {
-                            "id": "IDOM",
-                            "displayName": "IDOM",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SACYR",
-                            "displayName": "SACYR",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "EA",
-                            "displayName": "EA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "SENER",
-                            "displayName": "SENER",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TRESCA",
-                            "displayName": "TRESCA",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "WORLEY",
-                            "displayName": "WORLEY",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        },
-                        {
-                            "id": "TECNICASREUNIDAS",
-                            "displayName": "TECNICASREUNIDAS",
-                            "required": false,
-                            "defaultMatch": false,
-                            "display": true,
-                            "type": "string",
-                            "readOnly": false,
-                            "removed": true
-                        }
-                    ],
-                    "attemptToConvertTypes": false,
-                    "convertFieldsToString": false
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.dataTable",
-            "typeVersion": 1.1,
-            "position": [
-                2880,
-                432
-            ],
-            "id": "007b8a97-4d8a-4db5-b804-a3a764030b2f",
-            "name": "Insertar Items en Tabla1"
         },
         {
             "parameters": {
@@ -520,10 +376,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                2224,
-                448
+                2272,
+                480
             ],
-            "id": "6e437559-8100-4078-afac-7e7b133f32c2",
+            "id": "92763ab8-63e9-4abb-8a2c-97546002681c",
             "name": "Ollama Extractor1",
             "credentials": {
                 "ollamaApi": {
@@ -540,10 +396,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                2400,
-                864
+                2448,
+                896
             ],
-            "id": "0a41ee77-9167-4097-aa0e-f6a8c7f25f85",
+            "id": "92f094dc-19c6-4961-b0de-164cb691e8da",
             "name": "Structured Output Parser1"
         },
         {
@@ -554,10 +410,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                2400,
-                448
+                2448,
+                480
             ],
-            "id": "e9931bf4-6162-40e4-93a3-f9f17451d101",
+            "id": "b4417be9-5e06-4662-8ec2-45da4c2b574e",
             "name": "Structured Output Parser2"
         },
         {
@@ -567,10 +423,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1376,
-                464
+                1424,
+                496
             ],
-            "id": "b26d834d-a6ac-4fcb-9568-4bff6b5d692d",
+            "id": "f25557e2-fbbc-446a-a53b-31613f8fe8f7",
             "name": "Dividir en Trozos1"
         },
         {
@@ -582,10 +438,10 @@
             "type": "n8n-nodes-base.splitInBatches",
             "typeVersion": 3,
             "position": [
-                1728,
-                464
+                1776,
+                496
             ],
-            "id": "b5a73881-bc4c-429d-a94e-2a6ad2a0e0d2",
+            "id": "ece83992-28bb-4302-b1e1-6ae520eeb428",
             "name": "Loop por Trozo1"
         },
         {
@@ -595,10 +451,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                1552,
-                464
+                1600,
+                496
             ],
-            "id": "1426e2c3-645c-45ef-9db3-fcdb32ab2c0c",
+            "id": "06ffa25e-430c-43fa-89e0-6eac3507fc87",
             "name": "Reset Items1"
         },
         {
@@ -609,10 +465,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
             "typeVersion": 1,
             "position": [
-                2336,
-                992
+                2384,
+                1024
             ],
-            "id": "ac6c1fd0-d861-41cc-91c1-cc5f828cebfc",
+            "id": "8c82cef5-4ad4-4d3b-ab63-7a2044371a30",
             "name": "Mistral Cloud Chat Model",
             "credentials": {
                 "mistralCloudApi": {
@@ -628,10 +484,10 @@
             "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
             "typeVersion": 1,
             "position": [
-                496,
-                528
+                544,
+                560
             ],
-            "id": "c916edad-0c0a-4003-9ed5-c163309167c8",
+            "id": "2d7192d3-379d-41dd-9a7f-e2d4d1eee080",
             "name": "Embeddings Ollama1",
             "credentials": {
                 "ollamaApi": {
@@ -645,22 +501,28 @@
                 "mode": "insert",
                 "tableName": {
                     "__rl": true,
-                    "value": "documents_768",
+                    "value": "rfq",
                     "mode": "list",
-                    "cachedResultName": "documents_768"
+                    "cachedResultName": "rfq"
                 },
                 "options": {
-                    "queryName": "match_documents_768"
+                    "queryName": "match_rfq"
                 }
             },
-            "id": "33571160-f022-429e-8fdf-0525a3c027ef",
+            "id": "0293f770-7667-4375-9248-d70058ef57db",
             "name": "Insert into Supabase Vectorstore1",
             "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
             "typeVersion": 1,
             "position": [
-                528,
-                304
-            ]
+                576,
+                336
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
         },
         {
             "parameters": {
@@ -671,10 +533,10 @@
             "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
             "typeVersion": 1,
             "position": [
-                704,
-                736
+                752,
+                768
             ],
-            "id": "d57e6466-3b20-47aa-af7f-b5c0949dbf33",
+            "id": "ee956908-ec8e-47d8-b0d8-af12fc381ef3",
             "name": "Recursive Character Text Splitter1"
         },
         {
@@ -704,14 +566,191 @@
                     }
                 }
             },
-            "id": "49b293dd-7c8c-4a59-8a25-76ff496f48d4",
+            "id": "01317ed2-96e8-4acc-b9a7-7bb6a81cd356",
             "name": "Default Data Loader1",
             "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
             "typeVersion": 1,
             "position": [
-                624,
-                528
+                672,
+                560
             ]
+        },
+        {
+            "parameters": {
+                "tableId": "rfq_items_master",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "project_name",
+                            "fieldValue": "={{ $json.project_name }}"
+                        },
+                        {
+                            "fieldId": "evaluation_type",
+                            "fieldValue": "={{ $json.evaluation }}"
+                        },
+                        {
+                            "fieldId": "phase",
+                            "fieldValue": "={{ $json.fase }}"
+                        },
+                        {
+                            "fieldId": "requirement_text",
+                            "fieldValue": "={{ $json.requisito_rfq }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                2976,
+                448
+            ],
+            "id": "b6052897-123e-49cd-8732-3847fb5a116f",
+            "name": "Create a row",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "delete",
+                "tableId": "rfq",
+                "filterType": "string",
+                "filterString": "=metadata->>file_id=like.*{{ $json.rfq_document_id }}*"
+            },
+            "id": "4b2f18e0-f544-4f08-9b5a-a9f2a3d3d19b",
+            "name": "Delete Old Doc Rows1",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -480,
+                112
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "schema": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "public"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "document_metadata",
+                    "mode": "list",
+                    "cachedResultName": "document_metadata"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "id": "={{ $('Set File ID').item.json.file_id }}",
+                        "title": "={{ $('Set File ID').item.json.file_title }}",
+                        "project_name": "="
+                    },
+                    "matchingColumns": [
+                        "id"
+                    ],
+                    "schema": [
+                        {
+                            "id": "id",
+                            "displayName": "id",
+                            "required": true,
+                            "defaultMatch": true,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "title",
+                            "displayName": "title",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "project_name",
+                            "displayName": "project_name",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false,
+                            "removed": false
+                        },
+                        {
+                            "id": "document_type",
+                            "displayName": "document_type",
+                            "required": true,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false,
+                            "removed": false
+                        },
+                        {
+                            "id": "provider",
+                            "displayName": "provider",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false,
+                            "removed": false
+                        },
+                        {
+                            "id": "evaluation_types",
+                            "displayName": "evaluation_types",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "array",
+                            "canBeUsedToMatch": false,
+                            "removed": false
+                        },
+                        {
+                            "id": "created_at",
+                            "displayName": "created_at",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "dateTime",
+                            "canBeUsedToMatch": false,
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                272,
+                336
+            ],
+            "id": "86e1934f-cd43-4328-a26a-be3bd92d4ce0",
+            "name": "Insert Document Metadata2",
+            "executeOnce": true,
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
         }
     ],
     "connections": {
@@ -741,7 +780,7 @@
             "main": [
                 [
                     {
-                        "node": "Insert into Supabase Vectorstore1",
+                        "node": "Insert Document Metadata2",
                         "type": "main",
                         "index": 0
                     }
@@ -803,7 +842,7 @@
             "main": [
                 [
                     {
-                        "node": "Insertar Items en Tabla1",
+                        "node": "Create a row",
                         "type": "main",
                         "index": 0
                     }
@@ -858,7 +897,7 @@
             "main": [
                 [
                     {
-                        "node": "Base64 a Binary3",
+                        "node": "Delete Old Doc Rows1",
                         "type": "main",
                         "index": 0
                     }
@@ -881,11 +920,6 @@
                         "index": 0
                     }
                 ]
-            ]
-        },
-        "Ollama Extractor2": {
-            "ai_languageModel": [
-                []
             ]
         },
         "LLM Extractor - Deliverables": {
@@ -914,18 +948,7 @@
             "main": [
                 [
                     {
-                        "node": "Insertar Items en Tabla1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Insertar Items en Tabla1": {
-            "main": [
-                [
-                    {
-                        "node": "Agregar Resultados1",
+                        "node": "Create a row",
                         "type": "main",
                         "index": 0
                     }
@@ -1033,6 +1056,39 @@
                     {
                         "node": "Insert into Supabase Vectorstore1",
                         "type": "ai_document",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create a row": {
+            "main": [
+                [
+                    {
+                        "node": "Agregar Resultados1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Delete Old Doc Rows1": {
+            "main": [
+                [
+                    {
+                        "node": "Base64 a Binary3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Document Metadata2": {
+            "main": [
+                [
+                    {
+                        "node": "Insert into Supabase Vectorstore1",
+                        "type": "main",
                         "index": 0
                     }
                 ]

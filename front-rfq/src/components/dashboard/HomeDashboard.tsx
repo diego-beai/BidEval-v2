@@ -1,21 +1,444 @@
-import React from 'react';
-import { useRfqStore } from '../../stores/useRfqStore';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useLanguageStore } from '../../stores/useLanguageStore';
+import { useDashboardStore } from '../../stores/useDashboardStore';
+import { useRfqStore } from '../../stores/useRfqStore';
+import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { supabase } from '../../lib/supabase';
+import './Dashboard.css';
 
 interface HomeDashboardProps {
     onNavigate: (view: string) => void;
 }
 
-export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
-    const { results } = useRfqStore();
-    const { t } = useLanguageStore();
+// Map database provider names to Provider enum
+const PROVIDER_NAME_MAP: Record<string, Provider> = {
+    'TECNICASREUNIDAS': Provider.TR,
+    'TR': Provider.TR,
+    'Técnicas Reunidas': Provider.TR,
+    'IDOM': Provider.IDOM,
+    'SACYR': Provider.SACYR,
+    'EA': Provider.EA,
+    'SENER': Provider.SENER,
+    'TRESCA': Provider.TRESCA,
+    'WORLEY': Provider.WORLEY
+};
 
-    const metrics = {
-        totalPropuestas: results ? results.length : 24,
-        activeRfqs: 12,
-        completedToday: 8,
+const normalizeProviderName = (name: string) => {
+    return name
+        .trim()
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/\s+/g, '');
+};
+
+const NORMALIZED_PROVIDER_NAME_MAP: Record<string, Provider> = Object.fromEntries(
+    Object.entries(PROVIDER_NAME_MAP).map(([key, value]) => [normalizeProviderName(key), value])
+);
+
+export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
+    const { t } = useLanguageStore();
+    const {
+        metrics,
+        totalProposals,
+        proposalsThisWeek,
+        proposalsGrowthPercentage,
+        loadDashboardData,
+        isLoading,
+        stopRealtimeUpdates,
+        startRealtimeUpdates
+    } = useDashboardStore();
+
+    const { tableData, proposalEvaluations, pivotTableData, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
+
+    // Load data on mount
+    useEffect(() => {
+        loadDashboardData();
+        startRealtimeUpdates();
+        if (!tableData || tableData.length === 0) {
+            fetchAllTableData();
+        }
+        if (!proposalEvaluations || proposalEvaluations.length === 0) {
+            fetchProposalEvaluations();
+        }
+        if (!pivotTableData || pivotTableData.length === 0) {
+            fetchPivotTableData();
+        }
+        if (!providerRanking || providerRanking.length === 0) {
+            fetchProviderRanking();
+        }
+    }, [startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, tableData, proposalEvaluations, pivotTableData, providerRanking]);
+
+    // Cleanup realtime updates on unmount
+    React.useEffect(() => {
+        return () => {
+            stopRealtimeUpdates();
+        };
+    }, [stopRealtimeUpdates]);
+
+    // Refresh proposal evaluations periodically
+    React.useEffect(() => {
+        const refreshInterval = setInterval(() => {
+            refreshProposalEvaluations();
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(refreshInterval);
+    }, [refreshProposalEvaluations]);
+
+    // Calculate provider evaluations from ranking data (cumplimiento_porcentual / 10)
+    const providerEvaluations = useMemo(() => {
+        const evaluations: Record<string, Record<string, number>> = {};
+
+        const normalizeEvaluationType = (evalType: string) => {
+            const v = evalType.trim().toLowerCase();
+            if (v.includes('pre-feed') || v.includes('pre feed')) return 'Pre-FEED Deliverables';
+            if (v.includes('feed')) return 'FEED Deliverables';
+            if (v.includes('econom')) return 'Economical Evaluation';
+            if (v.includes('technic')) return 'Technical Evaluation';
+            return evalType.trim();
+        };
+
+        const providerTypes: Record<string, Set<string>> = {};
+
+        const registerProviderType = (providerRaw: any, evalTypeRaw: any) => {
+            if (!providerRaw || !evalTypeRaw) return;
+            const provider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(providerRaw))];
+            if (!provider) return;
+            const evalType = normalizeEvaluationType(String(evalTypeRaw));
+            if (!providerTypes[provider]) providerTypes[provider] = new Set<string>();
+            providerTypes[provider].add(evalType);
+        };
+
+        // Initialize all providers
+        Object.values(Provider).forEach(provider => {
+            evaluations[provider] = {
+                'Technical Evaluation': 0,
+                'Economical Evaluation': 0,
+                'Pre-FEED Deliverables': 0,
+                'FEED Deliverables': 0
+            };
+        });
+
+        // Use provider ranking data if available
+        if (providerRanking && providerRanking.length > 0) {
+            if (tableData && tableData.length > 0) {
+                tableData.forEach((item: any) => {
+                    registerProviderType(item.Provider || item.provider, item.evaluation_type || item.evaluation);
+                });
+            }
+
+            if (proposalEvaluations && proposalEvaluations.length > 0) {
+                proposalEvaluations.forEach((item: any) => {
+                    registerProviderType(item.provider_name, item.evaluation_type);
+                });
+            }
+
+            providerRanking.forEach((ranking: any) => {
+                const providerName = ranking.provider_name;
+                if (!providerName) return;
+
+                const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(providerName))];
+                if (!normalizedProvider) return;
+
+                // Calculate score as cumplimiento_porcentual / 10
+                const cumplimientoPorcentual = Number(ranking.cumplimiento_porcentual);
+                const rawCumplimientoScore = Number.isFinite(cumplimientoPorcentual)
+                    ? (cumplimientoPorcentual > 100 ? (cumplimientoPorcentual / 100) : (cumplimientoPorcentual / 10))
+                    : 0;
+                const cumplimientoScore = Math.max(0, Math.min(10, Math.round(rawCumplimientoScore * 100) / 100));
+
+                const availableTypes = providerTypes[normalizedProvider];
+                const shouldApplyToType = (type: string) => {
+                    if (!availableTypes || availableTypes.size === 0) return true;
+                    return availableTypes.has(type);
+                };
+
+                evaluations[normalizedProvider] = {
+                    'Technical Evaluation': shouldApplyToType('Technical Evaluation') ? cumplimientoScore : 0,
+                    'Economical Evaluation': shouldApplyToType('Economical Evaluation') ? cumplimientoScore : 0,
+                    'Pre-FEED Deliverables': shouldApplyToType('Pre-FEED Deliverables') ? cumplimientoScore : 0,
+                    'FEED Deliverables': shouldApplyToType('FEED Deliverables') ? cumplimientoScore : 0
+                };
+            });
+        } else {
+            // Fallback to old logic if no ranking data
+            // Count RFQ evaluations from tableData (rfq_items_master)
+            if (tableData && tableData.length > 0) {
+                tableData.forEach((item: any) => {
+                    const itemProvider = item.Provider || item.provider;
+                    if (!itemProvider) return;
+
+                    const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(itemProvider))];
+                    if (!normalizedProvider) return;
+
+                    const evalType = item.evaluation_type || item.evaluation;
+                    if (!evalType) return;
+
+                    // Normalize evaluation type
+                    const evalTypeNormalized = evalType.trim();
+
+                    if (!evaluations[normalizedProvider]) {
+                        evaluations[normalizedProvider] = {};
+                    }
+
+                    if (!evaluations[normalizedProvider][evalTypeNormalized]) {
+                        evaluations[normalizedProvider][evalTypeNormalized] = 0;
+                    }
+
+                    evaluations[normalizedProvider][evalTypeNormalized]++;
+                });
+            }
+
+            // Count Proposal evaluations from proposalEvaluations (provider_responses)
+            if (proposalEvaluations && proposalEvaluations.length > 0) {
+                proposalEvaluations.forEach((item: any) => {
+                    const itemProvider = item.provider_name;
+                    if (!itemProvider) return;
+
+                    const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(itemProvider))];
+                    if (!normalizedProvider) return;
+
+                    const evalType = item.evaluation_type;
+                    if (!evalType) return;
+
+                    // Normalize evaluation type
+                    const evalTypeNormalized = evalType.trim();
+
+                    if (!evaluations[normalizedProvider]) {
+                        evaluations[normalizedProvider] = {};
+                    }
+
+                    if (!evaluations[normalizedProvider][evalTypeNormalized]) {
+                        evaluations[normalizedProvider][evalTypeNormalized] = 0;
+                    }
+
+                    evaluations[normalizedProvider][evalTypeNormalized]++;
+                });
+            }
+        }
+
+        return evaluations;
+    }, [tableData, proposalEvaluations, providerRanking]);
+
+    // Count active providers (those with data)
+    const activeProvidersCount = useMemo(() => {
+        return Object.values(providerEvaluations).filter(evals =>
+            Object.values(evals).some(count => count > 0)
+        ).length;
+    }, [providerEvaluations]);
+
+    // Generate recent activity from both tableData and proposalEvaluations
+    const recentActivity = useMemo(() => {
+        const activities: any[] = [];
+
+        // Add RFQ activities
+        if (tableData && tableData.length > 0) {
+            tableData.forEach((item: any) => {
+                const date = new Date(item.created_at || item.updated_at);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffHours / 24);
+
+                let timeAgo = '';
+                if (diffDays > 0) {
+                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                } else if (diffHours > 0) {
+                    timeAgo = `${diffHours}h ago`;
+                } else {
+                    timeAgo = 'Just now';
+                }
+
+                const provider = item.Provider || item.provider;
+                const evalType = item.evaluation_type || item.evaluation;
+
+                activities.push({
+                    title: provider
+                        ? `${t('home.activity.offer_received')} - ${provider}`
+                        : `New ${evalType || 'RFQ'} item`,
+                    desc: item.requirement_text?.substring(0, 50) || `${item.phase || 'General'} - ${evalType || 'Evaluation'}`,
+                    time: timeAgo,
+                    type: provider ? 'success' : 'info',
+                    timestamp: date.getTime()
+                });
+            });
+        }
+
+        // Add Proposal evaluation activities
+        if (proposalEvaluations && proposalEvaluations.length > 0) {
+            proposalEvaluations.forEach((item: any) => {
+                const date = new Date(item.updated_at);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffHours / 24);
+
+                let timeAgo = '';
+                if (diffDays > 0) {
+                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                } else if (diffHours > 0) {
+                    timeAgo = `${diffHours}h ago`;
+                } else {
+                    timeAgo = 'Just now';
+                }
+
+                activities.push({
+                    title: `Proposal evaluated - ${item.provider_name}`,
+                    desc: `${item.evaluation_type}: ${item.evaluation_value} (${item.score}/10)`,
+                    time: timeAgo,
+                    type: 'success',
+                    timestamp: date.getTime()
+                });
+            });
+        }
+
+        // Sort by timestamp descending and take the 4 most recent
+        return activities
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 4);
+    }, [tableData, proposalEvaluations, t]);
+
+    const [rfqCount, setRfqCount] = useState(0);
+    const [evaluationTypes, setEvaluationTypes] = useState<Set<string>>(new Set());
+
+    // Fetch RFQ count from document_metadata
+    useEffect(() => {
+        const fetchRfqCount = async () => {
+            if (supabase) {
+                try {
+                    console.log('Fetching RFQ documents from document_metadata...');
+                    const { data: rfqDocuments, error: rfqError } = await supabase
+                        .from('document_metadata')
+                        .select('id, title, project_name, evaluation_types, created_at')
+                        .eq('document_type', 'RFQ');
+                    
+                    console.log('RFQ query result:', { rfqDocuments, rfqError });
+                    
+                    if (!rfqError && rfqDocuments) {
+                        console.log('Found', rfqDocuments.length, 'RFQ documents');
+                        setRfqCount(rfqDocuments.length);
+                        
+                        // Collect all evaluation types
+                        const types = new Set<string>();
+                        rfqDocuments.forEach((doc: any) => {
+                            console.log('RFQ Document:', doc.title, 'Types:', doc.evaluation_types, 'Type of evaluation_types:', typeof doc.evaluation_types, 'Is Array:', Array.isArray(doc.evaluation_types));
+                            if (doc.evaluation_types) {
+                                // Handle both string and array cases
+                                if (Array.isArray(doc.evaluation_types)) {
+                                    doc.evaluation_types.forEach((type: string) => {
+                                        types.add(type.trim());
+                                    });
+                                } else if (typeof doc.evaluation_types === 'string') {
+                                    // Try to parse if it's a JSON string
+                                    try {
+                                        const parsed = JSON.parse(doc.evaluation_types);
+                                        if (Array.isArray(parsed)) {
+                                            parsed.forEach((type: string) => {
+                                                types.add(type.trim());
+                                            });
+                                        }
+                                    } catch {
+                                        // If it's not JSON, treat as single type
+                                        types.add(doc.evaluation_types.trim());
+                                    }
+                                }
+                            }
+                        });
+                        console.log('Final evaluation types found:', Array.from(types));
+                        console.log('Total unique evaluation types:', types.size);
+                        setEvaluationTypes(types);
+                    } else {
+                        console.log('RFQ query error or no data:', rfqError);
+                    }
+                } catch (err) {
+                    console.warn('Error fetching RFQ documents from metadata:', err);
+                }
+            } else {
+                console.warn('Supabase client not available');
+            }
+        };
+
+        fetchRfqCount();
+    }, []);
+
+    // Calculate metrics from both tableData and proposalEvaluations
+    const calculatedMetrics = useMemo(() => {
+        const uniqueProjects = new Set<string>();
+        let updatedToday = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Fallback: count from tableData if Supabase fails
+        if (rfqCount === 0 && tableData && tableData.length > 0) {
+            const uniqueRfqs = new Set();
+            const types = new Set<string>();
+            
+            tableData.forEach((item: any) => {
+                if (item.requirement_text) {
+                    const rfqKey = `${item.project_name || 'unknown'}-${item.requirement_text.substring(0, 50)}`;
+                    uniqueRfqs.add(rfqKey);
+                    if (item.evaluation_type) {
+                        types.add(item.evaluation_type);
+                    }
+                }
+            });
+            
+            setRfqCount(uniqueRfqs.size);
+            // Only set evaluation types if not already set from database
+            if (evaluationTypes.size === 0) {
+                setEvaluationTypes(types);
+            }
+        }
+
+        // Count items updated today
+        if (tableData && tableData.length > 0) {
+            tableData.forEach((item: any) => {
+                if (item.created_at || item.updated_at) {
+                    const itemDate = new Date(item.updated_at || item.created_at);
+                    itemDate.setHours(0, 0, 0, 0);
+                    if (itemDate.getTime() === today.getTime()) {
+                        updatedToday++;
+                    }
+                }
+            });
+        }
+
+        // Count from proposal evaluations
+        let proposalCount = 0;
+        if (proposalEvaluations && proposalEvaluations.length > 0) {
+            proposalEvaluations.forEach((item: any) => {
+                if (item.project_name) {
+                    uniqueProjects.add(item.project_name);
+                }
+
+                // Count evaluations updated today
+                if (item.updated_at) {
+                    const itemDate = new Date(item.updated_at);
+                    itemDate.setHours(0, 0, 0, 0);
+                    if (itemDate.getTime() === today.getTime()) {
+                        updatedToday++;
+                    }
+                }
+            });
+            proposalCount = proposalEvaluations.length;
+        }
+
+        return {
+            totalItems: (tableData?.length || 0) + proposalCount,
+            totalProjects: uniqueProjects.size,
+            totalEvaluations: rfqCount, // Ahora usa el conteo real de RFQs desde document_metadata
+            updatedToday
+        };
+    }, [tableData, proposalEvaluations]);
+
+    const dashboardMetrics = {
+        totalPropuestas: calculatedMetrics.totalItems,
+        activeRfqs: calculatedMetrics.totalEvaluations, // Ahora muestra el total de evaluaciones procesadas
+        completedToday: calculatedMetrics.updatedToday,
         avgProcessingTime: '2.4h',
-        providers: ['Técnicas Reunidas', 'IDOM', 'SACYR', 'Worley', 'SENER'],
+        providers: Object.keys(providerEvaluations).filter(p =>
+            Object.values(providerEvaluations[p] || {}).some(count => count > 0)
+        ),
         recentActivity: {
             lastUpload: '2 hours ago',
             pendingReviews: 3,
@@ -24,12 +447,23 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         systemHealth: {
             accuracyRate: 98.5,
             automationLevel: 94,
-            totalProcessed: 156
+            totalProcessed: totalProposals // Usar el conteo real de propuestas desde Supabase
         }
     };
 
+    if (isLoading && !metrics) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-400 animate-pulse">Cargando estadísticas...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div className="home-dashboard">
 
             {/* Hero Section */}
             <div style={{
@@ -121,12 +555,43 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 </div>
             </div>
 
+
             {/* Key Metrics Grid */}
+            {/* Temporary debug display */}
+            <div style={{ 
+                background: '#f0f0f0', 
+                padding: '10px', 
+                margin: '10px 0', 
+                borderRadius: '5px',
+                fontSize: '12px',
+                fontFamily: 'monospace'
+            }}>
+                DEBUG: evaluationTypes.size = {evaluationTypes.size}, 
+                types = [{Array.from(evaluationTypes).join(', ')}],
+                rfqCount = {rfqCount}
+            </div>
+            {/* Temporary test buttons */}
+            <div style={{ padding: '10px', margin: '10px 0' }}>
+                <button onClick={() => {
+                    const testTypes = new Set(['Technical Evaluation', 'Economical Evaluation', 'Pre-FEED Deliverables', 'FEED Deliverables']);
+                    setEvaluationTypes(testTypes);
+                    console.log('Set test types:', Array.from(testTypes));
+                }}>
+                    Set 4 Types (Test)
+                </button>
+                <button onClick={() => {
+                    console.log('Current evaluationTypes:', Array.from(evaluationTypes));
+                    console.log('Current rfqCount:', rfqCount);
+                }}>
+                    Log Current State
+                </button>
+            </div>
             <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
                 <DashboardCard
                     title="Total Processed"
-                    value={metrics.systemHealth.totalProcessed.toString()}
-                    trend="+24 this week"
+                    value={dashboardMetrics.systemHealth.totalProcessed.toString()}
+                    trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% this week (${proposalsThisWeek} proposals)`}
+                    isPositiveTrend={proposalsGrowthPercentage >= 0}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -138,9 +603,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="var(--color-primary)"
                 />
                 <DashboardCard
-                    title="Active RFQs"
-                    value={metrics.activeRfqs.toString()}
-                    trend="Processing"
+                    title="RFQs Procesadas"
+                    value={dashboardMetrics.activeRfqs.toString()}
+                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% de cobertura`}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -150,7 +615,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 />
                 <DashboardCard
                     title="AI Accuracy"
-                    value={`${metrics.systemHealth.accuracyRate}%`}
+                    value={`${dashboardMetrics.systemHealth.accuracyRate}%`}
                     trend="Excellent performance"
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -163,7 +628,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 />
                 <DashboardCard
                     title="Automation"
-                    value={`${metrics.systemHealth.automationLevel}%`}
+                    value={`${dashboardMetrics.systemHealth.automationLevel}%`}
                     trend="Very high"
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -171,7 +636,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path>
                         </svg>
                     }
-                    color="#8b5cf6"
+                    color="#10b981"
                 />
             </div>
 
@@ -191,7 +656,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         Average Time
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                        {metrics.avgProcessingTime}
+                        {dashboardMetrics.avgProcessingTime}
                     </div>
                 </div>
                 <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
@@ -199,7 +664,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         Completed Today
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-cyan)' }}>
-                        {metrics.completedToday}
+                        {dashboardMetrics.completedToday}
                     </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
@@ -207,7 +672,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         Active Providers
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
-                        {metrics.providers.length}
+                        {activeProvidersCount}
                     </div>
                 </div>
             </div>
@@ -259,51 +724,41 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         borderBottom: '2px solid var(--border-color)',
                         gap: '12px'
                     }}>
-                        <StackedBar
-                            provider="Técnicas Reunidas"
-                            evaluations={[
-                                { type: 'Technical', score: 9.2, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: 8.1, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: 8.8, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: 7.5, color: 'rgba(139, 92, 246, 0.8)' }
-                            ]}
-                        />
-                        <StackedBar
-                            provider="IDOM"
-                            evaluations={[
-                                { type: 'Technical', score: 8.5, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: 9.2, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: 8.2, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: 8.0, color: 'rgba(139, 92, 246, 0.8)' }
-                            ]}
-                        />
-                        <StackedBar
-                            provider="SACYR"
-                            evaluations={[
-                                { type: 'Technical', score: 7.8, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: 7.5, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: 8.5, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: 7.0, color: 'rgba(139, 92, 246, 0.8)' }
-                            ]}
-                        />
-                        <StackedBar
-                            provider="Worley"
-                            evaluations={[
-                                { type: 'Technical', score: 9.0, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: 7.2, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: 9.2, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: 8.8, color: 'rgba(139, 92, 246, 0.8)' }
-                            ]}
-                        />
-                        <StackedBar
-                            provider="SENER"
-                            evaluations={[
-                                { type: 'Technical', score: 8.2, color: 'rgba(20, 184, 166, 0.8)' },
-                                { type: 'Economical', score: 8.8, color: 'rgba(245, 158, 11, 0.8)' },
-                                { type: 'Pre-FEED', score: 8.0, color: 'rgba(59, 130, 246, 0.8)' },
-                                { type: 'FEED', score: 7.8, color: 'rgba(139, 92, 246, 0.8)' }
-                            ]}
-                        />
+                        {Object.entries(providerEvaluations).map(([providerKey, evals]) => {
+                            // Only show providers with data
+                            const hasData = Object.values(evals).some(count => count > 0);
+                            if (!hasData) return null;
+
+                            const evaluations = [
+                                { type: 'Technical', score: evals['Technical Evaluation'] || 0, color: 'rgba(20, 184, 166, 0.8)' },
+                                { type: 'Economical', score: evals['Economical Evaluation'] || 0, color: 'rgba(245, 158, 11, 0.8)' },
+                                { type: 'Pre-FEED', score: evals['Pre-FEED Deliverables'] || 0, color: 'rgba(59, 130, 246, 0.8)' },
+                                { type: 'FEED', score: evals['FEED Deliverables'] || 0, color: 'rgba(139, 92, 246, 0.8)' }
+                            ];
+
+                            return (
+                                <StackedBar
+                                    key={providerKey}
+                                    provider={PROVIDER_DISPLAY_NAMES[providerKey as Provider] || providerKey}
+                                    evaluations={evaluations}
+                                />
+                            );
+                        })}
+
+                        {/* Show placeholder if no data */}
+                        {Object.keys(providerEvaluations).length === 0 && (
+                            <div style={{
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-tertiary)',
+                                fontSize: '0.9rem'
+                            }}>
+                                No provider data available yet
+                            </div>
+                        )}
                     </div>
 
                     {/* Legend */}
@@ -359,30 +814,26 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         </div>
                     </div>
                     <div style={{ padding: '0' }}>
-                        <ActivityItem
-                            title={`${t('home.activity.offer_received')} - Técnicas Reunidas`}
-                            desc={t('home.activity.offer_desc')}
-                            time={t('home.activity.ago_2h')}
-                            type="success"
-                        />
-                        <ActivityItem
-                            title={t('home.activity.alert')}
-                            desc={`IDOM ${t('home.activity.alert_desc')}`}
-                            time={t('home.activity.ago_5h')}
-                            type="warning"
-                        />
-                        <ActivityItem
-                            title={t('home.activity.created')}
-                            desc={t('home.activity.created_desc')}
-                            time={t('home.activity.yesterday')}
-                            type="info"
-                        />
-                        <ActivityItem
-                            title={`Diego - ${t('home.activity.user')}`}
-                            desc="Log"
-                            time={t('home.activity.yesterday')}
-                            type="neutral"
-                        />
+                        {recentActivity.length > 0 ? (
+                            recentActivity.map((activity, index) => (
+                                <ActivityItem
+                                    key={index}
+                                    title={activity.title}
+                                    desc={activity.desc}
+                                    time={activity.time}
+                                    type={activity.type}
+                                />
+                            ))
+                        ) : (
+                            <div style={{
+                                padding: '20px',
+                                textAlign: 'center',
+                                color: 'var(--text-tertiary)',
+                                fontSize: '0.9rem'
+                            }}>
+                                {t('home.activity.no_activity') || 'No recent activity'}
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -393,8 +844,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 };
 
 // Sub-components for cleaner internal code
-const DashboardCard = ({ title, value, trend, icon, color }: any) => {
+const DashboardCard = ({ title, value, trend, icon, color, isPositiveTrend = true }: any) => {
     const [isHovered, setIsHovered] = React.useState(false);
+
+    // Color del trend basado en si es positivo o negativo
+    const trendColor = isPositiveTrend ? color : '#ef4444';
+
     return (
         <div
             className="stat-card"
@@ -476,16 +931,23 @@ const DashboardCard = ({ title, value, trend, icon, color }: any) => {
                 </div>
                 <div style={{
                     fontSize: '0.875rem',
-                    color: color,
+                    color: trendColor,
                     fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px'
                 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                        <polyline points="17 6 23 6 23 12"></polyline>
-                    </svg>
+                    {isPositiveTrend ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                    ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                            <polyline points="17 18 23 18 23 12"></polyline>
+                        </svg>
+                    )}
                     {trend}
                 </div>
             </div>
@@ -650,7 +1112,7 @@ const StackedBar = ({ provider, evaluations }: {
                             {evaluations[hoveredIdx].type}
                         </div>
                         <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                            {evaluations[hoveredIdx].score.toFixed(1)}/10
+                            {evaluations[hoveredIdx].score.toFixed(2)}/10
                         </div>
                         <div style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '8px solid var(--border-color)' }}></div>
                     </div>
@@ -730,3 +1192,16 @@ const LegendItem = ({ color, label }: any) => (
     </div>
 );
 
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+`;
+document.head.appendChild(style);

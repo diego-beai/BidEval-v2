@@ -1,18 +1,37 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRfqStore, TableFilters } from '../../stores/useRfqStore';
-import { API_CONFIG } from '../../config/constants';
 import * as XLSX from 'xlsx';
 
 export const ExternalDataTable: React.FC = () => {
     // State declarations first
     const [data, setData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const hasLoadedRef = useRef(false);
     const filterPanelRef = useRef<HTMLDivElement>(null);
 
-    const { rfqMetadata, applyTableFilters, setApplyTableFilters, tableFilters, setTableFilters } = useRfqStore();
+    const {
+        rfqMetadata,
+        applyTableFilters,
+        setApplyTableFilters,
+        tableFilters,
+        setTableFilters,
+        projects,
+        fetchPivotTableData,
+        pivotTableData,
+        error,
+        isProcessing
+    } = useRfqStore();
+
+    // Sync pivotTableData with internal data state - use direct Supabase data
+    useEffect(() => {
+        if (pivotTableData && pivotTableData.length > 0) {
+            // Use the pivot data directly as it comes from Supabase with provider columns
+            setData(pivotTableData);
+        } else {
+            setData([]);
+        }
+    }, [pivotTableData]);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -31,14 +50,21 @@ export const ExternalDataTable: React.FC = () => {
             setTableFilters({
                 project_name: rfqMetadata.proyecto || '',
                 provider: rfqMetadata.proveedor ? [rfqMetadata.proveedor] : [],
-                evaluation: rfqMetadata.tipoEvaluacion || []
+                evaluation_type: rfqMetadata.tipoEvaluacion || []
             });
             setApplyTableFilters(false);
+
+            // Auto-load if project matches - el filtrado se hace automáticamente en el useEffect
         }
     }, [applyTableFilters, rfqMetadata, setApplyTableFilters, setTableFilters]);
 
+    // Cargar datos solo cuando se accede al apartado por primera vez
     useEffect(() => {
-        loadData();
+        if (!hasLoadedRef.current) {
+            loadData();
+            hasLoadedRef.current = true;
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const toggleFilter = (key: keyof TableFilters, value: string) => {
@@ -54,48 +80,18 @@ export const ExternalDataTable: React.FC = () => {
     };
 
     const loadData = async () => {
-        setLoading(true);
-        setError(null);
         try {
-            const res = await fetch(API_CONFIG.N8N_TABLA_URL);
-            if (!res.ok) throw new Error(`Status: ${res.status}`);
+            // Usar llamada directa a Supabase para obtener datos pivoteados
+            await fetchPivotTableData();
 
-            const contentType = res.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const json = await res.json();
-                let rows: any[] = [];
-                if (Array.isArray(json)) {
-                    rows = json;
-                } else if (json && Array.isArray(json.data)) {
-                    rows = json.data;
-                } else if (typeof json === 'object') {
-                    rows = [json];
-                }
-                setData(rows);
-            } else {
-                const text = await res.text();
-                const rows = parseCSV(text);
-                setData(rows);
-            }
+            // No aplicar filtros automáticos - dejar que el usuario elija
         } catch (err: any) {
-            console.error(err);
-            setError(err.message || 'Error loading data');
-        } finally {
-            setLoading(false);
+            console.error('Error loading pivot table data:', err);
+            // Error will be handled by the store
         }
     };
 
-    const parseCSV = (text: string) => {
-        const lines = text.trim().split('\n');
-        if (lines.length < 2) return [];
-        const headers = lines[0].split(',').map(h => h.trim());
-        return lines.slice(1).map(line => {
-            const values = line.split(',').map(v => v.trim());
-            const obj: any = {};
-            headers.forEach((h, i) => obj[h] = values[i] || '');
-            return obj;
-        });
-    };
+
 
     const downloadExcel = () => {
         if (!data.length) return;
@@ -126,7 +122,7 @@ export const ExternalDataTable: React.FC = () => {
         document.body.removeChild(link);
     };
 
-    if (loading) return (
+    if (isProcessing) return (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div className="spinner" style={{ margin: '0 auto 16px', border: '3px solid rgba(0,0,0,0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', width: 24, height: 24, animation: 'spin 1s linear infinite' }}></div>
             Loading Data Table...
@@ -138,36 +134,95 @@ export const ExternalDataTable: React.FC = () => {
             <p>Error loading table data</p>
             <small>{error}</small>
             <br />
-            <button className="btn btnSecondary" onClick={loadData} style={{ marginTop: 16 }}>Retry</button>
+            <button className="btn btnSecondary" onClick={fetchPivotTableData} style={{ marginTop: 16 }}>Retry</button>
         </div>
     );
 
-    if (!data.length) return <div style={{ padding: 40, textAlign: 'center' }}>No data available</div>;
+    if (!data.length && !isProcessing) return (
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <div style={{ marginBottom: '16px' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" style={{ opacity: 0.5 }}>
+                    <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </div>
+            <h3 style={{ margin: '0 0 8px 0', color: 'var(--text-primary)' }}>No Data Available</h3>
+            <p style={{ margin: '0 0 16px 0' }}>
+                {projects.length === 0
+                    ? 'No projects found. Trying to load general data or the data source may be temporarily unavailable.'
+                    : 'No data available for the selected filters. Try selecting a different project or clearing filters.'
+                }
+            </p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btnSecondary" onClick={fetchPivotTableData}>
+                    Reload Data
+                </button>
+                {tableFilters.project_name && (
+                    <button
+                        className="btn btnSecondary"
+                        onClick={() => {
+                            setTableFilters({ project_name: '' });
+                            loadData();
+                        }}
+                    >
+                        Clear Project Filter
+                    </button>
+                )}
+                {projects.length === 0 && (
+                    <button
+                        className="btn btnPrimary"
+                        onClick={async () => {
+                            try {
+                                await fetchPivotTableData();
+                            } catch (err) {
+                                console.error('Error loading pivot table data:', err);
+                            }
+                        }}
+                    >
+                        Load All Data
+                    </button>
+                )}
+            </div>
+        </div>
+    );
 
-    // Ordered columns based on user request/CSV
-    const preferredOrder = ['id', 'project_name', 'evaluation', 'requisito_rfq'];
-    const allKeys = data.length > 0 ? Object.keys(data[0]) : [];
-    const columns = [
-        ...preferredOrder.filter(k => allKeys.includes(k)),
-        ...allKeys.filter(k => !preferredOrder.includes(k) && k !== 'createdAt' && k !== 'updatedAt' && k !== 'fase')
-    ];
+    // Determine columns dynamically from pivot data
+    const baseColumns = ['project_name', 'evaluation_type', 'phase', 'requirement_text'];
+
+    // Get all provider columns (any column that is not a base column)
+    const providerColumns = data.length > 0
+        ? Object.keys(data[0]).filter(col => !baseColumns.includes(col) && col !== 'id' && col !== 'project_id' && col !== 'created_at')
+        : [];
+
+    // Combine base columns with provider columns
+    const columns = [...baseColumns, ...providerColumns];
+
+    const getColumnWidth = (col: string, isProviderColumn: boolean) => {
+        if (col === 'project_name') return '200px';
+        if (col === 'evaluation_type') return '120px';
+        if (col === 'phase') return '70px';
+        if (col === 'requirement_text') return '230px';
+        if (isProviderColumn) return '240px';
+        return '160px';
+    };
 
     // Filter Options
     const filterOptions = {
-        evaluations: [...new Set(data.map(d => d.evaluation))].filter(Boolean) as string[],
-        rfqRequirements: [...new Set(data.map(d => d.requisito_rfq))].filter(Boolean) as string[],
-        providers: allKeys.filter(k => !preferredOrder.includes(k) && k !== 'fase')
+        evaluations: [...new Set(data.map(d => d.evaluation_type))].filter(Boolean) as string[],
+        rfqRequirements: [...new Set(data.map(d => d.phase))].filter(Boolean) as string[],
+        providers: providerColumns // Now we have provider columns to filter
     };
 
     const filteredData = data.filter(row => {
         const matchProject = !tableFilters.project_name || row.project_name?.toLowerCase().includes(tableFilters.project_name.toLowerCase());
-        const matchEval = tableFilters.evaluation.length === 0 || tableFilters.evaluation.includes(String(row.evaluation));
-        const matchRfq = tableFilters.requisito_rfq.length === 0 || tableFilters.requisito_rfq.includes(String(row.requisito_rfq));
-        const matchProvider = tableFilters.provider.length === 0 || tableFilters.provider.some(p => row[p] && String(row[p]).trim() !== '');
-        return matchProject && matchEval && matchRfq && matchProvider;
+        const matchEvalType = tableFilters.evaluation_type.length === 0 || tableFilters.evaluation_type.includes(String(row.evaluation_type));
+        const matchPhase = tableFilters.phase.length === 0 || tableFilters.phase.includes(String(row.phase));
+        // Provider filter: check if any selected provider has data in this row
+        const matchProvider = tableFilters.provider.length === 0 ||
+            tableFilters.provider.some(provider => row[provider] && String(row[provider]).trim() !== '');
+        return matchProject && matchEvalType && matchPhase && matchProvider;
     });
 
-    const activeFilterCount = (tableFilters.evaluation.length + tableFilters.requisito_rfq.length + tableFilters.provider.length + (tableFilters.project_name ? 1 : 0));
+    const activeFilterCount = (tableFilters.evaluation_type.length + tableFilters.phase.length + tableFilters.provider.length + (tableFilters.project_name ? 1 : 0));
 
     const FilterDropdown = ({ label, options, selected, onToggle, id, displayMap }: any) => {
         const isOpen = activeDropdown === id;
@@ -246,7 +301,7 @@ export const ExternalDataTable: React.FC = () => {
         <div style={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Data Overview</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Requirements & Provider Evaluations</h3>
                     {activeFilterCount > 0 && (
                         <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--color-cyan)', color: '#000', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
                             {activeFilterCount} filters active
@@ -254,8 +309,27 @@ export const ExternalDataTable: React.FC = () => {
                     )}
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btnSecondary" onClick={loadData} title="Reload Data">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+                    <button
+                        className="btn btnSecondary"
+                        onClick={async () => {
+                            // Reset filters first
+                            setTableFilters({
+                                project_name: '',
+                                evaluation_type: [],
+                                phase: [],
+                                provider: [],
+                                rfqSearch: ''
+                            });
+                            // Then reload data
+                            await fetchPivotTableData();
+                        }}
+                        title="Reload Data & Reset Filters"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M23 4v6h-6" />
+                            <path d="M1 20v-6h6" />
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                        </svg>
                     </button>
                     <button
                         className={`btn ${showFilterPanel ? 'btnPrimary' : 'btnSecondary'}`}
@@ -324,29 +398,36 @@ export const ExternalDataTable: React.FC = () => {
                     zIndex: 150
                 }}>
 
-                    {/* Project Filter */}
+                    {/* Project Filter - Now a Dropdown */}
                     <div style={{ flex: '1 1 200px' }}>
                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>Project Name</label>
-                        <input
-                            type="text"
-                            placeholder="Enter project name..."
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                        <select
+                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer' }}
                             value={tableFilters.project_name}
-                            onChange={(e) => setTableFilters({ project_name: e.target.value })}
-                        />
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setTableFilters({ project_name: val });
+                                // El filtrado se hace automáticamente en el componente basado en tableFilters.project_name
+                            }}
+                        >
+                            <option value="">Select Project...</option>
+                            {projects.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <FilterDropdown
-                        label="Evaluation"
+                        label="Evaluation Type"
                         id="eval"
                         options={filterOptions.evaluations}
-                        selected={tableFilters.evaluation}
-                        onToggle={(v: string) => toggleFilter('evaluation', v)}
+                        selected={tableFilters.evaluation_type}
+                        onToggle={(v: string) => toggleFilter('evaluation_type', v)}
                     />
 
                     {/* RFQ Requirement Searchable Autocomplete */}
                     <div style={{ position: 'relative', flex: '2 1 300px' }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>RFQ Requirement</label>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>Phase</label>
                         <div style={{ position: 'relative' }}>
                             <input
                                 type="text"
@@ -359,9 +440,9 @@ export const ExternalDataTable: React.FC = () => {
                                 }}
                                 onFocus={() => setActiveDropdown('rfq_req')}
                             />
-                            {tableFilters.requisito_rfq.length > 0 && (
+                            {tableFilters.phase.length > 0 && (
                                 <span style={{ position: 'absolute', right: '35px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.7rem', backgroundColor: 'var(--color-cyan)', color: '#000', padding: '1px 6px', borderRadius: '6px' }}>
-                                    {tableFilters.requisito_rfq.length}
+                                    {tableFilters.phase.length}
                                 </span>
                             )}
                             <button
@@ -406,11 +487,11 @@ export const ExternalDataTable: React.FC = () => {
                                         }} className="dropdown-item-hover">
                                             <input
                                                 type="checkbox"
-                                                checked={tableFilters.requisito_rfq.includes(opt)}
-                                                onChange={() => toggleFilter('requisito_rfq', opt)}
+                                                checked={tableFilters.phase.includes(opt)}
+                                                onChange={() => toggleFilter('phase', opt)}
                                                 style={{ accentColor: 'var(--color-cyan)' }}
                                             />
-                                            <span style={{ color: tableFilters.requisito_rfq.includes(opt) ? 'var(--color-cyan)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            <span style={{ color: tableFilters.phase.includes(opt) ? 'var(--color-cyan)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {opt}
                                             </span>
                                         </label>
@@ -438,8 +519,8 @@ export const ExternalDataTable: React.FC = () => {
                             onClick={() => {
                                 setTableFilters({
                                     project_name: '',
-                                    evaluation: [],
-                                    requisito_rfq: [],
+                                    evaluation_type: [],
+                                    phase: [],
                                     provider: [],
                                     rfqSearch: ''
                                 });
@@ -457,8 +538,8 @@ export const ExternalDataTable: React.FC = () => {
                     <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-body)', zIndex: 1 }}>
                         <tr>
                             {columns.map(col => {
-                                const isProvider = filterOptions.providers.includes(col);
-                                const colWidth = isProvider ? '235px' : (col === 'id' ? '50px' : (col === 'requisito_rfq' ? '300px' : '150px'));
+                                const isProviderColumn = providerColumns.includes(col);
+                                const colWidth = getColumnWidth(col, isProviderColumn);
                                 return (
                                     <th key={col} style={{
                                         padding: '12px 10px',
@@ -477,12 +558,10 @@ export const ExternalDataTable: React.FC = () => {
                                     }}>
                                         {(
                                             {
-                                                'id': 'ID',
-                                                'project_name': 'Project Name',
-                                                'evaluation': 'Evaluation',
-                                                'fase': 'Phase',
-                                                'requisito_rfq': 'RFQ Requirement',
-                                                'requisito': 'Requirement'
+                                                'project_name': 'Project',
+                                                'evaluation_type': 'Evaluation Type',
+                                                'phase': 'Phase',
+                                                'requirement_text': 'Requirement'
                                             }[col] || col.replace(/_/g, ' ')
                                         )}
                                     </th>
@@ -494,8 +573,8 @@ export const ExternalDataTable: React.FC = () => {
                         {filteredData.map((row, idx) => (
                             <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                 {columns.map(col => {
-                                    const isProvider = filterOptions.providers.includes(col);
-                                    const colWidth = isProvider ? '235px' : (col === 'id' ? '50px' : (col === 'requisito_rfq' ? '300px' : '150px'));
+                                    const isProviderColumn = providerColumns.includes(col);
+                                    const colWidth = getColumnWidth(col, isProviderColumn);
                                     return (
                                         <td key={col} style={{
                                             padding: '12px 10px',
@@ -508,7 +587,12 @@ export const ExternalDataTable: React.FC = () => {
                                             wordBreak: 'break-word',
                                             whiteSpace: 'normal'
                                         }}>
-                                            {row[col] && String(row[col]).trim() !== '' ? row[col] : '-'}
+                                            {(() => {
+                                                const value = row[col];
+                                                if (value === null || value === undefined) return '-';
+                                                const strValue = String(value).trim();
+                                                return strValue !== '' ? strValue : '-';
+                                            })()}
                                         </td>
                                     );
                                 })}
