@@ -413,18 +413,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     
                     if (!rfqError && rfqDocuments) {
                         console.log('Found', rfqDocuments.length, 'RFQ documents');
-                        setRfqCount(rfqDocuments.length);
-                        
-                        // Collect all evaluation types
+
+                        // Collect all evaluation types and count total
                         const types = new Set<string>();
                         // Collect all unique providers
                         const providers = new Set<string>();
-                        
+                        // Count total evaluation types across all RFQs
+                        let totalEvaluationTypesCount = 0;
+
                         rfqDocuments.forEach((doc: any) => {
                             console.log('RFQ Document:', doc.title, 'Types:', doc.evaluation_types, 'Type of evaluation_types:', typeof doc.evaluation_types, 'Is Array:', Array.isArray(doc.evaluation_types));
                             if (doc.evaluation_types) {
                                 // Handle both string and array cases
                                 if (Array.isArray(doc.evaluation_types)) {
+                                    totalEvaluationTypesCount += doc.evaluation_types.length;
                                     doc.evaluation_types.forEach((type: string) => {
                                         types.add(type.trim());
                                     });
@@ -433,28 +435,32 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                     try {
                                         const parsed = JSON.parse(doc.evaluation_types);
                                         if (Array.isArray(parsed)) {
+                                            totalEvaluationTypesCount += parsed.length;
                                             parsed.forEach((type: string) => {
                                                 types.add(type.trim());
                                             });
                                         }
                                     } catch {
                                         // If it's not JSON, treat as single type
+                                        totalEvaluationTypesCount += 1;
                                         types.add(doc.evaluation_types.trim());
                                     }
                                 }
                             }
-                            
+
                             // Add provider if exists
                             if (doc.provider) {
                                 providers.add(doc.provider.trim());
                             }
                         });
-                        
+
                         console.log('Final evaluation types found:', Array.from(types));
-                        console.log('Total unique evaluation types:', types.size);
+                        console.log('Total evaluation types count:', totalEvaluationTypesCount);
                         console.log('Final providers found:', Array.from(providers));
                         console.log('Total unique providers:', providers.size);
-                        
+
+                        // Set rfqCount to total evaluation types across all RFQ documents
+                        setRfqCount(totalEvaluationTypesCount);
                         setEvaluationTypes(types);
                         setProvidersCount(providers.size);
                     } else {
@@ -561,16 +567,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         }
     };
 
-    if (isLoading && !metrics) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-400 animate-pulse">Cargando estadísticas...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="home-dashboard">
@@ -608,46 +604,23 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 }}></div>
 
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                        <h1 style={{ margin: '0', fontSize: '2.5rem', fontWeight: 800, textShadow: '0 2px 4px rgba(0,0,0,0.1)', letterSpacing: '-0.5px' }}>
+                            <span style={{ color: 'white' }}>Bid</span>
+                            <span style={{ color: '#1a1a1a' }}>Eval</span>
+                        </h1>
                         <div style={{
-                            width: '60px',
-                            height: '60px',
-                            background: 'linear-gradient(135deg, #fff, rgba(255,255,255,0.9))',
-                            borderRadius: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                            position: 'relative'
+                            fontSize: '1.1rem',
+                            fontWeight: 500,
+                            opacity: 0.9,
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                            marginTop: '4px'
                         }}>
-                            <div style={{
-                                fontSize: '1.5rem',
-                                fontWeight: 800,
-                                background: 'linear-gradient(135deg, var(--color-primary), #0d9488)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text'
-                            }}>
-                                AI
-                            </div>
-                        </div>
-                        <div>
-                            <h1 style={{ margin: '0', fontSize: '2.5rem', fontWeight: 800, textShadow: '0 2px 4px rgba(0,0,0,0.1)', letterSpacing: '-0.5px' }}>
-                                {t('home.hero.title')}
-                            </h1>
-                            <div style={{
-                                fontSize: '1.1rem',
-                                fontWeight: 500,
-                                opacity: 0.9,
-                                letterSpacing: '0.5px',
-                                textTransform: 'uppercase',
-                                marginTop: '4px'
-                            }}>
-                                {t('home.hero.subtitle')}
-                            </div>
+                            {t('home.hero.subtitle')}
                         </div>
                     </div>
-                    <p style={{ margin: '16px 0 0 0', opacity: 0.95, maxWidth: '650px', lineHeight: '1.6', fontSize: '1.05rem' }}>
+                    <p style={{ margin: '16px 0 0 0', opacity: 0.95, lineHeight: '1.6', fontSize: '1.05rem' }}>
                         {t('home.hero.desc')}
                     </p>
                     <div style={{ marginTop: '28px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -838,11 +811,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         flex: 1,
                         display: 'flex',
                         alignItems: 'flex-end',
-                        justifyContent: 'space-around',
+                        justifyContent: 'center',
                         height: '240px',
                         paddingBottom: '16px',
                         borderBottom: '2px solid var(--border-color)',
-                        gap: '12px'
+                        gap: '50px'
                     }}>
                         {Object.entries(providerEvaluations).map(([providerKey, evals]) => {
                             // Only show providers with data
@@ -851,7 +824,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                             const evaluations = [
                                 { type: 'Technical', score: evals['Technical Evaluation'] || 0, color: '#12b5b0' },
-                                { type: 'EA', score: evals['EA'] || 0, color: '#f59e0b' },
+                                { type: 'Economical', score: evals['EA'] || 0, color: '#f59e0b' },
                                 { type: 'Pre-FEED', score: evals['Pre-FEED Deliverables'] || 0, color: '#3b82f6' },
                                 { type: 'FEED', score: evals['FEED Deliverables'] || 0, color: '#8b5cf6' }
                             ];
@@ -1179,123 +1152,109 @@ const StackedBar = ({ provider, evaluations }: {
     evaluations: { type: string, score: number, color: string }[]
 }) => {
     const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
-    const [isBarHovered, setIsBarHovered] = React.useState(false);
 
-    // Max score per category is 10, total max (if stacked) is 40
+    // Filtrar solo evaluaciones con score > 0
+    const activeEvaluations = evaluations.filter(ev => ev.score > 0);
+
+    // Max para el height
     const maxPossible = 40;
+
+    if (activeEvaluations.length === 0) return null;
+
+    const hoveredEval = hoveredIdx !== null ? activeEvaluations[hoveredIdx] : null;
 
     return (
         <div
-            onMouseEnter={() => setIsBarHovered(true)}
-            onMouseLeave={() => {
-                setIsBarHovered(false);
-                setHoveredIdx(null);
-            }}
+            onMouseLeave={() => setHoveredIdx(null)}
             style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '8px',
                 height: '100%',
                 justifyContent: 'flex-end',
                 cursor: 'pointer',
                 transition: 'all 0.3s',
-                flex: 1,
-                minWidth: '40px',
-                maxWidth: '60px'
+                width: '48px',
+                flexShrink: 0
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                {/* Custom Tooltip */}
-                {isBarHovered && hoveredIdx !== null && (
+                {/* Tooltip - solo muestra el tipo en hover */}
+                {hoveredEval && (
                     <div style={{
                         position: 'absolute',
-                        top: '-70px',
+                        top: '-10px',
                         left: '50%',
-                        transform: 'translateX(-50%)',
+                        transform: 'translate(-50%, -100%)',
                         backgroundColor: 'var(--bg-surface)',
-                        border: `2px solid ${evaluations[hoveredIdx].color}`,
+                        border: `2px solid ${hoveredEval.color}`,
                         padding: '10px 14px',
                         borderRadius: '10px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                         zIndex: 100,
                         whiteSpace: 'nowrap',
                         pointerEvents: 'none',
-                        animation: 'fadeInUp 0.2s ease-out'
+                        textAlign: 'center'
                     }}>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: evaluations[hoveredIdx].color, marginBottom: '2px' }}>
-                            {evaluations[hoveredIdx].type}
+                        <div style={{ fontSize: '0.7rem', fontWeight: 600, color: hoveredEval.color, marginBottom: '2px' }}>
+                            {hoveredEval.type}
                         </div>
-                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                            {evaluations[hoveredIdx].score.toFixed(1)}/10
+                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                            {hoveredEval.score.toFixed(1)}/10
                         </div>
-                        <div style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: `8px solid ${evaluations[hoveredIdx].color}` }}></div>
+                        <div style={{ position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)', borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: `8px solid ${hoveredEval.color}` }} />
                     </div>
                 )}
 
+                {/* Barra apilada */}
                 <div style={{
                     width: '100%',
                     height: '100%',
                     display: 'flex',
-                    flexDirection: 'column-reverse', // Stack from bottom
+                    flexDirection: 'column-reverse',
                     justifyContent: 'flex-start',
-                    borderRadius: '14px 14px 0 0',
+                    borderRadius: '8px 8px 0 0',
                     overflow: 'hidden',
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    transform: isBarHovered ? 'scaleX(1.1) translateY(-8px)' : 'scaleX(1)',
-                    boxShadow: isBarHovered ? '0 12px 28px rgba(0,0,0,0.2)' : 'none',
-                    background: 'transparent',
-                    backdropFilter: 'blur(4px)'
+                    transition: 'all 0.3s ease',
+                    transform: hoveredIdx !== null ? 'scaleX(1.08) translateY(-4px)' : 'scaleX(1)',
+                    boxShadow: hoveredIdx !== null ? '0 8px 20px rgba(0,0,0,0.15)' : 'none'
                 }}>
-                    {(() => {
-                        const topIdx = (() => {
-                            for (let i = evaluations.length - 1; i >= 0; i--) {
-                                if ((Number(evaluations[i]?.score) || 0) > 0) return i;
-                            }
-                            return -1;
-                        })();
-
-                        return evaluations.map((ev, i) => {
-                        const isSegmentHovered = hoveredIdx === i;
-                        const shouldShowLabel = ev.score > 0 && (isBarHovered || isSegmentHovered);
-                        
+                    {activeEvaluations.map((ev, i) => {
+                        const isTop = i === activeEvaluations.length - 1;
+                        const isHovered = hoveredIdx === i;
                         return (
                             <div
                                 key={i}
                                 onMouseEnter={() => setHoveredIdx(i)}
                                 style={{
                                     height: `${(ev.score / maxPossible) * 100}%`,
-                                    background: ev.color,
-                                    opacity: hoveredIdx === null || hoveredIdx === i ? 1 : 0.4,
+                                    background: `linear-gradient(180deg, ${ev.color} 0%, ${ev.color}dd 100%)`,
                                     transition: 'all 0.2s',
-                                    borderTop: i < evaluations.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                                    borderTopLeftRadius: i === topIdx ? '14px' : 0,
-                                    borderTopRightRadius: i === topIdx ? '14px' : 0,
-                                    boxSizing: 'border-box',
-                                    position: 'relative',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    minHeight: shouldShowLabel ? '20px' : 'auto'
+                                    borderTopLeftRadius: isTop ? '8px' : 0,
+                                    borderTopRightRadius: isTop ? '8px' : 0,
+                                    minHeight: '4px',
+                                    opacity: hoveredIdx === null || isHovered ? 1 : 0.4
                                 }}
-                            >
-                            </div>
+                            />
                         );
-                        });
-                    })()}
+                    })}
                 </div>
             </div>
 
+            {/* Nombre del proveedor */}
             <span style={{
-                fontSize: '0.75rem',
-                color: isBarHovered ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: isBarHovered ? 700 : 500,
+                fontSize: '0.7rem',
+                color: hoveredIdx !== null ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: hoveredIdx !== null ? 600 : 500,
                 textAlign: 'center',
-                lineHeight: '1.2',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s'
+                lineHeight: '1.1',
+                transition: 'all 0.2s',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
             }}>
-                {provider.split(' ')[0]}
+                {provider.length > 8 ? provider.substring(0, 7) + '.' : provider}
             </span>
         </div>
     );

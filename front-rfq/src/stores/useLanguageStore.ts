@@ -32,9 +32,9 @@ const translations: any = {
         'header.mail': 'Generador de Comunicaciones',
 
         // Home Dashboard
-        'home.hero.title': 'Bideval AI',
-        'home.hero.subtitle': 'Plataforma de Evaluación de Licitaciones',
-        'home.hero.desc': 'Plataforma de evaluación de licitaciones impulsada por IA. Análisis inteligente de RFQ, scoring automatizado y toma de decisiones basada en datos.',
+        'home.hero.title': 'BidEval',
+        'home.hero.subtitle': 'Sistema de Evaluación de Ofertas',
+        'home.hero.desc': 'Evaluación de ofertas potenciada con IA. Análisis inteligente, scoring automatizado y decisiones basadas en datos.',
         'home.hero.btn_new': '+ Nueva RFQ',
         'home.hero.btn_reports': 'Ver Reportes',
 
@@ -181,9 +181,9 @@ const translations: any = {
         'header.mail': 'Communication Generator',
 
         // Home Dashboard
-        'home.hero.title': 'Bideval AI',
+        'home.hero.title': 'BidEval',
         'home.hero.subtitle': 'Intelligent Bid Evaluation Platform',
-        'home.hero.desc': 'AI-powered bid evaluation platform. Intelligent RFQ analysis, automated scoring, and data-driven decision making.',
+        'home.hero.desc': 'AI-powered bid evaluation. Smart analysis, automated scoring, and data-driven decisions.',
         'home.hero.btn_new': '+ New RFQ',
         'home.hero.btn_reports': 'View Reports',
 

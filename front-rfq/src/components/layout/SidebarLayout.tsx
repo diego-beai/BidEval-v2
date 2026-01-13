@@ -64,7 +64,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
             <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
                     {/* Brand Logo or Text - Hidden when collapsed */}
-                    <div className="sidebar-brand">Bideval AI</div>
+                    <div className="sidebar-brand"><span style={{ color: '#ffffff' }}>Bid</span><span style={{ color: '#12b5b0' }}>Eval</span></div>
 
                     {/* Toggle Button */}
                     <button className="sidebar-toggle-btn" onClick={toggleSidebar}>

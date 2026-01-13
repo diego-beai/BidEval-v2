@@ -14,7 +14,7 @@ export function AppLayout({ children, wideContent }: AppLayoutProps) {
       <header className="page-header">
         <div className="brand-section">
           <div>
-            <h1 className="brand-title">Bideval AI</h1>
+            <h1 className="brand-title">Bideval</h1>
             <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
               Análisis Automático de RFQs y Ofertas
             </small>
