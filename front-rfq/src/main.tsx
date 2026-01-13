@@ -5,6 +5,9 @@ import { ThemeProvider } from './context/ThemeContext';
 import '../styles.css';
 import { initPerformanceMonitoring } from './utils/performance';
 
+// Limpiar chat corrupto
+localStorage.removeItem('chat-store');
+
 // Registrar Service Worker para cache offline
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

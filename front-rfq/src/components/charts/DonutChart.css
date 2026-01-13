@@ -1,56 +1,53 @@
-/* Donut Chart Container */
-.donut-chart-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+/* ===== MODERN COMPACT DONUT CHART ===== */
+
+.donut-chart-wrapper {
+  width: 100%;
 }
 
-/* Donut Chart Circle */
-.donut-chart {
-  border-radius: 50%;
+/* Horizontal layout: chart + legend side by side */
+.donut-chart-layout {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: center;
+}
+
+/* Main chart container */
+.donut-chart-modern {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: donutFadeIn 0.6s ease-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
-/* Sizes */
-.donut-chart-small {
-  /* mask creates the donut hole effect */
-  mask: radial-gradient(transparent 45%, black 45%);
-  -webkit-mask: radial-gradient(transparent 45%, black 45%);
+/* Outer glow effect */
+.donut-glow-ring {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(18, 181, 176, 0.12) 0%, transparent 70%);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
-.donut-chart-medium {
-  mask: radial-gradient(transparent 50%, black 50%);
-  -webkit-mask: radial-gradient(transparent 50%, black 50%);
+/* SVG container */
+.donut-svg {
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
 }
 
-.donut-chart-large {
-  mask: radial-gradient(transparent 55%, black 55%);
-  -webkit-mask: radial-gradient(transparent 55%, black 55%);
+/* Data segments */
+.donut-segment {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Interactive State */
-.donut-chart.interactive {
-  cursor: pointer;
+.donut-segment.active {
+  filter: drop-shadow(0 0 6px currentColor);
 }
 
-.donut-chart.interactive:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-.donut-chart.interactive.hovered {
-  transform: scale(1.05);
-}
-
-/* Center Content */
-.donut-center {
+/* ===== CENTER CONTENT ===== */
+.donut-center-modern {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -58,171 +55,174 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
-  width: 100%;
-  height: 100%;
+  z-index: 3;
 }
 
-.donut-center-text {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
+.donut-center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+}
+
+.donut-center-value {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   line-height: 1;
-  animation: donutCenterFadeIn 0.8s ease-out 0.3s both;
+  letter-spacing: -0.5px;
+  transition: all 0.2s ease;
 }
 
-.donut-chart-small .donut-center-text {
-  font-size: 1.25rem;
-}
-
-.donut-chart-medium .donut-center-text {
-  font-size: 1.75rem;
-}
-
-.donut-chart-large .donut-center-text {
-  font-size: 2.5rem;
-}
-
-/* Tooltip */
-.donut-tooltip {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: tooltipFadeIn 0.2s ease-out;
-  min-width: 120px;
-}
-
-.donut-tooltip-label {
-  font-size: 0.75rem;
+.donut-center-label {
+  font-size: 0.65rem;
   font-weight: 700;
   color: var(--text-secondary);
-  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  opacity: 0.7;
 }
 
-.donut-tooltip-value {
-  font-size: 1rem;
+/* ===== COMPACT LEGEND ===== */
+.donut-legend-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.legend-item-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.legend-item-compact:hover,
+.legend-item-compact.active {
+  border-color: var(--color-primary);
+  background: var(--bg-hover);
+  transform: translateX(2px);
+}
+
+.legend-item-compact.empty {
+  opacity: 0.5;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legend-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-val {
+  font-size: 0.85rem;
   font-weight: 800;
   color: var(--text-primary);
+  min-width: 20px;
+  text-align: right;
 }
 
-/* Legend */
+.legend-bar-track {
+  width: 40px;
+  height: 4px;
+  background: rgba(100, 116, 139, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.legend-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 500px) {
+  .donut-chart-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .donut-legend-compact {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .donut-center-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* ===== LEGACY SUPPORT ===== */
+.donut-chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 .donut-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
-  max-width: 100%;
-  animation: legendFadeIn 0.6s ease-out 0.4s both;
 }
 
 .donut-legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 4px 10px;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: 6px;
   transition: all 0.2s ease;
   cursor: pointer;
+  font-size: 0.75rem;
 }
 
 .donut-legend-item:hover,
 .donut-legend-item.active {
-  background: var(--bg-hover);
   border-color: var(--color-primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .donut-legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
 
 .donut-legend-label {
-  font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .donut-legend-value {
-  font-size: 0.8rem;
   color: var(--text-primary);
   font-weight: 700;
-  margin-left: auto;
-}
-
-/* Animations */
-@keyframes donutFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes donutCenterFadeIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes legendFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .donut-chart-large {
-    width: 180px !important;
-    height: 180px !important;
-  }
-
-  .donut-chart-medium {
-    width: 140px !important;
-    height: 140px !important;
-  }
-
-  .donut-legend {
-    gap: 8px;
-  }
-
-  .donut-legend-item {
-    padding: 4px 10px;
-  }
 }

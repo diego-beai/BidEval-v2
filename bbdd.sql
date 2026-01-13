@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS public.qa_audit (
     discipline TEXT,
     question TEXT NOT NULL,
     importance TEXT CHECK (importance IN ('High', 'Medium', 'Low')),
-    status TEXT DEFAULT 'PENDIENTE',
+    status TEXT DEFAULT 'Pending',
     response TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -299,9 +299,60 @@ CREATE OR REPLACE TRIGGER trigger_update_overall_score
 
 
 
-create view public.ranking_proveedores as
-select
-  m.project_name,
+-- ============================================
+-- VISTA: ranking_proveedores_por_tipo
+-- Vista que calcula scores por tipo de evaluación para cada proveedor
+-- Esta vista es usada por el frontend para mostrar gráficos de scoring
+-- ============================================
+CREATE OR REPLACE VIEW public.ranking_proveedores_por_tipo AS
+WITH provider_scores AS (
+    SELECT
+        r.provider_name,
+        m.project_id,
+        m.evaluation_type,
+        COUNT(r.id) as items_evaluados,
+        COALESCE(AVG(r.score), 0) as avg_score
+    FROM provider_responses r
+    JOIN rfq_items_master m ON r.requirement_id = m.id
+    WHERE r.score IS NOT NULL
+    GROUP BY r.provider_name, m.project_id, m.evaluation_type
+),
+aggregated_scores AS (
+    SELECT
+        provider_name,
+        project_id,
+        -- Technical Evaluation score
+        COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Technical%' THEN avg_score END), 0) as technical_score,
+        -- Economical Evaluation score
+        COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Econom%' THEN avg_score END), 0) as economical_score,
+        -- Pre-FEED score
+        COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Pre-FEED%' OR evaluation_type ILIKE '%Pre FEED%' THEN avg_score END), 0) as pre_feed_score,
+        -- FEED score (excluding Pre-FEED)
+        COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%FEED%' AND evaluation_type NOT ILIKE '%Pre-FEED%' AND evaluation_type NOT ILIKE '%Pre FEED%' THEN avg_score END), 0) as feed_score,
+        -- Total items evaluados
+        SUM(items_evaluados) as total_items
+    FROM provider_scores
+    GROUP BY provider_name, project_id
+)
+SELECT
+    provider_name,
+    project_id,
+    ROUND(technical_score::numeric, 2) as technical_score,
+    ROUND(economical_score::numeric, 2) as economical_score,
+    ROUND(pre_feed_score::numeric, 2) as pre_feed_score,
+    ROUND(feed_score::numeric, 2) as feed_score,
+    ROUND(((technical_score * 0.4 + economical_score * 0.3 + pre_feed_score * 0.15 + feed_score * 0.15))::numeric, 2) as overall_score,
+    ROUND(((technical_score + economical_score + pre_feed_score + feed_score) / 4 * 10)::numeric, 2) as cumplimiento_porcentual,
+    total_items as evaluation_count
+FROM aggregated_scores
+ORDER BY overall_score DESC;
+
+-- ============================================
+-- VISTA LEGACY: ranking_proveedores_simple (para compatibilidad)
+-- ============================================
+CREATE OR REPLACE VIEW public.ranking_proveedores_simple AS
+SELECT
+  m.project_id,
   r.provider_name,
   count(r.id) as total_items_evaluados,
   sum(r.score) as puntos_totales,
@@ -309,16 +360,10 @@ select
     sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
     2
   ) as cumplimiento_porcentual
-from
+FROM
   rfq_items_master m
-  join provider_responses r on m.id = r.requirement_id
-group by
-  m.project_name,
+  JOIN provider_responses r ON m.id = r.requirement_id
+GROUP BY
+  m.project_id,
   r.provider_name
-order by
-  (
-    round(
-      sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
-      2
-    )
-  ) desc;
+ORDER BY cumplimiento_porcentual DESC;

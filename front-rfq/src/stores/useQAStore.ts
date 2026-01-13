@@ -196,15 +196,16 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     try {
       const currentProjectId = get().selectedProjectId;
+      // Use correct DB column names (English)
       const { data, error } = await (supabase!
         .from('qa_audit') as any)
         .insert([{
-          project_id: question.project_id || currentProjectId,
-          proveedor: question.proveedor || question.provider_name,
-          disciplina: question.disciplina || question.discipline,
-          pregunta_texto: question.pregunta_texto || question.question,
-          estado: question.estado || question.status || 'Draft',
-          importancia: question.importancia || question.importance || 'Medium',
+          project_name: question.project_name || question.project_id || currentProjectId,
+          provider_name: question.provider_name || question.proveedor,
+          discipline: question.discipline || question.disciplina,
+          question: question.question || question.pregunta_texto,
+          status: question.status || question.estado || 'Draft',
+          importance: question.importance || question.importancia || 'Medium',
           created_at: new Date().toISOString()
         }])
         .select()
@@ -212,8 +213,11 @@ export const useQAStore = create<QAState>((set, get) => ({
 
       if (error) throw error;
 
+      // Map the returned data to include both English and Spanish field aliases
+      const mappedData = mapQAAuditToQAQuestion(data);
+
       set(state => ({
-        questions: [data as QAQuestion, ...state.questions],
+        questions: [mappedData, ...state.questions],
         isLoading: false
       }));
     } catch (error) {
@@ -235,27 +239,43 @@ export const useQAStore = create<QAState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
+      // Build update object with only defined fields, using correct DB column names
+      const updateData: Record<string, any> = {};
+
+      if (updates.provider_name || updates.proveedor) {
+        updateData.provider_name = updates.provider_name || updates.proveedor;
+      }
+      if (updates.discipline || updates.disciplina) {
+        updateData.discipline = updates.discipline || updates.disciplina;
+      }
+      if (updates.question || updates.pregunta_texto) {
+        updateData.question = updates.question || updates.pregunta_texto;
+      }
+      if (updates.status || updates.estado) {
+        updateData.status = updates.status || updates.estado;
+      }
+      if (updates.importance !== undefined || updates.importancia !== undefined) {
+        updateData.importance = updates.importance || updates.importancia;
+      }
+      if (updates.response || updates.respuesta_proveedor) {
+        updateData.response = updates.response || updates.respuesta_proveedor;
+      }
+
       const { data, error } = await (supabase!
         .from('qa_audit') as any)
-        .update({
-          proveedor: updates.proveedor || updates.provider_name,
-          disciplina: updates.disciplina || updates.discipline,
-          pregunta_texto: updates.pregunta_texto || updates.question,
-          estado: updates.estado || updates.status,
-          importancia: updates.importancia || updates.importance,
-          respuesta_proveedor: updates.respuesta_proveedor || updates.response,
-          fecha_respuesta: updates.fecha_respuesta,
-          notas_internas: updates.notas_internas
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
 
+      // Map the returned data to include both English and Spanish field aliases
+      const mappedData = mapQAAuditToQAQuestion(data);
+
       set(state => ({
         questions: state.questions.map(q =>
-          q.id === id ? { ...q, ...data } : q
+          q.id === id ? { ...q, ...mappedData } : q
         ),
         isLoading: false
       }));
@@ -308,16 +328,18 @@ export const useQAStore = create<QAState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
+      // Use correct DB column name 'status' (not 'estado')
       const { error } = await (supabase!
         .from('qa_audit') as any)
-        .update({ estado: estado })
+        .update({ status: estado })
         .in('id', ids);
 
       if (error) throw error;
 
+      // Update both 'status' (DB) and 'estado' (alias) in local state
       set(state => ({
         questions: state.questions.map(q =>
-          ids.includes(q.id) ? { ...q, estado } : q
+          ids.includes(q.id) ? { ...q, status: estado, estado } : q
         ),
         isLoading: false
       }));

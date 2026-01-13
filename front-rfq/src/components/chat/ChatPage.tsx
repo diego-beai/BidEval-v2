@@ -1,18 +1,133 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, Component, ErrorInfo, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import './ChatPage.css';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useChatStore } from '../../stores/useChatStore';
 
+/**
+ * Error Boundary para capturar errores de renderizado de Markdown
+ */
+interface ErrorBoundaryProps {
+    children: ReactNode;
+    fallback: ReactNode;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+}
+
+class MarkdownErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(): ErrorBoundaryState {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.warn('[MarkdownErrorBoundary] Error rendering markdown:', error.message, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return this.props.fallback;
+        }
+        return this.props.children;
+    }
+}
+
+/**
+ * Sanitiza contenido para evitar errores de parsing
+ */
+function sanitizeContent(content: string): string {
+    if (typeof content !== 'string') return '';
+
+    // Remover caracteres de control problemáticos excepto saltos de línea y tabs
+    let safe = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+    // Remover secuencias que pueden romper el parser
+    safe = safe.replace(/_{3,}/g, '___'); // Limitar underscores consecutivos
+    safe = safe.replace(/\*{3,}/g, '***'); // Limitar asteriscos consecutivos
+
+    return safe;
+}
+
+/**
+ * Renderiza texto plano de forma segura
+ */
+const PlainText: React.FC<{ content: string }> = ({ content }) => (
+    <pre style={{
+        whiteSpace: 'pre-wrap',
+        margin: 0,
+        fontFamily: 'inherit',
+        wordBreak: 'break-word'
+    }}>
+        {content}
+    </pre>
+);
+
+/**
+ * Componente seguro para renderizar Markdown
+ * Usa Error Boundary para capturar errores de renderizado
+ */
+const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
+    const safeContent = useMemo(() => sanitizeContent(content), [content]);
+
+    // Fallback en texto plano
+    const fallback = <PlainText content={safeContent} />;
+
+    return (
+        <MarkdownErrorBoundary fallback={fallback}>
+            <ReactMarkdown
+                components={{
+                    p: ({ children }) => <p style={{ margin: '0.5em 0' }}>{children}</p>,
+                    code: ({ children, className }) => {
+                        const isInline = !className;
+                        return isInline
+                            ? <code style={{ background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px' }}>{children}</code>
+                            : <code className={className}>{children}</code>;
+                    }
+                }}
+            >
+                {safeContent}
+            </ReactMarkdown>
+        </MarkdownErrorBoundary>
+    );
+};
+
 export const ChatPage: React.FC = () => {
-    const { messages, sendMessage, status } = useChatStore();
+    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded } = useChatStore();
     const { t } = useLanguageStore();
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const isLoading = status === 'sending'; // Assuming 'sending' is the status string enum value or similar. Store usually has enums.
+    const isLoading = status === 'sending';
+    const isLoadingHistory = status === 'connecting';
+
+    // Cargar historial al montar el componente
+    useEffect(() => {
+        if (!historyLoaded) {
+            loadHistory();
+        }
+    }, [historyLoaded, loadHistory]);
+
+    // Limpiar mensajes corruptos al montar el componente
+    useEffect(() => {
+        const hasCorruptMessages = messages.some(msg => {
+            if (typeof msg.content !== 'string') return true;
+            // Detectar caracteres problemáticos
+            if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(msg.content)) return true;
+            return false;
+        });
+
+        if (hasCorruptMessages) {
+            console.warn('[ChatPage] Detectados mensajes corruptos, limpiando...');
+            clearMessages();
+        }
+    }, []);
 
     // Auto-resize textarea
     useEffect(() => {
@@ -33,7 +148,6 @@ export const ChatPage: React.FC = () => {
         const content = input;
         setInput('');
 
-        // Reset height
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
         await sendMessage(content);
@@ -50,6 +164,11 @@ export const ChatPage: React.FC = () => {
         navigator.clipboard.writeText(text);
     };
 
+    // Filtrar mensajes válidos para renderizar
+    const validMessages = useMemo(() => {
+        return messages.filter(msg => typeof msg.content === 'string' && msg.content.length > 0);
+    }, [messages]);
+
     return (
         <div className="chat-page">
             <div style={{
@@ -59,7 +178,7 @@ export const ChatPage: React.FC = () => {
                 zIndex: 20
             }}>
                 <button
-                    onClick={() => useChatStore.getState().clearMessages()}
+                    onClick={() => clearMessages()}
                     className="action-btn"
                     title="Clear Conversation"
                     style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
@@ -72,19 +191,27 @@ export const ChatPage: React.FC = () => {
                 </button>
             </div>
 
-            {messages.length === 0 ? (
-                /* Empty State / Welcome */
+            {isLoadingHistory ? (
+                <div className="chat-welcome">
+                    <div className="typing-indicator" style={{ margin: '0 auto' }}>
+                        <span className="typing-dot"></span>
+                        <span className="typing-dot"></span>
+                        <span className="typing-dot"></span>
+                    </div>
+                    <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>
+                        {t('chat.loadingHistory') || 'Loading chat history...'}
+                    </p>
+                </div>
+            ) : validMessages.length === 0 ? (
                 <div className="chat-welcome">
                     <h1>How can I help you?</h1>
                 </div>
             ) : (
-                /* Messages List */
                 <div className="chat-messages">
-                    {messages.map(msg => (
+                    {validMessages.map(msg => (
                         <div key={msg.id} className={`message ${msg.role}`}>
                             {msg.role === 'assistant' && (
                                 <div className="message-avatar">
-                                    {/* Brain Icon */}
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
                                         <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
@@ -93,9 +220,7 @@ export const ChatPage: React.FC = () => {
                             )}
                             <div className="message-bubble-container">
                                 <div className="message-content markdown-body">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                        {msg.content}
-                                    </ReactMarkdown>
+                                    <SafeMarkdown content={msg.content} />
                                 </div>
                                 <button
                                     className="copy-btn-message"
@@ -133,7 +258,6 @@ export const ChatPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Floating Input Area */}
             <div className="chat-input-container">
                 <div
                     className="chat-input-wrapper"

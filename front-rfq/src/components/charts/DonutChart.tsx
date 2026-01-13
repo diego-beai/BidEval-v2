@@ -19,9 +19,9 @@ export interface DonutChartProps {
 }
 
 const SIZE_MAP = {
-  small: 80,
+  small: 100,
   medium: 160,
-  large: 240
+  large: 200
 };
 
 export const DonutChart: React.FC<DonutChartProps> = ({
@@ -34,140 +34,178 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   className = ''
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   const sizeInPx = SIZE_MAP[size];
+  const strokeWidth = size === 'small' ? 12 : size === 'medium' ? 16 : 20;
+  const radius = (sizeInPx - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const centerXY = sizeInPx / 2;
 
-  // Calcular total para porcentajes
+  // Calculate total
   const total = useMemo(() => {
     return data.reduce((sum, d) => sum + d.value, 0);
   }, [data]);
 
-  // Generar conic-gradient string
-  const conicGradient = useMemo(() => {
+  // Generate arc segments
+  const segments = useMemo(() => {
     if (total === 0) {
-      return 'conic-gradient(rgba(203, 213, 225, 0.3) 0% 100%)';
+      return [{
+        offset: 0,
+        length: circumference,
+        color: 'rgba(100, 116, 139, 0.2)',
+        data: { label: 'No data', value: 0, color: 'rgba(100, 116, 139, 0.2)' },
+        index: -1
+      }];
     }
 
-    let currentAngle = 0;
-    const gradientStops: string[] = [];
+    let currentOffset = 0;
+    const gap = 3;
 
-    data.forEach((d) => {
-      const percentage = (d.value / total) * 100;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + percentage;
-
-      const color = d.isEmpty || d.value === 0 ? 'rgba(203, 213, 225, 0.3)' : d.color;
-
-      gradientStops.push(`${color} ${startAngle}% ${endAngle}%`);
-      currentAngle = endAngle;
+    return data.map((d, index) => {
+      const percentage = d.value / total;
+      const segmentLength = percentage * circumference - gap;
+      const segment = {
+        offset: currentOffset,
+        length: Math.max(0, segmentLength),
+        color: d.isEmpty || d.value === 0 ? 'rgba(100, 116, 139, 0.2)' : d.color,
+        data: d,
+        index
+      };
+      currentOffset += percentage * circumference;
+      return segment;
     });
+  }, [data, total, circumference]);
 
-    return `conic-gradient(${gradientStops.join(', ')})`;
-  }, [data, total]);
-
-  // Calcular qué sector está en hover basado en posición del mouse
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactive || total === 0) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const mouseX = e.clientX - rect.left - centerX;
-    const mouseY = e.clientY - rect.top - centerY;
-
-    // Calcular ángulo del mouse
-    let angle = Math.atan2(mouseY, mouseX) * (180 / Math.PI);
-    angle = (angle + 90 + 360) % 360; // Normalizar a 0-360 empezando desde arriba
-
-    // Encontrar qué sector corresponde a este ángulo
-    let currentAngle = 0;
-    let foundIndex = -1;
-
-    for (let idx = 0; idx < data.length; idx++) {
-      const percentage = (data[idx].value / total) * 100;
-      const sectorAngle = (percentage / 100) * 360;
-
-      if (angle >= currentAngle && angle < currentAngle + sectorAngle) {
-        foundIndex = idx;
-        break;
-      }
-
-      currentAngle += sectorAngle;
-    }
-
-    setHoveredIndex(foundIndex >= 0 ? foundIndex : null);
-    setTooltipPosition({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredIndex(null);
-  };
-
-  const handleClick = () => {
-    if (!interactive || !onSectorClick || hoveredIndex === null) return;
-    onSectorClick(hoveredIndex, data[hoveredIndex]);
+  const handleSegmentClick = (index: number) => {
+    if (!interactive || !onSectorClick || index < 0) return;
+    onSectorClick(index, data[index]);
   };
 
   return (
-    <div className={`donut-chart-container ${className}`}>
-      <div
-        className={`donut-chart donut-chart-${size} ${interactive ? 'interactive' : ''} ${
-          hoveredIndex !== null ? 'hovered' : ''
-        }`}
-        style={{
-          width: sizeInPx,
-          height: sizeInPx,
-          background: conicGradient,
-        }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
-      >
-        <div className="donut-center">
-          {centerText && <span className="donut-center-text">{centerText}</span>}
-        </div>
-      </div>
+    <div className={`donut-chart-wrapper ${className}`}>
+      <div className="donut-chart-layout">
+        {/* Chart */}
+        <div className="donut-chart-modern">
+          {/* Outer glow ring */}
+          <div
+            className="donut-glow-ring"
+            style={{
+              width: sizeInPx + 16,
+              height: sizeInPx + 16,
+              opacity: hoveredIndex !== null ? 0.6 : 0.3
+            }}
+          />
 
-      {/* Tooltip */}
-      {interactive && hoveredIndex !== null && data[hoveredIndex].value > 0 && (
-        <div
-          className="donut-tooltip"
-          style={{
-            position: 'fixed',
-            left: tooltipPosition.x + 10,
-            top: tooltipPosition.y - 30,
-            pointerEvents: 'none',
-            zIndex: 1000
-          }}
-        >
-          <div className="donut-tooltip-label">{data[hoveredIndex].label}</div>
-          <div className="donut-tooltip-value">
-            {data[hoveredIndex].value} ({((data[hoveredIndex].value / total) * 100).toFixed(1)}%)
+          {/* SVG Chart */}
+          <svg
+            width={sizeInPx}
+            height={sizeInPx}
+            viewBox={`0 0 ${sizeInPx} ${sizeInPx}`}
+            className="donut-svg"
+          >
+            <defs>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            {/* Background track */}
+            <circle
+              cx={centerXY}
+              cy={centerXY}
+              r={radius}
+              fill="none"
+              stroke="rgba(100, 116, 139, 0.08)"
+              strokeWidth={strokeWidth + 2}
+            />
+
+            {/* Data segments */}
+            {segments.map((segment, i) => (
+              <circle
+                key={i}
+                cx={centerXY}
+                cy={centerXY}
+                r={radius}
+                fill="none"
+                stroke={segment.color}
+                strokeWidth={hoveredIndex === segment.index ? strokeWidth + 3 : strokeWidth}
+                strokeDasharray={`${segment.length} ${circumference}`}
+                strokeDashoffset={-segment.offset}
+                strokeLinecap="round"
+                className={`donut-segment ${hoveredIndex === segment.index ? 'active' : ''}`}
+                style={{
+                  transform: 'rotate(-90deg)',
+                  transformOrigin: 'center',
+                  filter: hoveredIndex === segment.index ? 'url(#glow)' : 'none',
+                  opacity: hoveredIndex !== null && hoveredIndex !== segment.index ? 0.4 : 1,
+                  cursor: interactive && segment.index >= 0 ? 'pointer' : 'default'
+                }}
+                onMouseEnter={() => interactive && segment.index >= 0 && setHoveredIndex(segment.index)}
+                onMouseLeave={() => interactive && setHoveredIndex(null)}
+                onClick={() => handleSegmentClick(segment.index)}
+              />
+            ))}
+          </svg>
+
+          {/* Center content */}
+          <div className="donut-center-modern">
+            <div className="donut-center-content">
+              {hoveredIndex !== null && data[hoveredIndex] ? (
+                <>
+                  <span className="donut-center-value">{data[hoveredIndex].value}</span>
+                  <span className="donut-center-label">{data[hoveredIndex].label.split(' ')[0]}</span>
+                </>
+              ) : (
+                <>
+                  <span className="donut-center-value">{centerText || total}</span>
+                  <span className="donut-center-label">Total</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Legend */}
-      {showLegend && (
-        <div className="donut-legend">
-          {data.map((d, i) => (
-            <div
-              key={i}
-              className={`donut-legend-item ${hoveredIndex === i ? 'active' : ''}`}
-              onMouseEnter={() => interactive && setHoveredIndex(i)}
-              onMouseLeave={() => interactive && setHoveredIndex(null)}
-            >
-              <div
-                className="donut-legend-color"
-                style={{ background: d.isEmpty || d.value === 0 ? 'rgba(203, 213, 225, 0.3)' : d.color }}
-              />
-              <span className="donut-legend-label">{d.label}</span>
-              <span className="donut-legend-value">{d.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
+        {/* Compact Legend */}
+        {showLegend && (
+          <div className="donut-legend-compact">
+            {data.map((d, i) => {
+              const percentage = total > 0 ? ((d.value / total) * 100).toFixed(0) : 0;
+              return (
+                <div
+                  key={i}
+                  className={`legend-item-compact ${hoveredIndex === i ? 'active' : ''} ${d.value === 0 ? 'empty' : ''}`}
+                  onMouseEnter={() => interactive && setHoveredIndex(i)}
+                  onMouseLeave={() => interactive && setHoveredIndex(null)}
+                >
+                  <div
+                    className="legend-dot"
+                    style={{
+                      background: d.isEmpty || d.value === 0
+                        ? 'rgba(100, 116, 139, 0.3)'
+                        : d.color
+                    }}
+                  />
+                  <span className="legend-name">{d.label}</span>
+                  <span className="legend-val">{d.value}</span>
+                  <div className="legend-bar-track">
+                    <div
+                      className="legend-bar-fill"
+                      style={{
+                        width: `${percentage}%`,
+                        background: d.isEmpty || d.value === 0 ? 'rgba(100, 116, 139, 0.3)' : d.color
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

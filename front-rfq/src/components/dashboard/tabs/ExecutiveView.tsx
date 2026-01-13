@@ -1,93 +1,143 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
     PieChart, Pie
 } from 'recharts';
-import { useDashboardStore } from '../../../stores/useDashboardStore';
+import { useScoringStore } from '../../../stores/useScoringStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
+// Category weights for the scoring system
+const CATEGORY_WEIGHTS = {
+    TECHNICAL: 40,
+    ECONOMIC: 30,
+    EXECUTION: 20,
+    'HSE/ESG': 10
+};
+
 export const ExecutiveView: React.FC = () => {
-    const { data } = useDashboardStore();
+    const { scoringResults, refreshScoring, isCalculating } = useScoringStore();
     const { t } = useLanguageStore();
 
-    if (!data) return <div>Loading...</div>;
+    // Load scoring data on mount
+    useEffect(() => {
+        refreshScoring();
+    }, [refreshScoring]);
 
-    // --- 1. Calculate Overall Scores (Bar Chart) ---
-    const providerScores = data.providers.map(p => {
-        let score = 0;
-        p.responses.forEach(r => {
-            const req = data.requirements.find(req => req.id === r.req_id);
-            if (req) {
-                score += (r.user_score ?? r.auto_score) * req.weight;
-            }
-        });
-        return { ...p, score };
-    });
+    if (isCalculating) {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '400px',
+                color: 'var(--text-secondary)'
+            }}>
+                Loading scoring data...
+            </div>
+        );
+    }
 
-    const sortedProviders = [...providerScores].sort((a, b) => b.score - a.score);
-    const winner = sortedProviders[0];
-    const runnerUp = sortedProviders[1];
-    const thirdPlace = sortedProviders[2];
+    if (!scoringResults || scoringResults.ranking.length === 0) {
+        return (
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '400px',
+                color: 'var(--text-secondary)',
+                gap: '16px'
+            }}>
+                <div>No scoring data available. Run the scoring workflow to generate results.</div>
+                <button
+                    onClick={() => refreshScoring()}
+                    style={{
+                        padding: '10px 20px',
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Refresh Data
+                </button>
+            </div>
+        );
+    }
 
-    // --- 2. Prepare Radar Data (Category Averages) ---
-    const categories = Array.from(new Set(data.requirements.map(r => r.category)));
+    const providers = scoringResults.ranking;
 
-    // Calculate category scores for winner
-    const winnerCategoryScores = categories.map(cat => {
-        const reqs = data.requirements.filter(r => r.category === cat);
-        const winnerProvider = data.providers.find(p => p.id === winner.id);
-        if (!winnerProvider || reqs.length === 0) return { category: cat, score: 0, maxScore: 0 };
-
-        const rawSum = reqs.reduce((sum, r) => {
-            const resp = winnerProvider.responses.find(res => res.req_id === r.id);
-            return sum + ((resp?.user_score ?? resp?.auto_score) || 0);
-        }, 0);
-        const maxScore = reqs.length * 10;
-        return { category: cat, score: parseFloat(rawSum.toFixed(2)), maxScore };
-    });
-
-    // Identify strengths and weaknesses
-    const strengths = winnerCategoryScores
-        .filter(c => c.score / c.maxScore >= 0.8)
-        .map(c => c.category);
-
-    const weaknesses = winnerCategoryScores
-        .filter(c => c.score / c.maxScore < 0.6)
-        .map(c => c.category)
-
-;
+    // Get top 3 providers (already sorted by overall_score)
+    const winner = providers[0];
+    const runnerUp = providers[1];
+    const thirdPlace = providers[2];
 
     // Calculate score gap
-    const scoreGap = winner.score - runnerUp.score;
+    const scoreGap = runnerUp ? winner.overall_score - runnerUp.overall_score : 0;
 
-    const radarData = categories.map(cat => {
-        const entry: any = { subject: cat };
-        data.providers.forEach(p => {
-            const reqs = data.requirements.filter(r => r.category === cat);
-            if (reqs.length === 0) {
-                entry[p.id] = 0;
-                return;
-            }
-            const rawSum = reqs.reduce((sum, r) => {
-                const resp = p.responses.find(res => res.req_id === r.id);
-                return sum + ((resp?.user_score ?? resp?.auto_score) || 0);
-            }, 0);
-            const avg = rawSum / reqs.length;
-            entry[p.id] = parseFloat(avg.toFixed(2));
-        });
-        return entry;
-    });
+    // Identify strengths and weaknesses based on category scores
+    const categoryScores = [
+        { category: 'TECHNICAL', score: winner.scores.technical, maxScore: 10 },
+        { category: 'ECONOMIC', score: winner.scores.economic, maxScore: 10 },
+        { category: 'EXECUTION', score: winner.scores.execution, maxScore: 10 },
+        { category: 'HSE/ESG', score: winner.scores.hse_esg, maxScore: 10 }
+    ];
+
+    const strengths = categoryScores
+        .filter(c => c.score / c.maxScore >= 0.7)
+        .map(c => c.category);
+
+    const weaknesses = categoryScores
+        .filter(c => c.score / c.maxScore < 0.5)
+        .map(c => c.category);
+
+    // Prepare radar chart data
+    const radarData = [
+        {
+            subject: 'TECHNICAL',
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.technical]))
+        },
+        {
+            subject: 'ECONOMIC',
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.economic]))
+        },
+        {
+            subject: 'EXECUTION',
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.execution]))
+        },
+        {
+            subject: 'HSE/ESG',
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.hse_esg]))
+        }
+    ];
+
+    // Prepare bar chart data (overall scores)
+    const barChartData = providers.map(p => ({
+        name: p.provider_name,
+        score: p.overall_score,
+        id: p.provider_name
+    }));
 
     // Helper for colors
     const getColor = (id: string, index: number) => {
-        // Try direct lookup or fallback
-        // @ts-ignore
-        const defined = PROVIDER_COLORS[id] || PROVIDER_COLORS[Object.keys(PROVIDER_COLORS).find(k => k === id)];
+        const colorMap: Record<string, string> = {
+            'EA': '#3b82f6',
+            'WORLEY': '#12b5b0',
+            'IDOM': '#f59e0b',
+            'TR': '#12b5b0',
+            'SACYR': '#ef4444',
+            'SENER': '#8b5cf6',
+            'TRESCA': '#ec4899',
+            'TECNICASREUNIDAS': '#12b5b0'
+        };
+
+        const defined = colorMap[id] || PROVIDER_COLORS[id as keyof typeof PROVIDER_COLORS];
         if (defined) return defined;
 
-        const fallbacks = ['#12b5b0', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'];
+        const fallbacks = ['#12b5b0', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981'];
         return fallbacks[index % fallbacks.length];
     };
 
@@ -177,7 +227,7 @@ export const ExecutiveView: React.FC = () => {
                                         fontWeight: 700,
                                         textShadow: '0 2px 8px rgba(0,0,0,0.2)'
                                     }}>
-                                        {winner.name}
+                                        {winner.provider_name}
                                     </h2>
                                     <div style={{
                                         marginTop: '12px',
@@ -189,7 +239,7 @@ export const ExecutiveView: React.FC = () => {
                                         fontSize: '0.9rem',
                                         fontWeight: 600
                                     }}>
-                                        Score: <span style={{ fontSize: '1.3rem', marginLeft: '8px' }}>{winner.score.toFixed(2)}</span>
+                                        Score: <span style={{ fontSize: '1.3rem', marginLeft: '8px' }}>{winner.overall_score.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -211,8 +261,8 @@ export const ExecutiveView: React.FC = () => {
                                     gap: '10px'
                                 }}
                                 onClick={() => {
-                                    if (window.confirm(`${t('executive.award')} ${winner.name}?`)) {
-                                        alert(`Contract awarded to ${winner.name}! \nTotal Score: ${winner.score.toFixed(2)}`);
+                                    if (window.confirm(`${t('executive.award')} ${winner.provider_name}?`)) {
+                                        alert(`Contract awarded to ${winner.provider_name}! \nTotal Score: ${winner.overall_score.toFixed(2)}`);
                                     }
                                 }}
                                 onMouseEnter={(e) => {
@@ -254,7 +304,7 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Lead Margin vs {runnerUp.name}
+                                    Lead Margin vs {runnerUp?.provider_name || 'N/A'}
                                 </div>
                                 <div style={{
                                     fontSize: '1.5rem',
@@ -267,7 +317,7 @@ export const ExecutiveView: React.FC = () => {
                                     opacity: 0.8,
                                     marginTop: '4px'
                                 }}>
-                                    {((scoreGap / runnerUp.score) * 100).toFixed(1)}% advantage
+                                    {runnerUp ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : 0}% advantage
                                 </div>
                             </div>
 
@@ -379,7 +429,7 @@ export const ExecutiveView: React.FC = () => {
                                     gap: '8px'
                                 }}>
                                     {[winner, runnerUp, thirdPlace].filter(Boolean).map((p, i) => (
-                                        <div key={p.id} style={{
+                                        <div key={p.provider_name} style={{
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '8px',
@@ -394,14 +444,14 @@ export const ExecutiveView: React.FC = () => {
                                             }}>
                                                 #{i + 1}
                                             </span>
-                                            <span style={{ flex: 1 }}>{p.name}</span>
+                                            <span style={{ flex: 1 }}>{p.provider_name}</span>
                                             <span style={{
                                                 background: 'rgba(255, 255, 255, 0.25)',
                                                 padding: '2px 8px',
                                                 borderRadius: '4px',
                                                 fontSize: '0.75rem'
                                             }}>
-                                                {p.score.toFixed(2)}
+                                                {p.overall_score.toFixed(2)}
                                             </span>
                                         </div>
                                     ))}
@@ -425,7 +475,7 @@ export const ExecutiveView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Charts Row - 3 gráficos en fila */}
+            {/* Charts Row - 3 charts in a row */}
             <div className="charts-row-container">
                 {/* Radar Chart */}
                 <div className="widget-card" style={{
@@ -460,10 +510,10 @@ export const ExecutiveView: React.FC = () => {
                     <ResponsiveContainer width="100%" height="100%">
                         <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                             <defs>
-                                {data.providers.map((p, i) => (
-                                    <linearGradient key={`gradient-${p.id}`} id={`gradient-${p.id}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor={getColor(p.id, i)} stopOpacity={0.3} />
-                                        <stop offset="100%" stopColor={getColor(p.id, i)} stopOpacity={0.05} />
+                                {providers.map((p, i) => (
+                                    <linearGradient key={`gradient-${p.provider_name}`} id={`gradient-${p.provider_name}`} x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor={getColor(p.provider_name, i)} stopOpacity={0.3} />
+                                        <stop offset="100%" stopColor={getColor(p.provider_name, i)} stopOpacity={0.05} />
                                     </linearGradient>
                                 ))}
                             </defs>
@@ -513,15 +563,15 @@ export const ExecutiveView: React.FC = () => {
                                 }}
                                 iconType="circle"
                             />
-                            {data.providers.map((p, i) => (
+                            {providers.map((p, i) => (
                                 <Radar
-                                    key={p.id}
-                                    name={p.name}
-                                    dataKey={p.id}
-                                    stroke={getColor(p.id, i)}
-                                    fill={`url(#gradient-${p.id})`}
+                                    key={p.provider_name}
+                                    name={p.provider_name}
+                                    dataKey={p.provider_name}
+                                    stroke={getColor(p.provider_name, i)}
+                                    fill={`url(#gradient-${p.provider_name})`}
                                     strokeWidth={2.5}
-                                    dot={{ fill: getColor(p.id, i), r: 4 }}
+                                    dot={{ fill: getColor(p.provider_name, i), r: 4 }}
                                     activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--bg-surface)' }}
                                 />
                             ))}
@@ -559,12 +609,12 @@ export const ExecutiveView: React.FC = () => {
                 <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
-                            data={providerScores}
+                            data={barChartData}
                             layout="vertical"
                             margin={{ top: 10, right: 40, left: 20, bottom: 10 }}
                         >
                             <defs>
-                                {providerScores.map((entry, index) => (
+                                {barChartData.map((entry, index) => (
                                     <linearGradient key={`bar-gradient-${entry.id}`} id={`bar-gradient-${entry.id}`} x1="0" y1="0" x2="1" y2="0">
                                         <stop offset="0%" stopColor={getColor(entry.id, index)} stopOpacity={0.8} />
                                         <stop offset="100%" stopColor={getColor(entry.id, index)} stopOpacity={1} />
@@ -622,12 +672,12 @@ export const ExecutiveView: React.FC = () => {
                                 animationDuration={1000}
                                 animationBegin={200}
                             >
-                                {providerScores.map((entry, index) => (
+                                {barChartData.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
                                         fill={`url(#bar-gradient-${entry.id})`}
                                         stroke={getColor(entry.id, index)}
-                                        strokeWidth={entry.id === winner.id ? 3 : 0}
+                                        strokeWidth={entry.id === winner.provider_name ? 3 : 0}
                                     />
                                 ))}
                             </Bar>
@@ -685,10 +735,10 @@ export const ExecutiveView: React.FC = () => {
                             </defs>
                             <Pie
                                 data={[
-                                    { name: 'TECHNICAL', value: 40, color: 'url(#tech-gradient)' },
-                                    { name: 'ECONOMIC', value: 30, color: 'url(#econ-gradient)' },
-                                    { name: 'EXECUTION', value: 20, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE/ESG', value: 10, color: 'url(#hse-gradient)' }
+                                    { name: 'TECHNICAL', value: CATEGORY_WEIGHTS.TECHNICAL, color: 'url(#tech-gradient)' },
+                                    { name: 'ECONOMIC', value: CATEGORY_WEIGHTS.ECONOMIC, color: 'url(#econ-gradient)' },
+                                    { name: 'EXECUTION', value: CATEGORY_WEIGHTS.EXECUTION, color: 'url(#exec-gradient)' },
+                                    { name: 'HSE/ESG', value: CATEGORY_WEIGHTS['HSE/ESG'], color: 'url(#hse-gradient)' }
                                 ]}
                                 cx="50%"
                                 cy="50%"

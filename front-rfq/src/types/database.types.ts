@@ -10,6 +10,18 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+/**
+ * Estructura del mensaje JSON almacenado en n8n_chat_history
+ */
+export interface N8nChatMessage {
+  type: 'ai' | 'human'
+  content: string
+  additional_kwargs?: Record<string, unknown>
+  response_metadata?: Record<string, unknown>
+  tool_calls?: unknown[]
+  invalid_tool_calls?: unknown[]
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -122,6 +134,23 @@ export interface Database {
           evaluation_count?: number
           last_updated?: string
           created_at?: string
+        }
+      }
+      n8n_chat_histories: {
+        Row: {
+          id: number
+          session_id: string
+          message: N8nChatMessage
+        }
+        Insert: {
+          id?: number
+          session_id: string
+          message: N8nChatMessage
+        }
+        Update: {
+          id?: number
+          session_id?: string
+          message?: N8nChatMessage
         }
       }
     }

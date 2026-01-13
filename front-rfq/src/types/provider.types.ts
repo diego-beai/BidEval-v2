@@ -26,10 +26,10 @@ export enum EvaluationType {
  * Nombres display para proveedores
  */
 export const PROVIDER_DISPLAY_NAMES: Record<Provider, string> = {
-  [Provider.TR]: 'Técnicas Reunidas',
+  [Provider.TR]: 'TR',
   [Provider.IDOM]: 'IDOM',
   [Provider.SACYR]: 'SACYR',
-  [Provider.EA]: 'Empresarios Agrupados',
+  [Provider.EA]: 'EA',
   [Provider.SENER]: 'SENER',
   [Provider.TRESCA]: 'TRESCA',
   [Provider.WORLEY]: 'WORLEY'

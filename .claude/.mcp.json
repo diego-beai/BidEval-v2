@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "n8n": {
+      "type": "http",
+      "url": "http://localhost:5678/mcp-server/http",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2ViNDUxMi1lNTRjLTQ2M2ItYWQxMC00Y2U0OTQ0ZDE3YzUiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6IjM1NWRmODNhLWRiMTktNDQ0Yi1hYzg4LWVlZDFmOGEzMDRhMiIsImlhdCI6MTc2NzAyMTgwMn0.bgKDTKGYLbTBlDq0CUSspMvFfwOywuJHx10FyU6ovSg"
+      }
+    },
+    "n8n-mcp": {
+      "command": "npx",
+      "args": ["n8n-mcp"],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "http://localhost:5678",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0Y2ViNDUxMi1lNTRjLTQ2M2ItYWQxMC00Y2U0OTQ0ZDE3YzUiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6IjNmZjVhOGU3LTJkMjEtNDJkZS05Yzc1LWE2MzVjMTkwYWE2ZSIsImlhdCI6MTc2NzQ1MDc1M30.pTx25XHbahGCdRfWhjafutXZOHfKFjCjgtE6B0GHONo"
+      }
+    }
+  }
+}

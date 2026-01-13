@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { ChatMessage, ChatRole, ChatStatus } from '../types/chat.types';
-import { sendChatMessage } from '../services/chat.service';
+import { sendChatMessage, getChatHistory, getLastActiveSession } from '../services/chat.service';
 import { useSessionViewStore } from './useSessionViewStore';
+import { useActivityStore, ActivityType, ActivityStatus } from './useActivityStore';
 
 /**
  * Estado del chat
@@ -15,6 +16,7 @@ interface ChatState {
   status: ChatStatus;
   sessionId: string | null;
   error: string | null;
+  historyLoaded: boolean;
 
   // Acciones
   toggleChat: () => void;
@@ -24,6 +26,8 @@ interface ChatState {
   clearMessages: () => void;
   setError: (error: string | null) => void;
   markAsRead: () => void;
+  loadHistory: (sessionId?: string) => Promise<void>;
+  setSessionId: (sessionId: string) => void;
 }
 
 /**
@@ -51,6 +55,7 @@ export const useChatStore = create<ChatState>()(
         status: ChatStatus.IDLE,
         sessionId: null,
         error: null,
+        historyLoaded: false,
 
         toggleChat: () => {
           const currentState = get();
@@ -102,6 +107,20 @@ export const useChatStore = create<ChatState>()(
             // Notificar que hay contenido nuevo en el chat
             useSessionViewStore.getState().updateContent('chat');
 
+            // Registrar actividad de chat
+            useActivityStore.getState().addActivity({
+              type: ActivityType.CHAT,
+              status: ActivityStatus.COMPLETED,
+              title: 'Conversación de chat',
+              description: trimmedContent.substring(0, 50) + (trimmedContent.length > 50 ? '...' : ''),
+              relatedId: sessionId,
+              relatedType: 'chat_session',
+              metadata: {
+                userMessage: trimmedContent.substring(0, 100),
+                responsePreview: response.substring(0, 100)
+              }
+            });
+
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
             set({
@@ -124,10 +143,68 @@ export const useChatStore = create<ChatState>()(
           messages: [],
           sessionId: null,
           status: ChatStatus.IDLE,
-          error: null
+          error: null,
+          historyLoaded: true // Mantener en true para no recargar historial anterior
         }),
 
-        setError: (error) => set({ error })
+        setError: (error) => set({ error }),
+
+        setSessionId: (sessionId) => set({ sessionId }),
+
+        loadHistory: async (sessionIdParam?: string) => {
+          const state = get();
+
+          // Si ya se cargó el historial, no volver a cargar
+          if (state.historyLoaded && state.messages.length > 0) {
+            return;
+          }
+
+          set({ status: ChatStatus.CONNECTING });
+
+          try {
+            // Usar sessionId proporcionado o buscar la última sesión activa
+            let targetSessionId = sessionIdParam || state.sessionId;
+
+            if (!targetSessionId) {
+              // Buscar la última sesión activa en Supabase
+              targetSessionId = await getLastActiveSession();
+            }
+
+            if (!targetSessionId) {
+              // No hay sesión previa, iniciar una nueva
+              set({
+                status: ChatStatus.IDLE,
+                historyLoaded: true
+              });
+              return;
+            }
+
+            // Cargar historial de la sesión
+            const history = await getChatHistory(targetSessionId);
+
+            if (history.length > 0) {
+              set({
+                messages: history,
+                sessionId: targetSessionId,
+                status: ChatStatus.IDLE,
+                historyLoaded: true
+              });
+            } else {
+              set({
+                status: ChatStatus.IDLE,
+                historyLoaded: true,
+                sessionId: targetSessionId
+              });
+            }
+          } catch (error) {
+            console.error('[ChatStore] Error cargando historial:', error);
+            set({
+              status: ChatStatus.ERROR,
+              error: 'Error al cargar historial',
+              historyLoaded: true
+            });
+          }
+        }
       }),
       {
         name: 'chat-store',
@@ -135,7 +212,25 @@ export const useChatStore = create<ChatState>()(
         partialize: (state) => ({
           messages: state.messages,
           sessionId: state.sessionId
-        })
+        }),
+        // Sanitizar mensajes al rehidratar desde localStorage
+        onRehydrateStorage: () => (state) => {
+          if (state?.messages) {
+            // Filtrar mensajes con contenido inválido
+            const validMessages = state.messages.filter(msg => {
+              try {
+                // Verificar que el contenido sea un string válido
+                return typeof msg.content === 'string' && msg.content.length > 0;
+              } catch {
+                return false;
+              }
+            });
+            if (validMessages.length !== state.messages.length) {
+              console.warn('Se limpiaron mensajes de chat inválidos');
+              state.messages = validMessages;
+            }
+          }
+        }
       }
     ),
     { name: 'ChatStore' }

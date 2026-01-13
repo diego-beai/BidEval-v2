@@ -72,12 +72,25 @@
     },
     {
       "parameters": {
+        "jsCode": "// =============================================\n// NODO: Agrupar Requisitos por Phase\n// =============================================\n\nconst items = $input.all();\n\n// Agrupar requisitos por phase\nconst grupos = {};\nitems.forEach(item => {\n    const phase = item.json.phase || \"Sin Phase\";\n    if (!grupos[phase]) {\n        grupos[phase] = [];\n    }\n    grupos[phase].push(item.json);\n});\n\n// Obtener información del contexto (texto de oferta y tamaño)\nlet textoOfertaCompleto = \"\";\nlet totalChars = 0;\nlet esOfertaLarga = false;\n\ntry {\n    const loopData = $('Loop Over Items1').first().json;\n    textoOfertaCompleto = loopData.texto_oferta_completo || \"\";\n    totalChars = textoOfertaCompleto.length;\n    // SIEMPRE usar RAG - el documento completo está indexado en Supabase\n    // Esto garantiza que el LLM tenga acceso a todo el contenido relevante\n    esOfertaLarga = true;\n} catch(e) {\n    console.warn('⚠️ No se pudo obtener texto de oferta:', e.message);\n}\n\nconsole.log(`📊 Agrupación por Phase:`);\nconsole.log(`   ├─ Total requisitos: ${items.length}`);\nconsole.log(`   ├─ Grupos (phases): ${Object.keys(grupos).length}`);\nconsole.log(`   ├─ Tamaño oferta: ${totalChars} chars`);\nconsole.log(`   └─ Modo: ${esOfertaLarga ? 'RAG (oferta larga)' : 'DIRECTO (oferta corta)'}`);\n\n// Retornar un item por cada grupo de phase\nreturn Object.entries(grupos).map(([phase, requisitos]) => ({\n    json: {\n        phase: phase,\n        requisitos: requisitos,\n        total_requisitos: requisitos.length,\n        texto_oferta_completo: textoOfertaCompleto,\n        total_chars: totalChars,\n        es_oferta_larga: esOfertaLarga,\n        evaluation_type: requisitos[0]?.evaluation_type || \"Technical Evaluation\"\n    }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -1760
+      ],
+      "id": "f8a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c",
+      "name": "Agrupar por Phase"
+    },
+    {
+      "parameters": {
         "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n    json: {\n        ...item.json, // Mantiene todos los datos originales (incluido tipo_evaluacion)\n        \n        // Aquí está la corrección: Usamos dos puntos, no el igual.\n        reiniciar_bucle: true \n    }\n}));\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        336,
+        496,
         -1760
       ],
       "id": "54dea7d2-d47a-47dd-9a37-bc804d07a622",
@@ -191,7 +204,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Aggregate OCR Pages (CORREGIDO)\n// =============================================\n\nconst items = $input.all();\nlet fullText = \"\";\nlet pagesArray = [];\n\n// OPCIÓN A: Si Tesseract devuelve múltiples items (1 por página)\nif (items.length > 1) {\n  items.forEach((item, idx) => {\n    const pageText = item.json.text || \"\";\n    fullText += pageText + \"\\n\\n\";\n    \n    // Construimos array compatible con vectorstore\n    pagesArray.push({\n      text: pageText,\n      pageNumber: idx + 1\n    });\n  });\n}\n// OPCIÓN B: Si Tesseract devuelve un solo item con todo el texto\nelse if (items.length === 1) {\n  fullText = items[0].json.text || \"\";\n  pagesArray = [{\n    text: fullText,\n    pageNumber: 1\n  }];\n}\n\n// RECUPERAR METADATOS ORIGINALES (CRÍTICO)\nlet fileId, fileName, proveedor;\ntry {\n  fileId = $('Set File ID').first().json.file_id;\n  fileName = $('Set File ID').first().json.file_title;\n  proveedor = $('Identificar Proveedor').first().json.proveedor_detectado;\n} catch (e) {\n  console.error(\"⚠️ No se pudieron recuperar metadatos:\", e.message);\n  fileId = \"unknown\";\n  fileName = \"unknown\";\n  proveedor = \"OTROS\";\n}\n\nconsole.log(`🔄 OCR Agregado: ${items.length} páginas → ${fullText.length} caracteres`);\n\n// ESTRUCTURA COMPATIBLE CON VECTORSTORE\nreturn {\n  json: {\n    pages: pagesArray, // ← Array de páginas (requerido por Default Data Loader)\n    text: fullText, // ← Texto completo (backup)\n    \n    // Metadatos críticos\n    file_id: fileId,\n    file_title: fileName,\n    proveedor: proveedor,\n    \n    // Marca de origen\n    origen_datos: \"OCR_TESSERACT\",\n    ocr_pages_processed: items.length,\n    ocr_total_chars: fullText.length\n  }\n};"
+        "jsCode": "// =============================================\n// NODO: Aggregate OCR Pages (CORREGIDO)\n// =============================================\n\nconst items = $input.all();\nlet fullText = \"\";\nlet pagesArray = [];\n\n// OPCIÓN A: Si Tesseract devuelve múltiples items (1 por página)\nif (items.length > 1) {\n  items.forEach((item, idx) => {\n    const pageText = item.json.text || \"\";\n    fullText += pageText + \"\\n\\n\";\n    \n    // Construimos array compatible con vectorstore\n    pagesArray.push({\n      text: pageText,\n      pageNumber: idx + 1\n    });\n  });\n}\n// OPCIÓN B: Si Tesseract devuelve un solo item con todo el texto\nelse if (items.length === 1) {\n  fullText = items[0].json.text || \"\";\n  pagesArray = [{\n    text: fullText,\n    pageNumber: 1\n  }];\n}\n\n// RECUPERAR METADATOS ORIGINALES (CRÍTICO)\nlet fileId, fileName, proveedor;\ntry {\n  fileId = $('Set File ID').first().json.file_id;\n  fileName = $('Set File ID').first().json.file_title;\n  proveedor = $('Set File ID').first().json.proveedor || \"OTROS\";\n} catch (e) {\n  console.error(\"⚠️ No se pudieron recuperar metadatos:\", e.message);\n  fileId = \"unknown\";\n  fileName = \"unknown\";\n  proveedor = \"OTROS\";\n}\n\nconsole.log(`🔄 OCR Agregado: ${items.length} páginas → ${fullText.length} caracteres`);\n\n// ESTRUCTURA COMPATIBLE CON VECTORSTORE\nreturn {\n  json: {\n    pages: pagesArray, // ← Array de páginas (requerido por Default Data Loader)\n    text: fullText, // ← Texto completo (backup)\n    \n    // Metadatos críticos\n    file_id: fileId,\n    file_title: fileName,\n    proveedor: proveedor,\n    \n    // Marca de origen\n    origen_datos: \"OCR_TESSERACT\",\n    ocr_pages_processed: items.length,\n    ocr_total_chars: fullText.length\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -555,11 +568,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### REQUISITOS RFQ (LISTA)\nA continuación tienes una lista de requisitos RFQ en formato JSON. Cada elemento incluye el campo 'id' y el texto del requisito.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### TEXTO COMPLETO DE LA OFERTA\n{{ $('Loop Over Items1').first().json.texto_oferta_completo }}\n\n---\n### TAREA\nAnaliza el texto completo de la oferta y determina el cumplimiento del proveedor respecto a CADA requisito de la lista.\n\n### CRITERIOS DE EVALUACIÓN\n\n#### Para Evaluaciones Técnicas:\n- **INCLUIDO** (10 pts): Cumplimiento total explícito del requisito\n- **INCLUIDO CON SALVEDADES** (8 pts): Cumple pero con condiciones menores documentadas\n- **PARCIALMENTE INCLUIDO** (6 pts): Cumple solo parte del requisito\n- **NO INCLUIDO CON ALTERNATIVA** (3 pts): No cumple pero propone solución alternativa\n- **NO INCLUIDO** (0 pts): No cumple y no propone alternativa\n- **SIN INFORMACIÓN** (0 pts): El documento no menciona este requisito\n\n#### Para Evaluaciones Económicas:\n- **PRECIO COMPETITIVO** (10 pts): Precio cotizado claro y dentro del rango esperado\n- **PRECIO ALTO** (7 pts): Precio cotizado pero por encima del mercado\n- **TARIFA HORARIA** (5 pts): Solo indica tarifa por hora sin total\n- **SIN VALORAR** (3 pts): Menciona el item pero no da precio\n- **NO COTIZADO** (0 pts): No aparece en la oferta económica\n\n### INSTRUCCIONES ESPECIALES\n1. **Cita exacta**: En gap_analysis, incluye la cita textual del documento que sustenta tu evaluación\n2. **Ubicación**: Si es posible, menciona la página o sección donde encontraste la información\n3. **Conservador**: Si hay duda, prefiere puntuaciones más bajas y marca como \"SIN INFORMACIÓN\"\n4. **Evidencia clara**: Solo asigna puntuaciones altas si hay evidencia explícita en el contexto\n\n### FORMATO DE SALIDA (JSON)\nDevuelve un array con un objeto por cada requisito de entrada:\n[\n  {\n    \"id\": \"<id del requisito>\",\n    \"cumple\": \"[INCLUIDO | INCLUIDO CON SALVEDADES | PARCIALMENTE INCLUIDO | NO INCLUIDO CON ALTERNATIVA | NO INCLUIDO | SIN INFORMACIÓN | PRECIO COMPETITIVO | PRECIO ALTO | TARIFA HORARIA | SIN VALORAR | NO COTIZADO]\",\n    \"gap_analysis\": \"[CITA TEXTUAL del documento con ubicación (ej: 'Página 15: El proveedor indica...')]. Si no hay información: 'No se encontró mención de este requisito en el texto de la oferta.'\",\n    \"score\": [0-10]\n  }\n]\n\nResponde SOLO con el JSON. No agregues explicaciones fuera del JSON.",
+        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Phase: {{ $json.phase }}\n- Total requirements in this group: {{ $json.total_requisitos }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### PROPOSAL CONTEXT\n{{ $json.context }}\n\n---\n### TASK\nAnalyze the proposal context and determine the provider's compliance with EACH requirement in the list.\n\n### EVALUATION CRITERIA\n\n#### For Technical Evaluations:\n- **INCLUDED** (10 pts): Full explicit compliance with the requirement\n- **INCLUDED WITH CAVEATS** (8 pts): Complies but with minor documented conditions\n- **PARTIALLY INCLUDED** (6 pts): Complies with only part of the requirement\n- **NOT INCLUDED WITH ALTERNATIVE** (3 pts): Does not comply but proposes alternative solution\n- **NOT INCLUDED** (0 pts): Does not comply and no alternative proposed\n- **NO INFORMATION** (0 pts): Document does not mention this requirement\n\n#### For Economic Evaluations (EXTRACT THE ACTUAL VALUE):\n- **QUOTED** (10 pts): Clear price/cost quoted - MUST extract the exact value\n- **HOURLY RATE** (7 pts): Only hourly/daily rate given - MUST extract the rate value\n- **ESTIMATED** (5 pts): Estimated or approximate price given - MUST extract the value\n- **MENTIONED NO PRICE** (3 pts): Item mentioned but no price provided\n- **NOT QUOTED** (0 pts): Item does not appear in economic proposal\n\n### SPECIAL INSTRUCTIONS\n1. **Exact quote**: In gap_analysis, include the textual quote from the document supporting your evaluation\n2. **Location**: If possible, mention the page or section where you found the information\n3. **Conservative**: If in doubt, prefer lower scores and mark as \"NO INFORMATION\"\n4. **Clear evidence**: Only assign high scores if there is explicit evidence in the context\n5. **ECONOMIC EVALUATIONS**: You MUST extract and include the actual quoted value (price, hours, rate) in the 'quoted_value' field. Include currency and units.\n\n### OUTPUT FORMAT (JSON)\nReturn an array with one object per input requirement:\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[INCLUDED | INCLUDED WITH CAVEATS | PARTIALLY INCLUDED | NOT INCLUDED WITH ALTERNATIVE | NOT INCLUDED | NO INFORMATION | QUOTED | HOURLY RATE | ESTIMATED | MENTIONED NO PRICE | NOT QUOTED]\",\n    \"gap_analysis\": \"[TEXTUAL QUOTE from document with location (e.g.: 'Page 15: The provider states...')]. If no information: 'No mention of this requirement found in the proposal text.'\",\n    \"quoted_value\": \"[For ECONOMIC evaluations ONLY: Extract the exact price/rate/hours quoted, e.g. '45,000 EUR', '120 EUR/hour', '500 man-hours'. Use null for technical evaluations or if no value found]\",\n    \"score\": [0-10]\n  }\n]\n\nRespond ONLY with the JSON. Do not add explanations outside the JSON.",
         "messages": {
           "messageValues": [
             {
-              "message": "=Eres un auditor técnico-comercial experto especializado en evaluación de ofertas industriales.\n\nTu rol es:\n1. Analizar ofertas técnicas y comerciales con precisión\n2. Buscar evidencia textual específica en los documentos\n3. Ser objetivo y conservador: ante la duda, puntuar bajo\n4. Documentar cada evaluación con citas textuales del documento\n\nNO inventes información. Si no encuentras evidencia clara, márcalo como \"SIN INFORMACIÓN\" con score 0."
+              "message": "=You are an expert technical-commercial auditor specialized in industrial proposal evaluation.\n\nYour role is:\n1. Analyze technical and commercial proposals with precision\n2. Search for specific textual evidence in documents\n3. Be objective and conservative: when in doubt, score low\n4. Document each evaluation with textual quotes from the document\n\nIMPORTANT: ALL your responses MUST be in ENGLISH, regardless of the source document language.\n\nDO NOT invent information. If you don't find clear evidence, mark it as \"NO INFORMATION\" with score 0."
             }
           ]
         },
@@ -576,7 +589,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (CON VALIDACIÓN DE FK)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  // Si no podemos obtener la lista válida, no procesamos nada\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    // El LLM Chain devuelve el resultado en el campo 'text' o 'output'\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    // Limpiar el texto: remover code blocks de markdown\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    // Extraer el JSON del texto\n    let parsedData = null;\n\n    try {\n      // Buscar el JSON array en el texto\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        // Intentar parsear directamente\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    // El LLM puede devolver un array (1 objeto por requisito) o un objeto único\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      // Extraer valores del análisis\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      // Validar que score esté en rango 0-10\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      // VALIDACIÓN CRÍTICA: Verificar que el requirement_id existe en la base de datos\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        console.error(`   Requisitos válidos disponibles:`, validRequirements.slice(0, 5), '...');\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      // Preparar resultado para Upsert\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    // Continuar con el siguiente item\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente (con FK válidas)`);\n\n// 5. Retornar todos los resultados\nreturn resultados;"
+        "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (CON VALIDACIÓN DE FK)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  // Si no podemos obtener la lista válida, no procesamos nada\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    // El LLM Chain devuelve el resultado en el campo 'text' o 'output'\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    // Limpiar el texto: remover code blocks de markdown\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    // Extraer el JSON del texto\n    let parsedData = null;\n\n    try {\n      // Buscar el JSON array en el texto\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        // Intentar parsear directamente\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    // El LLM puede devolver un array (1 objeto por requisito) o un objeto único\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      // Extraer valores del análisis\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n      const quotedValue = outputItem?.quoted_value || null;\n\n      // Validar que score esté en rango 0-10\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      // VALIDACIÓN CRÍTICA: Verificar que el requirement_id existe en la base de datos\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        console.error(`   Requisitos válidos disponibles:`, validRequirements.slice(0, 5), '...');\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)${quotedValue ? ' - Value: ' + quotedValue : ''}`);\n\n      // Preparar resultado para Upsert\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore,\n          quoted_value: quotedValue\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    // Continuar con el siguiente item\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente (con FK válidas)`);\n\n// 5. Retornar todos los resultados\nreturn resultados;"
       },
       "id": "273f103a-cc43-4640-831f-fafc8b014c47",
       "name": "Parsear y Preparar Update",
@@ -589,7 +602,7 @@
     },
     {
       "parameters": {
-        "batchSize": 50,
+        "batchSize": 1,
         "options": {
           "reset": "={{ $json.reiniciar_bucle ? true : false }}"
         }
@@ -601,7 +614,7 @@
         -1696
       ],
       "id": "1cdc513d-8eee-4901-87eb-152790d45282",
-      "name": "Loop Over Items"
+      "name": "Loop Over Phases"
     },
     {
       "parameters": {
@@ -652,7 +665,7 @@
       "typeVersion": 1,
       "position": [
         1680,
-        -1488
+        -1504
       ],
       "id": "ad73cba8-b86b-44e5-9101-f0936ff952ec",
       "name": "Ollama Model1",
@@ -720,7 +733,7 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\",\n        \"description\": \"ID numérico del ítem evaluado\"\n      },\n      \"cumple\": {\n        \"type\": \"string\",\n        \"description\": \"Estado de cumplimiento según criterios específicos. Técnico: INCLUIDO, INCLUIDO CON SALVEDADES, PARCIALMENTE INCLUIDO, NO INCLUIDO CON ALTERNATIVA, NO INCLUIDO, SIN INFORMACIÓN. Económico: PRECIO COMPETITIVO, PRECIO ALTO, TARIFA HORARIA, SIN VALORAR, NO COTIZADO\",\n        \"enum\": [\"INCLUIDO\", \"INCLUIDO CON SALVEDADES\", \"PARCIALMENTE INCLUIDO\", \"NO INCLUIDO CON ALTERNATIVA\", \"NO INCLUIDO\", \"SIN INFORMACIÓN\", \"PRECIO COMPETITIVO\", \"PRECIO ALTO\", \"TARIFA HORARIA\", \"SIN VALORAR\", \"NO COTIZADO\"]\n      },\n      \"gap_analysis\": {\n        \"type\": \"string\",\n        \"description\": \"Cita textual del documento con ubicación exacta (página/sección) que sustenta la evaluación\"\n      },\n      \"score\": {\n        \"type\": \"integer\",\n        \"description\": \"Puntuación de 0 a 10 según cumplimiento del requisito\",\n        \"minimum\": 0,\n        \"maximum\": 10\n      }\n    },\n    \"required\": [\"id\", \"cumple\", \"gap_analysis\", \"score\"]\n  }\n}"
+        "inputSchema": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\",\n        \"description\": \"Numeric ID of the evaluated item\"\n      },\n      \"cumple\": {\n        \"type\": \"string\",\n        \"description\": \"Compliance status. Technical: INCLUDED, INCLUDED WITH CAVEATS, PARTIALLY INCLUDED, NOT INCLUDED WITH ALTERNATIVE, NOT INCLUDED, NO INFORMATION. Economic: QUOTED, HOURLY RATE, ESTIMATED, MENTIONED NO PRICE, NOT QUOTED\",\n        \"enum\": [\"INCLUDED\", \"INCLUDED WITH CAVEATS\", \"PARTIALLY INCLUDED\", \"NOT INCLUDED WITH ALTERNATIVE\", \"NOT INCLUDED\", \"NO INFORMATION\", \"QUOTED\", \"HOURLY RATE\", \"ESTIMATED\", \"MENTIONED NO PRICE\", \"NOT QUOTED\"]\n      },\n      \"gap_analysis\": {\n        \"type\": \"string\",\n        \"description\": \"Textual quote from document with exact location (page/section) supporting the evaluation\"\n      },\n      \"quoted_value\": {\n        \"type\": [\"string\", \"null\"],\n        \"description\": \"For economic evaluations: the exact price, rate or hours quoted (e.g. '45000 EUR', '120 EUR/hour'). Null for technical evaluations.\"\n      },\n      \"score\": {\n        \"type\": \"integer\",\n        \"description\": \"Score from 0 to 10 based on requirement compliance\",\n        \"minimum\": 0,\n        \"maximum\": 10\n      }\n    },\n    \"required\": [\"id\", \"cumple\", \"gap_analysis\", \"score\"]\n  }\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
@@ -864,6 +877,10 @@
             {
               "fieldId": "file_id",
               "fieldValue": "={{ $('Set File ID').first().json.file_id }}"
+            },
+            {
+              "fieldId": "quoted_value",
+              "fieldValue": "={{ $json.quoted_value }}"
             }
           ]
         }
@@ -952,7 +969,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Preparar Requisito + Texto Completo de Oferta\n// Procesa TODOS los requisitos del loop\n// =============================================\n\n// 1. Obtener TODOS los requisitos del loop\nconst allItems = $input.all();\nconsole.log(`📋 Procesando ${allItems.length} requisitos del loop`);\n\n// 2. Obtener el texto completo de la oferta del nodo Merge1 (una sola vez)\nlet textoCompletoOferta = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge').first().json;\n    \n    // El Merge1 puede tener el texto en diferentes formatos\n    if (mergeData.pages && Array.isArray(mergeData.pages) && mergeData.pages.length > 0) {\n        // Si tiene páginas, unimos todas las páginas (texto completo)\n        textoCompletoOferta = mergeData.pages.map(p => p.text || \"\").join(\"\\n\\n\");\n        totalPages = mergeData.pages.length;\n    } else if (mergeData.text) {\n        // Si tiene texto directo\n        textoCompletoOferta = mergeData.text;\n        totalPages = mergeData.totalPages || 1;\n    } else {\n        // Buscar cualquier propiedad que contenga texto largo\n        for (const key in mergeData) {\n            const value = mergeData[key];\n            if (typeof value === 'string' && value.length > 100) {\n                textoCompletoOferta = value;\n                break;\n            }\n        }\n    }\n    \n    console.log(`✅ Texto de oferta recuperado: ${textoCompletoOferta.length} caracteres, ${totalPages} páginas`);\n} catch (e) {\n    console.error(\"❌ Error obteniendo texto completo de Merge1:\", e.message);\n    textoCompletoOferta = \"ERROR: No se pudo recuperar el texto completo de la oferta.\";\n}\n\n// 3. Validar que tenemos datos mínimos\nif (!textoCompletoOferta || textoCompletoOferta.trim().length === 0) {\n    console.warn(\"⚠️ El texto de la oferta está vacío\");\n    textoCompletoOferta = \"SIN TEXTO DISPONIBLE EN LA OFERTA.\";\n}\n\n// 4. Construir array de requisitos para el LLM\nconst requisitos = allItems.map(item => {\n    const currentItem = item.json || item;\n    const requisitoId = currentItem.id || \"\";\n    // El campo correcto de Supabase es 'requirement_text'\n    const requisitoTexto = currentItem.requirement_text || currentItem.requisito_rfq || currentItem.text || currentItem.description || \"NO ESPECIFICADO EN RFQ\";\n    \n    console.log(`📋 Preparando requisito ID: ${requisitoId} - ${requisitoTexto.substring(0, 50)}...`);\n    \n    return {\n        id: requisitoId,\n        requirement_text: requisitoTexto,\n        // Mantener otros campos del requisito por si acaso\n        project_name: currentItem.project_name,\n        evaluation_type: currentItem.evaluation_type,\n        phase: currentItem.phase\n    };\n});\n\n// 5. Retornar UN SOLO item con la lista de requisitos y el contexto completo\nreturn [{\n    json: {\n        requisitos: requisitos,\n        context: textoCompletoOferta,\n        // Metadatos adicionales para debugging\n        total_pages: totalPages,\n        texto_length: textoCompletoOferta.length,\n        total_requisitos: requisitos.length\n    }\n}];"
+        "jsCode": "// =============================================\n// NODO: Preparar Grupo de Requisitos por Phase\n// Recibe datos ya agrupados del nodo 'Agrupar por Phase'\n// =============================================\n\n// 1. Obtener el grupo actual (ya viene agrupado por phase)\nconst grupoActual = $input.first().json;\n\nconst phase = grupoActual.phase || \"Sin Phase\";\nconst requisitosDelGrupo = grupoActual.requisitos || [];\nconst textoOfertaCompleto = grupoActual.texto_oferta_completo || \"\";\nconst esOfertaLarga = grupoActual.es_oferta_larga || false;\nconst evaluationType = grupoActual.evaluation_type || \"Technical Evaluation\";\n\nconsole.log(`📋 Procesando grupo: ${evaluationType} - ${phase}`);\nconsole.log(`   ├─ Requisitos en este grupo: ${requisitosDelGrupo.length}`);\nconsole.log(`   ├─ Tamaño texto oferta: ${textoOfertaCompleto.length} chars`);\nconsole.log(`   └─ Modo: ${esOfertaLarga ? 'RAG' : 'DIRECTO'}`);\n\n// 2. Preparar contexto según tamaño de oferta\nlet contextoParaLLM = \"\";\n\nif (esOfertaLarga) {\n    // MODO RAG: Usaremos el vectorstore (se configura después)\n    // Por ahora pasamos una muestra y marcamos para RAG\n    contextoParaLLM = textoOfertaCompleto.substring(0, 8000);\n    console.log(`🔍 Modo RAG: Contexto limitado a 8000 chars (se complementará con retrieval)`);\n} else {\n    // MODO DIRECTO: Pasamos todo el texto\n    contextoParaLLM = textoOfertaCompleto;\n    console.log(`📄 Modo DIRECTO: Pasando texto completo`);\n}\n\n// 3. Formatear requisitos para el LLM\nconst requisitosFormateados = requisitosDelGrupo.map(req => ({\n    id: req.id || \"\",\n    requirement_text: req.requirement_text || req.text || \"NO ESPECIFICADO\",\n    phase: req.phase || phase,\n    evaluation_type: req.evaluation_type || evaluationType\n}));\n\n// 4. Retornar datos preparados para el LLM\nreturn [{\n    json: {\n        // Datos del grupo\n        phase: phase,\n        evaluation_type: evaluationType,\n        \n        // Requisitos del grupo\n        requisitos: requisitosFormateados,\n        total_requisitos: requisitosFormateados.length,\n        \n        // Contexto de la oferta\n        context: contextoParaLLM,\n        texto_length: contextoParaLLM.length,\n        \n        // Flags para el flujo\n        es_oferta_larga: esOfertaLarga,\n        usar_rag: esOfertaLarga\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -961,7 +978,111 @@
         -1680
       ],
       "id": "a0573c54-146b-48ba-82a7-67a08b147f4f",
-      "name": "Code in JavaScript"
+      "name": "Preparar Grupo Phase"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "rag-condition-1",
+              "leftValue": "={{ $json.es_oferta_larga }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1400,
+        -1680
+      ],
+      "id": "if-oferta-larga-001",
+      "name": "IF Oferta Larga"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "proposals",
+          "mode": "list",
+          "cachedResultName": "proposals"
+        },
+        "prompt": "={{ $json.evaluation_type }} {{ $json.phase }} {{ $json.requisitos.slice(0, 5).map(r => r.requirement_text).join('. ') }}",
+        "topK": 15,
+        "options": {
+          "queryName": "match_proposals",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $('Set File ID').first().json.file_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1600,
+        -1840
+      ],
+      "id": "rag-vectorstore-001",
+      "name": "RAG Query Vectorstore",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -1680
+      ],
+      "id": "embeddings-rag-001",
+      "name": "Embeddings Ollama RAG",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Contexto RAG\n// Combina los chunks recuperados con los requisitos\n// =============================================\n\nconst items = $input.all();\n\n// Obtener datos del grupo desde el nodo anterior\nlet grupoData;\ntry {\n    grupoData = $('Preparar Grupo Phase').first().json;\n} catch(e) {\n    grupoData = {};\n}\n\n// Construir contexto desde los chunks RAG\n// Estructura de Supabase Vector Store: { document: { pageContent, metadata }, score }\nlet contextoRAG = \"\";\nitems.forEach((item, idx) => {\n    const chunk = item.json;\n    \n    // Extraer texto - puede estar en document.pageContent o directamente\n    let text = \"\";\n    if (chunk.document && chunk.document.pageContent) {\n        text = chunk.document.pageContent;\n    } else if (chunk.pageContent) {\n        text = chunk.pageContent;\n    } else if (chunk.text) {\n        text = chunk.text;\n    } else if (chunk.content) {\n        text = chunk.content;\n    }\n    \n    // Extraer metadata para referencia\n    const metadata = chunk.document?.metadata || chunk.metadata || {};\n    const lines = metadata.loc?.lines || {};\n    const score = chunk.score || 0;\n    \n    if (text) {\n        contextoRAG += `\\n--- Fragment ${idx + 1} (lines ${lines.from || '?'}-${lines.to || '?'}, relevance: ${score.toFixed(4)}) ---\\n${text}\\n`;\n    }\n});\n\nconsole.log(`🔍 RAG: ${items.length} chunks recuperados`);\nconsole.log(`   └─ Total contexto: ${contextoRAG.length} chars`);\n\n// Retornar con el mismo formato que espera LLM Chain\nreturn [{\n    json: {\n        // Datos del grupo\n        phase: grupoData.phase || \"Sin Phase\",\n        evaluation_type: grupoData.evaluation_type || \"Technical Evaluation\",\n        \n        // Requisitos (vienen del grupo)\n        requisitos: grupoData.requisitos || [],\n        total_requisitos: grupoData.total_requisitos || 0,\n        \n        // Contexto RAG (reemplaza el contexto directo)\n        context: contextoRAG,\n        texto_length: contextoRAG.length,\n        \n        // Flags\n        es_oferta_larga: true,\n        usar_rag: true,\n        rag_chunks: items.length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        -1840
+      ],
+      "id": "preparar-contexto-rag-001",
+      "name": "Preparar Contexto RAG"
     }
   ],
   "connections": {
@@ -1013,7 +1134,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Items",
+            "node": "Loop Over Phases",
             "type": "main",
             "index": 0
           }
@@ -1243,7 +1364,7 @@
         ]
       ]
     },
-    "Loop Over Items": {
+    "Loop Over Phases": {
       "main": [
         [
           {
@@ -1254,7 +1375,7 @@
         ],
         [
           {
-            "node": "Code in JavaScript",
+            "node": "Preparar Grupo Phase",
             "type": "main",
             "index": 0
           }
@@ -1338,7 +1459,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Items",
+            "node": "Loop Over Phases",
             "type": "main",
             "index": 0
           }
@@ -1346,6 +1467,17 @@
       ]
     },
     "Get many rows1": {
+      "main": [
+        [
+          {
+            "node": "Agrupar por Phase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar por Phase": {
       "main": [
         [
           {
@@ -1378,7 +1510,47 @@
         ]
       ]
     },
-    "Code in JavaScript": {
+    "Preparar Grupo Phase": {
+      "main": [
+        [
+          {
+            "node": "IF Oferta Larga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Oferta Larga": {
+      "main": [
+        [
+          {
+            "node": "RAG Query Vectorstore",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG Query Vectorstore": {
+      "main": [
+        [
+          {
+            "node": "Preparar Contexto RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Contexto RAG": {
       "main": [
         [
           {
@@ -1388,29 +1560,20 @@
           }
         ]
       ]
+    },
+    "Embeddings Ollama RAG": {
+      "ai_embedding": [
+        [
+          {
+            "node": "RAG Query Vectorstore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "pinData": {
-    "Validador de Ofertas": [
-      {
-        "output": {
-          "modo_usado": "VALIDADOR",
-          "proyecto_detectado": "Hydrogen Production Plant – La Zaida, Spain",
-          "proyecto_valido": true,
-          "proyecto_nota": "The project name matches the one selected by the user.",
-          "proveedor_detectado": "SENER",
-          "proveedor_valido": true,
-          "proveedor_nota": "The provider detected in the PDF matches the one selected by the user.",
-          "tipos_detectados": [
-            "Economical Evaluation"
-          ],
-          "tipos_validados": true,
-          "tipos_nota": "Both 'Economical Evaluation' and 'Technical Evaluation' are clearly present in the PDF.",
-          "razonamiento": "The Nombre Archivo is 'C0227005-GPE-OE-3000_R1_IGNIS Green Hydrogen Production Plant_Commercial Proposal.pdf', and the title of the document mentions 'Commercial Proposal' which corresponds to 'Economical Evaluation'. Additionally, the document contains sections related to 'Technical Services' which corresponds to 'Technical Evaluation'."
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"

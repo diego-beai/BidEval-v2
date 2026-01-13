@@ -1,7 +1,18 @@
 import { API_CONFIG } from '../config/constants';
 import { fetchWithTimeout } from './api.service';
 import { ApiError } from '../types/api.types';
-import { ChatResponse } from '../types/chat.types';
+import { ChatMessage, ChatRole } from '../types/chat.types';
+import { supabase } from '../lib/supabase';
+import { N8nChatMessage } from '../types/database.types';
+
+/**
+ * Tipo para la fila de n8n_chat_history desde Supabase
+ */
+interface N8nChatHistoryRow {
+  id: number;
+  session_id: string;
+  message: N8nChatMessage;
+}
 
 /**
  * Genera un ID de sesión único para el chat
@@ -72,11 +83,113 @@ export async function sendChatMessage(
 }
 
 /**
- * Obtiene el historial del chat para una sesión
- * Nota: La implementación depende de si n8n expone un endpoint para esto
+ * Obtiene el historial del chat para una sesión desde Supabase
  */
-export async function getChatHistory(): Promise<ChatResponse[]> {
-  // Por ahora retornamos vacío ya que el historial se mantiene en el store local
-  // Si n8n expone un endpoint de historial, se puede implementar aquí
-  return [];
+export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> {
+  if (!supabase) {
+    console.warn('[chat.service] Supabase no configurado, no se puede cargar historial');
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('n8n_chat_histories')
+      .select('id, session_id, message')
+      .eq('session_id', sessionId)
+      .order('id', { ascending: true }) as { data: N8nChatHistoryRow[] | null; error: unknown };
+
+    if (error) {
+      console.error('[chat.service] Error cargando historial:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Convertir mensajes de n8n a formato ChatMessage
+    return data.map((row: N8nChatHistoryRow) => {
+      const msg = row.message;
+      return {
+        id: `msg-${row.id}`,
+        role: msg.type === 'human' ? ChatRole.USER : ChatRole.ASSISTANT,
+        content: msg.content,
+        timestamp: new Date() // n8n no guarda timestamp, usamos fecha actual
+      };
+    });
+  } catch (error) {
+    console.error('[chat.service] Error cargando historial:', error);
+    return [];
+  }
+}
+
+/**
+ * Obtiene la lista de sesiones de chat disponibles
+ */
+export async function getChatSessions(): Promise<{ sessionId: string; messageCount: number; lastMessage: string }[]> {
+  if (!supabase) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('n8n_chat_histories')
+      .select('session_id, message')
+      .order('id', { ascending: false }) as { data: N8nChatHistoryRow[] | null; error: unknown };
+
+    if (error || !data) {
+      return [];
+    }
+
+    // Agrupar por session_id y contar mensajes
+    const sessionMap = new Map<string, { count: number; lastMessage: string }>();
+
+    for (const row of data) {
+      const msg = row.message;
+      if (!sessionMap.has(row.session_id)) {
+        sessionMap.set(row.session_id, {
+          count: 1,
+          lastMessage: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : '')
+        });
+      } else {
+        const existing = sessionMap.get(row.session_id)!;
+        existing.count++;
+      }
+    }
+
+    return Array.from(sessionMap.entries()).map(([sessionId, info]) => ({
+      sessionId,
+      messageCount: info.count,
+      lastMessage: info.lastMessage
+    }));
+  } catch (error) {
+    console.error('[chat.service] Error cargando sesiones:', error);
+    return [];
+  }
+}
+
+/**
+ * Obtiene la última sesión de chat activa (la más reciente)
+ */
+export async function getLastActiveSession(): Promise<string | null> {
+  if (!supabase) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('n8n_chat_histories')
+      .select('session_id')
+      .order('id', { ascending: false })
+      .limit(1) as { data: { session_id: string }[] | null; error: unknown };
+
+    if (error || !data || data.length === 0) {
+      return null;
+    }
+
+    return data[0].session_id;
+  } catch (error) {
+    console.error('[chat.service] Error obteniendo última sesión:', error);
+    return null;
+  }
 }

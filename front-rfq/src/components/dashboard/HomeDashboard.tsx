@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { useScoringStore } from '../../stores/useScoringStore';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import { supabase } from '../../lib/supabase';
 import './Dashboard.css';
@@ -39,17 +40,18 @@ const NORMALIZED_PROVIDER_NAME_MAP: Record<string, Provider> = Object.fromEntrie
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     const { t } = useLanguageStore();
     const {
-        metrics,
         totalProposals,
         proposalsThisWeek,
         proposalsGrowthPercentage,
         loadDashboardData,
-        isLoading,
         stopRealtimeUpdates,
         startRealtimeUpdates
     } = useDashboardStore();
 
     const { tableData, proposalEvaluations, pivotTableData, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
+
+    // Scoring data from workflow results
+    const { scoringResults, refreshScoring } = useScoringStore();
 
     // Load data on mount
     useEffect(() => {
@@ -67,7 +69,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         if (!providerRanking || providerRanking.length === 0) {
             fetchProviderRanking();
         }
-    }, [startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, tableData, proposalEvaluations, pivotTableData, providerRanking]);
+        // Always refresh scoring results from database to get latest data
+        refreshScoring();
+    }, [loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring]);
 
     // Cleanup realtime updates on unmount
     React.useEffect(() => {
@@ -109,13 +113,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             providerTypes[provider].add(evalType);
         };
 
-        // Initialize all providers
+        // Initialize all providers with the 4 scoring categories
         Object.values(Provider).forEach(provider => {
             evaluations[provider] = {
-                'Technical Evaluation': 0,
-                'Economical Evaluation': 0,
-                'Pre-FEED Deliverables': 0,
-                'FEED Deliverables': 0
+                'Technical': 0,      // 40%
+                'Economic': 0,       // 30%
+                'Execution': 0,      // 20%
+                'HSE/ESG': 0         // 10%
             };
         });
 
@@ -154,13 +158,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 return Math.max(prev, next);
             };
 
-            // IMPORTANT: ranking_proveedores_por_tipo can return multiple rows per provider (one per project_name).
-            // If we don't aggregate, later rows overwrite earlier ones and some types appear as 0.
+            // Aggregate scores per provider (handles multiple rows per provider)
             const aggregated: Record<string, {
                 technical: number | null;
-                economical: number | null;
-                preFeed: number | null;
-                feed: number | null;
+                economic: number | null;
+                execution: number | null;
+                hseEsg: number | null;
             }> = {};
 
             providerRanking.forEach((ranking: any) => {
@@ -178,79 +181,55 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 if (!aggregated[normalizedProvider]) {
                     aggregated[normalizedProvider] = {
                         technical: null,
-                        economical: null,
-                        preFeed: null,
-                        feed: null
+                        economic: null,
+                        execution: null,
+                        hseEsg: null
                     };
                 }
 
+                // Read from new column names (technical_score, economic_score, execution_score, hse_esg_score)
                 aggregated[normalizedProvider].technical = mergeScore(
                     aggregated[normalizedProvider].technical,
                     parseScore(ranking.technical_score)
                 );
-                aggregated[normalizedProvider].economical = mergeScore(
-                    aggregated[normalizedProvider].economical,
-                    parseScore(ranking.economical_score)
+                aggregated[normalizedProvider].economic = mergeScore(
+                    aggregated[normalizedProvider].economic,
+                    parseScore(ranking.economic_score || ranking.economical_score) // fallback for compatibility
                 );
-                aggregated[normalizedProvider].preFeed = mergeScore(
-                    aggregated[normalizedProvider].preFeed,
-                    parseScore(ranking.pre_feed_score)
+                aggregated[normalizedProvider].execution = mergeScore(
+                    aggregated[normalizedProvider].execution,
+                    parseScore(ranking.execution_score || ranking.pre_feed_score) // fallback for compatibility
                 );
-                aggregated[normalizedProvider].feed = mergeScore(
-                    aggregated[normalizedProvider].feed,
-                    parseScore(ranking.feed_score)
+                aggregated[normalizedProvider].hseEsg = mergeScore(
+                    aggregated[normalizedProvider].hseEsg,
+                    parseScore(ranking.hse_esg_score || ranking.feed_score) // fallback for compatibility
                 );
             });
 
             Object.entries(aggregated).forEach(([provider, scores]) => {
                 evaluations[provider] = {
-                    'Technical Evaluation': scores.technical === null ? 0 : clampScore(scores.technical),
-                    'EA': scores.economical === null ? 0 : clampScore(scores.economical),
-                    'Pre-FEED Deliverables': scores.preFeed === null ? 0 : clampScore(scores.preFeed),
-                    'FEED Deliverables': scores.feed === null ? 0 : clampScore(scores.feed)
+                    'Technical': scores.technical === null ? 0 : clampScore(scores.technical),
+                    'Economic': scores.economic === null ? 0 : clampScore(scores.economic),
+                    'Execution': scores.execution === null ? 0 : clampScore(scores.execution),
+                    'HSE/ESG': scores.hseEsg === null ? 0 : clampScore(scores.hseEsg)
                 };
             });
 
-            // Reordenar los tipos de evaluación (columnas) según si tienen datos > 0
+            // Reorder evaluation types (columns) by weight (Technical 40%, Economic 30%, Execution 20%, HSE/ESG 10%)
             const reorderEvaluationTypes = (evaluations: any) => {
-                // Obtener todos los proveedores
                 const providers = Object.keys(evaluations);
-                
+
                 console.log('[HomeDashboard] Providers found:', providers);
                 console.log('[HomeDashboard] Current evaluations:', evaluations);
-                
-                // Calcular qué tipos tienen datos > 0 en CUALQUIER proveedor
-                const typeScores: { [key: string]: number } = {};
-                ['Technical Evaluation', 'EA', 'Pre-FEED Deliverables', 'FEED Deliverables'].forEach(type => {
-                    typeScores[type] = providers.reduce((sum, provider) => {
-                        // Solo sumar si el proveedor no es el mismo nombre que el tipo de evaluación
-                        if (provider === type) return sum;
-                        return sum + (evaluations[provider][type] || 0);
-                    }, 0);
-                });
 
-                console.log('[HomeDashboard] Type scores calculated:', typeScores);
+                // Fixed order by category weight (most important first)
+                const sortedTypes = ['Technical', 'Economic', 'Execution', 'HSE/ESG'];
 
-                // Ordenar tipos: primero los que tienen datos > 0, luego los que tienen 0
-                const sortedTypes = ['Technical Evaluation', 'EA', 'Pre-FEED Deliverables', 'FEED Deliverables'].sort((a, b) => {
-                    const scoreA = typeScores[a];
-                    const scoreB = typeScores[b];
-                    
-                    console.log(`[HomeDashboard] Comparing ${a} (${scoreA}) vs ${b} (${scoreB})`);
-                    
-                    if (scoreA > 0 && scoreB === 0) return -1; // A tiene datos, B no → A primero
-                    if (scoreA === 0 && scoreB > 0) return 1;  // A no tiene datos, B sí → B primero
-                    if (scoreA > 0 && scoreB > 0) return a.localeCompare(b); // Ambos tienen datos → alfabético
-                    return a.localeCompare(b); // Ambos sin datos → alfabético
-                });
-
-                console.log('[HomeDashboard] Sorted types:', sortedTypes);
-
-                // Reordenar las evaluaciones de cada proveedor según el nuevo orden
+                // Reorder evaluations for each provider
                 providers.forEach(provider => {
                     const reordered: any = {};
                     sortedTypes.forEach(type => {
-                        reordered[type] = evaluations[provider][type];
+                        reordered[type] = evaluations[provider][type] || 0;
                     });
                     evaluations[provider] = reordered;
                 });
@@ -732,6 +711,57 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 </div>
             </div>
 
+            {/* AI Scoring Results - from workflow */}
+            {scoringResults && scoringResults.ranking.length > 0 && (
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '20px',
+                    padding: '8px',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--shadow-sm)',
+                    marginBottom: '8px'
+                }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                            Top Performer
+                        </div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                            {scoringResults.statistics.top_performer}
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                            Average Score
+                        </div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
+                            {scoringResults.statistics.average_score.toFixed(1)}/10
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                            Compliance Rate
+                        </div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>
+                            {(() => {
+                                const avgCompliance = scoringResults.ranking.reduce((sum, r) => sum + (r.compliance_percentage || 0), 0) / scoringResults.ranking.length;
+                                return `${avgCompliance.toFixed(0)}%`;
+                            })()}
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                            Providers Evaluated
+                        </div>
+                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
+                            {scoringResults.statistics.total_providers}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Quick Stats Row */}
             <div style={{
                 display: 'grid',
@@ -784,10 +814,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <div>
                             <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                Evaluations by Provider
+                                AI Scoring by Provider
                             </h3>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                Performance distribution
+                                Weighted scores from workflow
                             </span>
                         </div>
                         <div style={{
@@ -823,10 +853,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             if (!hasData) return null;
 
                             const evaluations = [
-                                { type: 'Technical', score: evals['Technical Evaluation'] || 0, color: '#12b5b0' },
-                                { type: 'Economical', score: evals['EA'] || 0, color: '#f59e0b' },
-                                { type: 'Pre-FEED', score: evals['Pre-FEED Deliverables'] || 0, color: '#3b82f6' },
-                                { type: 'FEED', score: evals['FEED Deliverables'] || 0, color: '#8b5cf6' }
+                                { type: 'Technical (40%)', score: evals['Technical'] || 0, color: '#12b5b0' },
+                                { type: 'Economic (30%)', score: evals['Economic'] || 0, color: '#f59e0b' },
+                                { type: 'Execution (20%)', score: evals['Execution'] || 0, color: '#3b82f6' },
+                                { type: 'HSE/ESG (10%)', score: evals['HSE/ESG'] || 0, color: '#8b5cf6' }
                             ];
 
                             return (
@@ -862,10 +892,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         gap: '16px',
                         justifyContent: 'center'
                     }}>
-                        <LegendItem color="#12b5b0" label="Technical" />
-                        <LegendItem color="#f59e0b" label="Economical" />
-                        <LegendItem color="#3b82f6" label="Pre-FEED" />
-                        <LegendItem color="#8b5cf6" label="FEED" />
+                        <LegendItem color="#12b5b0" label="Technical (40%)" />
+                        <LegendItem color="#f59e0b" label="Economic (30%)" />
+                        <LegendItem color="#3b82f6" label="Execution (20%)" />
+                        <LegendItem color="#8b5cf6" label="HSE/ESG (10%)" />
                     </div>
                 </div>
 

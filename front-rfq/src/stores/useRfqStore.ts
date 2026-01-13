@@ -636,73 +636,104 @@ export const useRfqStore = create<RfqState>()(
 
         set({ isProcessing: true, error: null });
 
+        // Lista de posibles columnas de proveedores en rfq_items_master
+        const PROVIDER_COLUMNS = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY', 'TECNICASREUNIDAS'];
+
         try {
-          // Obtener todas las evaluaciones de proveedores con su información de RFQ
+          // Primero: Obtener todos los datos de rfq_items_master (incluyendo columnas de proveedores)
+          const { data: rfqItemsData, error: rfqItemsError } = await supabase
+            .from('rfq_items_master')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (rfqItemsError) {
+            throw new Error(`Supabase error fetching rfq_items: ${rfqItemsError.message}`);
+          }
+
+          // Crear mapa de requisitos con datos base y columnas de proveedores directas
+          const requirementsMap = new Map();
+
+          (rfqItemsData || []).forEach((item: any) => {
+            const reqId = item.id;
+            const evaluations: Record<string, string> = {};
+
+            // Extraer columnas de proveedores directamente de rfq_items_master
+            Object.keys(item).forEach(key => {
+              const upperKey = key.toUpperCase();
+              if (PROVIDER_COLUMNS.includes(upperKey) || PROVIDER_COLUMNS.includes(key)) {
+                const value = item[key];
+                if (value && typeof value === 'string' && value.trim() !== '' && value !== 'NOT QUOTED' && value !== 'NO INFORMATION') {
+                  // Normalizar el nombre del proveedor
+                  const normalizedKey = upperKey === 'TECNICASREUNIDAS' ? 'TR' : upperKey;
+                  evaluations[normalizedKey] = value;
+                }
+              }
+            });
+
+            requirementsMap.set(reqId, {
+              id: reqId,
+              project_name: item.project_name,
+              evaluation_type: item.evaluation_type,
+              phase: item.phase,
+              requirement_text: item.requirement_text,
+              created_at: item.created_at,
+              evaluations
+            });
+          });
+
+          // Segundo: Obtener evaluaciones adicionales de provider_responses
           const { data: responsesData, error: responsesError } = await supabase
             .from('provider_responses')
             .select(`
               requirement_id,
               provider_name,
               evaluation_value,
-              comment,
-              rfq_items_master (
-                id,
-                project_name,
-                evaluation_type,
-                phase,
-                requirement_text,
-                created_at
-              )
+              comment
             `)
             .order('updated_at', { ascending: false });
 
-          if (responsesError) {
-            throw new Error(`Supabase error fetching responses: ${responsesError.message}`);
+          if (!responsesError && responsesData) {
+            // Agregar/sobrescribir con datos de provider_responses
+            responsesData.forEach((response: any) => {
+              const reqId = response.requirement_id;
+
+              if (requirementsMap.has(reqId)) {
+                const providerKey = (response.provider_name || '').toUpperCase();
+                const normalizedKey = providerKey === 'TECNICASREUNIDAS' ? 'TR' : providerKey;
+                const evaluationText = response.evaluation_value && response.comment
+                  ? `${response.evaluation_value} - ${response.comment}`
+                  : response.evaluation_value || response.comment || '';
+
+                if (evaluationText.trim() !== '') {
+                  requirementsMap.get(reqId).evaluations[normalizedKey] = evaluationText;
+                }
+              }
+            });
           }
 
-          // Filtrar solo evaluaciones que tienen información de RFQ completa
-          const validResponses = (responsesData as any)?.filter((response: any) =>
-            response.rfq_items_master
-          ) || [];
-
-          // Crear mapa de requisitos únicos con sus evaluaciones
-          const requirementsMap = new Map();
-
-          validResponses.forEach((response: any) => {
-            const rfq = response.rfq_items_master;
-            const reqId = rfq.id;
-
-            if (!requirementsMap.has(reqId)) {
-              requirementsMap.set(reqId, {
-                id: reqId,
-                project_name: rfq.project_name,
-                evaluation_type: rfq.evaluation_type,
-                phase: rfq.phase,
-                requirement_text: rfq.requirement_text,
-                created_at: rfq.created_at,
-                evaluations: {}
-              });
-            }
-
-            // Agregar evaluación del proveedor
-            const providerKey = response.provider_name;
-            const evaluationText = response.evaluation_value && response.comment
-              ? `${response.evaluation_value} - ${response.comment}`
-              : response.evaluation_value || response.comment || '';
-
-            requirementsMap.get(reqId).evaluations[providerKey] = evaluationText;
+          // Convertir a array con todas las columnas de proveedores encontradas
+          const allProviderKeys = new Set<string>();
+          requirementsMap.forEach((req: any) => {
+            Object.keys(req.evaluations).forEach(key => allProviderKeys.add(key));
           });
 
-          // Convertir a array
-          const pivotData = Array.from(requirementsMap.values()).map((req: any) => ({
-            id: req.id,
-            project_name: req.project_name,
-            evaluation_type: req.evaluation_type,
-            phase: req.phase,
-            requirement_text: req.requirement_text,
-            created_at: req.created_at,
-            ...req.evaluations // Expandir las evaluaciones de proveedores como columnas
-          }));
+          const pivotData = Array.from(requirementsMap.values()).map((req: any) => {
+            const row: any = {
+              id: req.id,
+              project_name: req.project_name,
+              evaluation_type: req.evaluation_type,
+              phase: req.phase,
+              requirement_text: req.requirement_text,
+              created_at: req.created_at
+            };
+
+            // Agregar todas las columnas de proveedores encontradas
+            allProviderKeys.forEach(providerKey => {
+              row[providerKey] = req.evaluations[providerKey] || '';
+            });
+
+            return row;
+          });
 
           const projectNames = pivotData
             .map((item: any) => item.project_name)
@@ -710,7 +741,7 @@ export const useRfqStore = create<RfqState>()(
           const projectList = [...new Set(projectNames)];
 
           set({ pivotTableData: pivotData, projects: projectList });
-          console.log('Pivot table data loaded:', pivotData.length, 'requirements');
+          console.log('Pivot table data loaded:', pivotData.length, 'requirements with providers:', Array.from(allProviderKeys));
 
         } catch (err: any) {
           console.error('Error fetching pivot table data:', err);
@@ -801,45 +832,35 @@ export const useRfqStore = create<RfqState>()(
         }
 
         try {
+          // Read directly from ranking_proveedores table (has all 12 criterion scores)
           const { data, error } = await supabase
-            .from('ranking_proveedores_por_tipo')
-            .select('*');
+            .from('ranking_proveedores')
+            .select('*')
+            .order('overall_score', { ascending: false, nullsFirst: false });
 
           if (error) {
-            const { data: fallbackData, error: fallbackError } = await supabase
-              .from('ranking_proveedores')
-              .select('*')
-              .order('cumplimiento_porcentual', { ascending: false, nullsFirst: false });
-
-            if (fallbackError) {
-              throw new Error(`Supabase error: ${fallbackError.message}`);
-            }
-
-            set({ providerRanking: fallbackData || [] });
-            console.log('Provider ranking loaded (fallback):', fallbackData?.length, 'records');
-            if (!fallbackData || fallbackData.length === 0) {
-              console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores for the current client.');
-            } else {
-              console.log('Provider ranking sample (fallback):', fallbackData[0]);
-            }
-            return;
+            throw new Error(`Supabase error: ${error.message}`);
           }
 
-          const sorted = (data || []).slice().sort((a: any, b: any) => {
-            const aTotal = (Number(a.technical_score) || 0) + (Number(a.economical_score) || 0) + (Number(a.pre_feed_score) || 0) + (Number(a.feed_score) || 0);
-            const bTotal = (Number(b.technical_score) || 0) + (Number(b.economical_score) || 0) + (Number(b.pre_feed_score) || 0) + (Number(b.feed_score) || 0);
-            return bTotal - aTotal;
-          });
+          // Map new column names to match expected format in components
+          const mapped = (data || []).map((row: any) => ({
+            ...row,
+            // Map to expected column names for backward compatibility
+            economical_score: row.economic_score || 0,
+            pre_feed_score: row.execution_score || 0,
+            feed_score: row.hse_esg_score || 0,
+            cumplimiento_porcentual: row.compliance_percentage || 0
+          }));
 
-          set({ providerRanking: sorted });
-          console.log('Provider ranking loaded (by type):', sorted.length, 'records');
-          if (sorted.length === 0) {
-            console.warn('Provider ranking is empty. If you expect rows, this is commonly caused by Supabase RLS/policies blocking SELECT on ranking_proveedores_por_tipo for the current client.');
+          set({ providerRanking: mapped });
+          console.log('[useRfqStore] Provider ranking loaded from ranking_proveedores:', mapped.length, 'records');
+          if (mapped.length === 0) {
+            console.warn('[useRfqStore] Provider ranking is empty. Run the scoring workflow to populate data.');
           } else {
-            console.log('Provider ranking sample (by type):', sorted[0]);
+            console.log('[useRfqStore] Provider ranking sample:', mapped[0]);
           }
         } catch (err: any) {
-          console.error('Error fetching provider ranking:', err);
+          console.error('[useRfqStore] Error fetching provider ranking:', err);
         }
       },
 

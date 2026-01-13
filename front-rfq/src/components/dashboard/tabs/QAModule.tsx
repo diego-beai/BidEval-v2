@@ -309,22 +309,42 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
   const handleAddManualQuestion = async (disciplina: string) => {
     const text = newQuestionTexts[disciplina]?.trim();
-    if (!text || !projectId || !selectedProvider) {
-      addToast('Please enter a question and ensure project/provider are selected', 'warning');
+
+    // Try to get provider from selection, or from existing questions in this discipline
+    const existingProvider = questions.find(q =>
+      (q.disciplina || q.discipline) === disciplina
+    )?.proveedor || questions.find(q =>
+      (q.disciplina || q.discipline) === disciplina
+    )?.provider_name;
+
+    const providerToUse = selectedProvider || existingProvider;
+
+    if (!text) {
+      addToast('Please enter a question', 'warning');
+      return;
+    }
+
+    if (!projectId) {
+      addToast('Please select a project in the form above', 'warning');
+      return;
+    }
+
+    if (!providerToUse) {
+      addToast('Please select a provider in the form above', 'warning');
       return;
     }
 
     try {
       await createQuestion({
         project_name: projectId,
-        provider_name: selectedProvider,
+        provider_name: providerToUse,
         discipline: disciplina as Disciplina,
         question: text,
         status: 'Draft',
         importance: 'Medium',
         // Alias for compatibility
         project_id: projectId,
-        proveedor: selectedProvider,
+        proveedor: providerToUse,
         disciplina: disciplina as Disciplina,
         pregunta_texto: text,
         estado: 'Draft',
@@ -334,9 +354,10 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       // Reset text
       setNewQuestionTexts(prev => ({ ...prev, [disciplina || '']: '' }));
       setAddingToDisciplina(null);
+      addToast('Question added successfully', 'success');
     } catch (err) {
       console.error('Error adding question:', err);
-      alert('Error adding question');
+      addToast('Error adding question', 'error');
     }
   };
 
@@ -726,15 +747,20 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         <span className="question-provider">{question.proveedor || question.provider_name}</span>
                       </div>
                       <div className="question-actions-top">
-                        {(question.estado || question.status) === 'Draft' && (
-                          <button
-                            onClick={() => handleDeleteQuestion(question.id)}
-                            className="icon-btn icon-btn-danger"
-                            title="Delete"
-                          >
-                            <Icons.Delete />
-                          </button>
-                        )}
+                        {(() => {
+                          const rawStatus = question.estado || question.status || 'Draft';
+                          const upper = rawStatus.toUpperCase();
+                          const isDraftOrPending = ['DRAFT', 'BORRADOR', 'PENDING', 'PENDIENTE'].includes(upper);
+                          return isDraftOrPending && (
+                            <button
+                              onClick={() => handleDeleteQuestion(question.id)}
+                              className="icon-btn icon-btn-danger"
+                              title="Delete"
+                            >
+                              <Icons.Delete />
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -786,50 +812,71 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             <Icons.Cancel /> Cancel
                           </button>
                         </>
-                      ) : (
-                        <>
-                          {(question.estado || question.status) === 'Draft' && (
-                            <>
+                      ) : (() => {
+                        const rawStatus = question.estado || question.status || 'Draft';
+                        // Normalize status to handle both English and Spanish values
+                        const normalizeStatus = (s: string): string => {
+                          const upper = s.toUpperCase();
+                          if (['DRAFT', 'BORRADOR'].includes(upper)) return 'Draft';
+                          if (['PENDING', 'PENDIENTE'].includes(upper)) return 'Pending';
+                          if (['APPROVED', 'APROBADO', 'APROBADA'].includes(upper)) return 'Approved';
+                          if (['SENT', 'ENVIADO', 'ENVIADA'].includes(upper)) return 'Sent';
+                          if (['ANSWERED', 'RESPONDIDO', 'RESPONDIDA'].includes(upper)) return 'Answered';
+                          if (['DISCARDED', 'DESCARTADO', 'DESCARTADA'].includes(upper)) return 'Discarded';
+                          return s;
+                        };
+                        const currentStatus = normalizeStatus(rawStatus);
+                        return (
+                          <>
+                            {/* Show Edit/Approve/Discard for Draft or Pending status */}
+                            {(currentStatus === 'Draft' || currentStatus === 'Pending') && (
+                              <>
+                                <button
+                                  onClick={() => handleEditQuestion(question)}
+                                  className="btn btnSecondary btn-sm"
+                                >
+                                  <Icons.Edit /> Edit
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(question.id, 'Approved')}
+                                  className="btn btnPrimary btn-sm"
+                                >
+                                  <Icons.Approve /> Approve
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(question.id, 'Discarded')}
+                                  className="btn btnDanger btn-sm"
+                                >
+                                  <Icons.Discard /> Discard
+                                </button>
+                              </>
+                            )}
+                            {currentStatus === 'Approved' && (
                               <button
-                                onClick={() => handleEditQuestion(question)}
-                                className="btn btnSecondary btn-sm"
-                              >
-                                <Icons.Edit /> Edit
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(question.id, 'Approved')}
+                                onClick={() => handleUpdateStatus(question.id, 'Sent')}
                                 className="btn btnPrimary btn-sm"
                               >
-                                <Icons.Approve /> Approve
+                                <Icons.Send /> Send
                               </button>
-                              <button
-                                onClick={() => handleUpdateStatus(question.id, 'Discarded')}
-                                className="btn btnDanger btn-sm"
-                              >
-                                <Icons.Discard /> Discard
-                              </button>
-                            </>
-                          )}
-                          {(question.estado || question.status) === 'Approved' && (
-                            <button
-                              onClick={() => handleUpdateStatus(question.id, 'Sent')}
-                              className="btn btnPrimary btn-sm"
-                            >
-                              <Icons.Send /> Send
-                            </button>
-                          )}
-                          {(question.estado || question.status) === 'Sent' && (
-                            <span className="question-text">
-                          {question.pregunta_texto || question.question}
-                        </span>
-                          )}
-                          {(question.estado || question.status) === 'Answered' && (
-                            <span className="status-message success">
-                              Question answered
-                            </span>
-                          )}
-                        </>
-                      )}
+                            )}
+                            {currentStatus === 'Sent' && (
+                              <span className="status-message">
+                                Waiting for response...
+                              </span>
+                            )}
+                            {currentStatus === 'Answered' && (
+                              <span className="status-message success">
+                                Question answered
+                              </span>
+                            )}
+                            {currentStatus === 'Discarded' && (
+                              <span className="status-message" style={{ color: 'var(--color-error, #ef4444)' }}>
+                                Discarded
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
