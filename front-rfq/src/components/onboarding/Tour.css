@@ -1,0 +1,151 @@
+/* Tour Content Styles */
+.tour-content {
+    min-width: 280px;
+    max-width: 340px;
+}
+
+.tour-content h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+}
+
+.tour-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.tour-final {
+    text-align: center;
+}
+
+.tour-final h3 {
+    color: #12b5b0;
+}
+
+/* Restart Button */
+.tour-restart-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tour-restart-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.tour-restart-btn svg {
+    opacity: 0.7;
+}
+
+.tour-restart-btn:hover svg {
+    opacity: 1;
+}
+
+/* Joyride Override Styles */
+.react-joyride__tooltip {
+    font-family: inherit !important;
+}
+
+.react-joyride__tooltip button[data-action="primary"] {
+    transition: all 0.2s ease !important;
+}
+
+.react-joyride__tooltip button[data-action="primary"]:hover {
+    background-color: #0fa3a0 !important;
+    transform: translateY(-1px);
+}
+
+.react-joyride__tooltip button[data-action="back"]:hover {
+    color: var(--text-primary) !important;
+}
+
+.react-joyride__tooltip button[data-action="skip"]:hover {
+    color: var(--text-secondary) !important;
+}
+
+/* Progress indicator styles */
+.react-joyride__tooltip [class*="__progress"] {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+/* Spotlight pulse animation */
+@keyframes spotlight-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(18, 181, 176, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(18, 181, 176, 0);
+    }
+}
+
+.react-joyride__spotlight {
+    animation: spotlight-pulse 2s ease-in-out infinite;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .react-joyride__tooltip {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .react-joyride__tooltip [class*="__arrow"] {
+    color: var(--bg-surface) !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .tour-content {
+        min-width: 240px;
+        max-width: 280px;
+    }
+
+    .tour-content h3 {
+        font-size: 1rem;
+    }
+
+    .tour-content p {
+        font-size: 0.85rem;
+    }
+
+    .react-joyride__tooltip {
+        margin: 10px !important;
+    }
+}
+
+/* Help trigger button in header (optional) */
+.tour-help-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tour-help-btn:hover {
+    background: var(--bg-hover);
+    color: #12b5b0;
+    border-color: #12b5b0;
+}

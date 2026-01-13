@@ -309,6 +309,198 @@
     }
 }
 
+/* Q&A Cards */
+.qa-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.qa-card:hover {
+    border-color: rgba(18, 181, 176, 0.3);
+    background: rgba(18, 181, 176, 0.03);
+}
+
+.qa-card.selected {
+    border-color: var(--color-cyan);
+    background: rgba(18, 181, 176, 0.08);
+}
+
+.qa-card .checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--border-color);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.qa-card.selected .checkbox {
+    border-color: var(--color-cyan);
+    background: var(--color-cyan);
+}
+
+.qa-card .question-text {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qa-card.selected .question-text {
+    color: var(--text-primary);
+}
+
+.qa-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+.qa-badge.discipline {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.qa-badge.high {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.qa-badge.medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.qa-badge.low {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+/* Config body with sticky button */
+.config-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.config-body > .btn-generate {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+/* Q&A Section */
+.qa-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.qa-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.qa-cards-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.qa-cards-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.qa-cards-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.qa-cards-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+}
+
+/* Mini buttons */
+.btn-mini {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-mini:hover {
+    border-color: var(--color-cyan);
+    color: var(--color-cyan);
+}
+
+/* Remove button */
+.btn-remove {
+    padding: 4px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    opacity: 0.4;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove:hover {
+    opacity: 1;
+    color: #ef4444;
+}
+
+/* Q&A Empty state */
+.qa-empty-state {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+.qa-empty-state p {
+    margin: 8px 0 0;
+}
+
+.qa-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: var(--color-cyan);
+}
+
 @media (max-width: 900px) {
     .mail-container {
         grid-template-columns: 1fr;

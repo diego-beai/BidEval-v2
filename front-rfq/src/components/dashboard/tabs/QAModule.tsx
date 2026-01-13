@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQAStore } from '../../../stores/useQAStore';
+import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
 import { generateTechnicalAudit } from '../../../services/n8n.service';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
@@ -108,6 +109,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   } = useQAStore();
 
   const { addToast } = useToastStore();
+  const { addQAItem } = useMailStore();
 
   const [projectId, setProjectId] = useState<string>(initialProjectId);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
@@ -378,6 +380,15 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
   const handleUpdateStatus = async (questionId: string, estado: EstadoPregunta) => {
     await updateQuestion(questionId, { estado });
+
+    // When approving, add the question to the Mail store for inclusion in emails
+    if (estado === 'Approved') {
+      const question = questions.find(q => q.id === questionId);
+      if (question) {
+        addQAItem(question);
+        addToast('Question approved and added to Mail queue', 'success');
+      }
+    }
   };
 
   const handleDeleteQuestion = async (questionId: string) => {

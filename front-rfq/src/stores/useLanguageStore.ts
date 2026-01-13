@@ -157,7 +157,37 @@ const translations: any = {
         'table.col.requirement': 'Requisito',
         'table.col.phase': 'Fase',
         'table.col.evaluation': 'Evaluación',
-        'table.col.description': 'Descripción del Ítem'
+        'table.col.description': 'Descripción del Ítem',
+
+        // Tour / Onboarding
+        'tour.welcome.title': 'Bienvenido a BidEval',
+        'tour.welcome.description': 'Te guiaremos por las principales funcionalidades de la plataforma para que puedas sacar el máximo provecho.',
+        'tour.sidebar.title': 'Navegación Principal',
+        'tour.sidebar.description': 'Este es el menú lateral donde encontrarás acceso a todos los módulos de la plataforma. Puedes expandirlo o contraerlo según prefieras.',
+        'tour.home.title': 'Panel Principal',
+        'tour.home.description': 'Aquí verás un resumen de tu actividad: métricas, estadísticas y actividad reciente de tus proyectos.',
+        'tour.upload.title': 'Subir Documentos',
+        'tour.upload.description': 'Carga tus RFQs de referencia y las propuestas de proveedores. El sistema procesará y extraerá automáticamente los requisitos.',
+        'tour.table.title': 'Explorador de Datos',
+        'tour.table.description': 'Visualiza y explora todos los datos procesados en formato de tabla con filtros avanzados y opciones de exportación.',
+        'tour.qa.title': 'Q&A de Ofertas',
+        'tour.qa.description': 'Gestiona las preguntas y aclaraciones pendientes sobre las ofertas de los proveedores.',
+        'tour.decision.title': 'Análisis de Scoring',
+        'tour.decision.description': 'Matriz de puntuación con análisis comparativo de proveedores. Ajusta pesos y visualiza el ranking final.',
+        'tour.chat.title': 'Asistente IA',
+        'tour.chat.description': 'Conversa con nuestro asistente inteligente para obtener respuestas rápidas sobre tus RFQs y propuestas.',
+        'tour.mail.title': 'Generador de Emails',
+        'tour.mail.description': 'Genera borradores de correos profesionales con IA basados en las aclaraciones pendientes de cada proveedor.',
+        'tour.header.title': 'Configuración Rápida',
+        'tour.header.description': 'Cambia el idioma, alterna entre modo claro y oscuro, y accede a tu perfil desde aquí.',
+        'tour.finish.title': '¡Listo para comenzar!',
+        'tour.finish.description': 'Ya conoces las funcionalidades principales. Puedes reiniciar este tour en cualquier momento desde el menú de ayuda.',
+        'tour.btn.next': 'Siguiente',
+        'tour.btn.back': 'Atrás',
+        'tour.btn.skip': 'Omitir tour',
+        'tour.btn.finish': 'Finalizar',
+        'tour.btn.close': 'Cerrar',
+        'tour.btn.restart': 'Reiniciar Tour'
     },
     en: {
         // ... existing translations
@@ -306,7 +336,37 @@ const translations: any = {
         'table.col.requirement': 'Requirement',
         'table.col.phase': 'Phase',
         'table.col.evaluation': 'Evaluation',
-        'table.col.description': 'Item Description'
+        'table.col.description': 'Item Description',
+
+        // Tour / Onboarding
+        'tour.welcome.title': 'Welcome to BidEval',
+        'tour.welcome.description': 'We\'ll guide you through the main features of the platform so you can get the most out of it.',
+        'tour.sidebar.title': 'Main Navigation',
+        'tour.sidebar.description': 'This is the sidebar menu where you\'ll find access to all platform modules. You can expand or collapse it as you prefer.',
+        'tour.home.title': 'Dashboard',
+        'tour.home.description': 'Here you\'ll see a summary of your activity: metrics, statistics, and recent activity from your projects.',
+        'tour.upload.title': 'Upload Documents',
+        'tour.upload.description': 'Upload your reference RFQs and vendor proposals. The system will automatically process and extract requirements.',
+        'tour.table.title': 'Data Explorer',
+        'tour.table.description': 'View and explore all processed data in table format with advanced filters and export options.',
+        'tour.qa.title': 'Offer Q&A',
+        'tour.qa.description': 'Manage pending questions and clarifications about vendor offers.',
+        'tour.decision.title': 'Scoring Analysis',
+        'tour.decision.description': 'Scoring matrix with comparative vendor analysis. Adjust weights and view the final ranking.',
+        'tour.chat.title': 'AI Assistant',
+        'tour.chat.description': 'Chat with our intelligent assistant to get quick answers about your RFQs and proposals.',
+        'tour.mail.title': 'Email Generator',
+        'tour.mail.description': 'Generate professional email drafts with AI based on pending clarifications for each vendor.',
+        'tour.header.title': 'Quick Settings',
+        'tour.header.description': 'Change language, toggle between light and dark mode, and access your profile from here.',
+        'tour.finish.title': 'Ready to go!',
+        'tour.finish.description': 'You now know the main features. You can restart this tour anytime from the help menu.',
+        'tour.btn.next': 'Next',
+        'tour.btn.back': 'Back',
+        'tour.btn.skip': 'Skip tour',
+        'tour.btn.finish': 'Finish',
+        'tour.btn.close': 'Close',
+        'tour.btn.restart': 'Restart Tour'
     }
 };
 

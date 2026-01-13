@@ -4,6 +4,8 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useActiveSessions } from '../../hooks/useActiveSessions';
 import { useSessionViewStore } from '../../stores/useSessionViewStore';
+import { TourProvider } from '../onboarding/TourProvider';
+import { useOnboardingStore } from '../../stores/useOnboardingStore';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -16,6 +18,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const { t, language, setLanguage } = useLanguageStore();
     const activeSessions = useActiveSessions();
     const markAsViewed = useSessionViewStore(state => state.markAsViewed);
+    const { resetTour, startTour, hasCompletedTour } = useOnboardingStore();
 
     const toggleSidebar = () => setIsExpanded(!isExpanded);
 
@@ -50,6 +53,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                 className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''}`}
                 onClick={() => onNavigate(view)}
                 title={!isExpanded ? t(labelKey) : ''}
+                data-tour={`nav-${view}`}
             >
                 <div className="nav-icon">{icon}</div>
                 <span className="nav-label">{t(labelKey)}</span>
@@ -151,6 +155,46 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     </div>
 
                     <div className="header-actions">
+                        {/* Tour Help Button */}
+                        {hasCompletedTour && (
+                            <button
+                                className="tour-help-btn"
+                                onClick={() => {
+                                    resetTour();
+                                    setTimeout(() => startTour(), 100);
+                                }}
+                                title={t('tour.btn.restart')}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '32px',
+                                    height: '32px',
+                                    background: 'transparent',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'var(--bg-hover)';
+                                    e.currentTarget.style.color = '#12b5b0';
+                                    e.currentTarget.style.borderColor = '#12b5b0';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                }}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                            </button>
+                        )}
                         <button
                             className="btn-icon language-btn"
                             onClick={() => setLanguage(language === 'es' ? 'en' : 'es')}
@@ -200,6 +244,9 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     </div>
                 </main>
             </div>
+
+            {/* Onboarding Tour */}
+            <TourProvider onNavigate={onNavigate} />
         </div>
     );
 };

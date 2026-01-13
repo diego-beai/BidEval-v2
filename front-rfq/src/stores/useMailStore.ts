@@ -2,8 +2,16 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { useSessionViewStore } from './useSessionViewStore';
+import type { QAQuestion } from '../types/qa.types';
 
-// Interface Issue removed as it was unused
+// Interface for Q&A items in the mail context
+export interface MailQAItem {
+    id: string;
+    discipline: string;
+    question: string;
+    importance: string;
+    provider_name: string;
+}
 
 interface MailState {
     // Current Draft State
@@ -15,6 +23,10 @@ interface MailState {
     hasGenerated: boolean;
     error: string | null;
 
+    // Q&A Items State
+    pendingQAItems: MailQAItem[];
+    selectedQAItemIds: string[];
+
     // Actions
     setSubject: (subject: string) => void;
     setBody: (body: string) => void;
@@ -25,6 +37,15 @@ interface MailState {
     failGeneration: (error: string) => void;
     reset: () => void;
 
+    // Q&A Items Actions
+    addQAItem: (item: QAQuestion) => void;
+    removeQAItem: (id: string) => void;
+    toggleQAItemSelection: (id: string) => void;
+    selectAllQAItems: () => void;
+    deselectAllQAItems: () => void;
+    clearQAItems: () => void;
+    getSelectedQAItems: () => MailQAItem[];
+
     // API Interaction (can be moved deeper if needed)
     generateDraft: (params: {
         project_name: string;
@@ -32,18 +53,21 @@ interface MailState {
         provider_key: string;
         tone: string;
         issues: string[];
+        qa_items?: MailQAItem[];
     }) => Promise<void>;
 }
 
 export const useMailStore = create<MailState>()(
     devtools(
         persist(
-            (set) => ({
+            (set, get) => ({
             subject: '',
             body: '',
             isGenerating: false,
             hasGenerated: false,
             error: null,
+            pendingQAItems: [],
+            selectedQAItemIds: [],
 
             setSubject: (subject) => set({ subject }),
             setBody: (body) => set({ body }),
@@ -78,6 +102,54 @@ export const useMailStore = create<MailState>()(
                 error: null
             }),
 
+            // Q&A Items Actions
+            addQAItem: (item: QAQuestion) => {
+                const mailItem: MailQAItem = {
+                    id: item.id,
+                    discipline: item.discipline || item.disciplina || 'General',
+                    question: item.question || item.pregunta_texto || '',
+                    importance: item.importance || item.importancia || 'Medium',
+                    provider_name: item.provider_name || item.proveedor || ''
+                };
+
+                set(state => {
+                    // Avoid duplicates
+                    if (state.pendingQAItems.some(q => q.id === mailItem.id)) {
+                        return state;
+                    }
+                    return {
+                        pendingQAItems: [...state.pendingQAItems, mailItem]
+                        // Items arrive unselected - user must select which to include
+                    };
+                });
+            },
+
+            removeQAItem: (id: string) => set(state => ({
+                pendingQAItems: state.pendingQAItems.filter(item => item.id !== id),
+                selectedQAItemIds: state.selectedQAItemIds.filter(itemId => itemId !== id)
+            })),
+
+            toggleQAItemSelection: (id: string) => set(state => ({
+                selectedQAItemIds: state.selectedQAItemIds.includes(id)
+                    ? state.selectedQAItemIds.filter(itemId => itemId !== id)
+                    : [...state.selectedQAItemIds, id]
+            })),
+
+            selectAllQAItems: () => set(state => ({
+                selectedQAItemIds: state.pendingQAItems.map(item => item.id)
+            })),
+
+            deselectAllQAItems: () => set({ selectedQAItemIds: [] }),
+
+            clearQAItems: () => set({ pendingQAItems: [], selectedQAItemIds: [] }),
+
+            getSelectedQAItems: () => {
+                const state = get();
+                return state.pendingQAItems.filter(item =>
+                    state.selectedQAItemIds.includes(item.id)
+                );
+            },
+
             generateDraft: async (params) => {
                 set({ isGenerating: true, error: null, hasGenerated: false });
 
@@ -101,36 +173,35 @@ export const useMailStore = create<MailState>()(
                     let finalBody = '';
                     
                     if (Array.isArray(data) && data.length > 0 && data[0].text) {
-                        // Extract JSON from the text field (remove ```json wrapper if present)
-                        let jsonString = data[0].text;
-                        
-                        console.log('Raw text from webhook:', jsonString);
-                        
-                        // Remove all variations of json wrapper
-                        jsonString = jsonString
-                            .replace(/^```json\s*\n?/, '')  // Remove starting ```json
-                            .replace(/```\s*$/, '')          // Remove ending ```
-                            .trim();                        // Remove whitespace
-                        
-                        console.log('Cleaned JSON string:', jsonString);
-                        
-                        // Check if it looks like JSON (starts with { and ends with })
-                        if (jsonString.startsWith('{') && jsonString.endsWith('}')) {
+                        // Extract JSON from the text field
+                        let rawText = data[0].text;
+
+                        // Try to find JSON object in the response (handles ```json wrapper and other formats)
+                        const jsonMatch = rawText.match(/\{[\s\S]*"subject"[\s\S]*"body"[\s\S]*\}/);
+
+                        if (jsonMatch) {
                             try {
-                                const parsedJson = JSON.parse(jsonString);
+                                const parsedJson = JSON.parse(jsonMatch[0]);
                                 finalSubject = parsedJson.subject || '';
                                 finalBody = parsedJson.body || '';
-                                console.log('Successfully parsed - Subject:', finalSubject);
-                                console.log('Successfully parsed - Body length:', finalBody.length);
                             } catch (parseError) {
-                                console.warn('JSON parse failed, using raw text:', parseError);
-                                finalSubject = 'Draft Generated';
-                                finalBody = data[0].text;
+                                console.warn('JSON parse failed:', parseError);
+                                // Try to extract subject and body manually with regex
+                                const subjectMatch = rawText.match(/"subject"\s*:\s*"([^"]+)"/);
+                                const bodyMatch = rawText.match(/"body"\s*:\s*"([\s\S]*?)"\s*\}/);
+
+                                if (subjectMatch && bodyMatch) {
+                                    finalSubject = subjectMatch[1];
+                                    // Unescape the body string
+                                    finalBody = bodyMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                                } else {
+                                    finalSubject = 'Draft Generated';
+                                    finalBody = rawText;
+                                }
                             }
                         } else {
-                            console.warn('Text does not look like JSON, using raw text');
                             finalSubject = 'Draft Generated';
-                            finalBody = data[0].text;
+                            finalBody = rawText;
                         }
                     } else {
                         // Fallback for other response formats
@@ -165,7 +236,9 @@ export const useMailStore = create<MailState>()(
             partialize: (state) => ({
                 subject: state.subject,
                 body: state.body,
-                hasGenerated: state.hasGenerated
+                hasGenerated: state.hasGenerated,
+                pendingQAItems: state.pendingQAItems,
+                selectedQAItemIds: state.selectedQAItemIds
             })
         }
     ),

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMailStore } from '../../stores/useMailStore';
+import { useQAStore } from '../../stores/useQAStore';
 import './MailDashboard.css';
 
 interface Issue {
@@ -11,6 +12,29 @@ interface Issue {
     section?: string;
 }
 
+// Icons for Q&A section
+const QAIcons = {
+    Checkbox: ({ checked }: { checked: boolean }) => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill={checked ? 'var(--color-cyan)' : 'none'} stroke={checked ? 'var(--color-cyan)' : 'var(--text-tertiary)'} strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            {checked && <polyline points="9 11 12 14 20 6" stroke="white" strokeWidth="2.5" />}
+        </svg>
+    ),
+    Remove: () => (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+    ),
+    QA: () => (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+    )
+};
+
 export const MailDashboard = () => {
     // Global State from Store
     const {
@@ -19,12 +43,23 @@ export const MailDashboard = () => {
         isGenerating, hasGenerated,
         error,
         setHasGenerated,
-        generateDraft
+        generateDraft,
+        // Q&A Items
+        pendingQAItems,
+        selectedQAItemIds,
+        toggleQAItemSelection,
+        removeQAItem,
+        selectAllQAItems,
+        deselectAllQAItems,
+        addQAItem
     } = useMailStore();
 
+    // Get approved questions from Q&A store
+    const { questions: qaQuestions, loadQuestions: loadQAQuestions } = useQAStore();
+
     // Local UI State
-    const [viewMode, setViewMode] = useState<'markdown' | 'preview'>('preview');
     const [fontSize, setFontSize] = useState(16);
+    const [isEditing, setIsEditing] = useState(false);
 
     // Metadata State (Context/Provider/Tone) selection remains local as it drives the generation
     const [selectedContext, setSelectedContext] = useState('Hydrogen Production Plant – La Zaida, Spain');
@@ -34,8 +69,41 @@ export const MailDashboard = () => {
     // Issues selection state (even though UI is hidden, logic remains)
     const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
 
+    // Load Q&A questions on mount (needed if user goes directly to Mail without visiting Q&A first)
+    useEffect(() => {
+        if (qaQuestions.length === 0 && selectedContext) {
+            loadQAQuestions(selectedContext);
+        }
+    }, [selectedContext]);
+
+    // Sync approved Q&A items to Mail store
+    useEffect(() => {
+        const approvedQuestions = qaQuestions.filter(q =>
+            (q.status === 'Approved' || q.estado === 'Approved')
+        );
+
+        // Add any approved questions that aren't already in pendingQAItems
+        approvedQuestions.forEach(q => {
+            const alreadyExists = pendingQAItems.some(item => item.id === q.id);
+            if (!alreadyExists) {
+                addQAItem(q);
+            }
+        });
+    }, [qaQuestions]); // Only depend on qaQuestions to avoid infinite loops
+
     // Mock Data
     const providers = ['Técnicas Reunidas', 'IDOM', 'SACYR', 'WORLEY', 'SENER', 'TRESCA', 'EA'];
+
+    // Helper function to generate email from provider name
+    const getProviderEmail = (provider: string): string => {
+        if (!provider) return '';
+        const normalized = provider
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '') // Remove accents
+            .replace(/\s+/g, ''); // Remove spaces
+        return `contact@${normalized}.com`;
+    };
 
     const contextIssues: Record<string, Issue[]> = {
         'Técnicas Reunidas': [
@@ -58,7 +126,27 @@ export const MailDashboard = () => {
 
     const currentIssues = selectedProvider ? (contextIssues[selectedProvider] || []) : [];
 
-    // toggleIssue removed as unused
+    // Filter Q&A items for the selected provider
+    const providerKeyMap: Record<string, string> = {
+        'Técnicas Reunidas': 'TECNICASREUNIDAS',
+        'IDOM': 'IDOM',
+        'SACYR': 'SACYR',
+        'WORLEY': 'WORLEY',
+        'Worley': 'WORLEY',
+        'SENER': 'SENER',
+        'TRESCA': 'TRESCA',
+        'EA': 'EA'
+    };
+
+    const filteredQAItems = useMemo(() => {
+        if (!selectedProvider) return [];
+        const providerKey = providerKeyMap[selectedProvider] || selectedProvider.toUpperCase().replace(/\s+/g, '');
+        return pendingQAItems.filter(item => item.provider_name === providerKey);
+    }, [selectedProvider, pendingQAItems]);
+
+    const selectedQAItemsForProvider = useMemo(() => {
+        return filteredQAItems.filter(item => selectedQAItemIds.includes(item.id));
+    }, [filteredQAItems, selectedQAItemIds]);
 
     const handleGenerate = async () => {
         if (!selectedProvider) return;
@@ -84,7 +172,8 @@ export const MailDashboard = () => {
             provider_name: selectedProvider,
             provider_key: providerMap[selectedProvider] || selectedProvider.toUpperCase().replace(/\s+/g, ''),
             tone: tone,
-            issues: issuesPayload
+            issues: issuesPayload,
+            qa_items: selectedQAItemsForProvider
         };
 
         // Call store action
@@ -192,6 +281,76 @@ export const MailDashboard = () => {
                         </div>
                     </div>
 
+                    {/* Q&A Items Section - Compact Cards */}
+                    {selectedProvider && filteredQAItems.length > 0 && (
+                        <div className="qa-section">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <label className="mail-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    Technical Questions
+                                    <span style={{
+                                        padding: '2px 8px',
+                                        background: selectedQAItemsForProvider.length > 0 ? 'var(--color-cyan)' : 'var(--border-color)',
+                                        color: selectedQAItemsForProvider.length > 0 ? 'white' : 'var(--text-tertiary)',
+                                        borderRadius: '10px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 600
+                                    }}>
+                                        {selectedQAItemsForProvider.length}/{filteredQAItems.length}
+                                    </span>
+                                </label>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button onClick={selectAllQAItems} className="btn-mini">All</button>
+                                    <button onClick={deselectAllQAItems} className="btn-mini">None</button>
+                                </div>
+                            </div>
+
+                            <div className="qa-cards-container">
+                                {filteredQAItems.map(item => {
+                                    const isSelected = selectedQAItemIds.includes(item.id);
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`qa-card ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => toggleQAItemSelection(item.id)}
+                                            title={item.question}
+                                        >
+                                            <div className="checkbox">
+                                                {isSelected && (
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <span className="question-text">{item.question}</span>
+                                            <span className="qa-badge discipline">{item.discipline.substring(0, 4)}</span>
+                                            <span className={`qa-badge ${item.importance.toLowerCase()}`}>
+                                                {item.importance.charAt(0)}
+                                            </span>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); removeQAItem(item.id); }}
+                                                className="btn-remove"
+                                                title="Remove"
+                                            >
+                                                <QAIcons.Remove />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Empty state for Q&A */}
+                    {selectedProvider && filteredQAItems.length === 0 && (
+                        <div className="qa-empty-state">
+                            <QAIcons.QA />
+                            <p>No Q&A items for {selectedProvider}</p>
+                            {pendingQAItems.length > 0 && (
+                                <span className="qa-hint">{pendingQAItems.length} items for other providers</span>
+                            )}
+                        </div>
+                    )}
+
                     <button
                         className="btn btnPrimary"
                         disabled={!selectedProvider || isGenerating}
@@ -269,7 +428,7 @@ export const MailDashboard = () => {
                         <div className="email-meta">
                             <div className="meta-row">
                                 <span className="meta-label">To:</span>
-                                <input className="meta-input" value={`${selectedProvider} <contact@${selectedProvider.toLowerCase().replace(/\s/g, '')}.com>`} readOnly />
+                                <input className="meta-input" value={`${selectedProvider} <${getProviderEmail(selectedProvider)}>`} readOnly />
                             </div>
                             <div className="meta-row">
                                 <span className="meta-label">Subject:</span>
@@ -282,12 +441,13 @@ export const MailDashboard = () => {
                         </div>
 
                         <div className="email-body">
-                            {viewMode === 'markdown' ? (
+                            {isEditing ? (
                                 <textarea
                                     className="body-textarea"
                                     value={body}
                                     style={{ fontSize: `${fontSize}px` }}
                                     onChange={(e) => setBody(e.target.value)}
+                                    autoFocus
                                 />
                             ) : (
                                 <div className="markdown-preview" style={{ fontSize: `${fontSize}px` }}>
@@ -298,23 +458,6 @@ export const MailDashboard = () => {
 
                         <div className="editor-footer">
                             <div style={{ marginRight: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <button
-                                    className={`btn ${viewMode === 'markdown' ? 'btnPrimary' : 'btnSecondary'}`}
-                                    onClick={() => setViewMode('markdown')}
-                                    style={{ minWidth: '100px' }}
-                                >
-                                    Markdown
-                                </button>
-                                <button
-                                    className={`btn ${viewMode === 'preview' ? 'btnPrimary' : 'btnSecondary'}`}
-                                    onClick={() => setViewMode('preview')}
-                                    style={{ minWidth: '100px' }}
-                                >
-                                    Texto
-                                </button>
-
-                                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 8px' }}></div>
-
                                 <button
                                     className="btn btnSecondary"
                                     onClick={() => setFontSize(prev => Math.max(12, prev - 1))}
@@ -338,6 +481,26 @@ export const MailDashboard = () => {
                                         <line x1="12" y1="5" x2="12" y2="19"></line>
                                         <line x1="5" y1="12" x2="19" y2="12"></line>
                                     </svg>
+                                </button>
+
+                                <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', margin: '0 8px' }}></div>
+
+                                <button
+                                    className={`btn ${isEditing ? 'btnPrimary' : 'btnSecondary'}`}
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    style={{ padding: '8px 16px' }}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                                        {isEditing ? (
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        ) : (
+                                            <>
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </>
+                                        )}
+                                    </svg>
+                                    {isEditing ? 'Done' : 'Edit'}
                                 </button>
                             </div>
                             <button className="btn btnSecondary" onClick={() => setHasGenerated(false)}>
