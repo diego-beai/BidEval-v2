@@ -6,8 +6,6 @@ import { useActiveSessions } from '../../hooks/useActiveSessions';
 import { useSessionViewStore } from '../../stores/useSessionViewStore';
 import { TourProvider } from '../onboarding/TourProvider';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
-import { OperationsIndicator, OperationBadge } from '../common/OperationsIndicator';
-import { initializeOperationsSubscriptions, cleanupOperationsSubscriptions } from '../../stores/useOperationsStore';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -22,12 +20,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const markAsViewed = useSessionViewStore(state => state.markAsViewed);
     const { resetTour, startTour, hasCompletedTour } = useOnboardingStore();
     const toggleSidebar = () => setIsExpanded(!isExpanded);
-
-    // Inicializar suscripciones de operaciones
-    useEffect(() => {
-        initializeOperationsSubscriptions();
-        return () => cleanupOperationsSubscriptions();
-    }, []);
 
     // Marcar como visto cuando el usuario entra a una sección
     useEffect(() => {
@@ -54,9 +46,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
     const NavItem = ({ view, labelKey, icon }: { view: string, labelKey: string, icon: React.ReactNode }) => {
         const hasSession = hasActiveSession(view);
-        // Módulos que pueden tener operaciones activas
-        const operationModules = ['chat', 'mail', 'upload', 'decision'];
-        const showOperationBadge = operationModules.includes(view);
 
         return (
             <button
@@ -68,7 +57,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                 <div className="nav-icon">{icon}</div>
                 <span className="nav-label">{t(labelKey)}</span>
                 {hasSession && <div className="session-indicator" title="Active session"></div>}
-                {showOperationBadge && <OperationBadge module={view} />}
             </button>
         );
     };
@@ -89,9 +77,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         </svg>
                     </button>
                 </div>
-
-                {/* Indicador de operaciones activas */}
-                <OperationsIndicator isExpanded={isExpanded} onNavigate={onNavigate} />
 
                 <nav className="sidebar-nav">
                     <NavItem

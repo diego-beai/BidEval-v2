@@ -159,19 +159,19 @@ export const ExecutiveView: React.FC = () => {
     const radarData = [
         {
             subject: 'TECHNICAL',
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.technical]))
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.technical ?? 0]))
         },
         {
             subject: 'ECONOMIC',
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.economic]))
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.economic ?? 0]))
         },
         {
             subject: 'EXECUTION',
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.execution]))
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.execution ?? 0]))
         },
         {
             subject: 'HSE/ESG',
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores.hse_esg]))
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.hse_esg ?? 0]))
         }
     ];
 
