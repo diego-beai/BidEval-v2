@@ -130,7 +130,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Analyze & Classify**: For each deficiency, determine its specific engineering field.\n    - If it involves cables, power, or circuits -> **Electrical**\n    - If it involves machinery, pumps, or piping -> **Mechanical**\n    - If it involves structures, foundations, or concrete -> **Civil**\n    - If it involves workflows, chemical stages, or P&IDs -> **Process**\n    - Only if it is administrative or multi-disciplinary -> **General**\n2.  **Language**: All questions and text MUST be in English.\n3.  **Strictness**: Do not label everything as \"General\". Be as specific as possible.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"questions\": [\n    {\n      \"discipline\": \"Electrical\" | \"Mechanical\" | \"Civil\" | \"Process\" | \"General\",\n      \"question\": \"The specific question in English\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
+        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Analyze & Classify**: For each deficiency, you MUST use EXACTLY one of these 6 disciplines (no variations allowed):\n    - **Electrical**: cables, power, circuits, transformers, switchgear, UPS, DC systems, grounding, instrumentation\n    - **Mechanical**: machinery, pumps, piping, compressors, heat exchangers, valves, cooling systems, electrolyzers\n    - **Civil**: structures, foundations, concrete, buildings, plot layout, land use, construction\n    - **Process**: chemical processes, P&IDs, flow diagrams, production capacity, purity, pressures, temperatures, storage\n    - **General**: administrative, contracts, project management, schedules, documentation, compliance, HSE, safety, quality assurance\n    - **Cost**: pricing, budgets, CAPEX, OPEX, economic evaluations\n2.  **CRITICAL**: You can ONLY use these exact discipline names: Electrical, Mechanical, Civil, Process, General, Cost. NO other names are allowed (not 'Process Engineering', not 'HSE / Safety', etc.).\n3.  **Language**: All questions and text MUST be in English.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\", \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\", \"Cost\"] },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\", \"enum\": [\"High\", \"Medium\", \"Low\"] }\n        }\n      }\n    }\n  }\n}",
         "hasOutputParser": true,
         "batching": {}
       },
@@ -168,7 +168,7 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\" },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\", \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\", \"Cost\"] },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\", \"enum\": [\"High\", \"Medium\", \"Low\"] }\n        }\n      }\n    }\n  }\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
@@ -218,6 +218,10 @@
             {
               "fieldId": "project_name",
               "fieldValue": "={{ $(\"Set Input Params\").first().json.project_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Pending"
             }
           ]
         }

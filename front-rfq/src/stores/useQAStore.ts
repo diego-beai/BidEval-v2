@@ -131,6 +131,13 @@ export const useQAStore = create<QAState>((set, get) => ({
         .eq('project_name', encodedProjectId)
         .order('created_at', { ascending: false });
 
+      console.log('📋 Q&A query result:', {
+        projectId: encodedProjectId,
+        dataCount: data?.length || 0,
+        data: data,
+        error: error
+      });
+
       if (error) {
         console.error('Supabase error details:', {
           message: error.message,
