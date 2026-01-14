@@ -16,6 +16,7 @@ import { useLanguageStore } from './stores/useLanguageStore';
 import { ProgressRing } from './components/charts/ProgressRing';
 import { ProviderProgressGrid, ProviderEvaluationData } from './components/charts/ProviderProgressGrid';
 import { Provider } from './types/provider.types';
+import { ProcessingStage } from './types/rfq.types';
 import { QAModule } from './components/dashboard/tabs/QAModule';
 import { useDashboardStore } from './stores/useDashboardStore';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -429,26 +430,38 @@ export default function App() {
             </div>
 
             {/* Processing Status - Overlay */}
-            {(isProcessing || status.stage === 'completed') && (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'rgba(0, 0, 0, 0.5)',
-                backdropFilter: 'blur(4px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-                animation: 'fadeIn 0.3s ease-out'
-              }}>
-                <div style={{ maxWidth: '600px', width: '90%' }}>
+            {(isProcessing || status.stage === ProcessingStage.COMPLETED) && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 1000,
+                  animation: 'fadeIn 0.3s ease-out'
+                }}
+                onClick={(e) => {
+                  // Close when clicking on backdrop (not on the modal content)
+                  if (e.target === e.currentTarget && status.stage === ProcessingStage.COMPLETED) {
+                    useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
+                  }
+                }}
+              >
+                <div style={{ maxWidth: '600px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
                   <ProcessingStatus
                     onViewResults={() => {
+                      useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
                       setActiveView('table');
                       setApplyTableFilters(true);
+                    }}
+                    onClose={() => {
+                      useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
                     }}
                   />
                 </div>

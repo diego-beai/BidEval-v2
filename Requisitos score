@@ -1,13 +1,36 @@
-Categoría,Criterio Detallado,Peso,¿Qué evaluar exactamente?
-TÉCNICA (40%),Eficiencia del Sistema (BOP),15%,Consumo total de energía (kWh/kg H2​) incluyendo auxiliares.
-,Degradación y Vida Útil,10%,Horas garantizadas antes del reemplazo del stack y % de pérdida anual.
-,Flexibilidad Operativa,10%,Carga mínima (Turndown) y velocidad de respuesta a cambios (rampa).
-,Pureza y Presión,5%,Calidad del gas de salida y presión directa sin necesidad de compresor extra.
-ECONÓMICA (30%),CAPEX Total,15%,"Precio de compra, transporte, seguros y puesta en marcha."
-,OPEX Garantizado,10%,"Coste de mantenimiento, consumibles y repuestos por contrato."
-,Garantías y Penalizaciones,5%,Cobertura en caso de fallo y penalizaciones por falta de disponibilidad.
-EJECUCIÓN (20%),Plazo de Entrega,10%,Semanas desde la firma hasta la entrega en sitio (Lead Time).
-,Experiencia (Track Record),5%,Número de plantas similares instaladas y operando actualmente.
-,Solidez del Proveedor,5%,Capacidad financiera y red de servicio técnico local/regional.
-HSE/ESG (10%),Seguridad y ATEX,5%,Certificaciones de seguridad y cumplimiento de normativa de explosivos.
-,Sostenibilidad,5%,Huella de carbono de la fabricación y reciclabilidad de materiales.
+  Nuevos Pesos Aplicados
+  ┌────────────────────────┬───────┬───────┐
+  │       Categoría        │ Antes │ Ahora │
+  ├────────────────────────┼───────┼───────┤
+  │ TECHNICAL              │ 40%   │ 35%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - efficiency_bop       │ 15%   │ 12%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - degradation_lifetime │ 10%   │ 8%    │
+  ├────────────────────────┼───────┼───────┤
+  │ - flexibility          │ 10%   │ 8%    │
+  ├────────────────────────┼───────┼───────┤
+  │ - purity_pressure      │ 5%    │ 7%    │
+  ├────────────────────────┼───────┼───────┤
+  │ ECONOMIC               │ 30%   │ 35%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - capex                │ 15%   │ 18%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - opex                 │ 10%   │ 12%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - warranties           │ 5%    │ 5%    │
+  ├────────────────────────┼───────┼───────┤
+  │ EXECUTION              │ 20%   │ 12%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - delivery_time        │ 10%   │ 6%    │
+  ├────────────────────────┼───────┼───────┤
+  │ - track_record         │ 5%    │ 3%    │
+  ├────────────────────────┼───────┼───────┤
+  │ - provider_strength    │ 5%    │ 3%    │
+  ├────────────────────────┼───────┼───────┤
+  │ HSE/ESG                │ 10%   │ 18%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - safety_atex          │ 5%    │ 12%   │
+  ├────────────────────────┼───────┼───────┤
+  │ - sustainability       │ 5%    │ 6%    │
+  └────────────────────────┴───────┴───────┘

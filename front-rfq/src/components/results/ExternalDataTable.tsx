@@ -189,9 +189,14 @@ export const ExternalDataTable: React.FC = () => {
     const baseColumns = ['project_name', 'evaluation_type', 'phase', 'requirement_text'];
 
     // Get all provider columns (any column that is not a base column)
-    const providerColumns = data.length > 0
+    const allProviderColumns = data.length > 0
         ? Object.keys(data[0]).filter(col => !baseColumns.includes(col) && col !== 'id' && col !== 'project_id' && col !== 'created_at')
         : [];
+
+    // Filter provider columns based on selection (if providers are selected, show only those columns)
+    const providerColumns = tableFilters.provider.length > 0
+        ? allProviderColumns.filter(col => tableFilters.provider.includes(col))
+        : allProviderColumns;
 
     // Combine base columns with provider columns
     const columns = [...baseColumns, ...providerColumns];
@@ -205,11 +210,11 @@ export const ExternalDataTable: React.FC = () => {
         return '160px';
     };
 
-    // Filter Options
+    // Filter Options (use allProviderColumns so all providers are always shown in the filter dropdown)
     const filterOptions = {
         evaluations: [...new Set(data.map(d => d.evaluation_type))].filter(Boolean) as string[],
         rfqRequirements: [...new Set(data.map(d => d.phase))].filter(Boolean) as string[],
-        providers: providerColumns // Now we have provider columns to filter
+        providers: allProviderColumns // Always show all available providers in the filter
     };
 
     const filteredData = data.filter(row => {

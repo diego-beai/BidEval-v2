@@ -2,7 +2,12 @@ import { memo } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { ProcessingStage } from '../../types/rfq.types';
 
-export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }: { onViewResults?: () => void }) {
+interface ProcessingStatusProps {
+  onViewResults?: () => void;
+  onClose?: () => void;
+}
+
+export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose }: ProcessingStatusProps) {
   const { status, isProcessing, results, rfqMetadata } = useRfqStore();
 
   if (!isProcessing && status.stage === ProcessingStage.IDLE) {
@@ -25,8 +30,44 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
       border: '1px solid var(--border-color)',
       borderRadius: 'var(--radius-lg)',
       boxShadow: 'var(--shadow-md)',
-      animation: 'fadeInUp 0.4s ease-out'
+      animation: 'fadeInUp 0.4s ease-out',
+      position: 'relative'
     }}>
+      {/* Close button - only show when completed */}
+      {isComplete && onClose && (
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-tertiary)',
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--bg-hover)';
+            e.currentTarget.style.color = 'var(--text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--text-tertiary)';
+          }}
+          aria-label="Close"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      )}
       <div style={{
         display: 'flex',
         flexDirection: 'column',
