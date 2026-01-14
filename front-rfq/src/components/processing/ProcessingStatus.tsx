@@ -113,8 +113,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
                 📋 Processing Summary
               </div>
               <div style={{ lineHeight: '1.4' }}>
-                • {results.length} evaluation{results.length !== 1 ? 's' : ''} processed<br/>
-                • {Object.keys(results[0]?.evaluations || {}).length} provider{Object.keys(results[0]?.evaluations || {}).length !== 1 ? 's' : ''} evaluated<br/>
+                • {results.length} requirement{results.length !== 1 ? 's' : ''} evaluated<br/>
                 • Ready for analysis in Results table
               </div>
             </div>
@@ -126,7 +125,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
               onClick={onViewResults}
               style={{ marginTop: '16px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
             >
-              Ver cambios
+              View Results
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>

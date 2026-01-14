@@ -14,9 +14,9 @@ interface RfqMetadataFormProps {
   disabled?: boolean;
 }
 
-// Proyectos disponibles
+// Available projects
 const AVAILABLE_PROJECTS = [
-  'Hydrogen Production Plant – La Zaida, Spain'
+  'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)'
 ];
 
 // Tipos de evaluación disponibles
@@ -87,15 +87,44 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
             Project <span className="required">*</span>
           </label>
           {isCustomProject ? (
-            <input
-              type="text"
-              className="metadata-input"
-              placeholder="Enter project name..."
-              value={metadata.proyecto}
-              onChange={(e) => handleCustomProjectChange(e.target.value)}
-              disabled={disabled}
-              autoFocus
-            />
+            <div className="metadata-dropdown-container" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="text"
+                className="metadata-input"
+                placeholder="Enter project name..."
+                value={metadata.proyecto}
+                onChange={(e) => handleCustomProjectChange(e.target.value)}
+                disabled={disabled}
+                autoFocus
+                style={{ flex: 1, width: 'auto', pointerEvents: 'auto' }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomProject(false);
+                  onChange({ ...metadata, proyecto: '' });
+                }}
+                disabled={disabled}
+                style={{
+                  padding: '10px 14px',
+                  minWidth: 'auto',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(232, 238, 245, 0.16)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text)',
+                  transition: 'border-color 0.2s ease, background 0.2s ease'
+                }}
+                title="Back to list"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+            </div>
           ) : (
             <div className="metadata-dropdown-container">
               <button

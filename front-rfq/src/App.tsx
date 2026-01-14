@@ -237,7 +237,7 @@ export default function App() {
                     {error
                       ? t('common.error')
                       : isProcessing
-                        ? `${t('upload.status.processing')} ${processingFileCount} ${t('upload.file')}${processingFileCount > 1 ? 's' : ''}...`
+                        ? `Processing ${processingFileCount} Proposal${processingFileCount > 1 ? 's' : ''}...`
                         : `${t('upload.btn.process')} ${selectedFiles.length || ''} ${t('upload.proposals')}`
                     }
                   </button>

@@ -203,17 +203,24 @@
 
 /* Sidebar Footer */
 .sidebar-footer {
-    padding: 16px;
-    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     display: flex;
-    justify-content: center;
-    height: 60px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-height: 70px;
 }
 
 .sidebar.expanded .sidebar-footer {
-    justify-content: flex-start;
+    align-items: flex-start;
     padding-left: 20px;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
 }
 
 .version-badges {
@@ -222,6 +229,28 @@
     background: var(--bg-hover);
     padding: 2px 6px;
     border-radius: 4px;
+}
+
+/* Tour Help Button in Footer */
+.tour-help-btn-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.tour-help-btn-footer:hover {
+    background: var(--bg-hover);
+    color: #12b5b0;
+    border-color: #12b5b0;
 }
 
 

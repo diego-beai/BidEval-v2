@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1056,
-        -160
+        -944,
+        -96
       ],
-      "id": "ae2a0658-cecf-4d9c-a59c-db1b80e610cf",
+      "id": "33ac86e5-7757-430c-ac6b-369d62d2b04f",
       "name": "Sticky Note"
     },
     {
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -944,
-        48
+        -832,
+        112
       ],
-      "id": "ad54479d-3954-4166-bf40-519e7ddedc24",
+      "id": "25ccf092-f3b9-4c62-8aed-a8720363de1c",
       "name": "Webhook RFQ",
       "webhookId": "ce591645-290f-46ab-a153-0dca369b1ebd"
     },
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        176,
-        48
+        288,
+        112
       ],
-      "id": "3bddadf5-9d88-4420-ab54-daffc797f3fd",
+      "id": "726ca271-a0e5-4ab9-8ef4-ce39d03869ce",
       "name": "Preparar Texto1"
     },
     {
@@ -63,10 +63,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -128,
-        272
+        -16,
+        336
       ],
-      "id": "760a9a23-c1d9-456e-80e2-3bcca9d96164",
+      "id": "54dcda26-569b-4978-9e4d-31ca527301f8",
       "name": "Clasificador de Tipos1"
     },
     {
@@ -79,10 +79,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -176,
-        496
+        -64,
+        560
       ],
-      "id": "a0fbf8f9-8a48-4565-8bc4-b1e9ca7a3e37",
+      "id": "44e8a88e-58e3-47fa-b36c-25a538c0d31a",
       "name": "Ollama Clasificador1",
       "credentials": {
         "ollamaApi": {
@@ -99,23 +99,23 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        64,
-        496
+        176,
+        560
       ],
-      "id": "d15e8caa-c2d8-48f5-92fd-5b03576a20ab",
+      "id": "f5dac8a0-fb5a-4491-a7d4-ce297463fdd4",
       "name": "Output Parser1"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO)\n// =============================================\n\nconst inputItem = $input.first();\nconst inputData = inputItem.json;\n\n// 1. Recuperar metadatos de nodos anteriores (Prioridad)\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    // Intentamos recuperar del nodo de preparación de texto\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. Procesar la entrada del Output Parser (IA)\nlet output = {\n    tipos_detectados: [],\n    nombre_proyecto: \"\"\n};\n\n// LÓGICA DE DETECCIÓN:\n// A veces el Parser devuelve un objeto directo, a veces una cadena JSON.\nif (inputData && Array.isArray(inputData.tipos_detectados)) {\n    // CASO A: Ya es un objeto válido (el Output Parser funcionó bien)\n    output = inputData;\n} else {\n    // CASO B: Es un string o un objeto malformado, intentamos parsear manualmente\n    let rawText = \"\";\n    \n    if (typeof inputData === 'string') rawText = inputData;\n    else if (inputData.output) rawText = typeof inputData.output === 'string' ? inputData.output : JSON.stringify(inputData.output);\n    else if (inputData.text) rawText = inputData.text;\n    else rawText = JSON.stringify(inputData);\n\n    try {\n        // Limpiar bloques de código Markdown ```json ... ```\n        const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();\n        \n        // Intentar encontrar el JSON entre llaves { }\n        const start = clean.indexOf('{');\n        const end = clean.lastIndexOf('}');\n        \n        if (start !== -1 && end !== -1) {\n            output = JSON.parse(clean.substring(start, end + 1));\n        } else {\n            // Intento final parseo directo\n            output = JSON.parse(clean);\n        }\n    } catch (e) {\n        console.log(\"⚠️ Error parseando JSON de la IA. Usando Fallback.\");\n        // No sobreescribimos output con datos falsos, mantenemos estructura vacía\n        output.tipos_detectados = [];\n    }\n}\n\n// 3. Normalización de Datos (Reglas de Negocio)\n\n// Nombre del Proyecto: Prioridad IA > Prioridad Metadata > Fallback Genérico\nlet finalProjectName = output.nombre_proyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\" || finalProjectName.includes(\"La Zaida\")) {\n    // Fallback inteligente basado en el nombre del archivo\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\n// Lista de Tipos\nlet tipos = output.tipos_detectados || [];\nif (!Array.isArray(tipos)) tipos = [];\n\n// REGLA CRÍTICA DE RFQ:\n// Si la lista está vacía O si el título dice RFQ, aseguramos los básicos.\nconst titleLower = (fileTitle || \"\").toLowerCase();\nconst isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n\nif (tipos.length === 0) {\n    if (isRFQ) {\n        tipos.push(\"Technical Evaluation\", \"Economical Evaluation\");\n        console.log(\"ℹ️ Inferencia: Archivo RFQ detectado, añadiendo tipos Technical y Economical.\");\n    } else {\n        // Si no es RFQ explícito y no detectó nada, por defecto Technical\n        tipos.push(\"Technical Evaluation\");\n    }\n} else if (isRFQ) {\n    // Si detectó cosas pero es un RFQ, nos aseguramos que no falten los principales\n    if (!tipos.includes(\"Technical Evaluation\")) tipos.push(\"Technical Evaluation\");\n    if (!tipos.includes(\"Economical Evaluation\")) tipos.push(\"Economical Evaluation\");\n}\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\n// 4. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText, // Pasamos el texto completo para el siguiente paso\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
+        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO v3)\n// =============================================\n\n// 1. Recuperar metadatos de nodos anteriores\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. OBTENER DATOS DEL CLASIFICADOR DIRECTAMENTE\nlet output = {\n    tipos_detectados: [],\n    nombre_proyecto: \"\"\n};\n\ntry {\n    const clasificadorData = $('Clasificador de Tipos1').first().json;\n    console.log(\"📊 Datos del clasificador:\", JSON.stringify(clasificadorData));\n    \n    // El Output Parser devuelve los datos en .output\n    if (clasificadorData.output && Array.isArray(clasificadorData.output.tipos_detectados)) {\n        output = clasificadorData.output;\n        console.log(\"✅ CASO A: Datos en .output\");\n    } else if (Array.isArray(clasificadorData.tipos_detectados)) {\n        output = clasificadorData;\n        console.log(\"✅ CASO B: Datos directos\");\n    } else {\n        let rawText = clasificadorData.output || clasificadorData.text || JSON.stringify(clasificadorData);\n        if (typeof rawText !== 'string') rawText = JSON.stringify(rawText);\n        \n        const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();\n        const start = clean.indexOf('{');\n        const end = clean.lastIndexOf('}');\n        \n        if (start !== -1 && end !== -1) {\n            output = JSON.parse(clean.substring(start, end + 1));\n            console.log(\"✅ CASO C: Parseado manual\");\n        }\n    }\n} catch (e) {\n    console.log(\"⚠️ Error accediendo al Clasificador:\", e.message);\n}\n\n// 3. Normalización de Datos\nlet finalProjectName = output.nombre_proyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\") {\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\n// Lista de Tipos - RESPETAR LO QUE DETECTÓ EL CLASIFICADOR\nlet tipos = output.tipos_detectados || [];\nif (!Array.isArray(tipos)) tipos = [];\n\nconsole.log(\"📋 Tipos detectados por IA:\", JSON.stringify(tipos));\n\n// REGLA DE FALLBACK (solo si el clasificador NO detectó nada)\nif (tipos.length === 0) {\n    const titleLower = (fileTitle || \"\").toLowerCase();\n    const isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n    \n    if (isRFQ) {\n        tipos.push(\"Technical Evaluation\", \"Economical Evaluation\");\n        console.log(\"ℹ️ Fallback: Archivo RFQ sin tipos detectados, añadiendo Technical y Economical.\");\n    } else {\n        tipos.push(\"Technical Evaluation\");\n        console.log(\"ℹ️ Fallback: Sin tipos detectados, añadiendo Technical por defecto.\");\n    }\n}\n// Si el clasificador SÍ detectó tipos, los respetamos tal cual\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\nconsole.log(\"📋 Tipos finales a procesar:\", JSON.stringify(tipos));\n\n// 4. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText,\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
-        272
+        944,
+        336
       ],
-      "id": "cc1f063e-ee05-4999-964b-0d0b0fb88e0f",
+      "id": "9ed69fba-e8c2-421d-81df-a272c966529a",
       "name": "Expandir por Tipo1"
     },
     {
@@ -125,10 +125,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1040,
-        272
+        1152,
+        336
       ],
-      "id": "6da04298-222d-4b90-a295-ed4a28ba6abf",
+      "id": "d1797574-16ef-456b-b9db-a0ca560766e3",
       "name": "Loop por Tipo1"
     },
     {
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2608,
-        208
+        2720,
+        256
       ],
-      "id": "8616972b-ff3d-44ba-a940-f159c56e5a84",
+      "id": "8e71a233-5d8f-4ace-b0d5-629766001ab9",
       "name": "Parsear Items1"
     },
     {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3136,
-        400
+        3248,
+        464
       ],
-      "id": "a76fcaaa-b1cf-4091-9eb7-cd3b51149699",
+      "id": "222fa567-8d5b-41b2-9dd4-dced4e05e8b7",
       "name": "Agregar Resultados1"
     },
     {
@@ -164,10 +164,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2336,
-        -96
+        2448,
+        -32
       ],
-      "id": "675aff1e-623c-4da2-88f6-da3a833a9700",
+      "id": "1697282a-5c4a-4e39-b29f-ebe9c7a4bd90",
       "name": "Resumen Final1"
     },
     {
@@ -179,10 +179,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2624,
-        -96
+        2736,
+        -32
       ],
-      "id": "ed20df6a-0ec8-42c8-877c-f07dc549b9af",
+      "id": "14e12fba-929a-407a-a9de-3347a8063565",
       "name": "Respond Success1"
     },
     {
@@ -192,10 +192,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
-        48
+        -160,
+        112
       ],
-      "id": "5fdfdcc4-2a71-4c7c-86ab-6627168d1904",
+      "id": "cc19a068-1d24-45e9-b5be-0a7521b3e5e6",
       "name": "Base64 a Binary3"
     },
     {
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -48,
-        48
+        64,
+        112
       ],
-      "id": "1b00f515-d593-4dd9-8326-edd882aa8b9d",
+      "id": "e9f0a463-0962-487a-a87e-aac88ba2e0c5",
       "name": "Extract from File3"
     },
     {
@@ -219,10 +219,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -720,
-        48
+        -608,
+        112
       ],
-      "id": "76dd45c9-2acc-4128-9f2c-c80e09f2a9a0",
+      "id": "9f8df502-a9c9-477c-87cb-ebfa9bf9c38d",
       "name": "Generate IDs1"
     },
     {
@@ -280,10 +280,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1936,
-        400
+        2048,
+        464
       ],
-      "id": "52d62168-037e-4a42-9126-55e5fa6d1094",
+      "id": "24d53591-40cd-4e54-a0ba-b09f8dbb1022",
       "name": "Switch1"
     },
     {
@@ -297,10 +297,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2192,
-        848
+        2304,
+        912
       ],
-      "id": "f49d03c5-dac3-4bd2-b525-ea0965da4c44",
+      "id": "86d08ba6-4cec-49d1-8c92-0d835c6c9c0c",
       "name": "Ollama Extractor2",
       "credentials": {
         "ollamaApi": {
@@ -325,10 +325,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2256,
-        624
+        2368,
+        688
       ],
-      "id": "20b007e9-6a59-49d9-8f76-ae50f52282d8",
+      "id": "7ffdb680-2de1-4697-95c0-c34b75202800",
       "name": "LLM Extractor - Deliverables"
     },
     {
@@ -338,10 +338,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2608,
-        624
+        2720,
+        688
       ],
-      "id": "a9824468-d136-471c-9493-fd59c11f26a4",
+      "id": "6062a706-3d2c-42f2-af26-efa2208d414f",
       "name": "Parsear deliverables"
     },
     {
@@ -354,10 +354,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2192,
-        400
+        2304,
+        464
       ],
-      "id": "fb26efb0-c6d8-4d8a-9334-b7339ad5a724",
+      "id": "71a56d5a-5407-40e1-aa7b-019995cf2e79",
       "name": "Ollama Extractor1",
       "credentials": {
         "ollamaApi": {
@@ -374,10 +374,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2496,
-        832
+        2608,
+        896
       ],
-      "id": "82731ab2-f52c-4773-8aa5-123001ce4773",
+      "id": "01c23aa6-216c-4305-ae73-76b9089ef07e",
       "name": "Structured Output Parser1"
     },
     {
@@ -388,10 +388,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2432,
-        400
+        2544,
+        464
       ],
-      "id": "b2589318-68e8-48d5-bff2-fe86b029cc6a",
+      "id": "c97006f9-f2df-4637-95bb-ea29b8c44f52",
       "name": "Structured Output Parser2"
     },
     {
@@ -401,11 +401,12 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1328,
-        384
+        1440,
+        448
       ],
-      "id": "c568080f-7e32-4ed1-9a9b-7cc660320cac",
-      "name": "Dividir en Trozos1"
+      "id": "abd68381-e264-48ef-93d7-0f4b340568a3",
+      "name": "Dividir en Trozos1",
+      "disabled": true
     },
     {
       "parameters": {
@@ -416,10 +417,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1680,
-        384
+        1792,
+        448
       ],
-      "id": "19fba962-74e2-4b2b-80b7-2ee7d149b797",
+      "id": "9a877197-f03c-46b3-a0de-fd069cd456f8",
       "name": "Loop por Trozo1"
     },
     {
@@ -429,10 +430,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1504,
-        384
+        1616,
+        448
       ],
-      "id": "c47bcf3c-e1e4-4c7e-907b-2a35e0d559ba",
+      "id": "844aa1e1-4ea9-46ae-90c2-81f41ce03547",
       "name": "Reset Items1"
     },
     {
@@ -442,10 +443,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        400,
-        496
+        512,
+        560
       ],
-      "id": "44d4d730-5d1d-4f10-a4b5-7f9c38f9b2bd",
+      "id": "efdcce2c-2eae-4053-b211-64c7b5038153",
       "name": "Embeddings Ollama1",
       "credentials": {
         "ollamaApi": {
@@ -467,13 +468,13 @@
           "queryName": "match_rfq"
         }
       },
-      "id": "d428d6aa-5377-4ad4-be37-13d095c3d252",
+      "id": "dc6f47ec-b26b-4491-a15e-eeef9d0aff34",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        480,
-        272
+        592,
+        336
       ],
       "credentials": {
         "supabaseApi": {
@@ -491,10 +492,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        656,
-        704
+        768,
+        768
       ],
-      "id": "a5c5e243-35f0-44bb-b2b8-55f9861e0ed3",
+      "id": "940045c4-abce-447a-b539-4151af7e3920",
       "name": "Recursive Character Text Splitter1"
     },
     {
@@ -506,7 +507,7 @@
             "metadataValues": [
               {
                 "name": "file_id",
-                "value": "={{ $('Generate IDs1').first().json.rfq_document_id }}"
+                "value": "={{ $json.id }}"
               },
               {
                 "name": "file_title",
@@ -524,13 +525,13 @@
           }
         }
       },
-      "id": "fa6c4a4f-0326-4478-9830-3b288e176d27",
+      "id": "9397e861-e986-4430-bc6a-5f12fdf5fc24",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        576,
-        496
+        688,
+        560
       ]
     },
     {
@@ -540,7 +541,7 @@
           "fieldValues": [
             {
               "fieldId": "project_name",
-              "fieldValue": "={{ $json.project_name }}"
+              "fieldValue": "=PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)"
             },
             {
               "fieldId": "evaluation_type",
@@ -560,10 +561,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        2928,
-        400
+        3040,
+        464
       ],
-      "id": "b82de4f9-163c-42ad-b804-62e319e7971a",
+      "id": "29dd3eaf-f42c-49b1-841b-13b87808bc22",
       "name": "Create a row",
       "credentials": {
         "supabaseApi": {
@@ -579,13 +580,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "02851bc7-6359-4d65-aa94-75c74951f3aa",
+      "id": "aceb96cf-bd88-4f4e-9abf-f27d26e4f4c4",
       "name": "Delete Old Doc Rows1",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -496,
-        48
+        -384,
+        112
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -612,9 +613,9 @@
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "id": "={{ $('Generate IDs1').first().json.rfq_project_id }}",
+            "id": "={{ $('Generate IDs1').first().json.file_id }}",
             "title": "={{ $('Generate IDs1').first().json.file_title }}",
-            "project_name": "={{ $json.output.nombre_proyecto }}",
+            "project_name": "=PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)",
             "document_type": "=RFQ",
             "evaluation_types": "={{ $json.output.tipos_detectados }}",
             "provider": "IGNIS"
@@ -700,10 +701,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        256,
-        272
+        368,
+        336
       ],
-      "id": "fefb8280-6661-4267-80bb-2bedd23ac320",
+      "id": "5e319136-f822-4d56-96e2-6a3b298df564",
       "name": "Insert Document Metadata2",
       "executeOnce": true,
       "credentials": {
@@ -715,38 +716,16 @@
     },
     {
       "parameters": {
-        "promptType": "define",
-        "text": "=### EXTRACCIÓN DE REQUISITOS RFQ - SOLO ÍTEMS EXPLÍCITOS\n\nProyecto: {{ $json.nombre_proyecto }}\nTipo: {{ $json.tipo_evaluacion }}\nArchivo: {{ $json.file_title }}\n\n### TEXTO:\n{{ $json.texto_chunk }}\n\n---\n### INSTRUCCIONES:\n\n**SOLO EXTRAER ÍTEMS QUE APARECEN CLARAMENTE EN LISTAS, TABLAS O COMO REQUISITOS EXPLÍCITOS**\n\n#### Para Technical Evaluation:\n- Buscar: \"The vendor shall provide/submit/deliver...\"\n- Buscar: Listas de documentos, entregables o planos\n- NO extraer: Descripciones generales, introducciones, alcance\n\n#### Para Economical Evaluation:  \n- Buscar: \"Item\", \"Line item\", tablas de precios, BOQ\n- Buscar: Partidas específicas a cotizar\n- NO extraer: Textos descriptivos sin ítems concretos\n\n### REGLAS ESTRICTAS:\n1. **MÍNIMO**: Extraer solo lo que es claramente un requisito/lista\n2. **CONCRETO**: Un ítem por cada línea de lista/tabla\n3. **ESPECÍFICO**: Si hay duda, NO extraer\n\n### FORMATO:\n```json\n[\n  { \"fase\": \"Disciplina\", \"requisito_rfq\": \"Ítem exacto del texto\" }\n]\n```\n\n**RESPUESTA:**",
-        "messages": {
-          "messageValues": [
-            {
-              "message": "=Eres un Extractor de Requisitos de Ingeniería. Tu trabajo es poblar la base de datos maestra de requisitos del proyecto.\nNO inventes datos.\nNO resumas.\nUsa JSON estricto."
-            }
-          ]
-        },
-        "batching": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.7,
-      "position": [
-        2240,
-        208
-      ],
-      "id": "c519713f-05a5-485f-b9f0-7268333d6baa",
-      "name": "LLM Extractor Tech-Econ"
-    },
-    {
-      "parameters": {
         "model": "mistral-large-latest",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2272,
-        512
+        2416,
+        528
       ],
-      "id": "e88f089c-4e7b-4f03-a29c-e4fabfe6e614",
+      "id": "7eab12a9-c286-4a1a-8442-1c3313503a38",
       "name": "Mistral Cloud Chat Model4",
       "credentials": {
         "mistralCloudApi": {
@@ -760,10 +739,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
       "typeVersion": 1,
       "position": [
-        768,
-        720
+        880,
+        784
       ],
-      "id": "e33a3543-d8a4-4fd1-b675-c29004117be5",
+      "id": "ed1e6a43-63d2-4161-b9c3-cd410cf7a332",
       "name": "Embeddings Cohere1",
       "credentials": {
         "cohereApi": {
@@ -771,6 +750,28 @@
           "name": "CohereApi account"
         }
       }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### RFQ REQUIREMENTS EXTRACTION - EXHAUSTIVE\n\nProject: {{ $json.nombre_proyecto }}\nType: {{ $json.tipo_evaluacion }}\nChunk: {{ $json.chunk_index }}/{{ $json.total_chunks }}\n\n### TEXT TO ANALYZE:\n{{ $json.texto_chunk }}\n\n---\n### VALID PHASES:\n- Process Engineering\n- Mechanical Engineering  \n- Electrical Engineering\n- Civil & Structural\n- Instrumentation & Control\n- Piping\n- HSE / Safety\n- Project Management\n- Quality Assurance\n- General Requirements\n\n### WHAT TO EXTRACT (be exhaustive):\n\n✅ **EXTRACT ALL OF THESE:**\n- Numerical specifications (pressures, temperatures, flows, capacities, dimensions)\n- Quality standards and codes (ISO, API, ASME, NFPA, IEC)\n- Material requirements (steel grades, coatings, certifications)\n- Equipment specifications (pumps, compressors, tanks, transformers)\n- Utility requirements (power, water, air, nitrogen)\n- Environmental limits (noise, emissions, effluents)\n- Safety requirements (ATEX zones, fire protection, detection systems)\n- Design conditions (ambient temp, seismic, wind loads)\n- Operational parameters (hours/year, availability, redundancy)\n- Deliverables and documents required\n- Compliance requirements (local regulations, permits)\n- Interface/battery limit conditions\n- Each row from tables as separate item\n\n### FORMAT RULES:\n\n1. **NO REDUNDANCY** - Don't repeat project context words\n2. **SHORT** (max 60 chars) - Value + unit, no long descriptions\n3. **SEARCHABLE** - Use standard prefixes: \"Pressure:\", \"Temp:\", \"Flow:\", \"Code:\", \"Material:\"\n4. **SPLIT** compound data into separate items\n\n### EXAMPLES:\n\nFrom: \"The plant operates at 7 bar with temperature range 20-40°C\"\n→ {\"fase\": \"Process Engineering\", \"requisito_rfq\": \"Operating pressure: 7 barg\"}\n→ {\"fase\": \"Process Engineering\", \"requisito_rfq\": \"Operating temp: 20-40°C\"}\n\nFrom: \"Compressed air per ISO 8573-1 class 1.2.0\"\n→ {\"fase\": \"Mechanical Engineering\", \"requisito_rfq\": \"Instrument air: ISO 8573-1 class 1.2.0\"}\n\nFrom: \"ATEX Zone 2 classification for outdoor areas\"\n→ {\"fase\": \"HSE / Safety\", \"requisito_rfq\": \"ATEX Zone 2: outdoor areas\"}\n\nFrom: \"30 kV power supply from grid\"\n→ {\"fase\": \"Electrical Engineering\", \"requisito_rfq\": \"Grid supply: 30 kV\"}\n\nFrom table row: \"Buffer tank | 40 barg | SS316L\"\n→ {\"fase\": \"Mechanical Engineering\", \"requisito_rfq\": \"Buffer tank: 40 barg, SS316L\"}\n\n### JSON FORMAT:\n```json\n[\n  {\"fase\": \"Phase\", \"requisito_rfq\": \"Short requirement with value\"}\n]\n```\n\n**RESPONSE (JSON only, be EXHAUSTIVE):**",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an exhaustive Requirements Extractor for EPC tenders.\n\nMISSION: Extract ALL technical requirements, specifications, and parameters.\n\nRULES:\n- Be EXHAUSTIVE - extract every specification, parameter, code reference\n- NO redundancy - don't repeat project name terms\n- SHORT - max 60 chars, focus on value + unit\n- SEARCHABLE - use standard prefixes (Pressure:, Temp:, Code:, Material:)\n- SPLIT compound requirements into separate items\n- Extract EACH table row as separate item\n- If text has no requirements: return []\n- JSON only"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2384,
+        256
+      ],
+      "id": "07d7e073-8026-4c83-8279-c636ebbb8335",
+      "name": "LLM Extractor Tech-Econ"
     }
   ],
   "connections": {
@@ -1081,17 +1082,6 @@
         ]
       ]
     },
-    "LLM Extractor Tech-Econ": {
-      "main": [
-        [
-          {
-            "node": "Parsear Items1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Mistral Cloud Chat Model4": {
       "ai_languageModel": [
         [
@@ -1109,6 +1099,17 @@
           {
             "node": "Insert into Supabase Vectorstore1",
             "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Extractor Tech-Econ": {
+      "main": [
+        [
+          {
+            "node": "Parsear Items1",
+            "type": "main",
             "index": 0
           }
         ]

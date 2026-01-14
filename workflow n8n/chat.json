@@ -2,7 +2,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## Chat con RFQs - Optimizado",
+        "content": "## RFQ Chat - Optimized",
         "height": 832,
         "width": 2016,
         "color": 3
@@ -56,7 +56,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Consulta la tabla de evaluación. OBLIGATORIO: Debes generar el argumento 'nombre_requisito' con una palabra clave (ej: '3D model', 'Pricing') basada en la pregunta.",
+        "toolDescription": "Query the evaluation table. REQUIRED: You must generate the 'nombre_requisito' argument with a keyword (e.g., '3D model', 'Pricing') based on the question.",
         "operation": "executeQuery",
         "query": "SELECT * FROM rfq_items_master WHERE requisito_rfq ILIKE '%' || $1 || '%';",
         "options": {
@@ -179,25 +179,6 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2192,
-        -1424
-      ],
-      "id": "fc09e693-eec5-4a3c-a230-96cdab8bcee4",
-      "name": "Embeddings Ollama2",
-      "credentials": {
-        "ollamaApi": {
-          "id": "oS2Qqti9oVfsm8XZ",
-          "name": "Ollama account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "model": "qwen3-embedding:8b"
-      },
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-      "typeVersion": 1,
-      "position": [
         -1904,
         -1424
       ],
@@ -215,7 +196,7 @@
         "promptType": "define",
         "text": "={{ $json.body.chatInput }}",
         "options": {
-          "systemMessage": "=Eres un asistente experto en analizar ofertas de proveedores (IDOM, SACYR, TR, EA, SENER, TRESCA, WORLEY).\n\nTu tarea es responder preguntas sobre el cumplimiento de requisitos de estos proveedores basándote en la tabla de evaluación y documentos adjuntos.\n\nINSTRUCCIONES:\n1. Si necesitas datos estructurados de cumplimiento, usa **consultar_tabla_evaluacion**.\n2. Si necesitas detalles narrativos o texto de las propuestas de los proveedores, usa **consultar_ofertas_proveedores**.\n3. Si necesitas ver los requisitos originales del cliente, usa **consultar_documentos_rfq**.\n4. Responde de forma natural y directa (máximo 3 líneas)."
+          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH only. Never respond in Spanish or any other language.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals (IDOM, SACYR, TR, EA, SENER, TRESCA, WORLEY).\n\nYour task is to answer questions about these vendors' compliance with requirements based on the evaluation table and attached documents.\n\nTOOL USAGE INSTRUCTIONS:\n1. For detailed narrative information or text from vendor proposals, use **consultar_ofertas_proveedores** - this searches the proposals vector store.\n2. For original client requirements from the RFQ documents, use **consultar_documentos_rfq** - this searches the RFQ vector store.\n3. ALWAYS use the appropriate tools to retrieve information before answering. Do not guess or make assumptions.\n4. When comparing vendors, use both tools to get comprehensive information.\n\nRespond naturally and concisely (maximum 3 lines). Remember: English only, no emojis."
         }
       },
       "id": "c294a48b-b935-4ad9-ab2b-b363f6271588",
@@ -231,7 +212,7 @@
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "consultar_ofertas_proveedores",
-        "toolDescription": "Utiliza esta herramienta para buscar información detallada dentro de las propuestas técnicas de los proveedores.",
+        "toolDescription": "Use this tool to search for detailed information within vendor technical proposals. Search for specific requirements, compliance details, pricing, technical specifications, and any narrative content from the proposals.",
         "tableName": {
           "__rl": true,
           "value": "proposals",
@@ -262,7 +243,7 @@
       "parameters": {
         "mode": "retrieve-as-tool",
         "toolName": "consultar_documentos_rfq",
-        "toolDescription": "Utiliza esta herramienta para buscar información en los documentos originales de la petición de oferta (RFQ).",
+        "toolDescription": "Use this tool to search for information in the original Request for Quotation (RFQ) documents. Search for client requirements, specifications, scope of work, and any original tender documentation.",
         "tableName": {
           "__rl": true,
           "value": "rfq",
@@ -286,6 +267,25 @@
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        -1424
+      ],
+      "id": "fc09e693-eec5-4a3c-a230-96cdab8bcee4",
+      "name": "Embeddings Ollama5",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
         }
       }
     }
@@ -319,17 +319,6 @@
           {
             "node": "Chat AI Agent",
             "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Embeddings Ollama2": {
-      "ai_embedding": [
-        [
-          {
-            "node": "Revisar-ofertas",
-            "type": "ai_embedding",
             "index": 0
           }
         ]
@@ -374,6 +363,17 @@
           {
             "node": "Chat AI Agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama5": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Revisar-ofertas",
+            "type": "ai_embedding",
             "index": 0
           }
         ]

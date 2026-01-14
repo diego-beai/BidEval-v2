@@ -387,16 +387,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         .from('document_metadata')
                         .select('id, title, project_name, evaluation_types, provider, created_at')
                         .eq('document_type', 'RFQ');
-                    
+
                     console.log('RFQ query result:', { rfqDocuments, rfqError });
-                    
+
                     if (!rfqError && rfqDocuments) {
                         console.log('Found', rfqDocuments.length, 'RFQ documents');
 
                         // Collect all evaluation types and count total
                         const types = new Set<string>();
-                        // Collect all unique providers
-                        const providers = new Set<string>();
                         // Count total evaluation types across all RFQs
                         let totalEvaluationTypesCount = 0;
 
@@ -426,22 +424,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                     }
                                 }
                             }
-
-                            // Add provider if exists
-                            if (doc.provider) {
-                                providers.add(doc.provider.trim());
-                            }
                         });
 
                         console.log('Final evaluation types found:', Array.from(types));
                         console.log('Total evaluation types count:', totalEvaluationTypesCount);
-                        console.log('Final providers found:', Array.from(providers));
-                        console.log('Total unique providers:', providers.size);
 
                         // Set rfqCount to total evaluation types across all RFQ documents
                         setRfqCount(totalEvaluationTypesCount);
                         setEvaluationTypes(types);
-                        setProvidersCount(providers.size);
                     } else {
                         console.log('RFQ query error or no data:', rfqError);
                     }
@@ -453,7 +443,40 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             }
         };
 
+        // Fetch unique providers from PROPOSAL documents (offers received)
+        const fetchProvidersCount = async () => {
+            if (supabase) {
+                try {
+                    console.log('Fetching unique providers from proposals...');
+                    const { data: proposals, error: proposalError } = await supabase
+                        .from('document_metadata')
+                        .select('provider')
+                        .eq('document_type', 'PROPOSAL')
+                        .not('provider', 'is', null);
+
+                    if (!proposalError && proposals) {
+                        // Get unique providers
+                        const uniqueProviders = new Set<string>();
+                        proposals.forEach((doc: any) => {
+                            if (doc.provider && doc.provider.trim()) {
+                                uniqueProviders.add(doc.provider.trim());
+                            }
+                        });
+
+                        console.log('Unique providers from proposals:', Array.from(uniqueProviders));
+                        console.log('Total unique providers:', uniqueProviders.size);
+                        setProvidersCount(uniqueProviders.size);
+                    } else {
+                        console.log('Proposals query error:', proposalError);
+                    }
+                } catch (err) {
+                    console.warn('Error fetching providers from proposals:', err);
+                }
+            }
+        };
+
         fetchRfqCount();
+        fetchProvidersCount();
     }, []);
 
     // Calculate metrics from both tableData and proposalEvaluations

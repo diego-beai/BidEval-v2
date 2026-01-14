@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { useSessionViewStore } from './useSessionViewStore';
 import type { QAQuestion } from '../types/qa.types';
@@ -59,8 +59,9 @@ interface MailState {
 
 export const useMailStore = create<MailState>()(
     devtools(
-        persist(
-            (set, get) => ({
+        subscribeWithSelector(
+            persist(
+                (set, get) => ({
             subject: '',
             body: '',
             isGenerating: false,
@@ -241,7 +242,8 @@ export const useMailStore = create<MailState>()(
                 selectedQAItemIds: state.selectedQAItemIds
             })
         }
-    ),
-    { name: 'MailStore' }
-  )
+            )
+        ),
+        { name: 'MailStore' }
+    )
 );

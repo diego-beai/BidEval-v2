@@ -169,8 +169,51 @@ export const ScoringMatrix: React.FC = () => {
                 </div>
             )}
 
+            {/* Loading Overlay */}
+            {isCalculating && (
+                <div style={{
+                    position: 'relative',
+                    padding: '60px 20px',
+                    background: 'var(--bg-surface-alt)',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)',
+                    marginBottom: '24px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '20px'
+                    }}>
+                        <div style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '50%',
+                            border: '4px solid var(--border-color)',
+                            borderTopColor: 'var(--color-primary)',
+                            animation: 'spin 1s linear infinite'
+                        }}></div>
+                        <div style={{
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            color: 'var(--text-primary)'
+                        }}>
+                            Calculating AI Scores...
+                        </div>
+                        <div style={{
+                            fontSize: '0.875rem',
+                            color: 'var(--text-secondary)',
+                            textAlign: 'center',
+                            maxWidth: '400px'
+                        }}>
+                            Analyzing provider responses against 12 weighted criteria. Please wait...
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Empty State */}
-            {(!providers || providers.length === 0) && (
+            {!isCalculating && (!providers || providers.length === 0) && (
                 <div style={{
                     textAlign: 'center',
                     padding: '60px 20px',
@@ -187,7 +230,7 @@ export const ScoringMatrix: React.FC = () => {
             )}
 
             {/* Scoring Table */}
-            {providers && providers.length > 0 && (
+            {!isCalculating && providers && providers.length > 0 && (
                 <div className="scoring-grid-container" style={{ overflowX: 'auto' }}>
                     <table className="scoring-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
                         <thead>

@@ -16,6 +16,26 @@ const CATEGORY_WEIGHTS = {
     'HSE/ESG': 10
 };
 
+// Individual scoring criteria with readable names
+const CRITERIA_LABELS: Record<string, string> = {
+    // TECHNICAL (40%)
+    efficiency_bop: 'Efficiency (BOP)',
+    degradation_lifetime: 'Degradation & Lifetime',
+    flexibility: 'Operational Flexibility',
+    purity_pressure: 'Purity & Pressure',
+    // ECONOMIC (30%)
+    capex: 'CAPEX Total',
+    opex: 'OPEX Guaranteed',
+    warranties: 'Warranties & Penalties',
+    // EXECUTION (20%)
+    delivery_time: 'Delivery Time',
+    track_record: 'Track Record',
+    provider_strength: 'Provider Strength',
+    // HSE/ESG (10%)
+    safety_atex: 'Safety & ATEX',
+    sustainability: 'Sustainability'
+};
+
 export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating } = useScoringStore();
     const { t } = useLanguageStore();
@@ -29,12 +49,45 @@ export const ExecutiveView: React.FC = () => {
         return (
             <div style={{
                 display: 'flex',
+                flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '400px',
-                color: 'var(--text-secondary)'
+                minHeight: '500px',
+                padding: '40px',
+                background: 'var(--bg-surface)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--border-color)',
+                gap: '24px'
             }}>
-                Loading scoring data...
+                <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    border: '4px solid var(--border-color)',
+                    borderTopColor: 'var(--color-primary)',
+                    animation: 'spin 1s linear infinite'
+                }}></div>
+                <div style={{
+                    fontSize: '1.1rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)'
+                }}>
+                    Calculating AI Scores...
+                </div>
+                <div style={{
+                    fontSize: '0.875rem',
+                    color: 'var(--text-secondary)',
+                    textAlign: 'center',
+                    maxWidth: '300px'
+                }}>
+                    Evaluating providers across 12 criteria. This may take a moment.
+                </div>
+                <style>{`
+                    @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                `}</style>
             </div>
         );
     }
@@ -78,21 +131,29 @@ export const ExecutiveView: React.FC = () => {
     // Calculate score gap
     const scoreGap = runnerUp ? winner.overall_score - runnerUp.overall_score : 0;
 
-    // Identify strengths and weaknesses based on category scores
-    const categoryScores = [
-        { category: 'TECHNICAL', score: winner.scores.technical, maxScore: 10 },
-        { category: 'ECONOMIC', score: winner.scores.economic, maxScore: 10 },
-        { category: 'EXECUTION', score: winner.scores.execution, maxScore: 10 },
-        { category: 'HSE/ESG', score: winner.scores.hse_esg, maxScore: 10 }
-    ];
+    // Identify strengths and weaknesses based on individual criterion scores (12 criteria)
+    const individualScores = winner.individual_scores ? Object.entries(winner.individual_scores)
+        .map(([criterionId, score]) => ({
+            id: criterionId,
+            label: CRITERIA_LABELS[criterionId] || criterionId,
+            score: score as number
+        }))
+        .filter(c => c.score > 0) // Only include criteria with actual scores
+        : [];
 
-    const strengths = categoryScores
-        .filter(c => c.score / c.maxScore >= 0.7)
-        .map(c => c.category);
+    // Strengths: criteria with score >= 8 (top performers)
+    const strengths = individualScores
+        .filter(c => c.score >= 8)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4) // Limit to top 4 strengths
+        .map(c => c.label);
 
-    const weaknesses = categoryScores
-        .filter(c => c.score / c.maxScore < 0.5)
-        .map(c => c.category);
+    // Weaknesses: criteria with score <= 5 (need attention)
+    const weaknesses = individualScores
+        .filter(c => c.score <= 5)
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 4) // Limit to top 4 weaknesses
+        .map(c => c.label);
 
     // Prepare radar chart data
     const radarData = [

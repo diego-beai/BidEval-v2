@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { ChatMessage, ChatRole, ChatStatus } from '../types/chat.types';
 import { sendChatMessage, getChatHistory, getLastActiveSession } from '../services/chat.service';
 import { useSessionViewStore } from './useSessionViewStore';
@@ -47,8 +47,9 @@ function createMessage(role: ChatRole, content: string): ChatMessage {
  */
 export const useChatStore = create<ChatState>()(
   devtools(
-    persist(
-      (set, get) => ({
+    subscribeWithSelector(
+      persist(
+        (set, get) => ({
         isOpen: false,
         messages: [],
         unreadCount: 0,
@@ -232,6 +233,7 @@ export const useChatStore = create<ChatState>()(
           }
         }
       }
+      )
     ),
     { name: 'ChatStore' }
   )

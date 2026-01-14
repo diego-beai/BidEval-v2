@@ -43,9 +43,17 @@
     flex-shrink: 0;
 }
 
+.toast-success {
+    border-left: 4px solid #10b981;
+}
+
 .toast-success .toast-icon {
     background: rgba(16, 185, 129, 0.15);
     color: #10b981;
+}
+
+.toast-error {
+    border-left: 4px solid #ef4444;
 }
 
 .toast-error .toast-icon {
@@ -53,9 +61,17 @@
     color: #ef4444;
 }
 
+.toast-warning {
+    border-left: 4px solid #f59e0b;
+}
+
 .toast-warning .toast-icon {
     background: rgba(245, 158, 11, 0.15);
     color: #f59e0b;
+}
+
+.toast-info {
+    border-left: 4px solid #3b82f6;
 }
 
 .toast-info .toast-icon {

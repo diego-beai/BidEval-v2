@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, Component, ErrorInfo, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './ChatPage.css';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useChatStore } from '../../stores/useChatStore';
@@ -39,6 +40,93 @@ class MarkdownErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
 }
 
 /**
+ * Detecta y reformatea tablas mal formateadas (todo en una línea)
+ * Convierte: | A | B | |---|---| | 1 | 2 |
+ * A formato Markdown válido con saltos de línea
+ */
+function reformatInlineTables(content: string): string {
+    // Detectar si hay separadores de tabla (|---|) en una línea sin saltos previos
+    if (!content.includes('|---') && !content.includes('| ---')) {
+        return content;
+    }
+
+    let result = content;
+
+    // Dividir por líneas para procesar cada una
+    const lines = result.split('\n');
+    const processedLines: string[] = [];
+
+    for (const line of lines) {
+        // Si la línea contiene un separador de tabla inline
+        if ((line.includes('|---') || line.includes('| ---')) && line.includes('| |')) {
+            // Encontrar donde empieza el separador
+            // Patrón: cabecera | |---| datos
+            const separatorMatch = line.match(/^(.*?\|)\s*(\|[-:\s|]+\|)\s*(\|.*)$/);
+
+            if (separatorMatch) {
+                const [, header, separator, dataRows] = separatorMatch;
+
+                // Dividir las filas de datos - cada fila empieza después de || o | |
+                // La separación entre filas es cuando hay || seguido de un nombre (mayúscula)
+                let remainingData = dataRows;
+                const rows: string[] = [];
+
+                // Buscar patrones como: | | IDOM | o || IDOM |
+                const rowPattern = /\|\s*\|\s*([A-Z][A-Za-z]*)\s*\|/g;
+                let lastIndex = 0;
+                let match;
+
+                while ((match = rowPattern.exec(remainingData)) !== null) {
+                    if (lastIndex > 0) {
+                        const prevRow = remainingData.slice(lastIndex - 1, match.index).trim();
+                        if (prevRow && !prevRow.startsWith('|')) {
+                            rows.push('|' + prevRow);
+                        } else if (prevRow) {
+                            rows.push(prevRow);
+                        }
+                    }
+                    lastIndex = match.index + 1;
+                }
+
+                // Agregar la última fila
+                if (lastIndex > 0) {
+                    const lastRow = remainingData.slice(lastIndex - 1).trim();
+                    if (lastRow && !lastRow.startsWith('|')) {
+                        rows.push('|' + lastRow);
+                    } else if (lastRow) {
+                        rows.push(lastRow);
+                    }
+                }
+
+                // Si no encontramos filas con el patrón, intentar dividir por ||
+                if (rows.length === 0) {
+                    const simpleSplit = dataRows.split(/\|\s*\|/).filter(r => r.trim());
+                    for (const row of simpleSplit) {
+                        const trimmed = row.trim();
+                        if (trimmed) {
+                            rows.push(trimmed.startsWith('|') ? trimmed : '| ' + trimmed);
+                        }
+                    }
+                }
+
+                // Construir la tabla formateada
+                const formattedTable = [
+                    header.trim(),
+                    separator.trim(),
+                    ...rows.map(r => r.endsWith('|') ? r : r + ' |')
+                ].join('\n');
+
+                processedLines.push(formattedTable);
+                continue;
+            }
+        }
+        processedLines.push(line);
+    }
+
+    return processedLines.join('\n');
+}
+
+/**
  * Sanitiza contenido para evitar errores de parsing
  */
 function sanitizeContent(content: string): string {
@@ -50,6 +138,9 @@ function sanitizeContent(content: string): string {
     // Remover secuencias que pueden romper el parser
     safe = safe.replace(/_{3,}/g, '___'); // Limitar underscores consecutivos
     safe = safe.replace(/\*{3,}/g, '***'); // Limitar asteriscos consecutivos
+
+    // Intentar reformatear tablas inline
+    safe = reformatInlineTables(safe);
 
     return safe;
 }
@@ -81,6 +172,7 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
     return (
         <MarkdownErrorBoundary fallback={fallback}>
             <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                     p: ({ children }) => <p style={{ margin: '0.5em 0' }}>{children}</p>,
                     code: ({ children, className }) => {
@@ -88,7 +180,74 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
                         return isInline
                             ? <code style={{ background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px' }}>{children}</code>
                             : <code className={className}>{children}</code>;
-                    }
+                    },
+                    // Soporte para tablas Markdown
+                    table: ({ children }) => (
+                        <div style={{ overflowX: 'auto', margin: '1em 0' }}>
+                            <table style={{
+                                width: '100%',
+                                borderCollapse: 'collapse',
+                                fontSize: '0.9rem',
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                borderRadius: '8px',
+                                overflow: 'hidden'
+                            }}>
+                                {children}
+                            </table>
+                        </div>
+                    ),
+                    thead: ({ children }) => (
+                        <thead style={{
+                            background: 'rgba(18, 181, 176, 0.15)',
+                            borderBottom: '1px solid rgba(18, 181, 176, 0.3)'
+                        }}>
+                            {children}
+                        </thead>
+                    ),
+                    tbody: ({ children }) => <tbody>{children}</tbody>,
+                    tr: ({ children }) => (
+                        <tr style={{ borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>
+                            {children}
+                        </tr>
+                    ),
+                    th: ({ children }) => (
+                        <th style={{
+                            padding: '10px 12px',
+                            textAlign: 'left',
+                            fontWeight: 600,
+                            color: 'var(--color-cyan)',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {children}
+                        </th>
+                    ),
+                    td: ({ children }) => (
+                        <td style={{
+                            padding: '10px 12px',
+                            color: 'var(--text-primary)'
+                        }}>
+                            {children}
+                        </td>
+                    ),
+                    // Soporte para listas
+                    ul: ({ children }) => (
+                        <ul style={{ margin: '0.5em 0', paddingLeft: '1.5em' }}>{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                        <ol style={{ margin: '0.5em 0', paddingLeft: '1.5em' }}>{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                        <li style={{ margin: '0.3em 0' }}>{children}</li>
+                    ),
+                    // Headers
+                    h1: ({ children }) => <h1 style={{ fontSize: '1.4em', margin: '0.8em 0 0.4em', fontWeight: 700 }}>{children}</h1>,
+                    h2: ({ children }) => <h2 style={{ fontSize: '1.2em', margin: '0.8em 0 0.4em', fontWeight: 600 }}>{children}</h2>,
+                    h3: ({ children }) => <h3 style={{ fontSize: '1.1em', margin: '0.6em 0 0.3em', fontWeight: 600 }}>{children}</h3>,
+                    // Strong y emphasis
+                    strong: ({ children }) => <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{children}</strong>,
+                    em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+                    // Separador horizontal
+                    hr: () => <hr style={{ border: 'none', borderTop: '1px solid rgba(128, 128, 128, 0.3)', margin: '1em 0' }} />
                 }}
             >
                 {safeContent}

@@ -18,15 +18,15 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
     });
 
     if (invalidFiles.length > 0) {
-      setError(`${invalidFiles.length} archivo(s) no válido(s). Solo se permiten PDFs menores a 50MB`);
+      setError(`${invalidFiles.length} invalid file(s). Only PDFs under 50MB are allowed`);
       return;
     }
 
-    // Agregar archivos (addFiles ya limita a máximo 7)
+    // Add files (addFiles already limits to max 7)
     addFiles(acceptedFiles);
 
     if (acceptedFiles.length > 7) {
-      setError('Solo se pueden procesar hasta 7 archivos. Se agregaron los primeros disponibles.');
+      setError('Only up to 7 files can be processed. The first available files were added.');
     }
   }, [addFiles, setError]);
 
@@ -58,16 +58,16 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
 
         <p className={`dropzonePrompt ${compact ? 'dropzonePrompt--compact' : ''}`}>
           {isProcessing
-            ? 'Procesando propuestas... Esto puede tardar unos minutos'
+            ? 'Processing proposals... This may take a few minutes'
             : selectedFiles.length > 0
               ? selectedFiles.length > 1
-                ? `${selectedFiles.length} archivos seleccionados (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
+                ? `${selectedFiles.length} files selected (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
                 : `${selectedFiles[0].name} (${(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
               : isDragActive
-                ? 'Suelta los archivos PDF aquí...'
+                ? 'Drop the PDF files here...'
                 : compact
-                  ? 'Arrastra archivos PDF o haz clic para seleccionar'
-                  : 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar'}
+                  ? 'Drag PDF files or click to select'
+                  : 'Drag and drop PDF files here (up to 7), or click to select'}
         </p>
 
         {selectedFiles.length > 0 && (
@@ -88,7 +88,7 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
               padding: '8px 14px'
             }}
           >
-            Ver archivos ({selectedFiles.length})
+            View files ({selectedFiles.length})
           </button>
         </div>
       )}
@@ -102,12 +102,12 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
           <div className="fileListModal">
             <div className="fileListModalHeader">
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                Archivos Seleccionados ({selectedFiles.length})
+                Selected Files ({selectedFiles.length})
               </h3>
               <button
                 onClick={() => setShowFileList(false)}
                 className="removeBtn"
-                title="Cerrar"
+                title="Close"
               >
                 ×
               </button>
@@ -126,7 +126,7 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
                   <button
                     className="removeBtn"
                     onClick={() => removeFile(index)}
-                    title="Eliminar archivo"
+                    title="Remove file"
                   >
                     ×
                   </button>
@@ -147,7 +147,7 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
                   padding: '10px 16px'
                 }}
               >
-                Borrar todos los archivos
+                Remove all files
               </button>
             </div>
           </div>

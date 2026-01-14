@@ -636,7 +636,7 @@ tr:last-child td {
 
 .fileListModal {
   position: fixed;
-  top: 50%;
+  top: 30%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
@@ -660,7 +660,7 @@ tr:last-child td {
 
 .fileListModalBody {
   padding: 20px;
-  max-height: 60vh;
+  max-height: 45vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

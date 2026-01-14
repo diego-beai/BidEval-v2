@@ -35,7 +35,7 @@
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 32px calc(50% - 400px) 160px;
+    padding: 16px calc(50% - 400px) 160px;
     /* Large bottom padding for the floating input */
     display: flex;
     flex-direction: column;

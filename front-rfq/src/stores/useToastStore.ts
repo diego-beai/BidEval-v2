@@ -22,12 +22,12 @@ export const useToastStore = create<ToastState>((set) => ({
             toasts: [...state.toasts, { id, message, type }],
         }));
 
-        // Auto-remove after 5 seconds
+        // Auto-remove after 60 seconds (1 minute) for better visibility
         setTimeout(() => {
             set((state) => ({
                 toasts: state.toasts.filter((t) => t.id !== id),
             }));
-        }, 5000);
+        }, 60000);
     },
     removeToast: (id) =>
         set((state) => ({

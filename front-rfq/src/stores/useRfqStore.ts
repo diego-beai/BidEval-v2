@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/rfq.types';
 import { Provider } from '../types/provider.types';
 import { RfqMetadata } from '../components/upload/RfqMetadataForm';
@@ -56,6 +56,7 @@ interface RfqState {
 
   // Processing state
   isProcessing: boolean;
+  isLoadingData: boolean;  // For data fetching (doesn't block UI)
   processingFileCount: number;
   status: ProcessingStatus;
 
@@ -159,10 +160,12 @@ function transformResults(items: RfqItem[]): RfqResult[] {
 
 export const useRfqStore = create<RfqState>()(
   devtools(
-    persist(
-      (set, get) => ({
+    subscribeWithSelector(
+      persist(
+        (set, get) => ({
       selectedFiles: [],
       isProcessing: false,
+      isLoadingData: false,
       processingFileCount: 0,
       status: initialStatus,
       rawResults: null,
@@ -234,7 +237,7 @@ export const useRfqStore = create<RfqState>()(
       setRfqBase: (rfqBase, message?: string) => {
         // Agregar notificación toast de éxito para RFQ base
         const { addToast } = useToastStore.getState();
-        const toastMessage = `✅ Base RFQ processed successfully!\n📄 ${rfqBase.fileName}\n🏷️ Types: ${rfqBase.tiposProcesados.join(', ')}`;
+        const toastMessage = `Base RFQ loaded: ${rfqBase.fileName}`;
         addToast(toastMessage, 'success');
 
         set({
@@ -287,7 +290,7 @@ export const useRfqStore = create<RfqState>()(
       setRfqBaseError: (error) => {
         // Agregar notificación toast de error para RFQ base
         const { addToast } = useToastStore.getState();
-        addToast(`❌ RFQ Base processing failed: ${error}`, 'error');
+        addToast(`RFQ Base processing failed: ${error}`, 'error');
 
         set({
           rfqBaseError: error,
@@ -334,22 +337,16 @@ export const useRfqStore = create<RfqState>()(
       setResults: (rawResults: RfqItem[], message?: string) => {
         const transformedResults = transformResults(rawResults);
         const fileCount = get().processingFileCount;
+        const providerName = get().rfqMetadata.proveedor;
 
         get().stopSimulation();
 
-        // Agregar notificación toast de éxito
+        // Add success toast notification
         const { addToast } = useToastStore.getState();
-        const evaluationTypes = [...new Set(transformedResults.map(r => r.evaluation))];
-        const providers = [...new Set(transformedResults.flatMap(r => Object.keys(r.evaluations)))];
-        
-        let toastMessage = `✅ ${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} processed successfully!`;
-        if (evaluationTypes.length > 0) {
-          toastMessage += `\n📊 Evaluation types: ${evaluationTypes.join(', ')}`;
-        }
-        if (providers.length > 0) {
-          toastMessage += `\n🏢 Providers: ${providers.length} evaluated`;
-        }
-        
+        const toastMessage = providerName
+          ? `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} from ${providerName} processed successfully!`
+          : `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} processed successfully!`;
+
         addToast(toastMessage, 'success');
 
         set({
@@ -373,7 +370,7 @@ export const useRfqStore = create<RfqState>()(
         
         // Agregar notificación toast de error
         const { addToast } = useToastStore.getState();
-        addToast(`❌ Processing failed: ${error}`, 'error');
+        addToast(`Processing failed: ${error}`, 'error');
 
         set({
           error,
@@ -388,7 +385,7 @@ export const useRfqStore = create<RfqState>()(
       },
 
       fetchAllTableData: async () => {
-        set({ isProcessing: true, error: null });
+        set({ isLoadingData: true, error: null });
         try {
           // El webhook de n8n simplemente devuelve todos los datos de rfq_items_master
           // No procesa parámetros, solo hace getAll de Supabase
@@ -443,12 +440,12 @@ export const useRfqStore = create<RfqState>()(
             get().setError(`Connection failed: n8n unavailable and Supabase not configured. ${err.message}`);
           }
         } finally {
-          set({ isProcessing: false });
+          set({ isLoadingData: false });
         }
       },
 
         fetchProposalEvaluations: async () => {
-        set({ isProcessing: true, error: null });
+        set({ isLoadingData: true, error: null });
         try {
           // Intentar obtener datos de provider_responses desde Supabase
           if (supabase) {
@@ -552,7 +549,7 @@ export const useRfqStore = create<RfqState>()(
           console.error('Error fetching proposal evaluations:', err);
           get().setError(err.message || 'Error loading proposal evaluations');
         } finally {
-          set({ isProcessing: false });
+          set({ isLoadingData: false });
         }
       },
 
@@ -634,7 +631,7 @@ export const useRfqStore = create<RfqState>()(
           return;
         }
 
-        set({ isProcessing: true, error: null });
+        set({ isLoadingData: true, error: null });
 
         // Lista de posibles columnas de proveedores en rfq_items_master
         const PROVIDER_COLUMNS = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY', 'TECNICASREUNIDAS'];
@@ -747,7 +744,7 @@ export const useRfqStore = create<RfqState>()(
           console.error('Error fetching pivot table data:', err);
           get().setError(err.message || 'Error loading pivot table data');
         } finally {
-          set({ isProcessing: false });
+          set({ isLoadingData: false });
         }
       },
 
@@ -890,6 +887,7 @@ export const useRfqStore = create<RfqState>()(
           tableFilters: state.tableFilters
         })
       }
+      )
     ),
     { name: 'RfqStore' }
   )

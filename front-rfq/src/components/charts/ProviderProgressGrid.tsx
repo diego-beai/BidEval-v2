@@ -248,7 +248,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                {count}/4 evaluaciones
+                {count}/4 types
               </div>
             </div>
           </div>

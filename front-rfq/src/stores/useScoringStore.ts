@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
@@ -70,11 +70,13 @@ interface ScoringState {
 
 export const useScoringStore = create<ScoringState>()(
     devtools(
-        (set, get) => ({
-            isCalculating: false,
-            lastCalculation: null,
-            scoringResults: null,
-            error: null,
+        subscribeWithSelector(
+            persist(
+                (set, get) => ({
+                    isCalculating: false,
+                    lastCalculation: null,
+                    scoringResults: null,
+                    error: null,
 
             calculateScoring: async (projectId?: string, providerName?: string) => {
                 const { addToast } = useToastStore.getState();
@@ -222,7 +224,16 @@ export const useScoringStore = create<ScoringState>()(
                 scoringResults: null,
                 error: null
             })
-        }),
+                }),
+                {
+                    name: 'scoring-storage',
+                    partialize: (state) => ({
+                        scoringResults: state.scoringResults,
+                        lastCalculation: state.lastCalculation
+                    })
+                }
+            )
+        ),
         { name: 'ScoringStore' }
     )
 );

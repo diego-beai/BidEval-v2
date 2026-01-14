@@ -18,8 +18,35 @@ export const VendorDecisionDashboard: React.FC = () => {
 
     if (isLoading || !data) {
         return (
-            <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-                <p>Loading Scoring Analysis...</p>
+            <div className="dashboard-container" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '60vh',
+                gap: '24px'
+            }}>
+                <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    border: '4px solid var(--border-color)',
+                    borderTopColor: 'var(--color-primary)',
+                    animation: 'spin 1s linear infinite'
+                }}></div>
+                <p style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '1rem',
+                    fontWeight: 500
+                }}>
+                    Loading Scoring Analysis...
+                </p>
+                <style>{`
+                    @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                `}</style>
             </div>
         );
     }
