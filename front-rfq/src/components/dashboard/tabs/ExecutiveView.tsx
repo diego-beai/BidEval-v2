@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
@@ -7,14 +7,6 @@ import {
 import { useScoringStore } from '../../../stores/useScoringStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
-
-// Category weights for the scoring system
-const CATEGORY_WEIGHTS = {
-    TECHNICAL: 40,
-    ECONOMIC: 30,
-    EXECUTION: 20,
-    'HSE/ESG': 10
-};
 
 // Individual scoring criteria with readable names
 const CRITERIA_LABELS: Record<string, string> = {
@@ -37,13 +29,39 @@ const CRITERIA_LABELS: Record<string, string> = {
 };
 
 export const ExecutiveView: React.FC = () => {
-    const { scoringResults, refreshScoring, isCalculating } = useScoringStore();
+    const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
     const { t } = useLanguageStore();
 
     // Load scoring data on mount
     useEffect(() => {
         refreshScoring();
     }, [refreshScoring]);
+
+    // Calculate dynamic category weights from customWeights
+    const categoryWeights = useMemo(() => {
+        const technical = (customWeights.efficiency_bop || 0) +
+                         (customWeights.degradation_lifetime || 0) +
+                         (customWeights.flexibility || 0) +
+                         (customWeights.purity_pressure || 0);
+
+        const economic = (customWeights.capex || 0) +
+                        (customWeights.opex || 0) +
+                        (customWeights.warranties || 0);
+
+        const execution = (customWeights.delivery_time || 0) +
+                         (customWeights.track_record || 0) +
+                         (customWeights.provider_strength || 0);
+
+        const hseEsg = (customWeights.safety_atex || 0) +
+                      (customWeights.sustainability || 0);
+
+        return {
+            TECHNICAL: technical,
+            ECONOMIC: economic,
+            EXECUTION: execution,
+            'HSE/ESG': hseEsg
+        };
+    }, [customWeights]);
 
     if (isCalculating) {
         return (
@@ -796,10 +814,10 @@ export const ExecutiveView: React.FC = () => {
                             </defs>
                             <Pie
                                 data={[
-                                    { name: 'TECHNICAL', value: CATEGORY_WEIGHTS.TECHNICAL, color: 'url(#tech-gradient)' },
-                                    { name: 'ECONOMIC', value: CATEGORY_WEIGHTS.ECONOMIC, color: 'url(#econ-gradient)' },
-                                    { name: 'EXECUTION', value: CATEGORY_WEIGHTS.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE/ESG', value: CATEGORY_WEIGHTS['HSE/ESG'], color: 'url(#hse-gradient)' }
+                                    { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
+                                    { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
+                                    { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
+                                    { name: 'HSE/ESG', value: categoryWeights['HSE/ESG'], color: 'url(#hse-gradient)' }
                                 ]}
                                 cx="50%"
                                 cy="50%"
@@ -814,10 +832,10 @@ export const ExecutiveView: React.FC = () => {
                                 animationDuration={800}
                             >
                                 {[
-                                    { name: 'TECHNICAL', value: 40, color: 'url(#tech-gradient)' },
-                                    { name: 'ECONOMIC', value: 30, color: 'url(#econ-gradient)' },
-                                    { name: 'EXECUTION', value: 20, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE/ESG', value: 10, color: 'url(#hse-gradient)' }
+                                    { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
+                                    { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
+                                    { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
+                                    { name: 'HSE/ESG', value: categoryWeights['HSE/ESG'], color: 'url(#hse-gradient)' }
                                 ].map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--bg-surface)" strokeWidth={3} />
                                 ))}

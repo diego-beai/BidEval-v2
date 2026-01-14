@@ -363,6 +363,9 @@ export const useRfqStore = create<RfqState>()(
 
         // Notificar que hay contenido nuevo en rfq (upload/processing view)
         useSessionViewStore.getState().updateContent('upload');
+
+        // Automatically refresh proposal evaluations to update progress charts
+        get().refreshProposalEvaluations();
       },
 
       setError: (error) => {

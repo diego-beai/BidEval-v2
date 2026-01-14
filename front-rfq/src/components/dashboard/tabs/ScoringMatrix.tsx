@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { useScoringStore } from '../../../stores/useScoringStore';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStore';
+import type { ScoringWeights } from '../../../types/database.types';
 
 // Define the 12 scoring criteria with their weights
 const SCORING_CRITERIA = [
@@ -34,13 +35,154 @@ export const ScoringMatrix: React.FC = () => {
         lastCalculation,
         scoringResults,
         calculateScoring,
-        refreshScoring
+        refreshScoring,
+        customWeights,
+        setCustomWeights,
+        resetWeights: storeResetWeights,
+        saveScoresWithWeights,
+        loadSavedWeights,
+        isSavingWeights
     } = useScoringStore();
 
-    // Load scoring on mount
+    // Track if user has made changes from the saved/default state
+    const [isEditingWeights, setIsEditingWeights] = useState(false);
+    const hasLoadedRef = useRef(false);
+
+    // Load scoring and saved weights on mount (only once)
     useEffect(() => {
-        refreshScoring();
-    }, [refreshScoring]);
+        if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
+            refreshScoring();
+            loadSavedWeights();
+        }
+    }, [refreshScoring, loadSavedWeights]);
+
+    // Check if weights differ from defaults
+    const hasCustomWeights = useMemo(() => {
+        return Object.keys(DEFAULT_WEIGHTS).some(
+            key => customWeights[key as keyof ScoringWeights] !== DEFAULT_WEIGHTS[key as keyof ScoringWeights]
+        );
+    }, [customWeights]);
+
+    // Calculate total weight
+    const totalWeight = useMemo(() => {
+        return Object.values(customWeights).reduce((sum, w) => sum + w, 0);
+    }, [customWeights]);
+
+    // Check if weights are valid (sum to 100)
+    const weightsValid = totalWeight === 100;
+
+    // Calculate category weights based on custom weights
+    const customCategoryWeights = useMemo(() => {
+        return {
+            'TECHNICAL': (customWeights.efficiency_bop || 0) + (customWeights.degradation_lifetime || 0) + (customWeights.flexibility || 0) + (customWeights.purity_pressure || 0),
+            'ECONOMIC': (customWeights.capex || 0) + (customWeights.opex || 0) + (customWeights.warranties || 0),
+            'EXECUTION': (customWeights.delivery_time || 0) + (customWeights.track_record || 0) + (customWeights.provider_strength || 0),
+            'HSE/ESG': (customWeights.safety_atex || 0) + (customWeights.sustainability || 0),
+        };
+    }, [customWeights]);
+
+    // Track which input is being edited (to allow empty string during typing)
+    const [editingInput, setEditingInput] = useState<string | null>(null);
+    const [editingValue, setEditingValue] = useState<string>('');
+
+    // Handle weight change during typing
+    const handleWeightChange = useCallback((criterionId: string, value: string) => {
+        // Allow empty string or valid numbers only
+        if (value === '' || /^\d+$/.test(value)) {
+            setEditingInput(criterionId);
+            setEditingValue(value);
+
+            // Update the actual weight (use 0 for empty, parse for numbers)
+            const numValue = value === '' ? 0 : parseInt(value, 10);
+            const clampedValue = Math.max(0, Math.min(100, numValue));
+            setCustomWeights({
+                ...customWeights,
+                [criterionId]: clampedValue
+            } as ScoringWeights);
+            if (!isEditingWeights) setIsEditingWeights(true);
+        }
+    }, [isEditingWeights, customWeights, setCustomWeights]);
+
+    // Handle blur - reset editing state and ensure valid value
+    const handleWeightBlur = useCallback(() => {
+        setEditingInput(null);
+        setEditingValue('');
+    }, []);
+
+    // Reset to default weights
+    const resetWeights = useCallback(() => {
+        storeResetWeights();
+        setIsEditingWeights(false);
+    }, [storeResetWeights]);
+
+    // Save weights and scores
+    const handleSave = useCallback(async () => {
+        await saveScoresWithWeights();
+        setIsEditingWeights(false);
+    }, [saveScoresWithWeights]);
+
+    // Increment/decrement weight by 1
+    const adjustWeight = useCallback((criterionId: string, delta: number) => {
+        const currentValue = customWeights[criterionId as keyof ScoringWeights] || 0;
+        const newValue = Math.max(0, Math.min(100, currentValue + delta));
+        setCustomWeights({
+            ...customWeights,
+            [criterionId]: newValue
+        } as ScoringWeights);
+        if (!isEditingWeights) setIsEditingWeights(true);
+    }, [customWeights, setCustomWeights, isEditingWeights]);
+
+    // Recalculate scores with custom weights
+    const recalculatedProviders = useMemo(() => {
+        if (!scoringResults?.ranking) return [];
+
+        return scoringResults.ranking.map(provider => {
+            // Calculate new overall score using custom weights
+            const individualScores = provider.individual_scores;
+            const newOverall = Object.entries(customWeights).reduce((total, [key, weight]) => {
+                const score = individualScores[key as keyof typeof individualScores] || 0;
+                return total + (score * (weight || 0) / 100);
+            }, 0);
+
+            // Calculate new category scores
+            const newTechnical = (
+                (individualScores.efficiency_bop * (customWeights.efficiency_bop || 0)) +
+                (individualScores.degradation_lifetime * (customWeights.degradation_lifetime || 0)) +
+                (individualScores.flexibility * (customWeights.flexibility || 0)) +
+                (individualScores.purity_pressure * (customWeights.purity_pressure || 0))
+            ) / (customCategoryWeights['TECHNICAL'] || 1);
+
+            const newEconomic = (
+                (individualScores.capex * (customWeights.capex || 0)) +
+                (individualScores.opex * (customWeights.opex || 0)) +
+                (individualScores.warranties * (customWeights.warranties || 0))
+            ) / (customCategoryWeights['ECONOMIC'] || 1);
+
+            const newExecution = (
+                (individualScores.delivery_time * (customWeights.delivery_time || 0)) +
+                (individualScores.track_record * (customWeights.track_record || 0)) +
+                (individualScores.provider_strength * (customWeights.provider_strength || 0))
+            ) / (customCategoryWeights['EXECUTION'] || 1);
+
+            const newHseEsg = (
+                (individualScores.safety_atex * (customWeights.safety_atex || 0)) +
+                (individualScores.sustainability * (customWeights.sustainability || 0))
+            ) / (customCategoryWeights['HSE/ESG'] || 1);
+
+            return {
+                ...provider,
+                overall_score: newOverall,
+                scores: {
+                    technical: newTechnical,
+                    economic: newEconomic,
+                    execution: newExecution,
+                    hse_esg: newHseEsg
+                }
+            };
+        }).sort((a, b) => b.overall_score - a.overall_score)
+          .map((p, idx) => ({ ...p, position: idx + 1 }));
+    }, [scoringResults, customWeights, customCategoryWeights]);
 
     const getScoreColor = (score: number) => {
         if (score >= 8) return 'var(--color-primary)';
@@ -53,7 +195,8 @@ export const ScoringMatrix: React.FC = () => {
         return provider.individual_scores[criterionId] || 0;
     };
 
-    const providers = scoringResults?.ranking || [];
+    // Use recalculated providers (with custom weights applied)
+    const providers = recalculatedProviders;
 
     return (
         <div style={{
@@ -97,6 +240,101 @@ export const ScoringMatrix: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Weight validation indicator */}
+                    {(isEditingWeights || hasCustomWeights) && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            background: weightsValid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            border: `1px solid ${weightsValid ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'}`,
+                        }}>
+                            <span style={{
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                color: weightsValid ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'
+                            }}>
+                                Total: {totalWeight}%
+                            </span>
+                            {weightsValid ? (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(16, 185, 129)" strokeWidth="3">
+                                    <path d="M20 6L9 17l-5-5"></path>
+                                </svg>
+                            ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(239, 68, 68)" strokeWidth="3">
+                                    <path d="M18 6L6 18M6 6l12 12"></path>
+                                </svg>
+                            )}
+                        </div>
+                    )}
+                    {/* Reset weights button */}
+                    {(isEditingWeights || hasCustomWeights) && (
+                        <button
+                            onClick={resetWeights}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-secondary)',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                            </svg>
+                            Reset
+                        </button>
+                    )}
+                    {/* Save weights button */}
+                    {(isEditingWeights || hasCustomWeights) && weightsValid && (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSavingWeights}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: isSavingWeights ? 'var(--bg-surface-alt)' : 'rgb(16, 185, 129)',
+                                color: isSavingWeights ? 'var(--text-secondary)' : 'white',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: isSavingWeights ? 'not-allowed' : 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: isSavingWeights ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
+                            }}
+                        >
+                            {isSavingWeights ? (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
+                                        <path d="M21 12a9 9 0 11-6.219-8.56"></path>
+                                    </svg>
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    Save
+                                </>
+                            )}
+                        </button>
+                    )}
                     <button
                         onClick={() => calculateScoring()}
                         disabled={isCalculating}
@@ -136,38 +374,6 @@ export const ScoringMatrix: React.FC = () => {
                 </div>
             </div>
 
-            {/* AI Scoring Results Summary */}
-            {scoringResults && scoringResults.ranking.length > 0 && (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: '12px',
-                    marginBottom: '24px',
-                    padding: '16px',
-                    background: 'var(--bg-surface-alt)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)'
-                }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '4px', fontWeight: 600 }}>TOP PERFORMER</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                            {scoringResults.statistics.top_performer}
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '4px', fontWeight: 600 }}>AVG SCORE</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            {scoringResults.statistics.average_score.toFixed(2)}
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginBottom: '4px', fontWeight: 600 }}>PROVIDERS</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            {scoringResults.statistics.total_providers}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Loading Overlay */}
             {isCalculating && (
@@ -285,6 +491,9 @@ export const ScoringMatrix: React.FC = () => {
                             {/* Group criteria by category */}
                             {Object.entries(CATEGORY_INFO).map(([category, info]) => {
                                 const categoryCriteria = SCORING_CRITERIA.filter(c => c.category === category);
+                                const categoryWeight = customCategoryWeights[category as keyof typeof customCategoryWeights];
+                                const defaultCategoryWeight = info.weight;
+                                const categoryChanged = categoryWeight !== defaultCategoryWeight;
                                 return (
                                     <React.Fragment key={category}>
                                         {/* Category Header */}
@@ -296,7 +505,17 @@ export const ScoringMatrix: React.FC = () => {
                                                 color: info.color,
                                                 borderLeft: `4px solid ${info.color}`
                                             }}>
-                                                {category} ({info.weight}%)
+                                                {category} ({categoryWeight}%)
+                                                {categoryChanged && (
+                                                    <span style={{
+                                                        marginLeft: '8px',
+                                                        fontSize: '0.7rem',
+                                                        color: 'var(--text-tertiary)',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        (default: {defaultCategoryWeight}%)
+                                                    </span>
+                                                )}
                                             </td>
                                         </tr>
                                         {/* Criteria Rows */}
@@ -314,16 +533,93 @@ export const ScoringMatrix: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td style={{ textAlign: 'center', padding: '14px 16px', borderBottom: '1px solid var(--border-color)' }}>
-                                                    <span style={{
-                                                        padding: '4px 10px',
-                                                        background: `${info.color}20`,
-                                                        color: info.color,
-                                                        borderRadius: '8px',
-                                                        fontWeight: 700,
-                                                        fontSize: '0.85rem'
-                                                    }}>
-                                                        {criterion.weight}%
-                                                    </span>
+                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                pattern="[0-9]*"
+                                                                value={editingInput === criterion.id ? editingValue : (customWeights[criterion.id as keyof ScoringWeights] || 0).toString()}
+                                                                onChange={(e) => handleWeightChange(criterion.id, e.target.value)}
+                                                                onFocus={() => {
+                                                                    setEditingInput(criterion.id);
+                                                                    setEditingValue((customWeights[criterion.id as keyof ScoringWeights] || 0).toString());
+                                                                }}
+                                                                onBlur={() => handleWeightBlur()}
+                                                                style={{
+                                                                    width: '52px',
+                                                                    padding: '6px 8px',
+                                                                    paddingRight: '20px',
+                                                                    background: (customWeights[criterion.id as keyof ScoringWeights] || 0) !== criterion.weight ? `${info.color}30` : `${info.color}20`,
+                                                                    color: info.color,
+                                                                    borderRadius: '8px',
+                                                                    fontWeight: 700,
+                                                                    fontSize: '0.85rem',
+                                                                    border: (customWeights[criterion.id as keyof ScoringWeights] || 0) !== criterion.weight ? `2px solid ${info.color}` : '2px solid transparent',
+                                                                    textAlign: 'center',
+                                                                    outline: 'none',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            />
+                                                            <span style={{
+                                                                position: 'absolute',
+                                                                right: '8px',
+                                                                color: info.color,
+                                                                fontWeight: 700,
+                                                                fontSize: '0.85rem',
+                                                                pointerEvents: 'none'
+                                                            }}>%</span>
+                                                        </div>
+                                                        {/* Up/Down arrows */}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                            <button
+                                                                onClick={() => adjustWeight(criterion.id, 1)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    width: '18px',
+                                                                    height: '14px',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    background: 'var(--bg-surface-alt)',
+                                                                    color: info.color,
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.15s',
+                                                                    padding: 0
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = `${info.color}30`}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-surface-alt)'}
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                                                    <path d="M18 15l-6-6-6 6"/>
+                                                                </svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => adjustWeight(criterion.id, -1)}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    width: '18px',
+                                                                    height: '14px',
+                                                                    border: 'none',
+                                                                    borderRadius: '4px',
+                                                                    background: 'var(--bg-surface-alt)',
+                                                                    color: info.color,
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.15s',
+                                                                    padding: 0
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.background = `${info.color}30`}
+                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-surface-alt)'}
+                                                            >
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                                                                    <path d="M6 9l6 6 6-6"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 {providers.map(p => {
                                                     const score = getCriterionScore(p, criterion.id);
@@ -355,7 +651,7 @@ export const ScoringMatrix: React.FC = () => {
                                                 {category} Average
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>
-                                                <span style={{ fontWeight: 700, color: info.color }}>{info.weight}%</span>
+                                                <span style={{ fontWeight: 700, color: info.color }}>{categoryWeight}%</span>
                                             </td>
                                             {providers.map(p => {
                                                 const categoryScore = category === 'TECHNICAL' ? p.scores?.technical :
@@ -436,6 +732,15 @@ export const ScoringMatrix: React.FC = () => {
                         opacity: 1;
                         transform: translateY(0);
                     }
+                }
+                /* Hide number input spinners */
+                input[type="number"]::-webkit-inner-spin-button,
+                input[type="number"]::-webkit-outer-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+                input[type="number"] {
+                    -moz-appearance: textfield;
                 }
             `}</style>
         </div>

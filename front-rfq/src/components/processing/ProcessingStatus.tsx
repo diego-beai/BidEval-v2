@@ -1,10 +1,9 @@
 import { memo } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { ProcessingStage } from '../../types/rfq.types';
-import { Spinner } from '../ui/Spinner';
 
 export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }: { onViewResults?: () => void }) {
-  const { status, isProcessing, results } = useRfqStore();
+  const { status, isProcessing, results, rfqMetadata } = useRfqStore();
 
   if (!isProcessing && status.stage === ProcessingStage.IDLE) {
     return null;
@@ -42,24 +41,14 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
           height: '72px'
         }}>
           {isProcessing ? (
-            <>
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                borderRadius: '50%',
-                background: 'var(--color-primary-light)',
-                animation: 'pulse 2s ease-in-out infinite'
-              }}></div>
-              <div style={{
-                position: 'absolute',
-                inset: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Spinner />
-              </div>
-            </>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              border: '4px solid rgba(18, 181, 176, 0.2)',
+              borderTopColor: 'var(--color-cyan)',
+              animation: 'spin 1s linear infinite'
+            }}></div>
           ) : isComplete ? (
             <div style={{
               width: '100%',
@@ -101,20 +90,108 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
 
           {isComplete && results && results.length > 0 && (
             <div style={{
-              marginTop: '12px',
-              padding: '12px 16px',
-              background: 'rgba(18, 181, 176, 0.1)',
-              border: '1px solid var(--color-cyan)',
-              borderRadius: '8px',
-              fontSize: '0.85rem',
-              color: 'var(--text-primary)'
+              marginTop: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              width: '100%',
+              maxWidth: '400px'
             }}>
-              <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-cyan)' }}>
-                📋 Processing Summary
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-cyan)', marginBottom: '4px' }}>
+                Processing Summary
               </div>
-              <div style={{ lineHeight: '1.4' }}>
-                • {results.length} requirement{results.length !== 1 ? 's' : ''} evaluated<br/>
-                • Ready for analysis in Results table
+
+              {rfqMetadata.proveedor && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: 'rgba(18, 181, 176, 0.08)',
+                  border: '1px solid rgba(18, 181, 176, 0.3)',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: 'var(--color-cyan)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Provider</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rfqMetadata.proveedor}</div>
+                  </div>
+                </div>
+              )}
+
+              {rfqMetadata.tipoEvaluacion && rfqMetadata.tipoEvaluacion.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 14px',
+                  background: 'rgba(18, 181, 176, 0.08)',
+                  border: '1px solid rgba(18, 181, 176, 0.3)',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '6px',
+                    background: 'var(--color-cyan)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evaluation Type</div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rfqMetadata.tipoEvaluacion.join(', ')}</div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 14px',
+                background: 'rgba(18, 181, 176, 0.08)',
+                border: '1px solid rgba(18, 181, 176, 0.3)',
+                borderRadius: '8px'
+              }}>
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  background: 'var(--color-cyan)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requirements</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{results.length} evaluated</div>
+                </div>
               </div>
             </div>
           )}
@@ -200,14 +277,12 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults }
             transform: translateY(0);
           }
         }
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 0.6;
-            transform: scale(1);
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
           }
-          50% {
-            opacity: 1;
-            transform: scale(1.05);
+          to {
+            transform: rotate(360deg);
           }
         }
         @keyframes scaleIn {

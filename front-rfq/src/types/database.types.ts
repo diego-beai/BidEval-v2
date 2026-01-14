@@ -11,6 +11,24 @@ export type Json =
   | Json[]
 
 /**
+ * Estructura de pesos para scoring
+ */
+export interface ScoringWeights {
+  efficiency_bop: number
+  degradation_lifetime: number
+  flexibility: number
+  purity_pressure: number
+  capex: number
+  opex: number
+  warranties: number
+  delivery_time: number
+  track_record: number
+  provider_strength: number
+  safety_atex: number
+  sustainability: number
+}
+
+/**
  * Estructura del mensaje JSON almacenado en n8n_chat_history
  */
 export interface N8nChatMessage {
@@ -151,6 +169,32 @@ export interface Database {
           id?: number
           session_id?: string
           message?: N8nChatMessage
+        }
+      }
+      scoring_weight_configs: {
+        Row: {
+          id: string
+          name: string
+          weights: ScoringWeights
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name?: string
+          weights: ScoringWeights
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          weights?: ScoringWeights
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
     }

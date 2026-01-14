@@ -10,8 +10,8 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3696,
-        1776
+        -6352,
+        -688
       ],
       "id": "e966103e-9093-440c-960e-11025f9e378e",
       "name": "Webhook Scoring",
@@ -29,8 +29,8 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3248,
-        1680
+        -5696,
+        -784
       ],
       "id": "060af10c-74fa-42fa-b373-c5464fba19cf",
       "name": "Fetch Requirements",
@@ -53,8 +53,8 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3248,
-        1904
+        -5696,
+        -560
       ],
       "id": "a6908d2d-36ed-4910-9d15-7ba0ca7d7680",
       "name": "Fetch Provider Responses",
@@ -70,21 +70,21 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -3024,
-        1776
+        -5472,
+        -688
       ],
       "id": "c0e399c5-db97-4a69-9b6c-5fc7f69d2636",
       "name": "Merge Requirements & Responses"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Preparar Datos para Scoring\n// Criterios detallados de evaluación con pesos específicos\n// =============================================\n\nconst items = $input.all();\n\n// =============================================\n// CRITERIOS DE EVALUACIÓN DETALLADOS\n// Suma total = 100% (1.0)\n// =============================================\nconst SCORING_CRITERIA = {\n    // TÉCNICA (40% total)\n    TECHNICAL: {\n        categoryWeight: 0.40,\n        criteria: {\n            'EFICIENCIA_SISTEMA_BOP': {\n                weight: 0.15,\n                name: 'Eficiencia del Sistema (BOP)',\n                evaluate: 'Consumo total de energía (kWh/kg H2) incluyendo auxiliares'\n            },\n            'DEGRADACION_VIDA_UTIL': {\n                weight: 0.10,\n                name: 'Degradación y Vida Útil',\n                evaluate: 'Horas garantizadas antes del reemplazo del stack y % de pérdida anual'\n            },\n            'FLEXIBILIDAD_OPERATIVA': {\n                weight: 0.10,\n                name: 'Flexibilidad Operativa',\n                evaluate: 'Carga mínima (Turndown) y velocidad de respuesta a cambios (rampa)'\n            },\n            'PUREZA_PRESION': {\n                weight: 0.05,\n                name: 'Pureza y Presión',\n                evaluate: 'Calidad del gas de salida y presión directa sin necesidad de compresor extra'\n            }\n        }\n    },\n    // ECONÓMICA (30% total)\n    ECONOMIC: {\n        categoryWeight: 0.30,\n        criteria: {\n            'CAPEX_TOTAL': {\n                weight: 0.15,\n                name: 'CAPEX Total',\n                evaluate: 'Precio de compra, transporte, seguros y puesta en marcha'\n            },\n            'OPEX_GARANTIZADO': {\n                weight: 0.10,\n                name: 'OPEX Garantizado',\n                evaluate: 'Coste de mantenimiento, consumibles y repuestos por contrato'\n            },\n            'GARANTIAS_PENALIZACIONES': {\n                weight: 0.05,\n                name: 'Garantías y Penalizaciones',\n                evaluate: 'Cobertura en caso de fallo y penalizaciones por falta de disponibilidad'\n            }\n        }\n    },\n    // EJECUCIÓN (20% total)\n    EXECUTION: {\n        categoryWeight: 0.20,\n        criteria: {\n            'PLAZO_ENTREGA': {\n                weight: 0.10,\n                name: 'Plazo de Entrega',\n                evaluate: 'Semanas desde la firma hasta la entrega en sitio (Lead Time)'\n            },\n            'EXPERIENCIA_TRACK_RECORD': {\n                weight: 0.05,\n                name: 'Experiencia (Track Record)',\n                evaluate: 'Número de plantas similares instaladas y operando actualmente'\n            },\n            'SOLIDEZ_PROVEEDOR': {\n                weight: 0.05,\n                name: 'Solidez del Proveedor',\n                evaluate: 'Capacidad financiera y red de servicio técnico local/regional'\n            }\n        }\n    },\n    // HSE/ESG (10% total)\n    HSE_ESG: {\n        categoryWeight: 0.10,\n        criteria: {\n            'SEGURIDAD_ATEX': {\n                weight: 0.05,\n                name: 'Seguridad y ATEX',\n                evaluate: 'Certificaciones de seguridad y cumplimiento de normativa de explosivos'\n            },\n            'SOSTENIBILIDAD': {\n                weight: 0.05,\n                name: 'Sostenibilidad',\n                evaluate: 'Huella de carbono de la fabricación y reciclabilidad de materiales'\n            }\n        }\n    }\n};\n\n// Función para mapear requisitos a criterios\nfunction mapRequirementToCriteria(requirementText) {\n    const text = (requirementText || '').toLowerCase();\n    \n    // TÉCNICA\n    if (text.includes('eficiencia') || text.includes('bop') || text.includes('consumo') || text.includes('kwh')) {\n        return { category: 'TECHNICAL', criterion: 'EFICIENCIA_SISTEMA_BOP' };\n    }\n    if (text.includes('degradación') || text.includes('vida útil') || text.includes('stack') || text.includes('horas')) {\n        return { category: 'TECHNICAL', criterion: 'DEGRADACION_VIDA_UTIL' };\n    }\n    if (text.includes('flexibilidad') || text.includes('turndown') || text.includes('rampa') || text.includes('carga')) {\n        return { category: 'TECHNICAL', criterion: 'FLEXIBILIDAD_OPERATIVA' };\n    }\n    if (text.includes('pureza') || text.includes('presión') || text.includes('calidad') || text.includes('compresor')) {\n        return { category: 'TECHNICAL', criterion: 'PUREZA_PRESION' };\n    }\n    \n    // ECONÓMICA\n    if (text.includes('capex') || text.includes('precio') || text.includes('compra') || text.includes('transporte')) {\n        return { category: 'ECONOMIC', criterion: 'CAPEX_TOTAL' };\n    }\n    if (text.includes('opex') || text.includes('mantenimiento') || text.includes('consumibles') || text.includes('repuestos')) {\n        return { category: 'ECONOMIC', criterion: 'OPEX_GARANTIZADO' };\n    }\n    if (text.includes('garantía') || text.includes('penalización') || text.includes('disponibilidad') || text.includes('fallo')) {\n        return { category: 'ECONOMIC', criterion: 'GARANTIAS_PENALIZACIONES' };\n    }\n    \n    // EJECUCIÓN\n    if (text.includes('plazo') || text.includes('entrega') || text.includes('lead time') || text.includes('semanas')) {\n        return { category: 'EXECUTION', criterion: 'PLAZO_ENTREGA' };\n    }\n    if (text.includes('experiencia') || text.includes('track record') || text.includes('plantas') || text.includes('instaladas')) {\n        return { category: 'EXECUTION', criterion: 'EXPERIENCIA_TRACK_RECORD' };\n    }\n    if (text.includes('solidez') || text.includes('financiera') || text.includes('servicio técnico') || text.includes('soporte')) {\n        return { category: 'EXECUTION', criterion: 'SOLIDEZ_PROVEEDOR' };\n    }\n    \n    // HSE/ESG\n    if (text.includes('seguridad') || text.includes('atex') || text.includes('certificación') || text.includes('normativa')) {\n        return { category: 'HSE_ESG', criterion: 'SEGURIDAD_ATEX' };\n    }\n    if (text.includes('sostenibilidad') || text.includes('carbono') || text.includes('reciclabilidad') || text.includes('huella')) {\n        return { category: 'HSE_ESG', criterion: 'SOSTENIBILIDAD' };\n    }\n    \n    // Por defecto basado en evaluation_type\n    return null;\n}\n\n// Función para inferir categoría del evaluation_type\nfunction getCategoryFromEvalType(evalType) {\n    const type = (evalType || '').toLowerCase();\n    if (type.includes('technical')) return 'TECHNICAL';\n    if (type.includes('econom')) return 'ECONOMIC';\n    if (type.includes('pre-feed') || type.includes('pre feed')) return 'EXECUTION';\n    if (type.includes('feed')) return 'EXECUTION';\n    if (type.includes('hse') || type.includes('esg')) return 'HSE_ESG';\n    return 'TECHNICAL'; // Default\n}\n\n// Separar requirements y responses\nlet requirements = [];\nlet responses = [];\n\nitems.forEach(item => {\n    if (item.json.requirement_text || item.json.evaluation_type) {\n        requirements.push(item.json);\n    }\n    if (item.json.provider_name && item.json.requirement_id) {\n        responses.push(item.json);\n    }\n});\n\nif (requirements.length === 0 && responses.length === 0) {\n    items.forEach(item => {\n        if (Array.isArray(item.json)) {\n            item.json.forEach(j => {\n                if (j.requirement_text) requirements.push(j);\n                if (j.provider_name && j.requirement_id) responses.push(j);\n            });\n        }\n    });\n}\n\nconst providers = [...new Set(responses.map(r => r.provider_name))];\n\nlet providerFilter = '';\ntry {\n    providerFilter = $('Set Input Params1').first().json.provider_filter || '';\n} catch(e) {}\n\nconst targetProviders = providerFilter \n    ? providers.filter(p => p.toLowerCase().includes(providerFilter.toLowerCase()))\n    : providers;\n\nconsole.log(`📊 Scoring Analysis with Detailed Criteria:`);\nconsole.log(`   ├─ Total Requirements: ${requirements.length}`);\nconsole.log(`   ├─ Total Responses: ${responses.length}`);\nconsole.log(`   ├─ Providers Found: ${providers.join(', ')}`);\nconsole.log(`   └─ Target Providers: ${targetProviders.join(', ')}`);\n\n// Crear estructura para evaluación con criterios detallados\nconst evaluationData = targetProviders.map(providerName => {\n    const providerResponses = responses.filter(r => r.provider_name === providerName);\n    \n    // Estructura de criterios por categoría\n    const criteriaEvaluations = {\n        TECHNICAL: { items: [], categoryWeight: 0.40 },\n        ECONOMIC: { items: [], categoryWeight: 0.30 },\n        EXECUTION: { items: [], categoryWeight: 0.20 },\n        HSE_ESG: { items: [], categoryWeight: 0.10 }\n    };\n    \n    providerResponses.forEach(resp => {\n        const req = requirements.find(r => r.id === resp.requirement_id);\n        if (!req) return;\n        \n        // Intentar mapear al criterio específico\n        const mapping = mapRequirementToCriteria(req.requirement_text);\n        let category, criterion, criterionInfo;\n        \n        if (mapping) {\n            category = mapping.category;\n            criterion = mapping.criterion;\n            criterionInfo = SCORING_CRITERIA[category]?.criteria[criterion];\n        } else {\n            // Fallback por tipo de evaluación\n            category = getCategoryFromEvalType(req.evaluation_type);\n            criterion = 'GENERAL';\n            criterionInfo = { weight: 0.05, name: 'General', evaluate: req.requirement_text };\n        }\n        \n        if (!criteriaEvaluations[category]) {\n            criteriaEvaluations[category] = { items: [], categoryWeight: 0.25 };\n        }\n        \n        criteriaEvaluations[category].items.push({\n            requirement_id: req.id,\n            requirement_text: req.requirement_text,\n            criterion_id: criterion,\n            criterion_name: criterionInfo?.name || criterion,\n            criterion_weight: criterionInfo?.weight || 0.05,\n            what_to_evaluate: criterionInfo?.evaluate || req.requirement_text,\n            evaluation_value: resp.evaluation_value,\n            comment: resp.comment,\n            existing_score: resp.score || null\n        });\n    });\n    \n    return {\n        provider_name: providerName,\n        total_responses: providerResponses.length,\n        scoring_criteria: SCORING_CRITERIA,\n        criteria_evaluations: criteriaEvaluations\n    };\n});\n\nreturn evaluationData.map(data => ({ json: data }));"
+        "jsCode": "// =============================================\n// NODO: Preparar Datos para Scoring\n// Criterios detallados de evaluación con pesos específicos\n// =============================================\n\nconst items = $input.all();\n\n// =============================================\n// CRITERIOS DE EVALUACIÓN DETALLADOS\n// Suma total = 100% (1.0)\n// =============================================\nconst SCORING_CRITERIA = {\n    // TÉCNICA (35% total) - Based on H2 La Zaida requirements\n    TECHNICAL: {\n        categoryWeight: 0.35,\n        criteria: {\n            'EFICIENCIA_SISTEMA_BOP': {\n                weight: 0.12,\n                name: 'Eficiencia del Sistema (BOP)',\n                evaluate: 'Consumo total de energía (kWh/kg H2) incluyendo auxiliares'\n            },\n            'DEGRADACION_VIDA_UTIL': {\n                weight: 0.08,\n                name: 'Degradación y Vida Útil',\n                evaluate: 'Horas garantizadas antes del reemplazo del stack y % de pérdida anual'\n            },\n            'FLEXIBILIDAD_OPERATIVA': {\n                weight: 0.08,\n                name: 'Flexibilidad Operativa',\n                evaluate: 'Carga mínima (Turndown) y velocidad de respuesta a cambios (rampa)'\n            },\n            'PUREZA_PRESION': {\n                weight: 0.07,\n                name: 'Pureza y Presión',\n                evaluate: 'Calidad del gas de salida y presión directa sin necesidad de compresor extra'\n            }\n        }\n    },\n    // ECONÓMICA (35% total) - High CAPEX/OPEX importance for H2 projects\n    ECONOMIC: {\n        categoryWeight: 0.35,\n        criteria: {\n            'CAPEX_TOTAL': {\n                weight: 0.18,\n                name: 'CAPEX Total',\n                evaluate: 'Precio de compra, transporte, seguros y puesta en marcha'\n            },\n            'OPEX_GARANTIZADO': {\n                weight: 0.12,\n                name: 'OPEX Garantizado',\n                evaluate: 'Coste de mantenimiento, consumibles y repuestos por contrato'\n            },\n            'GARANTIAS_PENALIZACIONES': {\n                weight: 0.05,\n                name: 'Garantías y Penalizaciones',\n                evaluate: 'Cobertura en caso de fallo y penalizaciones por falta de disponibilidad'\n            }\n        }\n    },\n    // EJECUCIÓN (12% total) - Reduced as less critical vs safety\n    EXECUTION: {\n        categoryWeight: 0.12,\n        criteria: {\n            'PLAZO_ENTREGA': {\n                weight: 0.06,\n                name: 'Plazo de Entrega',\n                evaluate: 'Semanas desde la firma hasta la entrega en sitio (Lead Time)'\n            },\n            'EXPERIENCIA_TRACK_RECORD': {\n                weight: 0.03,\n                name: 'Experiencia (Track Record)',\n                evaluate: 'Número de plantas similares instaladas y operando actualmente'\n            },\n            'SOLIDEZ_PROVEEDOR': {\n                weight: 0.03,\n                name: 'Solidez del Proveedor',\n                evaluate: 'Capacidad financiera y red de servicio técnico local/regional'\n            }\n        }\n    },\n    // HSE/ESG (18% total) - ATEX critical for H2 handling\n    HSE_ESG: {\n        categoryWeight: 0.18,\n        criteria: {\n            'SEGURIDAD_ATEX': {\n                weight: 0.12,\n                name: 'Seguridad y ATEX',\n                evaluate: 'Certificaciones de seguridad y cumplimiento de normativa de explosivos'\n            },\n            'SOSTENIBILIDAD': {\n                weight: 0.06,\n                name: 'Sostenibilidad',\n                evaluate: 'Huella de carbono de la fabricación y reciclabilidad de materiales'\n            }\n        }\n    }\n};\n\n// Función para mapear requisitos a criterios\nfunction mapRequirementToCriteria(requirementText) {\n    const text = (requirementText || '').toLowerCase();\n    \n    // TÉCNICA\n    if (text.includes('eficiencia') || text.includes('bop') || text.includes('consumo') || text.includes('kwh')) {\n        return { category: 'TECHNICAL', criterion: 'EFICIENCIA_SISTEMA_BOP' };\n    }\n    if (text.includes('degradación') || text.includes('vida útil') || text.includes('stack') || text.includes('horas')) {\n        return { category: 'TECHNICAL', criterion: 'DEGRADACION_VIDA_UTIL' };\n    }\n    if (text.includes('flexibilidad') || text.includes('turndown') || text.includes('rampa') || text.includes('carga')) {\n        return { category: 'TECHNICAL', criterion: 'FLEXIBILIDAD_OPERATIVA' };\n    }\n    if (text.includes('pureza') || text.includes('presión') || text.includes('calidad') || text.includes('compresor')) {\n        return { category: 'TECHNICAL', criterion: 'PUREZA_PRESION' };\n    }\n    \n    // ECONÓMICA\n    if (text.includes('capex') || text.includes('precio') || text.includes('compra') || text.includes('transporte')) {\n        return { category: 'ECONOMIC', criterion: 'CAPEX_TOTAL' };\n    }\n    if (text.includes('opex') || text.includes('mantenimiento') || text.includes('consumibles') || text.includes('repuestos')) {\n        return { category: 'ECONOMIC', criterion: 'OPEX_GARANTIZADO' };\n    }\n    if (text.includes('garantía') || text.includes('penalización') || text.includes('disponibilidad') || text.includes('fallo')) {\n        return { category: 'ECONOMIC', criterion: 'GARANTIAS_PENALIZACIONES' };\n    }\n    \n    // EJECUCIÓN\n    if (text.includes('plazo') || text.includes('entrega') || text.includes('lead time') || text.includes('semanas')) {\n        return { category: 'EXECUTION', criterion: 'PLAZO_ENTREGA' };\n    }\n    if (text.includes('experiencia') || text.includes('track record') || text.includes('plantas') || text.includes('instaladas')) {\n        return { category: 'EXECUTION', criterion: 'EXPERIENCIA_TRACK_RECORD' };\n    }\n    if (text.includes('solidez') || text.includes('financiera') || text.includes('servicio técnico') || text.includes('soporte')) {\n        return { category: 'EXECUTION', criterion: 'SOLIDEZ_PROVEEDOR' };\n    }\n    \n    // HSE/ESG\n    if (text.includes('seguridad') || text.includes('atex') || text.includes('certificación') || text.includes('normativa')) {\n        return { category: 'HSE_ESG', criterion: 'SEGURIDAD_ATEX' };\n    }\n    if (text.includes('sostenibilidad') || text.includes('carbono') || text.includes('reciclabilidad') || text.includes('huella')) {\n        return { category: 'HSE_ESG', criterion: 'SOSTENIBILIDAD' };\n    }\n    \n    // Por defecto basado en evaluation_type\n    return null;\n}\n\n// Función para inferir categoría del evaluation_type\nfunction getCategoryFromEvalType(evalType) {\n    const type = (evalType || '').toLowerCase();\n    if (type.includes('technical')) return 'TECHNICAL';\n    if (type.includes('econom')) return 'ECONOMIC';\n    if (type.includes('pre-feed') || type.includes('pre feed')) return 'EXECUTION';\n    if (type.includes('feed')) return 'EXECUTION';\n    if (type.includes('hse') || type.includes('esg')) return 'HSE_ESG';\n    return 'TECHNICAL'; // Default\n}\n\n// Separar requirements y responses\nlet requirements = [];\nlet responses = [];\n\nitems.forEach(item => {\n    if (item.json.requirement_text || item.json.evaluation_type) {\n        requirements.push(item.json);\n    }\n    if (item.json.provider_name && item.json.requirement_id) {\n        responses.push(item.json);\n    }\n});\n\nif (requirements.length === 0 && responses.length === 0) {\n    items.forEach(item => {\n        if (Array.isArray(item.json)) {\n            item.json.forEach(j => {\n                if (j.requirement_text) requirements.push(j);\n                if (j.provider_name && j.requirement_id) responses.push(j);\n            });\n        }\n    });\n}\n\nconst providers = [...new Set(responses.map(r => r.provider_name))];\n\nlet providerFilter = '';\ntry {\n    providerFilter = $('Set Input Params1').first().json.provider_filter || '';\n} catch(e) {}\n\nconst targetProviders = providerFilter \n    ? providers.filter(p => p.toLowerCase().includes(providerFilter.toLowerCase()))\n    : providers;\n\nconsole.log(`📊 Scoring Analysis with Detailed Criteria:`);\nconsole.log(`   ├─ Total Requirements: ${requirements.length}`);\nconsole.log(`   ├─ Total Responses: ${responses.length}`);\nconsole.log(`   ├─ Providers Found: ${providers.join(', ')}`);\nconsole.log(`   └─ Target Providers: ${targetProviders.join(', ')}`);\n\n// Crear estructura para evaluación con criterios detallados\nconst evaluationData = targetProviders.map(providerName => {\n    const providerResponses = responses.filter(r => r.provider_name === providerName);\n    \n    // Estructura de criterios por categoría\n    const criteriaEvaluations = {\n        TECHNICAL: { items: [], categoryWeight: 0.35 },\n        ECONOMIC: { items: [], categoryWeight: 0.35 },\n        EXECUTION: { items: [], categoryWeight: 0.12 },\n        HSE_ESG: { items: [], categoryWeight: 0.18 }\n    };\n    \n    providerResponses.forEach(resp => {\n        const req = requirements.find(r => r.id === resp.requirement_id);\n        if (!req) return;\n        \n        // Intentar mapear al criterio específico\n        const mapping = mapRequirementToCriteria(req.requirement_text);\n        let category, criterion, criterionInfo;\n        \n        if (mapping) {\n            category = mapping.category;\n            criterion = mapping.criterion;\n            criterionInfo = SCORING_CRITERIA[category]?.criteria[criterion];\n        } else {\n            // Fallback por tipo de evaluación\n            category = getCategoryFromEvalType(req.evaluation_type);\n            criterion = 'GENERAL';\n            criterionInfo = { weight: 0.05, name: 'General', evaluate: req.requirement_text };\n        }\n        \n        if (!criteriaEvaluations[category]) {\n            criteriaEvaluations[category] = { items: [], categoryWeight: 0.25 };\n        }\n        \n        criteriaEvaluations[category].items.push({\n            requirement_id: req.id,\n            requirement_text: req.requirement_text,\n            criterion_id: criterion,\n            criterion_name: criterionInfo?.name || criterion,\n            criterion_weight: criterionInfo?.weight || 0.05,\n            what_to_evaluate: criterionInfo?.evaluate || req.requirement_text,\n            evaluation_value: resp.evaluation_value,\n            comment: resp.comment,\n            existing_score: resp.score || null\n        });\n    });\n    \n    return {\n        provider_name: providerName,\n        total_responses: providerResponses.length,\n        scoring_criteria: SCORING_CRITERIA,\n        criteria_evaluations: criteriaEvaluations\n    };\n});\n\nreturn evaluationData.map(data => ({ json: data }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2800,
-        1776
+        -5248,
+        -688
       ],
       "id": "38e21fb0-f652-49c8-8acf-9f6ce2c707cc",
       "name": "Prepare Scoring Data"
@@ -98,8 +98,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -2576,
-        1776
+        -5024,
+        -736
       ],
       "id": "03df48c0-ac7e-4b27-b906-7c14954b2b4c",
       "name": "Loop Over Providers"
@@ -107,28 +107,28 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are an expert technical evaluator for industrial RFQ (Request for Quotation) processes, specifically for hydrogen production equipment (electrolyzers).\n\nYour task is to score provider responses against detailed evaluation criteria.\n\n## PROVIDER: {{ $json.provider_name }}\n## TOTAL RESPONSES: {{ $json.total_responses }}\n\n## EVALUATION CRITERIA AND WEIGHTS:\n\n### TECHNICAL (40% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Eficiencia del Sistema (BOP) | 15% | Consumo total de energía (kWh/kg H2) incluyendo auxiliares |\n| Degradación y Vida Útil | 10% | Horas garantizadas antes del reemplazo del stack y % de pérdida anual |\n| Flexibilidad Operativa | 10% | Carga mínima (Turndown) y velocidad de respuesta a cambios (rampa) |\n| Pureza y Presión | 5% | Calidad del gas de salida y presión directa sin compresor extra |\n\n### ECONOMIC (30% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| CAPEX Total | 15% | Precio de compra, transporte, seguros y puesta en marcha |\n| OPEX Garantizado | 10% | Coste de mantenimiento, consumibles y repuestos por contrato |\n| Garantías y Penalizaciones | 5% | Cobertura en caso de fallo y penalizaciones por falta de disponibilidad |\n\n### EXECUTION (20% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Plazo de Entrega | 10% | Semanas desde la firma hasta la entrega en sitio (Lead Time) |\n| Experiencia (Track Record) | 5% | Número de plantas similares instaladas y operando |\n| Solidez del Proveedor | 5% | Capacidad financiera y red de servicio técnico local/regional |\n\n### HSE/ESG (10% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Seguridad y ATEX | 5% | Certificaciones de seguridad y cumplimiento de normativa de explosivos |\n| Sostenibilidad | 5% | Huella de carbono de la fabricación y reciclabilidad de materiales |\n\n## PROVIDER RESPONSES BY CATEGORY:\n{{ JSON.stringify($json.criteria_evaluations, null, 2) }}\n\n## SCORING GUIDELINES (0-10 scale):\n- **10**: Exceeds requirements significantly, best-in-class\n- **8-9**: Fully compliant, meets all requirements excellently\n- **6-7**: Compliant with minor gaps or areas for improvement\n- **4-5**: Partially compliant, significant gaps identified\n- **2-3**: Minimally compliant, major issues or missing information\n- **0-1**: Non-compliant, not addressed, or no response\n\n## RESPONSE VALUE INTERPRETATION:\n- \"INCLUIDO\" / \"INCLUDED\" / \"SI\" = Good compliance (7-10 depending on details)\n- \"PARCIAL\" / \"PARTIAL\" = Partial compliance (4-6)\n- \"NO INCLUIDO\" / \"NOT INCLUDED\" / \"NO\" = Non-compliance (0-3)\n- Detailed technical specifications = Higher scores\n- Vague or generic responses = Lower scores\n- Empty or null = 0\n\n## OUTPUT REQUIREMENTS:\nEvaluate each category and return a structured JSON with:\n1. Individual criterion scores (0-10)\n2. Category averages\n3. Overall weighted score\n4. Key strengths and weaknesses\n\n## OUTPUT SCHEMA:\n{\n  \"provider_name\": \"string\",\n  \"detailed_scores\": {\n    \"TECHNICAL\": {\n      \"EFICIENCIA_SISTEMA_BOP\": { \"score\": number, \"justification\": \"string\" },\n      \"DEGRADACION_VIDA_UTIL\": { \"score\": number, \"justification\": \"string\" },\n      \"FLEXIBILIDAD_OPERATIVA\": { \"score\": number, \"justification\": \"string\" },\n      \"PUREZA_PRESION\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"ECONOMIC\": {\n      \"CAPEX_TOTAL\": { \"score\": number, \"justification\": \"string\" },\n      \"OPEX_GARANTIZADO\": { \"score\": number, \"justification\": \"string\" },\n      \"GARANTIAS_PENALIZACIONES\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"EXECUTION\": {\n      \"PLAZO_ENTREGA\": { \"score\": number, \"justification\": \"string\" },\n      \"EXPERIENCIA_TRACK_RECORD\": { \"score\": number, \"justification\": \"string\" },\n      \"SOLIDEZ_PROVEEDOR\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"HSE_ESG\": {\n      \"SEGURIDAD_ATEX\": { \"score\": number, \"justification\": \"string\" },\n      \"SOSTENIBILIDAD\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    }\n  },\n  \"category_scores\": {\n    \"TECHNICAL\": { \"score\": number, \"weight\": 0.40 },\n    \"ECONOMIC\": { \"score\": number, \"weight\": 0.30 },\n    \"EXECUTION\": { \"score\": number, \"weight\": 0.20 },\n    \"HSE_ESG\": { \"score\": number, \"weight\": 0.10 }\n  },\n  \"overall_score\": number,\n  \"compliance_percentage\": number,\n  \"evaluation_summary\": \"string\",\n  \"strengths\": [\"string\"],\n  \"weaknesses\": [\"string\"],\n  \"recommendations\": [\"string\"]\n}",
+        "text": "=You are an expert technical evaluator for industrial RFQ (Request for Quotation) processes, specifically for hydrogen production equipment (electrolyzers).\n\nYour task is to score provider responses against detailed evaluation criteria.\n\n## PROVIDER: {{ $json.provider_name }}\n## TOTAL RESPONSES: {{ $json.total_responses }}\n\n## EVALUATION CRITERIA AND WEIGHTS:\n\n### TECHNICAL (35% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Eficiencia del Sistema (BOP) | 12% | Consumo total de energía (kWh/kg H2) incluyendo auxiliares |\n| Degradación y Vida Útil | 8% | Horas garantizadas antes del reemplazo del stack y % de pérdida anual |\n| Flexibilidad Operativa | 8% | Carga mínima (Turndown) y velocidad de respuesta a cambios (rampa) |\n| Pureza y Presión | 7% | Calidad del gas de salida y presión directa sin compresor extra |\n\n### ECONOMIC (35% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| CAPEX Total | 18% | Precio de compra, transporte, seguros y puesta en marcha |\n| OPEX Garantizado | 12% | Coste de mantenimiento, consumibles y repuestos por contrato |\n| Garantías y Penalizaciones | 5% | Cobertura en caso de fallo y penalizaciones por falta de disponibilidad |\n\n### EXECUTION (12% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Plazo de Entrega | 6% | Semanas desde la firma hasta la entrega en sitio (Lead Time) |\n| Experiencia (Track Record) | 3% | Número de plantas similares instaladas y operando |\n| Solidez del Proveedor | 3% | Capacidad financiera y red de servicio técnico local/regional |\n\n### HSE/ESG (18% total)\n| Criterion | Weight | What to Evaluate |\n|-----------|--------|------------------|\n| Seguridad y ATEX | 12% | Certificaciones de seguridad y cumplimiento de normativa de explosivos |\n| Sostenibilidad | 6% | Huella de carbono de la fabricación y reciclabilidad de materiales |\n\n## PROVIDER RESPONSES BY CATEGORY:\n{{ JSON.stringify($json.criteria_evaluations, null, 2) }}\n\n## SCORING GUIDELINES (0-10 scale):\n- **10**: Exceeds requirements significantly, best-in-class\n- **8-9**: Fully compliant, meets all requirements excellently\n- **6-7**: Compliant with minor gaps or areas for improvement\n- **4-5**: Partially compliant, significant gaps identified\n- **2-3**: Minimally compliant, major issues or missing information\n- **0-1**: Non-compliant, not addressed, or no response\n\n## RESPONSE VALUE INTERPRETATION:\n- \"INCLUIDO\" / \"INCLUDED\" / \"SI\" = Good compliance (7-10 depending on details)\n- \"PARCIAL\" / \"PARTIAL\" = Partial compliance (4-6)\n- \"NO INCLUIDO\" / \"NOT INCLUDED\" / \"NO\" = Non-compliance (0-3)\n- Detailed technical specifications = Higher scores\n- Vague or generic responses = Lower scores\n- Empty or null = 0\n\n## OUTPUT REQUIREMENTS:\nEvaluate each category and return a structured JSON with:\n1. Individual criterion scores (0-10)\n2. Category averages\n3. Overall weighted score\n4. Key strengths and weaknesses\n\n## OUTPUT SCHEMA:\n{\n  \"provider_name\": \"string\",\n  \"detailed_scores\": {\n    \"TECHNICAL\": {\n      \"EFICIENCIA_SISTEMA_BOP\": { \"score\": number, \"justification\": \"string\" },\n      \"DEGRADACION_VIDA_UTIL\": { \"score\": number, \"justification\": \"string\" },\n      \"FLEXIBILIDAD_OPERATIVA\": { \"score\": number, \"justification\": \"string\" },\n      \"PUREZA_PRESION\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"ECONOMIC\": {\n      \"CAPEX_TOTAL\": { \"score\": number, \"justification\": \"string\" },\n      \"OPEX_GARANTIZADO\": { \"score\": number, \"justification\": \"string\" },\n      \"GARANTIAS_PENALIZACIONES\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"EXECUTION\": {\n      \"PLAZO_ENTREGA\": { \"score\": number, \"justification\": \"string\" },\n      \"EXPERIENCIA_TRACK_RECORD\": { \"score\": number, \"justification\": \"string\" },\n      \"SOLIDEZ_PROVEEDOR\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    },\n    \"HSE_ESG\": {\n      \"SEGURIDAD_ATEX\": { \"score\": number, \"justification\": \"string\" },\n      \"SOSTENIBILIDAD\": { \"score\": number, \"justification\": \"string\" },\n      \"category_average\": number\n    }\n  },\n  \"category_scores\": {\n    \"TECHNICAL\": { \"score\": number, \"weight\": 0.35 },\n    \"ECONOMIC\": { \"score\": number, \"weight\": 0.35 },\n    \"EXECUTION\": { \"score\": number, \"weight\": 0.12 },\n    \"HSE_ESG\": { \"score\": number, \"weight\": 0.18 }\n  },\n  \"overall_score\": number,\n  \"compliance_percentage\": number,\n  \"evaluation_summary\": \"string\",\n  \"strengths\": [\"string\"],\n  \"weaknesses\": [\"string\"],\n  \"recommendations\": [\"string\"]\n}",
         "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2304,
-        1744
+        -4752,
+        -720
       ],
       "id": "7c50c816-94fd-4274-a281-395c95941999",
       "name": "Scoring LLM Chain"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Calculate Weighted Scores\n// Applies specific weights per criterion\n// Saves all 12 individual criterion scores\n// =============================================\n\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Category weights\nconst CATEGORY_WEIGHTS = {\n    'TECHNICAL': 0.40,\n    'ECONOMIC': 0.30,\n    'EXECUTION': 0.20,\n    'HSE_ESG': 0.10\n};\n\n// Detailed criterion weights (12 criteria)\nconst CRITERION_WEIGHTS = {\n    // TECHNICAL (40%)\n    'EFICIENCIA_SISTEMA_BOP': 0.15,\n    'DEGRADACION_VIDA_UTIL': 0.10,\n    'FLEXIBILIDAD_OPERATIVA': 0.10,\n    'PUREZA_PRESION': 0.05,\n    // ECONOMIC (30%)\n    'CAPEX_TOTAL': 0.15,\n    'OPEX_GARANTIZADO': 0.10,\n    'GARANTIAS_PENALIZACIONES': 0.05,\n    // EXECUTION (20%)\n    'PLAZO_ENTREGA': 0.10,\n    'EXPERIENCIA_TRACK_RECORD': 0.05,\n    'SOLIDEZ_PROVEEDOR': 0.05,\n    // HSE_ESG (10%)\n    'SEGURIDAD_ATEX': 0.05,\n    'SOSTENIBILIDAD': 0.05\n};\n\n// Map LLM criterion names to database column names\nconst CRITERION_TO_COLUMN = {\n    'EFICIENCIA_SISTEMA_BOP': 'efficiency_bop_score',\n    'DEGRADACION_VIDA_UTIL': 'degradation_lifetime_score',\n    'FLEXIBILIDAD_OPERATIVA': 'flexibility_score',\n    'PUREZA_PRESION': 'purity_pressure_score',\n    'CAPEX_TOTAL': 'capex_score',\n    'OPEX_GARANTIZADO': 'opex_score',\n    'GARANTIAS_PENALIZACIONES': 'warranties_score',\n    'PLAZO_ENTREGA': 'delivery_time_score',\n    'EXPERIENCIA_TRACK_RECORD': 'track_record_score',\n    'SOLIDEZ_PROVEEDOR': 'provider_strength_score',\n    'SEGURIDAD_ATEX': 'safety_atex_score',\n    'SOSTENIBILIDAD': 'sustainability_score'\n};\n\n// Extract category scores from LLM\nconst categoryScores = llmOutput.category_scores || {};\nconst detailedScores = llmOutput.detailed_scores || {};\n\n// Initialize all 12 individual scores with 0\nconst individualScores = {\n    efficiency_bop_score: 0,\n    degradation_lifetime_score: 0,\n    flexibility_score: 0,\n    purity_pressure_score: 0,\n    capex_score: 0,\n    opex_score: 0,\n    warranties_score: 0,\n    delivery_time_score: 0,\n    track_record_score: 0,\n    provider_strength_score: 0,\n    safety_atex_score: 0,\n    sustainability_score: 0\n};\n\n// Calculate weighted score using detailed weights\nlet weightedScore = 0;\nlet totalWeight = 0;\nlet evaluationCount = 0;\n\n// Extract individual scores from detailed_scores\nif (Object.keys(detailedScores).length > 0) {\n    Object.entries(detailedScores).forEach(([category, criteria]) => {\n        Object.entries(criteria).forEach(([criterion, data]) => {\n            if (criterion === 'category_average') return;\n            \n            const weight = CRITERION_WEIGHTS[criterion] || 0;\n            const score = data?.score || 0;\n            const columnName = CRITERION_TO_COLUMN[criterion];\n            \n            // Save individual score\n            if (columnName) {\n                individualScores[columnName] = Math.round(score * 100) / 100;\n            }\n            \n            if (weight > 0) {\n                weightedScore += score * weight;\n                totalWeight += weight;\n                evaluationCount++;\n            }\n        });\n    });\n} else {\n    // Fallback to category scores\n    Object.entries(categoryScores).forEach(([category, data]) => {\n        const normalizedCategory = category.toUpperCase().replace(/[^A-Z_]/g, '_');\n        const weight = CATEGORY_WEIGHTS[normalizedCategory] || 0.25;\n        const score = data?.score || 0;\n        \n        weightedScore += score * weight;\n        totalWeight += weight;\n        evaluationCount++;\n    });\n}\n\n// Normalize if weights don't sum exactly to 1\nif (totalWeight > 0 && Math.abs(totalWeight - 1) > 0.01) {\n    weightedScore = weightedScore / totalWeight;\n}\n\n// Get project_id\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n} catch(e) {}\n\n// Calculate category averages from individual scores\nconst technicalAvg = (individualScores.efficiency_bop_score + individualScores.degradation_lifetime_score + individualScores.flexibility_score + individualScores.purity_pressure_score) / 4;\nconst economicAvg = (individualScores.capex_score + individualScores.opex_score + individualScores.warranties_score) / 3;\nconst executionAvg = (individualScores.delivery_time_score + individualScores.track_record_score + individualScores.provider_strength_score) / 3;\nconst hseEsgAvg = (individualScores.safety_atex_score + individualScores.sustainability_score) / 2;\n\n// Prepare data for Supabase (matching new schema with 12 individual columns)\nconst rankingData = {\n    provider_name: llmOutput.provider_name,\n    project_id: projectId,\n    // 12 Individual criterion scores\n    ...individualScores,\n    // 4 Aggregated category scores\n    technical_score: Math.round((categoryScores.TECHNICAL?.score || detailedScores.TECHNICAL?.category_average || technicalAvg) * 100) / 100,\n    economic_score: Math.round((categoryScores.ECONOMIC?.score || detailedScores.ECONOMIC?.category_average || economicAvg) * 100) / 100,\n    execution_score: Math.round((categoryScores.EXECUTION?.score || detailedScores.EXECUTION?.category_average || executionAvg) * 100) / 100,\n    hse_esg_score: Math.round((categoryScores.HSE_ESG?.score || detailedScores.HSE_ESG?.category_average || hseEsgAvg) * 100) / 100,\n    // Overall\n    overall_score: Math.round(weightedScore * 100) / 100,\n    compliance_percentage: llmOutput.compliance_percentage || Math.round(weightedScore * 10 * 100) / 100,\n    evaluation_count: evaluationCount,\n    last_updated: new Date().toISOString()\n};\n\nconsole.log(`✅ Detailed Scoring Complete for ${llmOutput.provider_name}:`);\nconsole.log(`   Overall Score: ${rankingData.overall_score}`);\nconsole.log(`   Compliance: ${rankingData.compliance_percentage}%`);\n\nreturn {\n    json: {\n        ranking: rankingData,\n        details: {\n            strengths: llmOutput.strengths || [],\n            weaknesses: llmOutput.weaknesses || [],\n            recommendations: llmOutput.recommendations || [],\n            summary: llmOutput.evaluation_summary || ''\n        },\n        detailed_scores: detailedScores,\n        category_scores: categoryScores,\n        individual_scores: individualScores\n    }\n};"
+        "jsCode": "// =============================================\n// NODE: Calculate Weighted Scores\n// Applies specific weights per criterion\n// Saves all 12 individual criterion scores\n// =============================================\n\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Category weights (Based on H2 La Zaida project requirements)\nconst CATEGORY_WEIGHTS = {\n    'TECHNICAL': 0.35,\n    'ECONOMIC': 0.35,\n    'EXECUTION': 0.12,\n    'HSE_ESG': 0.18\n};\n\n// Detailed criterion weights (12 criteria)\nconst CRITERION_WEIGHTS = {\n    // TECHNICAL (35%)\n    'EFICIENCIA_SISTEMA_BOP': 0.12,\n    'DEGRADACION_VIDA_UTIL': 0.08,\n    'FLEXIBILIDAD_OPERATIVA': 0.08,\n    'PUREZA_PRESION': 0.07,\n    // ECONOMIC (35%)\n    'CAPEX_TOTAL': 0.18,\n    'OPEX_GARANTIZADO': 0.12,\n    'GARANTIAS_PENALIZACIONES': 0.05,\n    // EXECUTION (12%)\n    'PLAZO_ENTREGA': 0.06,\n    'EXPERIENCIA_TRACK_RECORD': 0.03,\n    'SOLIDEZ_PROVEEDOR': 0.03,\n    // HSE_ESG (18%)\n    'SEGURIDAD_ATEX': 0.12,\n    'SOSTENIBILIDAD': 0.06\n};\n\n// Map LLM criterion names to database column names\nconst CRITERION_TO_COLUMN = {\n    'EFICIENCIA_SISTEMA_BOP': 'efficiency_bop_score',\n    'DEGRADACION_VIDA_UTIL': 'degradation_lifetime_score',\n    'FLEXIBILIDAD_OPERATIVA': 'flexibility_score',\n    'PUREZA_PRESION': 'purity_pressure_score',\n    'CAPEX_TOTAL': 'capex_score',\n    'OPEX_GARANTIZADO': 'opex_score',\n    'GARANTIAS_PENALIZACIONES': 'warranties_score',\n    'PLAZO_ENTREGA': 'delivery_time_score',\n    'EXPERIENCIA_TRACK_RECORD': 'track_record_score',\n    'SOLIDEZ_PROVEEDOR': 'provider_strength_score',\n    'SEGURIDAD_ATEX': 'safety_atex_score',\n    'SOSTENIBILIDAD': 'sustainability_score'\n};\n\n// Extract category scores from LLM\nconst categoryScores = llmOutput.category_scores || {};\nconst detailedScores = llmOutput.detailed_scores || {};\n\n// Initialize all 12 individual scores with 0\nconst individualScores = {\n    efficiency_bop_score: 0,\n    degradation_lifetime_score: 0,\n    flexibility_score: 0,\n    purity_pressure_score: 0,\n    capex_score: 0,\n    opex_score: 0,\n    warranties_score: 0,\n    delivery_time_score: 0,\n    track_record_score: 0,\n    provider_strength_score: 0,\n    safety_atex_score: 0,\n    sustainability_score: 0\n};\n\n// Calculate weighted score using detailed weights\nlet weightedScore = 0;\nlet totalWeight = 0;\nlet evaluationCount = 0;\n\n// Extract individual scores from detailed_scores\nif (Object.keys(detailedScores).length > 0) {\n    Object.entries(detailedScores).forEach(([category, criteria]) => {\n        Object.entries(criteria).forEach(([criterion, data]) => {\n            if (criterion === 'category_average') return;\n            \n            const weight = CRITERION_WEIGHTS[criterion] || 0;\n            const score = data?.score || 0;\n            const columnName = CRITERION_TO_COLUMN[criterion];\n            \n            // Save individual score\n            if (columnName) {\n                individualScores[columnName] = Math.round(score * 100) / 100;\n            }\n            \n            if (weight > 0) {\n                weightedScore += score * weight;\n                totalWeight += weight;\n                evaluationCount++;\n            }\n        });\n    });\n} else {\n    // Fallback to category scores\n    Object.entries(categoryScores).forEach(([category, data]) => {\n        const normalizedCategory = category.toUpperCase().replace(/[^A-Z_]/g, '_');\n        const weight = CATEGORY_WEIGHTS[normalizedCategory] || 0.25;\n        const score = data?.score || 0;\n        \n        weightedScore += score * weight;\n        totalWeight += weight;\n        evaluationCount++;\n    });\n}\n\n// Normalize if weights don't sum exactly to 1\nif (totalWeight > 0 && Math.abs(totalWeight - 1) > 0.01) {\n    weightedScore = weightedScore / totalWeight;\n}\n\n// Get project_id\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n} catch(e) {}\n\n// Calculate category averages from individual scores\nconst technicalAvg = (individualScores.efficiency_bop_score + individualScores.degradation_lifetime_score + individualScores.flexibility_score + individualScores.purity_pressure_score) / 4;\nconst economicAvg = (individualScores.capex_score + individualScores.opex_score + individualScores.warranties_score) / 3;\nconst executionAvg = (individualScores.delivery_time_score + individualScores.track_record_score + individualScores.provider_strength_score) / 3;\nconst hseEsgAvg = (individualScores.safety_atex_score + individualScores.sustainability_score) / 2;\n\n// Prepare data for Supabase (matching new schema with 12 individual columns)\nconst rankingData = {\n    provider_name: llmOutput.provider_name,\n    project_id: projectId,\n    // 12 Individual criterion scores\n    ...individualScores,\n    // 4 Aggregated category scores\n    technical_score: Math.round((categoryScores.TECHNICAL?.score || detailedScores.TECHNICAL?.category_average || technicalAvg) * 100) / 100,\n    economic_score: Math.round((categoryScores.ECONOMIC?.score || detailedScores.ECONOMIC?.category_average || economicAvg) * 100) / 100,\n    execution_score: Math.round((categoryScores.EXECUTION?.score || detailedScores.EXECUTION?.category_average || executionAvg) * 100) / 100,\n    hse_esg_score: Math.round((categoryScores.HSE_ESG?.score || detailedScores.HSE_ESG?.category_average || hseEsgAvg) * 100) / 100,\n    // Overall\n    overall_score: Math.round(weightedScore * 100) / 100,\n    compliance_percentage: llmOutput.compliance_percentage || Math.round(weightedScore * 10 * 100) / 100,\n    evaluation_count: evaluationCount,\n    last_updated: new Date().toISOString()\n};\n\nconsole.log(`✅ Detailed Scoring Complete for ${llmOutput.provider_name}:`);\nconsole.log(`   Overall Score: ${rankingData.overall_score}`);\nconsole.log(`   Compliance: ${rankingData.compliance_percentage}%`);\n\nreturn {\n    json: {\n        ranking: rankingData,\n        details: {\n            strengths: llmOutput.strengths || [],\n            weaknesses: llmOutput.weaknesses || [],\n            recommendations: llmOutput.recommendations || [],\n            summary: llmOutput.evaluation_summary || ''\n        },\n        detailed_scores: detailedScores,\n        category_scores: categoryScores,\n        individual_scores: individualScores\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1920,
-        1744
+        -4368,
+        -720
       ],
       "id": "df59e3a8-ecc5-4b87-9d93-a3ee8e8f911b",
       "name": "Calculate Weighted Scores"
@@ -137,25 +137,17 @@
       "parameters": {
         "operation": "getAll",
         "tableId": "ranking_proveedores",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $json.ranking.provider_name }}"
-            }
-          ]
-        }
+        "limit": 1
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1680,
-        1744
+        -4128,
+        -720
       ],
       "id": "55c63eb9-9ea4-477f-99da-f4fbe14b1066",
       "name": "Check Provider Exists",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
@@ -176,23 +168,22 @@
             {
               "id": "provider-exists-condition",
               "leftValue": "={{ $json.provider_name }}",
-              "rightValue": "",
+              "rightValue": "={{ $('Loop Over Providers').item.json.provider_name }}",
               "operator": {
                 "type": "string",
-                "operation": "exists",
-                "singleValue": true
+                "operation": "equals"
               }
             }
           ],
-          "combinator": "and"
+          "combinator": "or"
         },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1440,
-        1744
+        -3888,
+        -720
       ],
       "id": "39f22396-3f40-4192-b814-d24f73afe15f",
       "name": "Provider Exists?"
@@ -302,8 +293,8 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1200,
-        1648
+        -3648,
+        -816
       ],
       "id": "023a7ca3-4205-4045-9368-e32319a89171",
       "name": "Update Ranking",
@@ -413,8 +404,8 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1200,
-        1856
+        -3648,
+        -608
       ],
       "id": "c720c461-ffd6-4fe2-b654-7c8ecc06ed8c",
       "name": "Insert Ranking",
@@ -434,21 +425,21 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -2304,
-        1568
+        -4752,
+        -896
       ],
       "id": "ef76f042-e7a6-429e-ad0d-21a91c958f77",
       "name": "Aggregate All Rankings"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details\n// Sorts providers and generates complete response\n// Includes all 12 individual criterion scores\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        detailed_scores: r.detailed_scores || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {}\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => ({\n    position: idx + 1,\n    provider_name: r.ranking.provider_name,\n    overall_score: r.ranking.overall_score,\n    compliance_percentage: r.ranking.compliance_percentage,\n    // Aggregated category scores\n    category_scores: {\n        technical: r.ranking.technical_score,\n        economic: r.ranking.economic_score,\n        execution: r.ranking.execution_score,\n        hse_esg: r.ranking.hse_esg_score\n    },\n    // All 12 individual criterion scores\n    individual_scores: {\n        // TECHNICAL (40%)\n        efficiency_bop: r.ranking.efficiency_bop_score || r.individual_scores?.efficiency_bop_score || 0,\n        degradation_lifetime: r.ranking.degradation_lifetime_score || r.individual_scores?.degradation_lifetime_score || 0,\n        flexibility: r.ranking.flexibility_score || r.individual_scores?.flexibility_score || 0,\n        purity_pressure: r.ranking.purity_pressure_score || r.individual_scores?.purity_pressure_score || 0,\n        // ECONOMIC (30%)\n        capex: r.ranking.capex_score || r.individual_scores?.capex_score || 0,\n        opex: r.ranking.opex_score || r.individual_scores?.opex_score || 0,\n        warranties: r.ranking.warranties_score || r.individual_scores?.warranties_score || 0,\n        // EXECUTION (20%)\n        delivery_time: r.ranking.delivery_time_score || r.individual_scores?.delivery_time_score || 0,\n        track_record: r.ranking.track_record_score || r.individual_scores?.track_record_score || 0,\n        provider_strength: r.ranking.provider_strength_score || r.individual_scores?.provider_strength_score || 0,\n        // HSE/ESG (10%)\n        safety_atex: r.ranking.safety_atex_score || r.individual_scores?.safety_atex_score || 0,\n        sustainability: r.ranking.sustainability_score || r.individual_scores?.sustainability_score || 0\n    },\n    detailed_scores: r.detailed_scores,\n    evaluation: {\n        strengths: r.details.strengths || [],\n        weaknesses: r.details.weaknesses || [],\n        recommendations: r.details.recommendations || [],\n        summary: r.details.summary || ''\n    }\n}));\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    criteria_weights: {\n        TECHNICAL: {\n            total: '40%',\n            efficiency_bop: '15%',\n            degradation_lifetime: '10%',\n            flexibility: '10%',\n            purity_pressure: '5%'\n        },\n        ECONOMIC: {\n            total: '30%',\n            capex: '15%',\n            opex: '10%',\n            warranties: '5%'\n        },\n        EXECUTION: {\n            total: '20%',\n            delivery_time: '10%',\n            track_record: '5%',\n            provider_strength: '5%'\n        },\n        HSE_ESG: {\n            total: '10%',\n            safety_atex: '5%',\n            sustainability: '5%'\n        }\n    }\n};\n\nconsole.log(`🏆 Final Ranking Generated:`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using 12 detailed criteria`\n    }\n};"
+        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details\n// Sorts providers and generates complete response\n// Includes all 12 individual criterion scores\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        detailed_scores: r.detailed_scores || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {}\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => ({\n    position: idx + 1,\n    provider_name: r.ranking.provider_name,\n    overall_score: r.ranking.overall_score,\n    compliance_percentage: r.ranking.compliance_percentage,\n    // Aggregated category scores\n    category_scores: {\n        technical: r.ranking.technical_score,\n        economic: r.ranking.economic_score,\n        execution: r.ranking.execution_score,\n        hse_esg: r.ranking.hse_esg_score\n    },\n    // All 12 individual criterion scores\n    individual_scores: {\n        // TECHNICAL (35%)\n        efficiency_bop: r.ranking.efficiency_bop_score || r.individual_scores?.efficiency_bop_score || 0,\n        degradation_lifetime: r.ranking.degradation_lifetime_score || r.individual_scores?.degradation_lifetime_score || 0,\n        flexibility: r.ranking.flexibility_score || r.individual_scores?.flexibility_score || 0,\n        purity_pressure: r.ranking.purity_pressure_score || r.individual_scores?.purity_pressure_score || 0,\n        // ECONOMIC (35%)\n        capex: r.ranking.capex_score || r.individual_scores?.capex_score || 0,\n        opex: r.ranking.opex_score || r.individual_scores?.opex_score || 0,\n        warranties: r.ranking.warranties_score || r.individual_scores?.warranties_score || 0,\n        // EXECUTION (12%)\n        delivery_time: r.ranking.delivery_time_score || r.individual_scores?.delivery_time_score || 0,\n        track_record: r.ranking.track_record_score || r.individual_scores?.track_record_score || 0,\n        provider_strength: r.ranking.provider_strength_score || r.individual_scores?.provider_strength_score || 0,\n        // HSE/ESG (18%)\n        safety_atex: r.ranking.safety_atex_score || r.individual_scores?.safety_atex_score || 0,\n        sustainability: r.ranking.sustainability_score || r.individual_scores?.sustainability_score || 0\n    },\n    detailed_scores: r.detailed_scores,\n    evaluation: {\n        strengths: r.details.strengths || [],\n        weaknesses: r.details.weaknesses || [],\n        recommendations: r.details.recommendations || [],\n        summary: r.details.summary || ''\n    }\n}));\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    criteria_weights: {\n        TECHNICAL: {\n            total: '35%',\n            efficiency_bop: '12%',\n            degradation_lifetime: '8%',\n            flexibility: '8%',\n            purity_pressure: '7%'\n        },\n        ECONOMIC: {\n            total: '35%',\n            capex: '18%',\n            opex: '12%',\n            warranties: '5%'\n        },\n        EXECUTION: {\n            total: '12%',\n            delivery_time: '6%',\n            track_record: '3%',\n            provider_strength: '3%'\n        },\n        HSE_ESG: {\n            total: '18%',\n            safety_atex: '12%',\n            sustainability: '6%'\n        }\n    }\n};\n\nconsole.log(`🏆 Final Ranking Generated:`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using 12 detailed criteria`\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2016,
-        1568
+        -4464,
+        -896
       ],
       "id": "487f8cdb-37e8-4358-a20a-94fd0ce3dd30",
       "name": "Generate Final Ranking"
@@ -471,24 +462,23 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1792,
-        1568
+        -4240,
+        -896
       ],
       "id": "018e5329-1353-4ed8-a8e0-42bb32e21f0c",
       "name": "Respond with Ranking"
     },
     {
       "parameters": {
-        "content": "## Scoring Workflow - Evaluacion de Proveedores\n## Con Criterios Detallados (12 criterios)\n\n### Pesos por Categoría:\n\n**TÉCNICA (40%)**\n- Eficiencia Sistema BOP: 15%\n- Degradación/Vida Útil: 10%\n- Flexibilidad Operativa: 10%\n- Pureza y Presión: 5%\n\n**ECONÓMICA (30%)**\n- CAPEX Total: 15%\n- OPEX Garantizado: 10%\n- Garantías/Penalizaciones: 5%\n\n**EJECUCIÓN (20%)**\n- Plazo de Entrega: 10%\n- Track Record: 5%\n- Solidez Proveedor: 5%\n\n**HSE/ESG (10%)**\n- Seguridad ATEX: 5%\n- Sostenibilidad: 5%\n\n### Endpoint:\nPOST /webhook/scoring-evaluation\n```json\n{\n  \"project_id\": \"uuid\",\n  \"provider_name\": \"filter\",\n  \"recalculate_all\": false\n}\n```",
-        "height": 560,
-        "width": 400,
-        "color": 4
+        "content": "## Scoring Workflow - Evaluacion de Proveedores\n## Con Criterios Detallados (12 criterios)\n## Based on H2 La Zaida Project Requirements\n\n### Pesos por Categoría:\n\n**TÉCNICA (35%)**\n- Eficiencia Sistema BOP: 12%\n- Degradación/Vida Útil: 8%\n- Flexibilidad Operativa: 8%\n- Pureza y Presión: 7%\n\n**ECONÓMICA (35%)**\n- CAPEX Total: 18%\n- OPEX Garantizado: 12%\n- Garantías/Penalizaciones: 5%\n\n**EJECUCIÓN (12%)**\n- Plazo de Entrega: 6%\n- Track Record: 3%\n- Solidez Proveedor: 3%\n\n**HSE/ESG (18%)**\n- Seguridad ATEX: 12%\n- Sostenibilidad: 6%\n\n### Endpoint:\nPOST /webhook/scoring-evaluation\n```json\n{\n  \"project_id\": \"uuid\",\n  \"provider_name\": \"filter\",\n  \"recalculate_all\": false\n}\n```",
+        "height": 1264,
+        "width": 3280
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3808,
-        1152
+        -6704,
+        -1264
       ],
       "id": "c82e8773-c678-4307-90c9-3a402b889cac",
       "name": "Workflow Info"
@@ -503,8 +493,8 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -2400,
-        1328
+        -4848,
+        -1136
       ],
       "id": "a64086d4-8ebe-4f61-b07c-1ceec049b9e0",
       "name": "LLM Scoring Info"
@@ -538,8 +528,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -3472,
-        1776
+        -5920,
+        -688
       ],
       "id": "e3517c77-5586-48f9-b782-b361c1fdb9c6",
       "name": "Set Input Params1"
@@ -554,8 +544,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2528,
-        1968
+        -5184,
+        -496
       ],
       "id": "cacda3d2-f919-4cb3-959f-bfcf87a54454",
       "name": "Mistral Model1",
@@ -574,8 +564,8 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -2160,
-        1968
+        -4608,
+        -496
       ],
       "id": "99f512b6-b811-45c5-b4a4-42383ffb0b93",
       "name": "JSON Output Parser1"
@@ -587,8 +577,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -2416,
-        1952
+        -4864,
+        -512
       ],
       "id": "1d6a6586-09c0-4326-bff3-466750454d4d",
       "name": "OpenRouter Chat Model1",
@@ -598,6 +588,36 @@
           "name": "OpenRouter account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "ranking_proveedores",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "provider_name",
+              "condition": "neq",
+              "keyValue": "R"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -6144,
+        -688
+      ],
+      "id": "6e27864a-c37e-4260-8930-398e36664f00",
+      "name": "Delete a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
     }
   ],
   "connections": {
@@ -605,7 +625,7 @@
       "main": [
         [
           {
-            "node": "Set Input Params1",
+            "node": "Delete a row",
             "type": "main",
             "index": 0
           }
@@ -785,6 +805,11 @@
         ]
       ]
     },
+    "Mistral Model1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
     "JSON Output Parser1": {
       "ai_outputParser": [
         [
@@ -802,6 +827,17 @@
           {
             "node": "Scoring LLM Chain",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a row": {
+      "main": [
+        [
+          {
+            "node": "Set Input Params1",
+            "type": "main",
             "index": 0
           }
         ]

@@ -24,7 +24,7 @@ import { ToastContainer } from './components/common/ToastContainer';
 type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
 
 export default function App() {
-  const { selectedFiles, reset, isProcessing, error, processingFileCount, rfqMetadata, setRfqMetadata, setApplyTableFilters, results, refreshProposalEvaluations } = useRfqStore();
+  const { selectedFiles, reset, isProcessing, error, processingFileCount, rfqMetadata, setRfqMetadata, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
   const [activeView, setActiveView] = useState<ViewType>(() => {
     const saved = localStorage.getItem('activeView') as ViewType;
@@ -428,21 +428,42 @@ export default function App() {
               />
             </div>
 
-            {/* Processing Status */}
-            <div style={{ marginTop: '32px' }}>
-              <ProcessingStatus
-                onViewResults={() => {
-                  setActiveView('table');
-                  setApplyTableFilters(true);
-                }}
-              />
-            </div>
+            {/* Processing Status - Overlay */}
+            {(isProcessing || status.stage === 'completed') && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                backdropFilter: 'blur(4px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                animation: 'fadeIn 0.3s ease-out'
+              }}>
+                <div style={{ maxWidth: '600px', width: '90%' }}>
+                  <ProcessingStatus
+                    onViewResults={() => {
+                      setActiveView('table');
+                      setApplyTableFilters(true);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             <style>{`
               @keyframes shake {
                 0%, 100% { transform: translateX(0); }
                 10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
                 20%, 40%, 60%, 80% { transform: translateX(8px); }
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
               }
             `}</style>
           </div>
