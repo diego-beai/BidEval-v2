@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -944,
+        -928,
         -96
       ],
-      "id": "33ac86e5-7757-430c-ac6b-369d62d2b04f",
+      "id": "a2e8ab8f-82d4-4e03-8f9a-ee6de6ab16f4",
       "name": "Sticky Note"
     },
     {
@@ -26,10 +26,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -832,
+        -816,
         112
       ],
-      "id": "25ccf092-f3b9-4c62-8aed-a8720363de1c",
+      "id": "60d2ff85-9939-4a54-8d88-5c57eb7c0984",
       "name": "Webhook RFQ",
       "webhookId": "ce591645-290f-46ab-a153-0dca369b1ebd"
     },
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        288,
+        304,
         112
       ],
-      "id": "726ca271-a0e5-4ab9-8ef4-ce39d03869ce",
+      "id": "7b5bd344-3ca0-4864-9f9e-1c4e030ec37c",
       "name": "Preparar Texto1"
     },
     {
@@ -63,10 +63,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -16,
+        0,
         336
       ],
-      "id": "54dcda26-569b-4978-9e4d-31ca527301f8",
+      "id": "ba3ccaac-bc51-42d3-bf3d-b1cc7d852a45",
       "name": "Clasificador de Tipos1"
     },
     {
@@ -79,10 +79,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -64,
+        -48,
         560
       ],
-      "id": "44e8a88e-58e3-47fa-b36c-25a538c0d31a",
+      "id": "db5a3d4a-5f8c-4f2e-8393-9a2e186396b7",
       "name": "Ollama Clasificador1",
       "credentials": {
         "ollamaApi": {
@@ -99,10 +99,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        176,
+        192,
         560
       ],
-      "id": "f5dac8a0-fb5a-4491-a7d4-ce297463fdd4",
+      "id": "67adb36c-691d-40ae-9e6e-2ba29d56e7e4",
       "name": "Output Parser1"
     },
     {
@@ -112,10 +112,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        944,
+        960,
         336
       ],
-      "id": "9ed69fba-e8c2-421d-81df-a272c966529a",
+      "id": "6975c3dd-78b7-4d95-bf68-f2aa8bb6c179",
       "name": "Expandir por Tipo1"
     },
     {
@@ -125,10 +125,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1152,
+        1168,
         336
       ],
-      "id": "d1797574-16ef-456b-b9db-a0ca560766e3",
+      "id": "0d2a738e-8cbf-461e-b79d-c8345285eeb7",
       "name": "Loop por Tipo1"
     },
     {
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2720,
+        2736,
         256
       ],
-      "id": "8e71a233-5d8f-4ace-b0d5-629766001ab9",
+      "id": "18aa3c36-4ffe-4892-a660-a97ca36d7f0f",
       "name": "Parsear Items1"
     },
     {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3248,
+        3264,
         464
       ],
-      "id": "222fa567-8d5b-41b2-9dd4-dced4e05e8b7",
+      "id": "b939967a-b722-4659-a362-250437edcde8",
       "name": "Agregar Resultados1"
     },
     {
@@ -164,10 +164,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2448,
+        2464,
         -32
       ],
-      "id": "1697282a-5c4a-4e39-b29f-ebe9c7a4bd90",
+      "id": "fb7d8dc9-1d3f-4086-aebe-1a3270813f90",
       "name": "Resumen Final1"
     },
     {
@@ -179,10 +179,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2736,
+        2752,
         -32
       ],
-      "id": "14e12fba-929a-407a-a9de-3347a8063565",
+      "id": "5085cfe3-4512-45d9-9d3c-cb0289f0c9fb",
       "name": "Respond Success1"
     },
     {
@@ -192,10 +192,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
+        -144,
         112
       ],
-      "id": "cc19a068-1d24-45e9-b5be-0a7521b3e5e6",
+      "id": "2a735241-4087-4d54-89ce-23a7e44e0a62",
       "name": "Base64 a Binary3"
     },
     {
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        64,
+        80,
         112
       ],
-      "id": "e9f0a463-0962-487a-a87e-aac88ba2e0c5",
+      "id": "10e170af-3664-40f9-a7b0-0672a89a2dce",
       "name": "Extract from File3"
     },
     {
@@ -219,10 +219,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -608,
+        -592,
         112
       ],
-      "id": "9f8df502-a9c9-477c-87cb-ebfa9bf9c38d",
+      "id": "45ae3659-7a78-45b2-80ac-f45bd4f26fe9",
       "name": "Generate IDs1"
     },
     {
@@ -280,10 +280,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        2048,
+        2064,
         464
       ],
-      "id": "24d53591-40cd-4e54-a0ba-b09f8dbb1022",
+      "id": "c6b57797-e37d-429f-beaa-6f8fb4135c5c",
       "name": "Switch1"
     },
     {
@@ -297,10 +297,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2304,
+        2320,
         912
       ],
-      "id": "86d08ba6-4cec-49d1-8c92-0d835c6c9c0c",
+      "id": "77763a98-cd71-47d5-b5e4-868fa0bd24f0",
       "name": "Ollama Extractor2",
       "credentials": {
         "ollamaApi": {
@@ -312,11 +312,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### TAREA: EXTRACCIÓN MASIVA DE ENTREGABLES (DELIVERABLES)\n\n**OBJETIVO:** Extraer **TODOS** los documentos, planos y entregables listados. **EXHAUSTIVIDAD TOTAL**.\n\n### INSTRUCCIONES CRÍTICAS (NO RESUMIR):\n1. **TABLAS:** Si encuentras una tabla, extrae **CADA FILA**. Si hay 140 filas, devuelve 140 ítems.\n2. **NO AGRUPES:** Mantén la granularidad.\n3. **FASES:** Infiere la fase/disciplina. Si no, usa 'General'.\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\nProyecto: {{ $json.nombre_proyecto }}\nEvaluación: {{ $('Loop por Tipo1').item.json.tipo_evaluacion }}\nArchivo: {{ $('Generate IDs1').first().json.file_title }}\n\n### TEXTO DEL PDF:\n{{ $json.texto_chunk }}\n\n### FORMATO DE SALIDA:\n```json\n[\n  { \"fase\": \"Process\", \"requisito_rfq\": \"PFD\" },\n  { \"fase\": \"Civil\", \"requisito_rfq\": \"Foundation Layout\" }\n]\n```\n\n**RESPUESTA (JSON PURO):**",
+        "text": "=Evaluation: {{ $('Loop por Tipo1').item.json.tipo_evaluacion }}\n\n### TEXT:\n{{ $json.texto_chunk }}\n\n### DISCIPLINES: Management, Preliminary surveys, Technical and economical studies, Process Engineering, HSE, Mechanical Engineering, Piping, Civil and Structural Engineering, Electrical Engineering, Instrumentation and control Engineering, Planning, Cost, Procurement\n\n### EXAMPLES:\n{\"fase\": \"Management\", \"requisito_rfq\": \"Project Execution plan\"}\n{\"fase\": \"Process Engineering\", \"requisito_rfq\": \"Process flow diagrams\"}\n{\"fase\": \"HSE\", \"requisito_rfq\": \"HAZID\"}\n{\"fase\": \"Electrical Engineering\", \"requisito_rfq\": \"Electrical consumer list and load balance\"}\n{\"fase\": \"Cost\", \"requisito_rfq\": \"CAPEX estimate Class 3 AACEI (-20% +30%)\"}\n\n**JSON RESPONSE:**",
         "messages": {
           "messageValues": [
             {
-              "message": "=Eres una API que devuelve JSON. \n- NO saludes.\n- NO expliques.\n- NO uses markdown fuera del JSON.\n- Tu salida DEBE empezar con `[` y terminar con `]`."
+              "message": "=Extract ALL deliverables from RFQ. Use disciplines as 'fase': Management, Process Engineering, HSE, Mechanical Engineering, Piping, Civil and Structural Engineering, Electrical Engineering, Instrumentation and control Engineering, Planning, Cost, Procurement. JSON array only."
             }
           ]
         },
@@ -325,10 +325,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2368,
+        2384,
         688
       ],
-      "id": "7ffdb680-2de1-4697-95c0-c34b75202800",
+      "id": "1fc66468-da54-4caa-8bcb-2fd17a3488d1",
       "name": "LLM Extractor - Deliverables"
     },
     {
@@ -338,10 +338,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2720,
+        2736,
         688
       ],
-      "id": "6062a706-3d2c-42f2-af26-efa2208d414f",
+      "id": "a642671d-5239-4913-a5cd-078c1da2f169",
       "name": "Parsear deliverables"
     },
     {
@@ -354,10 +354,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2304,
+        2320,
         464
       ],
-      "id": "71a56d5a-5407-40e1-aa7b-019995cf2e79",
+      "id": "f420575d-9c35-4963-a148-5758db82c8be",
       "name": "Ollama Extractor1",
       "credentials": {
         "ollamaApi": {
@@ -374,10 +374,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2608,
+        2624,
         896
       ],
-      "id": "01c23aa6-216c-4305-ae73-76b9089ef07e",
+      "id": "ddf73316-3b00-4ec1-b08b-2d0b9c7aeca9",
       "name": "Structured Output Parser1"
     },
     {
@@ -388,10 +388,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2544,
+        2560,
         464
       ],
-      "id": "c97006f9-f2df-4637-95bb-ea29b8c44f52",
+      "id": "35b2644b-1905-412c-a3fc-fdc51d018da5",
       "name": "Structured Output Parser2"
     },
     {
@@ -401,10 +401,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        1456,
         448
       ],
-      "id": "abd68381-e264-48ef-93d7-0f4b340568a3",
+      "id": "27c2869d-49ff-431e-8835-464f5ca4c9d8",
       "name": "Dividir en Trozos1",
       "disabled": true
     },
@@ -417,10 +417,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1792,
+        1808,
         448
       ],
-      "id": "9a877197-f03c-46b3-a0de-fd069cd456f8",
+      "id": "bea26928-05a1-48d9-b1e9-8708085abae0",
       "name": "Loop por Trozo1"
     },
     {
@@ -430,10 +430,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1616,
+        1632,
         448
       ],
-      "id": "844aa1e1-4ea9-46ae-90c2-81f41ce03547",
+      "id": "a92786e5-ce32-4b15-82ef-be95825f7091",
       "name": "Reset Items1"
     },
     {
@@ -443,10 +443,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        512,
+        528,
         560
       ],
-      "id": "efdcce2c-2eae-4053-b211-64c7b5038153",
+      "id": "5f09cdcd-7036-4cac-a245-9bfe46297077",
       "name": "Embeddings Ollama1",
       "credentials": {
         "ollamaApi": {
@@ -468,12 +468,12 @@
           "queryName": "match_rfq"
         }
       },
-      "id": "dc6f47ec-b26b-4491-a15e-eeef9d0aff34",
+      "id": "72e94c63-781d-4425-8c32-b63d1ee79927",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        592,
+        608,
         336
       ],
       "credentials": {
@@ -492,10 +492,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        768,
+        784,
         768
       ],
-      "id": "940045c4-abce-447a-b539-4151af7e3920",
+      "id": "2863de98-e918-4642-820f-9236fca19d83",
       "name": "Recursive Character Text Splitter1"
     },
     {
@@ -525,12 +525,12 @@
           }
         }
       },
-      "id": "9397e861-e986-4430-bc6a-5f12fdf5fc24",
+      "id": "a4c32a02-fc1b-42a7-bed5-2cea49c1eac3",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        688,
+        704,
         560
       ]
     },
@@ -561,10 +561,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        3040,
+        3056,
         464
       ],
-      "id": "29dd3eaf-f42c-49b1-841b-13b87808bc22",
+      "id": "f89e7493-65fd-49c8-bd9d-d90e319b06b6",
       "name": "Create a row",
       "credentials": {
         "supabaseApi": {
@@ -580,12 +580,12 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "aceb96cf-bd88-4f4e-9abf-f27d26e4f4c4",
+      "id": "45714e4c-85f2-48a1-bb76-b377ca841cbd",
       "name": "Delete Old Doc Rows1",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -384,
+        -368,
         112
       ],
       "alwaysOutputData": true,
@@ -701,10 +701,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        368,
+        384,
         336
       ],
-      "id": "5e319136-f822-4d56-96e2-6a3b298df564",
+      "id": "0bcec562-6c50-489c-809d-89f51df1d0fd",
       "name": "Insert Document Metadata2",
       "executeOnce": true,
       "credentials": {
@@ -722,10 +722,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2416,
+        2432,
         528
       ],
-      "id": "7eab12a9-c286-4a1a-8442-1c3313503a38",
+      "id": "faa8f75b-97a1-4127-a436-c78fdd55805c",
       "name": "Mistral Cloud Chat Model4",
       "credentials": {
         "mistralCloudApi": {
@@ -739,10 +739,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
       "typeVersion": 1,
       "position": [
-        880,
+        896,
         784
       ],
-      "id": "ed1e6a43-63d2-4161-b9c3-cd410cf7a332",
+      "id": "1e9afb1a-46d4-42fe-a0d3-3ce7efe30067",
       "name": "Embeddings Cohere1",
       "credentials": {
         "cohereApi": {
@@ -754,11 +754,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### RFQ REQUIREMENTS EXTRACTION - EXHAUSTIVE\n\nProject: {{ $json.nombre_proyecto }}\nType: {{ $json.tipo_evaluacion }}\nChunk: {{ $json.chunk_index }}/{{ $json.total_chunks }}\n\n### TEXT TO ANALYZE:\n{{ $json.texto_chunk }}\n\n---\n### VALID PHASES:\n- Process Engineering\n- Mechanical Engineering  \n- Electrical Engineering\n- Civil & Structural\n- Instrumentation & Control\n- Piping\n- HSE / Safety\n- Project Management\n- Quality Assurance\n- General Requirements\n\n### WHAT TO EXTRACT (be exhaustive):\n\n✅ **EXTRACT ALL OF THESE:**\n- Numerical specifications (pressures, temperatures, flows, capacities, dimensions)\n- Quality standards and codes (ISO, API, ASME, NFPA, IEC)\n- Material requirements (steel grades, coatings, certifications)\n- Equipment specifications (pumps, compressors, tanks, transformers)\n- Utility requirements (power, water, air, nitrogen)\n- Environmental limits (noise, emissions, effluents)\n- Safety requirements (ATEX zones, fire protection, detection systems)\n- Design conditions (ambient temp, seismic, wind loads)\n- Operational parameters (hours/year, availability, redundancy)\n- Deliverables and documents required\n- Compliance requirements (local regulations, permits)\n- Interface/battery limit conditions\n- Each row from tables as separate item\n\n### FORMAT RULES:\n\n1. **NO REDUNDANCY** - Don't repeat project context words\n2. **SHORT** (max 60 chars) - Value + unit, no long descriptions\n3. **SEARCHABLE** - Use standard prefixes: \"Pressure:\", \"Temp:\", \"Flow:\", \"Code:\", \"Material:\"\n4. **SPLIT** compound data into separate items\n\n### EXAMPLES:\n\nFrom: \"The plant operates at 7 bar with temperature range 20-40°C\"\n→ {\"fase\": \"Process Engineering\", \"requisito_rfq\": \"Operating pressure: 7 barg\"}\n→ {\"fase\": \"Process Engineering\", \"requisito_rfq\": \"Operating temp: 20-40°C\"}\n\nFrom: \"Compressed air per ISO 8573-1 class 1.2.0\"\n→ {\"fase\": \"Mechanical Engineering\", \"requisito_rfq\": \"Instrument air: ISO 8573-1 class 1.2.0\"}\n\nFrom: \"ATEX Zone 2 classification for outdoor areas\"\n→ {\"fase\": \"HSE / Safety\", \"requisito_rfq\": \"ATEX Zone 2: outdoor areas\"}\n\nFrom: \"30 kV power supply from grid\"\n→ {\"fase\": \"Electrical Engineering\", \"requisito_rfq\": \"Grid supply: 30 kV\"}\n\nFrom table row: \"Buffer tank | 40 barg | SS316L\"\n→ {\"fase\": \"Mechanical Engineering\", \"requisito_rfq\": \"Buffer tank: 40 barg, SS316L\"}\n\n### JSON FORMAT:\n```json\n[\n  {\"fase\": \"Phase\", \"requisito_rfq\": \"Short requirement with value\"}\n]\n```\n\n**RESPONSE (JSON only, be EXHAUSTIVE):**",
+        "text": "=Evaluation: {{ $json.tipo_evaluacion }}\n\n### TEXT:\n{{ $('Preparar Texto1').first().json.text }}\n\n### PHASES: PRE-FEED, FEED, EPC TENDER, EPC Budgetary Price, General Comments\n\n### EXAMPLES:\n{\"fase\": \"PRE-FEED\", \"requisito_rfq\": \"Scope of facilities\"}\n{\"fase\": \"PRE-FEED\", \"requisito_rfq\": \"CAPEX estimate\"}\n{\"fase\": \"PRE-FEED\", \"requisito_rfq\": \"Hours per discipline\"}\n{\"fase\": \"PRE-FEED\", \"requisito_rfq\": \"Process\"}\n{\"fase\": \"FEED\", \"requisito_rfq\": \"AACEI Class\"}\n{\"fase\": \"EPC TENDER\", \"requisito_rfq\": \"Technical specifications\"}\n{\"fase\": \"General Comments\", \"requisito_rfq\": \"Validity of the proposal\"}\n\n**JSON RESPONSE:**",
         "messages": {
           "messageValues": [
             {
-              "message": "You are an exhaustive Requirements Extractor for EPC tenders.\n\nMISSION: Extract ALL technical requirements, specifications, and parameters.\n\nRULES:\n- Be EXHAUSTIVE - extract every specification, parameter, code reference\n- NO redundancy - don't repeat project name terms\n- SHORT - max 60 chars, focus on value + unit\n- SEARCHABLE - use standard prefixes (Pressure:, Temp:, Code:, Material:)\n- SPLIT compound requirements into separate items\n- Extract EACH table row as separate item\n- If text has no requirements: return []\n- JSON only"
+              "message": "=Extract ALL requirements from RFQ for Technical/Economical Evaluation. Use phases: PRE-FEED, FEED, EPC TENDER, EPC Budgetary Price, General Comments. List each discipline separately (Process, Mechanical, Piping, etc.). JSON array only, no explanations."
             }
           ]
         },
@@ -767,10 +767,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2384,
+        2400,
         256
       ],
-      "id": "07d7e073-8026-4c83-8279-c636ebbb8335",
+      "id": "ccb2ea8e-d0b2-4bd0-843c-7b9ef270f457",
       "name": "LLM Extractor Tech-Econ"
     }
   ],
