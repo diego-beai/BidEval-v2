@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3232,
+        -3248,
         -2032
       ],
-      "id": "103f97ca-d884-4233-9813-28b869d6627d",
+      "id": "a66bf41b-6ee6-4354-87f0-d8959a451ce2",
       "name": "Sticky Note4"
     },
     {
@@ -23,53 +23,33 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1616,
-        -1856
+        -1488,
+        -1840
       ],
-      "id": "ecbb8d1a-0cd3-445c-9976-294e504246c5",
+      "id": "9af0aea1-5c7e-43cd-addc-00052540853f",
       "name": "Respond to Webhook5"
     },
     {
       "parameters": {
-        "model": "llama3.2:3b",
+        "model": "qwen3:8b",
         "options": {
           "temperature": 0.2,
-          "numCtx": 16384,
-          "numPredict": 512
+          "numCtx": 8192,
+          "numPredict": 1024
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -2896,
-        -1424
+        -2960,
+        -1472
       ],
-      "id": "4dda43eb-7996-4e47-b310-c69d91cf5193",
+      "id": "203082ab-8646-4e16-9999-2245a2e94062",
       "name": "Ollama Chat Model3",
       "credentials": {
         "ollamaApi": {
           "id": "oS2Qqti9oVfsm8XZ",
           "name": "Ollama account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "model": "mistral-large-latest",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        -2656,
-        -1632
-      ],
-      "id": "5a3aba3e-f8c3-4223-8aab-6dad16a022a1",
-      "name": "Mistral Cloud Chat Model1",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
         }
       }
     },
@@ -83,10 +63,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2896,
-        -1856
+        -3136,
+        -1840
       ],
-      "id": "07729c7f-c0d6-43ee-8d26-2b256d8c83e1",
+      "id": "4a9a27f0-8ee5-478c-b8d3-bae680fce13d",
       "name": "Webhook1",
       "webhookId": "chat-rfq"
     },
@@ -95,13 +75,13 @@
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.body.sessionId }}"
       },
-      "id": "fcdfa0c3-af6f-42e5-9001-6e195abc014f",
+      "id": "0b684682-1dd1-48a7-bbdf-42d3b2f37666",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        -2528,
-        -1632
+        -2784,
+        -1616
       ],
       "notesInFlow": false,
       "credentials": {
@@ -118,10 +98,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -1904,
-        -1424
+        -2288,
+        -1408
       ],
-      "id": "4af3d6a0-773f-44ac-9322-949d55f79b7e",
+      "id": "5f6406f7-e59d-4e0c-961b-f910dfc6652b",
       "name": "Embeddings Ollama",
       "credentials": {
         "ollamaApi": {
@@ -135,16 +115,16 @@
         "promptType": "define",
         "text": "={{ $json.body.chatInput }}",
         "options": {
-          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH only. Never respond in Spanish or any other language.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master table. Contains all RFQ requirements with vendor evaluations. Use for: requirement text, vendor compliance status, evaluation summaries.\n- **query_provider_responses**: Query provider_responses table. Contains detailed vendor responses with scores and comments. Use for: specific scores, detailed comments, requirement-level analysis.\n- **query_ranking**: Query ranking_proveedores table. Contains final vendor scores across 12 criteria. Use for: overall rankings, category scores (Technical/Economic/Execution/HSE), specific criterion scores (CAPEX, OPEX, efficiency, etc.).\n- **query_qa_audit**: Query qa_audit table. Contains technical Q&A by discipline. Use for: pending questions, answered questions, Q&A status by vendor/discipline.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Specific scores (CAPEX, technical) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor comments on requirements | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING CRITERIA (12 total)\n- **Technical (40%)**: efficiency_bop, degradation_lifetime, flexibility, purity_pressure\n- **Economic (30%)**: capex, opex, warranties\n- **Execution (20%)**: delivery_time, track_record, provider_strength\n- **HSE/ESG (10%)**: safety_atex, sustainability\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
+          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH only. Never respond in Spanish or any other language.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, score, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with scores and comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10), cumplimiento_porcentual (compliance %), technical_score, economical_score, pre_feed_score, feed_score.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor comments on requirements | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING WEIGHTS\n- **Technical Score (40%)**: Technical evaluation criteria\n- **Economical Score (30%)**: Economic/pricing evaluation\n- **Pre-FEED Score (15%)**: Pre-FEED deliverables evaluation\n- **FEED Score (15%)**: FEED deliverables evaluation\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
         }
       },
-      "id": "c294a48b-b935-4ad9-ab2b-b363f6271588",
+      "id": "fc09743c-c16b-4a2f-bc24-12bc7f35b388",
       "name": "Chat AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -2464,
-        -1856
+        -2256,
+        -1840
       ]
     },
     {
@@ -166,10 +146,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -2272,
-        -1632
+        -2656,
+        -1616
       ],
-      "id": "c109c951-dbd6-41da-baa4-9da6ad6047f7",
+      "id": "dc8bc7da-c9ab-4539-9211-f8f31fa61cf8",
       "name": "Revisar-ofertas",
       "credentials": {
         "supabaseApi": {
@@ -197,10 +177,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -1984,
-        -1632
+        -2368,
+        -1616
       ],
-      "id": "051bdaa0-3a97-45bf-b19a-302a856bfec2",
+      "id": "1598e077-5c64-41eb-aa26-b0defcbbda04",
       "name": "Revisar RFQs",
       "credentials": {
         "supabaseApi": {
@@ -216,10 +196,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2192,
-        -1424
+        -2576,
+        -1408
       ],
-      "id": "fc09e693-eec5-4a3c-a230-96cdab8bcee4",
+      "id": "c9066ebe-ba43-4715-b4e0-69d79d363ed4",
       "name": "Embeddings Ollama5",
       "credentials": {
         "ollamaApi": {
@@ -231,9 +211,9 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Query RFQ requirements and vendor evaluations. Use to find: requirement text (requisito_rfq), vendor compliance values (columns: IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY), project phases (fase), evaluation types. Provide a search_term to filter requirements.",
+        "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, and provider evaluations. Provide a search_term to filter requirements.",
         "operation": "executeQuery",
-        "query": "SELECT id, project_name, fase, requisito_rfq, IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY FROM rfq_items_master WHERE requisito_rfq ILIKE '%' || $1 || '%' OR project_name ILIKE '%' || $1 || '%' LIMIT 20;",
+        "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.score, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%' ORDER BY rim.id LIMIT 30;",
         "options": {
           "queryReplacement": "={{ $fromAI('search_term', 'Keyword to search in requirements', 'string') }}"
         }
@@ -242,9 +222,9 @@
       "typeVersion": 2.5,
       "position": [
         -2080,
-        -1456
+        -1616
       ],
-      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "id": "7279c0a9-feac-4c98-9f47-f053a65ed44d",
       "name": "query_requirements",
       "credentials": {
         "postgres": {
@@ -258,7 +238,7 @@
         "descriptionType": "manual",
         "toolDescription": "Query detailed vendor responses with scores and comments. Use to find: evaluation_value, score (numeric), comment, provider_name. Provide provider_name to filter by vendor (IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY) or leave empty for all.",
         "operation": "executeQuery",
-        "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.score, pr.comment, rim.requisito_rfq FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id::text WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') LIMIT 30;",
+        "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.score, pr.comment, rim.requirement_text, rim.evaluation_type, rim.phase FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') ORDER BY pr.provider_name LIMIT 30;",
         "options": {
           "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}"
         }
@@ -266,10 +246,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1888,
-        -1456
+        -1952,
+        -1616
       ],
-      "id": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "id": "7c5f454f-3363-4bee-9545-d9cd52c12ac9",
       "name": "query_provider_responses",
       "credentials": {
         "postgres": {
@@ -281,18 +261,18 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Query vendor rankings and scores. Returns: provider_name, overall_score, compliance_percentage, and 12 criterion scores (technical_score, economic_score, execution_score, hse_esg_score, capex_score, opex_score, efficiency_bop_score, etc.). Use for ranking questions and score comparisons.",
+        "toolDescription": "Query vendor rankings and scores. Returns: provider_name, overall_score (0-10), cumplimiento_porcentual (compliance %), and category scores: technical_score (40% weight), economical_score (30% weight), pre_feed_score (15%), feed_score (15%). Use for ranking questions and score comparisons.",
         "operation": "executeQuery",
-        "query": "SELECT provider_name, overall_score, compliance_percentage, technical_score, economic_score, execution_score, hse_esg_score, capex_score, opex_score, warranties_score, efficiency_bop_score, degradation_lifetime_score, flexibility_score, purity_pressure_score, delivery_time_score, track_record_score, provider_strength_score, safety_atex_score, sustainability_score, last_updated FROM ranking_proveedores ORDER BY overall_score DESC;",
+        "query": "SELECT rp.provider_name, rp.overall_score, rp.cumplimiento_porcentual, rp.technical_score, rp.economical_score, rp.pre_feed_score, rp.feed_score, rp.evaluation_count, rp.last_updated FROM ranking_proveedores rp ORDER BY rp.overall_score DESC;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1696,
-        -1456
+        -1824,
+        -1616
       ],
-      "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "id": "b49aa707-95bd-4797-b421-d6e385cafa76",
       "name": "query_ranking",
       "credentials": {
         "postgres": {
@@ -304,9 +284,9 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Query Q&A audit for technical questions and responses. Returns: provider_name, discipline (Electrical/Mechanical/Civil/Process/General/Cost), question, status (Draft/Pending/Approved/Sent/Answered/Discarded), importance (High/Medium/Low), response. Use filter_type: 'provider' with filter_value for vendor name, 'discipline' for discipline, 'status' for status, or 'all' for everything.",
+        "toolDescription": "Query Q&A audit for technical questions and responses. Returns: provider_name, discipline (Electrica/Mecanica/Civil/Proceso/General), question, status (Pending/Approved/etc.), importance (High/Medium/Low), response. Use filter_type: 'provider' with filter_value for vendor name, 'discipline' for discipline, 'status' for status, or 'all' for everything.",
         "operation": "executeQuery",
-        "query": "SELECT id, project_name, provider_name, discipline, question, status, importance, response, created_at, response_date FROM qa_audit WHERE ($1 = 'all') OR ($1 = 'provider' AND provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND status ILIKE '%' || $2 || '%') ORDER BY created_at DESC LIMIT 25;",
+        "query": "SELECT qa.id, qa.provider_name, qa.discipline, qa.question, qa.status, qa.importance, qa.response, qa.created_at FROM qa_audit qa WHERE ($1 = 'all') OR ($1 = 'provider' AND qa.provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND qa.discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND qa.status ILIKE '%' || $2 || '%') ORDER BY qa.created_at DESC LIMIT 25;",
         "options": {
           "queryReplacement": "={{ $fromAI('filter_type', 'Filter type: provider, discipline, status, or all', 'string') }}, {{ $fromAI('filter_value', 'Value to filter by (provider name, discipline, or status)', 'string') }}"
         }
@@ -314,10 +294,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1504,
-        -1456
+        -1696,
+        -1616
       ],
-      "id": "d4e5f6a7-b8c9-0123-defa-456789012345",
+      "id": "b5b7d3c6-c6eb-4529-91f5-ae0ac686ccfa",
       "name": "query_qa_audit",
       "credentials": {
         "postgres": {
@@ -328,7 +308,7 @@
     }
   ],
   "connections": {
-    "Mistral Cloud Chat Model1": {
+    "Ollama Chat Model3": {
       "ai_languageModel": [
         [
           {

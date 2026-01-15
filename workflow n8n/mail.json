@@ -21,12 +21,6 @@
               "name": "tone",
               "value": "={{ $json.body.tone }}",
               "type": "string"
-            },
-            {
-              "id": "4d3a985e-7c5e-4c74-8b5e-407e4d8c83a3",
-              "name": "qa_items",
-              "value": "={{ $json.body.qa_items || [] }}",
-              "type": "array"
             }
           ]
         },
@@ -38,12 +32,12 @@
         -2720,
         -768
       ],
-      "id": "f539bc69-b8a7-434a-8580-1e5293d559e0",
+      "id": "7dfb37d4-b7af-4aad-853b-b86fdd280a0b",
       "name": "Edit Fields"
     },
     {
       "parameters": {
-        "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\nconst qaItems = editFields.qa_items || [];\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      issuesFound.push({\n        requirement: row.requirement_id || 'Requisito no identificado',\n        status: status || 'VACÍO',\n        comment: row.comment || 'Sin comentarios adicionales'\n      });\n    }\n  }\n}\n\n// 3. Devolvemos un solo objeto con toda la info para el LLM\n// Esto evita el \"undefined\" porque el LLM recibirá estos campos directamente\nreturn {\n  issues: issuesFound,\n  total_count: issuesFound.length,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone,\n  qa_items: qaItems\n};"
+        "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      issuesFound.push({\n        requirement: row.requirement_id || 'Requisito no identificado',\n        status: status || 'VACÍO',\n        comment: row.comment || 'Sin comentarios adicionales'\n      });\n    }\n  }\n}\n\n// 3. Devolvemos un solo objeto con toda la info para el LLM\n// Esto evita el \"undefined\" porque el LLM recibirá estos campos directamente\nreturn {\n  issues: issuesFound,\n  total_count: issuesFound.length,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -51,7 +45,7 @@
         -2272,
         -768
       ],
-      "id": "8c1616cb-7389-4634-8aaa-bfbd4059832a",
+      "id": "958f844e-19ca-41b8-9533-65172c21bb0a",
       "name": "Filter and Aggregate Issues"
     },
     {
@@ -67,13 +61,13 @@
         -3232,
         -1056
       ],
-      "id": "b3c0b3b6-fd03-4e0c-aef8-e653638e5694",
+      "id": "f256a452-8fb6-4b0e-a761-17f0c9b1f0d1",
       "name": "Sticky Note2"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "mail",
+        "path": "2dcca6b6-4d20-4250-9202-7b16ac06f716",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -83,9 +77,9 @@
         -2944,
         -768
       ],
-      "id": "969b5546-0213-4cfc-af6e-57c5c529e6ee",
+      "id": "b676bb4c-f126-46eb-98e2-d5fc6a854dd7",
       "name": "Webhook3",
-      "webhookId": "e5929c60-27f5-441b-88a7-c01dae141abe",
+      "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716",
       "disabled": true
     },
     {
@@ -103,7 +97,7 @@
           ]
         }
       },
-      "id": "18a8dc24-8c44-452b-9066-44ed41fab18c",
+      "id": "659af2bf-7f3f-4543-aa3e-63dcdb68d20a",
       "name": "Get Offers",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
@@ -132,7 +126,7 @@
         -1984,
         -544
       ],
-      "id": "70babbf1-b944-4135-9c77-765ccfe20f74",
+      "id": "a04c320e-6cae-4c24-a3b8-018aed83c371",
       "name": "Mistral Cloud Chat Model2",
       "credentials": {
         "mistralCloudApi": {
@@ -143,8 +137,12 @@
     },
     {
       "parameters": {
-        "model": "qwen3:14b",
-        "options": {}
+        "model": "qwen3:8b",
+        "options": {
+          "temperature": 0.2,
+          "numCtx": 4096,
+          "numPredict": 1024
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
@@ -152,7 +150,7 @@
         -1680,
         -544
       ],
-      "id": "e48109b0-fbf2-42a8-a3d8-7eceed6af3c0",
+      "id": "77f18f10-e54a-4549-a685-9547c798f0fa",
       "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
@@ -164,11 +162,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### INPUT DATA\nPROJECT: {{ $('Edit Fields').first().json.project_name }}\nPROVIDER: {{ $('Edit Fields').first().json.provider_name }}\nTONE: {{ $('Edit Fields').first().json.tone }}\nISSUES: {{ JSON.stringify($json.issues) }}\nQA_QUESTIONS: {{ JSON.stringify($json.qa_items) }}\n\n### OUTPUT REQUIREMENT\nReturn ONLY a valid JSON object. No markdown, no explanations. Start with { end with }",
+        "text": "=### INPUT\n\n## PRROYECTO: {{ $('Edit Fields').first().json.project_name }}\n\n## PROVEEDOR: {{ $('Edit Fields').first().json.provider_name }}\n\n## TONO DEL MENSAJE REQUERIDO: {{ $('Edit Fields').first().json.tone }}\n\n## ISSUES: {{ JSON.stringify($json.issues, null, 2) }}\n\n\n\n### FINAL INSTRUCTIONS\nReturn ONLY the JSON object. Do NOT think out loud. Do NOT include any text before or after the JSON.\n",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are writing a professional email requesting clarifications from a supplier for an engineering project.\n\nWrite a complete email with the following structure:\n\n**OPENING PARAGRAPH (3-4 sentences):**\nThank the supplier for their proposal. Mention the project name. Explain that your team has completed a thorough technical and commercial review. State that before advancing to the next evaluation stage, you need clarification on several items.\n\n**BODY SECTIONS:**\nFor each category of issues, write:\n1. A section header\n2. An introductory sentence explaining what you need\n3. Bullet points with specific items (clear and descriptive, 8-15 words each)\n\nCategories to include:\n- Scope & Deliverables - Items not confirmed as included or unclear\n- Commercial & Pricing - Cost items requiring clarification (if any)\n- Technical Questions - Questions from QA_QUESTIONS array (include full question text)\n\n**CLOSING PARAGRAPH (2-3 sentences):**\nRequest a written response by a specific date. Offer to schedule a call if needed.\n\n**SIGNATURE:**\nBest regards,\nProject Evaluation Team\n\n---\n\n**IMPORTANT - ADAPT TO TONE:**\nThe TONE parameter is: Use the tone from the input data.\n\nIf TONE is 'formal':\n- Use formal language: \"We would like to request...\", \"Please be advised...\"\n- Maintain professional distance\n- Use complete sentences and formal closings\n- Subject: \"Request for Clarification - [Provider] Proposal\"\n\nIf TONE is 'urgent':\n- Emphasize time sensitivity: \"We urgently require...\", \"Time-critical response needed\"\n- Add deadline pressure: \"Response required within 48 hours\"\n- Use words like: immediately, critical, priority, time-sensitive\n- Subject: \"URGENT: Clarification Required - [Provider] Proposal\"\n\nIf TONE is 'friendly':\n- Use warmer language: \"We hope this finds you well\", \"We appreciate your partnership\"\n- Be collaborative: \"We'd love to understand better...\", \"Could you help us clarify...\"\n- Add positive reinforcement about the proposal\n- Subject: \"Quick Questions on Your Proposal - [Provider]\"\n\n---\n\n**OUTPUT FORMAT:**\nReturn ONLY a valid JSON object with two keys:\n- \"subject\": Subject line adapted to the tone\n- \"body\": The complete email body with proper line breaks (use \\n\\n for paragraph breaks)\n\nNo markdown code blocks. Start with { end with }"
+              "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues that need to be addressed.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing:\n   - **Critical**: Iterate through the 'ISSUES' list provided in the input. Group them intelligently (e.g., by Phase or Evaluation Type) to make the email readable.\n   - For each issue, clearly mention the *Requirement* ('requirement' field) and the *Current Status* ('status' field).\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use clean line breaks (\\n) for readability in the JSON string.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any conversational text, explanations, reasoning, thoughts, or technical notes.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n\n### SCHEMA\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here \\n\\n Point 1... \\n Point 2...\"\n}"
             }
           ]
         },
@@ -180,7 +178,7 @@
         -2048,
         -768
       ],
-      "id": "bb1fc506-a116-43da-93a5-f82f309d78b9",
+      "id": "d2b0148f-fb3a-433b-84f4-5cafba1673ba",
       "name": "Basic LLM Chain"
     },
     {
@@ -194,7 +192,7 @@
         -1696,
         -768
       ],
-      "id": "009a3688-d4bb-46e2-9c83-695519810cd9",
+      "id": "a5faf233-a824-4c8e-903f-4ec94594bd4d",
       "name": "Respond to Webhook3"
     }
   ],
@@ -244,6 +242,11 @@
       ]
     },
     "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Ollama Chat Model": {
       "ai_languageModel": [
         [
           {

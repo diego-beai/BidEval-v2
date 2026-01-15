@@ -2,28 +2,15 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Preparar Requisito + Texto Completo de Oferta\n// Procesa TODOS los requisitos del loop\n// =============================================\n\n// 1. Obtener TODOS los requisitos del loop\nconst allItems = $input.all();\nconsole.log(`📋 Procesando ${allItems.length} requisitos del loop`);\n\n// 2. Obtener el texto completo de la oferta del nodo Merge1 (una sola vez)\nlet textoCompletoOferta = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge').first().json;\n    \n    // El Merge1 puede tener el texto en diferentes formatos\n    if (mergeData.pages && Array.isArray(mergeData.pages) && mergeData.pages.length > 0) {\n        // Si tiene páginas, unimos todas las páginas (texto completo)\n        textoCompletoOferta = mergeData.pages.map(p => p.text || \"\").join(\"\\n\\n\");\n        totalPages = mergeData.pages.length;\n    } else if (mergeData.text) {\n        // Si tiene texto directo\n        textoCompletoOferta = mergeData.text;\n        totalPages = mergeData.totalPages || 1;\n    } else {\n        // Buscar cualquier propiedad que contenga texto largo\n        for (const key in mergeData) {\n            const value = mergeData[key];\n            if (typeof value === 'string' && value.length > 100) {\n                textoCompletoOferta = value;\n                break;\n            }\n        }\n    }\n    \n    console.log(`✅ Texto de oferta recuperado: ${textoCompletoOferta.length} caracteres, ${totalPages} páginas`);\n} catch (e) {\n    console.error(\"❌ Error obteniendo texto completo de Merge1:\", e.message);\n    textoCompletoOferta = \"ERROR: No se pudo recuperar el texto completo de la oferta.\";\n}\n\n// 3. Validar que tenemos datos mínimos\nif (!textoCompletoOferta || textoCompletoOferta.trim().length === 0) {\n    console.warn(\"⚠️ El texto de la oferta está vacío\");\n    textoCompletoOferta = \"SIN TEXTO DISPONIBLE EN LA OFERTA.\";\n}\n\n// 4. Construir array de requisitos para el LLM\nconst requisitos = allItems.map(item => {\n    const currentItem = item.json || item;\n    const requisitoId = currentItem.id || \"\";\n    // El campo correcto de Supabase es 'requirement_text'\n    const requisitoTexto = currentItem.requirement_text || currentItem.requisito_rfq || currentItem.text || currentItem.description || \"NO ESPECIFICADO EN RFQ\";\n    \n    console.log(`📋 Preparando requisito ID: ${requisitoId} - ${requisitoTexto.substring(0, 50)}...`);\n    \n    return {\n        id: requisitoId,\n        requirement_text: requisitoTexto,\n        // Mantener otros campos del requisito por si acaso\n        project_name: currentItem.project_name,\n        evaluation_type: currentItem.evaluation_type,\n        phase: currentItem.phase\n    };\n});\n\n// 5. Retornar UN SOLO item con la lista de requisitos y el contexto completo\nreturn [{\n    json: {\n        requisitos: requisitos,\n        context: textoCompletoOferta,\n        // Metadatos adicionales para debugging\n        total_pages: totalPages,\n        texto_length: textoCompletoOferta.length,\n        total_requisitos: requisitos.length\n    }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1520,
-        -1808
-      ],
-      "id": "4e605b32-1b60-4fa7-81cc-264570d3507e",
-      "name": "Code in JavaScript"
-    },
-    {
-      "parameters": {
         "jsCode": "// =============================================\n// NODO: Generate Stable ID + Detectar Modo (NOMBRES CORRECTOS)\n// =============================================\n\nfunction simpleHash(str) {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    const char = str.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  return Math.abs(hash).toString(16).padStart(16, '0').substring(0, 16);\n}\n\nconst body = $json.body;\n\n// CAMPOS EXISTENTES\nconst originalFileId = body.file_id || \"unknown\";\nconst fileTitle = body.file_title || \"unknown.pdf\";\nconst fileBinary = body.file_binary || \"\";\nconst fileUrl = body.file_url || \"unknown\";\n\n// ✅ EXTRAER METADATA DEL USUARIO (NOMBRES CORRECTOS)\nconst metadata = body.metadata || {};\nconst rfqProjectId = metadata.proyect_name || null;        // ← proyect_name\nconst userProveedor = metadata.proveedor || null;          // ← proveedor\nconst userTipoEval = metadata.evaluation || null;          // ← evaluation (Array)\n\n// ✅ DETERMINAR MODO DE OPERACIÓN\nlet modoOperacion = \"CLASIFICADOR\"; // Por defecto\nlet datosCompletos = false;\n\n// Verificar si tiene datos suficientes para VALIDACIÓN\nif (userProveedor && userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0) {\n    modoOperacion = \"VALIDADOR\";\n    datosCompletos = true;\n} else if (userProveedor || (userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0)) {\n    modoOperacion = \"HIBRIDO\"; // Tiene algunos datos pero no todos\n}\n\n// Generar ID estable del archivo\nconst normalizedTitle = fileTitle.toLowerCase().trim();\nconst stableId = simpleHash(normalizedTitle);\n\n// LOGGING\nconsole.log(\"=== ANÁLISIS DE METADATA ===\");\nconsole.log(`Modo Operación: ${modoOperacion}`);\nconsole.log(`RFQ Project Name: ${rfqProjectId || 'No especificado'}`);\nconsole.log(`Proveedor (Usuario): ${userProveedor || 'No especificado'}`);\nconsole.log(`Evaluation (Usuario): ${JSON.stringify(userTipoEval) || 'No especificado'}`);\nconsole.log(`Datos Completos: ${datosCompletos}`);\nconsole.log(`Original ID: ${originalFileId}`);\nconsole.log(`Nombre archivo: ${fileTitle}`);\nconsole.log(`ID ESTABLE generado: ${stableId}`);\n\n// RETORNO\nreturn {\n  json: {\n    // Datos directos en raíz\n    file_id: stableId,\n    file_id_original: originalFileId,\n    file_title: fileTitle,\n    file_binary: fileBinary,\n    file_url: fileUrl,\n    \n    rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n    user_proveedor: userProveedor,\n    user_tipo_evaluacion: userTipoEval,\n    modo_operacion: modoOperacion,\n    datos_usuario_completos: datosCompletos,\n    \n    // Mantener body completo\n    body: {\n      ...body,\n      file_id: stableId,\n      file_id_original: originalFileId,\n      rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n      user_proveedor: userProveedor,\n      user_tipo_evaluacion: userTipoEval,\n      modo_operacion: modoOperacion,\n      datos_usuario_completos: datosCompletos\n    }\n  }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -624,
-        -896
+        -640,
+        -848
       ],
-      "id": "254a5812-4547-40b3-8a51-77c52132bd71",
+      "id": "7bd6d639-22c5-43c6-8384-1d4761e5ed53",
       "name": "Code in JavaScript1"
     },
     {
@@ -33,10 +20,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1168,
-        -1008
+        1136,
+        -960
       ],
-      "id": "a8dc439a-ddd1-481d-a7a2-62335eb33dee",
+      "id": "cc629036-f814-42f0-ac1a-f6d3bde23eb0",
       "name": "Base64 a Binary1"
     },
     {
@@ -46,10 +33,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        160,
-        -896
+        128,
+        -848
       ],
-      "id": "5a391691-b4e4-4e36-b5bc-e28047bb15a2",
+      "id": "d7f1d26b-a4ac-4921-865b-83dae26654fa",
       "name": "Base64 a Binary"
     },
     {
@@ -62,10 +49,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -864,
-        -896
+        -880,
+        -848
       ],
-      "id": "0973291b-9abf-4dd6-b3c8-1a4c0cf5b9a6",
+      "id": "de528297-c9b2-4081-9485-56f889ea3cbd",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -77,11 +64,24 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -16,
-        -1936
+        -48,
+        -1904
       ],
-      "id": "283a23b1-f9a0-4fd0-900e-cb2580ea58b6",
+      "id": "f95a20d6-4327-4e99-9f5b-102de2d3dff0",
       "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Agrupar Requisitos por Phase (CON BATCHING)\n// =============================================\n\nconst items = $input.all();\nconst BATCH_SIZE = 5; // OPTIMIZADO: Batches más pequeños = respuestas más rápidas y precisas\n\n// Agrupar requisitos por phase\nconst grupos = {};\nitems.forEach(item => {\n    const phase = item.json.phase || \"Sin Phase\";\n    if (!grupos[phase]) {\n        grupos[phase] = [];\n    }\n    grupos[phase].push(item.json);\n});\n\n// Obtener texto de oferta\nlet textoOfertaCompleto = \"\";\ntry {\n    const loopData = $('Loop Over Items1').first().json;\n    textoOfertaCompleto = loopData.texto_oferta_completo || \"\";\n} catch(e) {\n    console.warn('⚠️ No se pudo obtener texto de oferta:', e.message);\n}\n\n// Crear batches por cada phase\nconst batches = [];\n\nObject.entries(grupos).forEach(([phase, requisitos]) => {\n    const evaluationType = requisitos[0]?.evaluation_type || \"Technical Evaluation\";\n    \n    // Dividir en batches de BATCH_SIZE\n    for (let i = 0; i < requisitos.length; i += BATCH_SIZE) {\n        const batch = requisitos.slice(i, i + BATCH_SIZE);\n        batches.push({\n            json: {\n                phase: phase,\n                requisitos: batch,\n                total_requisitos: batch.length,\n                batch_index: Math.floor(i / BATCH_SIZE) + 1,\n                total_batches: Math.ceil(requisitos.length / BATCH_SIZE),\n                texto_oferta_completo: textoOfertaCompleto,\n                es_oferta_larga: true,\n                evaluation_type: evaluationType\n            }\n        });\n    }\n});\n\nconsole.log(`📊 Generados ${batches.length} batches de máximo ${BATCH_SIZE} requisitos`);\n\nreturn batches;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -1680
+      ],
+      "id": "755d4661-dd5a-450f-9979-4b42ab0968a3",
+      "name": "Agrupar por Phase"
     },
     {
       "parameters": {
@@ -90,10 +90,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        368,
-        -1728
+        512,
+        -1680
       ],
-      "id": "9b7778da-436f-4cf1-896c-7c8a6229b1b2",
+      "id": "d41ab7b9-aa9c-42b4-969e-841ed2795a43",
       "name": "Reset Items"
     },
     {
@@ -101,10 +101,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1840,
-        -896
+        1808,
+        -848
       ],
-      "id": "a88992f5-61a6-4f0d-998a-6e24e968242f",
+      "id": "e47d0bd7-0c65-47bd-aa82-00d2069382e6",
       "name": "Merge1"
     },
     {
@@ -115,10 +115,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2688,
-        -480
+        2656,
+        -432
       ],
-      "id": "cb941d51-19ac-47b8-81f3-bc1fd899843b",
+      "id": "b690454c-c2f0-45e8-bd2c-377123d8b026",
       "name": "Structured Output Parser"
     },
     {
@@ -140,13 +140,13 @@
           "timeout": 300000
         }
       },
-      "id": "89194a3b-6cff-4889-944b-5ec2e23428d8",
+      "id": "a3be00b9-9fd5-47c3-bde9-dc46343437a8",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1376,
-        -1104
+        1344,
+        -1056
       ],
       "retryOnFail": true
     },
@@ -157,49 +157,49 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -480,
-        -1680
+        -496,
+        -1632
       ],
-      "id": "c94e5d2d-5465-424f-add2-ac8571350420",
+      "id": "d7d5dff4-ddcb-4ccc-9a08-00454a3ae58a",
       "name": "Loop Over Items1"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Expandir por Tipo de Evaluación (v2 - Valida Metadatos)\n// =============================================\n\n// 1. RECUPERAR TEXTO Y CONTENIDO BASE\nlet fullText = \"\";\nlet totalPages = 1;\ntry {\n    const mergeData = $('Merge1').first().json;\n    fullText = (mergeData.pages && mergeData.pages[0]) \n        ? mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\") \n        : (mergeData.text || \"\");\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.error(\"❌ Error leyendo Merge1\");\n}\n\n// 2. RECUPERAR DATOS VALIDADOS PRIORITARIAMENTE\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet projectName = \"proyecto_sin_especificar\";\n\ntry {\n    let llmNode = null;\n    try { llmNode = $('Validador de Ofertas').first().json; } catch(e) {}\n    if (!llmNode) { try { llmNode = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json; } catch(e) {} }\n\n    if (llmNode) {\n        const data = llmNode.output || llmNode;\n        proveedor = data.proveedor_detectado || proveedor;\n        tipoEval = data.tipos_detectados || tipoEval;\n        // El proyecto también puede venir del validador si se detectó\n        if (data.proyecto_detectado) projectName = data.proyecto_detectado;\n    }\n} catch (e) {\n    console.log(\"⚠️ Falló lectura de LLM, intentando fallbacks...\");\n}\n\n// 3. FALLBACK A SET FILE ID (Si el LLM no dio datos)\nlet fileId = \"unknown\";\ntry {\n    const fileData = $('Set File ID').first().json;\n    fileId = fileData.file_id || \"unknown\";\n    if (proveedor === \"OTROS\") proveedor = fileData.proveedor || \"OTROS\";\n    if (projectName === \"proyecto_sin_especificar\") projectName = fileData.proyect_name || \"proyecto_sin_especificar\";\n} catch (e) {}\n\n// 4. NORMALIZAR TIPOS\nif (!Array.isArray(tipoEval)) tipoEval = [tipoEval];\ntipoEval = tipoEval.filter(t => t && t.trim() !== \"\");\nif (tipoEval.length === 0) tipoEval = [\"Technical Evaluation\"];\n\n// 5. GENERAR FILAS\nreturn tipoEval.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion_actual: tipo,\n        proveedor_detectado: proveedor,\n        proyecto_nombre: projectName,\n        texto_oferta_completo: fullText,\n        indice_actual: idx + 1,\n        total_tipos: tipoEval.length,\n        file_id: fileId\n    }\n}));"
+        "jsCode": "// =============================================\n// NODO: Expandir por Tipo de Evaluación (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM - usa datos del usuario directamente\n// =============================================\n\n// 1. RECUPERAR TEXTO Y CONTENIDO BASE\nlet fullText = \"\";\nlet totalPages = 1;\ntry {\n    const mergeData = $('Merge1').first().json;\n    fullText = (mergeData.pages && mergeData.pages[0]) \n        ? mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\") \n        : (mergeData.text || \"\");\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.error(\"❌ Error leyendo Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet projectName = \"proyecto_sin_especificar\";\n\ntry {\n    const fileData = $('Set File ID').first().json;\n    fileId = fileData.file_id || \"unknown\";\n    proveedor = fileData.proveedor || \"OTROS\";\n    projectName = fileData.proyect_name || \"proyecto_sin_especificar\";\n    \n    // Tipos de evaluación del usuario\n    if (fileData.evaluation && Array.isArray(fileData.evaluation) && fileData.evaluation.length > 0) {\n        tipoEval = fileData.evaluation;\n    } else if (fileData.evaluation && typeof fileData.evaluation === 'string') {\n        tipoEval = [fileData.evaluation];\n    }\n    \n    console.log(`✅ Usando datos del usuario directamente:`);\n    console.log(`   Proveedor: ${proveedor}`);\n    console.log(`   Proyecto: ${projectName}`);\n    console.log(`   Tipos: ${JSON.stringify(tipoEval)}`);\n} catch (e) {\n    console.error(\"❌ Error leyendo Set File ID:\", e.message);\n}\n\n// 3. NORMALIZAR TIPOS\nif (!Array.isArray(tipoEval)) tipoEval = [tipoEval];\ntipoEval = tipoEval.filter(t => t && t.trim() !== \"\");\nif (tipoEval.length === 0) tipoEval = [\"Technical Evaluation\"];\n\n// 4. GENERAR FILAS\nreturn tipoEval.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion_actual: tipo,\n        proveedor_detectado: proveedor,\n        proyecto_nombre: projectName,\n        texto_oferta_completo: fullText,\n        indice_actual: idx + 1,\n        total_tipos: tipoEval.length,\n        file_id: fileId\n    }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -784,
-        -1600
+        -800,
+        -1552
       ],
-      "id": "3099ff1b-7439-41ec-b97b-45e39a531f4a",
+      "id": "48d21e73-9ee3-44a7-9577-7a2947893e96",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Format for Vectorstore (FINAL v2)\n// =============================================\n\n// 1. RECUPERAR CONTENIDO (Instrucción explícita)\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. RECUPERAR CLASIFICACIÓN O VALIDACIÓN\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\n\ntry {\n    // Intentamos leer del validador primero, si no, del clasificador\n    let llmData;\n    try {\n        llmData = $('Validador de Ofertas').first().json;\n    } catch (e) {\n        llmData = $('Clasificador de Tipo de Evaluacion y Proveedor').first().json;\n    }\n\n    const output = llmData.output || llmData;\n\n    if (output.proveedor_detectado) proveedor = output.proveedor_detectado;\n    if (output.proyecto_detectado) proyecto = output.proyecto_detectado;\n    \n    if (output.tipos_detectados) {\n        tipoEval = Array.isArray(output.tipos_detectados) \n            ? output.tipos_detectados \n            : [output.tipos_detectados];\n    }\n} catch (e) {\n    console.log(\"⚠️ Error leyendo clasificación/validación LLM, usando defaults.\");\n}\n\n// 3. RECUPERAR METADATOS DEL ARCHIVO Y FALLBACKS\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id;\n    fileTitle = fileNode.file_title;\n    if (!proyecto) proyecto = fileNode.proyect_name;\n} catch(e) {}\n\n// 4. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
+        "jsCode": "// =============================================\n// NODO: Format for Vectorstore (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM\n// =============================================\n\n// 1. RECUPERAR CONTENIDO\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\n\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id || \"unknown\";\n    fileTitle = fileNode.file_title || \"unknown\";\n    proveedor = fileNode.proveedor || \"OTROS\";\n    proyecto = fileNode.proyect_name || \"\";\n    \n    if (fileNode.evaluation && Array.isArray(fileNode.evaluation) && fileNode.evaluation.length > 0) {\n        tipoEval = fileNode.evaluation;\n    } else if (fileNode.evaluation && typeof fileNode.evaluation === 'string') {\n        tipoEval = [fileNode.evaluation];\n    }\n} catch(e) {\n    console.log(\"❌ Error leyendo Set File ID\");\n}\n\n// 3. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2896,
-        -912
+        2864,
+        -864
       ],
-      "id": "404fba86-387a-4cc4-bd4e-556365427fc1",
+      "id": "c5be520a-15a9-4c66-829f-e933855edc10",
       "name": "Format for Vectorstore"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "81a41c04-74c5-4254-ac63-3cd889a31d7e",
+      "id": "94c437f9-d05e-418d-8716-567058256b6a",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2032,
-        -896
+        2000,
+        -848
       ]
     },
     {
@@ -209,10 +209,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1584,
-        -1008
+        1552,
+        -960
       ],
-      "id": "45016919-cd8e-4b77-87fb-f71fc7bdf3cd",
+      "id": "a9dc75d3-432f-46a6-8020-d436375cec7d",
       "name": "Aggregate OCR Pages"
     },
     {
@@ -243,10 +243,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        944,
-        -896
+        912,
+        -848
       ],
-      "id": "6b457236-06b0-4754-8eb5-b7309c749cbc",
+      "id": "dd0bfaaa-1095-4604-b952-8bfd56a5724d",
       "name": "¿Necesita OCR?"
     },
     {
@@ -257,10 +257,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        384,
-        -896
+        352,
+        -848
       ],
-      "id": "fef5f41f-0009-43c7-b267-76dd1634c7fc",
+      "id": "305eecab-654d-47c7-88b9-faa17d613f97",
       "name": "Extract from File"
     },
     {
@@ -270,10 +270,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        656,
-        -896
+        624,
+        -848
       ],
-      "id": "565c7cbb-a2ea-48dd-90c6-1260839aa182",
+      "id": "e0372e49-2459-456b-b6b7-dbf60bcd4540",
       "name": "Validar Contenido PDF"
     },
     {
@@ -289,13 +289,13 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "a6379f2a-811f-4428-a83e-a6e4a35d2387",
+      "id": "83b52473-af3c-4de1-b2be-c52f07becf29",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        3072,
-        -912
+        3040,
+        -864
       ],
       "credentials": {
         "supabaseApi": {
@@ -313,10 +313,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        3104,
-        -448
+        3072,
+        -400
       ],
-      "id": "66803b47-9546-434e-8caf-20a2b6893e9d",
+      "id": "4a693dc3-3044-45f4-a6ad-607646d4d662",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -344,19 +344,19 @@
               },
               {
                 "name": "project_name",
-                "value": "=PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)"
+                "value": "={{ $json.metadata.project_name }}"
               }
             ]
           }
         }
       },
-      "id": "4634f3ee-9f2d-4c02-8b7e-e8fec84b420b",
+      "id": "25eea6cc-6f4d-42a7-8a87-5f50712c4503",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        3200,
-        -624
+        3168,
+        -576
       ]
     },
     {
@@ -415,13 +415,13 @@
         },
         "options": {}
       },
-      "id": "4c4c290f-188f-4bf2-9cbf-63d3542bb772",
+      "id": "d4134a82-39ae-440f-8f87-08403065ec2a",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -416,
-        -896
+        -448,
+        -848
       ]
     },
     {
@@ -431,13 +431,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "6a5b31c2-ec76-4e0a-8b7d-e34c131798af",
+      "id": "9b3bdcd4-d9f9-4df0-bc90-41491332f8a5",
       "name": "Delete Old Doc Rows",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -224,
-        -896
+        -256,
+        -848
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -466,7 +466,7 @@
           "value": {
             "id": "={{ $('Set File ID').item.json.file_id }}",
             "title": "={{ $('Set File ID').item.json.file_title }}",
-            "project_name": "=PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)",
+            "project_name": "={{ $('Set File ID').item.json.proyect_name }}\n",
             "evaluation_types": "={{ $('Set File ID').item.json.evaluation }}",
             "document_type": "PROPOSAL",
             "provider": "={{ $('Set File ID').item.json.proveedor }}"
@@ -552,10 +552,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -16,
-        -896
+        -48,
+        -848
       ],
-      "id": "3026e0ae-2efb-4869-9e22-fa2bc019d293",
+      "id": "4479ff0a-5dd3-4741-af6e-95e7918235db",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -568,7 +568,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Phase: {{ $json.phase }}\n- Total requirements in this group: {{ $json.total_requisitos }}\n\n### RFQ REQUIREMENTS (LIST)\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### PROPOSAL CONTEXT\n{{ $json.context_rag }}\n\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR TECHNICAL EVALUATIONS - Use these labels in 'cumple':\n- INCLUDED (10 pts)\n- INCLUDED WITH CAVEATS (8 pts)\n- PARTIALLY INCLUDED (6 pts)\n- NOT INCLUDED WITH ALTERNATIVE (3 pts)\n- NOT INCLUDED (0 pts)\n- NO INFORMATION (0 pts)\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\nScoring for Economic:\n- Value explicitly quoted: 10 pts\n- Hourly/daily rate given: 7 pts\n- Estimated/approximate value: 5 pts\n- Mentioned but no price: 3 pts\n- Not found: 0 pts\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\",\n    \"score\": [0-10]\n  }\n]\n\nJSON only, no explanations.",
+        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Phase: {{ $json.phase }}\n- Total requirements in this group: {{ $json.total_requisitos }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### PROPOSAL CONTEXT\n{{ $json.context_rag }}\n\n\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR TECHNICAL EVALUATIONS - Use these labels in 'cumple':\n- INCLUDED (10 pts)\n- INCLUDED WITH CAVEATS (8 pts)\n- PARTIALLY INCLUDED (6 pts)\n- NOT INCLUDED WITH ALTERNATIVE (3 pts)\n- NOT INCLUDED (0 pts)\n- NO INFORMATION (0 pts)\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\nScoring for Economic:\n- Value explicitly quoted: 10 pts\n- Hourly/daily rate given: 7 pts\n- Estimated/approximate value: 5 pts\n- Mentioned but no price: 3 pts\n- Not found: 0 pts\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\",\n    \"score\": [0-10]\n  }\n]\n\nJSON only, no explanations.",
         "messages": {
           "messageValues": [
             {
@@ -581,28 +581,27 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2288,
-        -1808
+        2256,
+        -1760
       ],
-      "id": "375361ef-cfc7-44c0-bc62-9a1b0a8bc386",
+      "id": "092032dc-bdca-4250-9084-442411fe911a",
       "name": "LLM Chain"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
       },
-      "id": "a668321b-0ce1-4c33-9cc9-1c30c12f30fd",
+      "id": "15c54c56-4632-45e4-ad14-fba046f5deec",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2736,
-        -1680
+        2704,
+        -1632
       ]
     },
     {
       "parameters": {
-        "batchSize": 50,
         "options": {
           "reset": "={{ $json.reiniciar_bucle ? true : false }}"
         }
@@ -610,10 +609,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        784,
-        -1664
+        752,
+        -1616
       ],
-      "id": "c9109010-027a-4f5a-8dbd-bd453b0d7664",
+      "id": "c4edb3c5-8957-4d60-9b2b-d49e1a8a5e33",
       "name": "Loop Over Phases"
     },
     {
@@ -626,26 +625,28 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1040,
-        -2032
+        -1056,
+        -2000
       ],
-      "id": "2a596670-6958-45f3-ab7d-631958995927",
+      "id": "0444c3a9-a9df-4e6e-b3ca-56d0b2b02259",
       "name": "Sticky Note5"
     },
     {
       "parameters": {
         "model": "mistral:7b",
         "options": {
-          "temperature": 0.1
+          "temperature": 0.1,
+          "numCtx": 4096,
+          "numPredict": 1024
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2448,
-        -480
+        2416,
+        -432
       ],
-      "id": "db4a128f-eb8f-41ef-8a46-4132d98b2b14",
+      "id": "65d22325-8f63-4a5f-8307-a62e6ebfaf9b",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -656,18 +657,20 @@
     },
     {
       "parameters": {
-        "model": "qwen3:14b",
+        "model": "qwen3:8b",
         "options": {
-          "temperature": 0.1
+          "temperature": 0.1,
+          "numCtx": 8192,
+          "numPredict": 1536
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2496,
-        -1424
+        2176,
+        -1408
       ],
-      "id": "7a04dd51-4e8d-4d8f-bb85-5905fc59fe37",
+      "id": "115590f7-7cb6-42e1-a7ab-ab34709a7815",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -724,10 +727,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2224,
-        -896
+        2192,
+        -848
       ],
-      "id": "7ee872a8-fe21-4f94-8ba6-2e266d084a27",
+      "id": "cff48a5c-e6ee-4f62-a86c-77931d348f8b",
       "name": "If"
     },
     {
@@ -747,10 +750,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2496,
-        -688
+        2464,
+        -640
       ],
-      "id": "6aed3ecb-9c9a-413c-82ca-b22be62c133c",
+      "id": "e666889f-5538-4bdc-824a-401327fe05ba",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor"
     },
     {
@@ -761,26 +764,28 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2688,
-        -896
+        2656,
+        -848
       ],
-      "id": "3c879357-f52d-4e11-90a7-9eb8f4ccd655",
+      "id": "17c5b554-0b77-4be2-9b7d-206e1bfaf358",
       "name": "Structured Output Parser4"
     },
     {
       "parameters": {
         "model": "mistral:7b",
         "options": {
-          "temperature": 0.1
+          "temperature": 0.1,
+          "numCtx": 4096,
+          "numPredict": 1024
         }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        2448,
-        -896
+        2416,
+        -848
       ],
-      "id": "870266ab-864a-4827-8818-c7755a3cb998",
+      "id": "ec5dd542-75b8-47d2-8047-00b5d885f6b2",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -806,10 +811,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2496,
-        -1088
+        2464,
+        -1040
       ],
-      "id": "0feb6058-5261-405f-a835-7e20ad720a84",
+      "id": "37b02da2-fd94-4747-8cc4-1214189b6de8",
       "name": "Validador de Ofertas"
     },
     {
@@ -819,10 +824,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        2992,
-        -656
+        2960,
+        -608
       ],
-      "id": "1bb93033-a575-4a79-8146-d408cd14441b",
+      "id": "24f58e36-97af-49a6-9ee0-2be2695d1d85",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -833,105 +838,56 @@
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "value": "provider_responses",
-          "mode": "list",
-          "cachedResultName": "provider_responses"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "requirement_id": "={{ $json.requirement_id }}",
-            "provider_name": "={{ $json.provider_name }}",
-            "evaluation_value": "={{ $json.evaluation_value }}",
-            "comment": "={{ $json.comment }}",
-            "score": "={{ $json.score }}",
-            "updated_at": "={{ $now }}"
-          },
-          "matchingColumns": [
-            "requirement_id",
-            "provider_name"
-          ],
-          "schema": [
+        "tableId": "provider_responses",
+        "fieldsUi": {
+          "fieldValues": [
             {
-              "id": "requirement_id",
-              "displayName": "requirement_id",
-              "required": true,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
+              "fieldId": "provider_name",
+              "fieldValue": "={{ $json.provider_name }}"
             },
             {
-              "id": "provider_name",
-              "displayName": "provider_name",
-              "required": true,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
+              "fieldId": "evaluation_value",
+              "fieldValue": "={{ $json.evaluation_value }}"
             },
             {
-              "id": "evaluation_value",
-              "displayName": "evaluation_value",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
+              "fieldId": "comment",
+              "fieldValue": "={{ $json.comment }}"
             },
             {
-              "id": "comment",
-              "displayName": "comment",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
+              "fieldId": "score",
+              "fieldValue": "={{ $json.score }}"
             },
             {
-              "id": "score",
-              "displayName": "score",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": false
+              "fieldId": "requirement_id",
+              "fieldValue": "={{ $json.requirement_id }}"
             },
             {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "canBeUsedToMatch": false
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now }}"
+            },
+            {
+              "fieldId": "file_id",
+              "fieldValue": "={{ $('Set File ID').first().json.file_id }}"
+            },
+            {
+              "fieldId": "quoted_value",
+              "fieldValue": "={{ $json.quoted_value }}"
             }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
+          ]
+        }
       },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
       "position": [
-        3024,
-        -1440
+        2992,
+        -1392
       ],
-      "id": "a0af6082-dfa9-4529-ba40-32f72ca99675",
+      "id": "3db41733-e50c-42dd-9ad3-d3b1d01e9e69",
       "name": "Upsert Provider Response",
       "credentials": {
-        "postgres": {
-          "id": "V0REAPph5JBLqze3",
-          "name": "Postgres account"
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
         }
       }
     },
@@ -953,10 +909,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -48,
-        -1728
+        -80,
+        -1680
       ],
-      "id": "368d75aa-4d7b-46fc-9686-84f400456fe0",
+      "id": "5e0e1925-ec50-4ae6-a1ff-16158d233bad",
       "name": "Get many rows1",
       "credentials": {
         "supabaseApi": {
@@ -973,10 +929,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2112,
-        -1600
+        2080,
+        -1552
       ],
-      "id": "8394616f-2743-456b-a4e9-fe5490abf26f",
+      "id": "99bd000d-b3ee-4dd6-bfea-8f9d0195e698",
       "name": "Mistral Cloud Chat Model",
       "credentials": {
         "mistralCloudApi": {
@@ -990,10 +946,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
       "typeVersion": 1,
       "position": [
-        3104,
-        -704
+        3072,
+        -656
       ],
-      "id": "c81d1dd6-0603-489c-bb8a-2a13f96cc693",
+      "id": "ec599407-8cc2-4185-866d-4fff1299e42b",
       "name": "Embeddings Cohere",
       "credentials": {
         "cohereApi": {
@@ -1004,15 +960,98 @@
     },
     {
       "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Grupo de Requisitos por Phase\n// Recibe datos ya agrupados del nodo 'Agrupar por Phase'\n// =============================================\n\n// 1. Obtener el grupo actual (ya viene agrupado por phase)\nconst grupoActual = $input.first().json;\n\nconst phase = grupoActual.phase || \"Sin Phase\";\nconst requisitosDelGrupo = grupoActual.requisitos || [];\nconst textoOfertaCompleto = grupoActual.texto_oferta_completo || \"\";\nconst esOfertaLarga = grupoActual.es_oferta_larga || false;\nconst evaluationType = grupoActual.evaluation_type || \"Technical Evaluation\";\n\nconsole.log(`📋 Procesando grupo: ${evaluationType} - ${phase}`);\nconsole.log(`   ├─ Requisitos en este grupo: ${requisitosDelGrupo.length}`);\nconsole.log(`   ├─ Tamaño texto oferta: ${textoOfertaCompleto.length} chars`);\nconsole.log(`   └─ Modo: ${esOfertaLarga ? 'RAG' : 'DIRECTO'}`);\n\n// 2. Preparar contexto según tamaño de oferta\nlet contextoParaLLM = \"\";\n\nif (esOfertaLarga) {\n    // MODO RAG: Usaremos el vectorstore (se configura después)\n    // Por ahora pasamos una muestra y marcamos para RAG\n    contextoParaLLM = textoOfertaCompleto.substring(0, 8000);\n    console.log(`🔍 Modo RAG: Contexto limitado a 8000 chars (se complementará con retrieval)`);\n} else {\n    // MODO DIRECTO: Pasamos todo el texto\n    contextoParaLLM = textoOfertaCompleto;\n    console.log(`📄 Modo DIRECTO: Pasando texto completo`);\n}\n\n// 3. Formatear requisitos para el LLM\nconst requisitosFormateados = requisitosDelGrupo.map(req => ({\n    id: req.id || \"\",\n    requirement_text: req.requirement_text || req.text || \"NO ESPECIFICADO\",\n    phase: req.phase || phase,\n    evaluation_type: req.evaluation_type || evaluationType\n}));\n\n// 4. Retornar datos preparados para el LLM\nreturn [{\n    json: {\n        // Datos del grupo\n        phase: phase,\n        evaluation_type: evaluationType,\n        \n        // Requisitos del grupo\n        requisitos: requisitosFormateados,\n        total_requisitos: requisitosFormateados.length,\n        \n        // Contexto de la oferta\n        context: contextoParaLLM,\n        texto_length: contextoParaLLM.length,\n        \n        // Flags para el flujo\n        es_oferta_larga: esOfertaLarga,\n        usar_rag: esOfertaLarga\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -1600
+      ],
+      "id": "eafd8daf-fb74-4d88-8402-b44cfa38c002",
+      "name": "Preparar Grupo Phase"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "proposals",
+          "mode": "list",
+          "cachedResultName": "proposals"
+        },
+        "prompt": "={{ $json.requisitos.map(r => r.requirement_text).join(' | ') }}",
+        "topK": 20,
+        "options": {
+          "queryName": "match_proposals",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $('Set File ID').first().json.file_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1616,
+        -1760
+      ],
+      "id": "3f779749-e442-41ee-b7cd-dcbed64f69de",
+      "name": "RAG Query Vectorstore",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pI4CpdYLTiEEBmnz",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen3-embedding:8b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -1552
+      ],
+      "id": "0c81f752-c317-41cc-ae2c-82373a37a482",
+      "name": "Embeddings Ollama RAG",
+      "credentials": {
+        "ollamaApi": {
+          "id": "oS2Qqti9oVfsm8XZ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Contexto RAG (CORREGIDO v3)\n// Output: context_rag para el LLM\n// =============================================\n\nconst items = $input.all();\n\n// Obtener datos del grupo desde el nodo anterior\nlet grupoData;\ntry {\n    grupoData = $('Preparar Grupo Phase').first().json;\n} catch(e) {\n    console.error('❌ Error obteniendo datos del grupo:', e.message);\n    grupoData = {};\n}\n\n// Construir contexto desde los chunks RAG\nlet contextRag = \"\";\nlet chunksUsados = 0;\n\nitems.forEach((item, idx) => {\n    const chunk = item.json;\n    \n    // Extraer datos según estructura de Supabase\n    let text = \"\";\n    let score = 0;\n    let lineas = {};\n    \n    if (chunk.document && chunk.document.pageContent) {\n        text = chunk.document.pageContent;\n        score = chunk.score || 0;\n        lineas = chunk.document.metadata?.loc?.lines || {};\n    } else if (chunk.pageContent) {\n        text = chunk.pageContent;\n        score = chunk.score || 0;\n        lineas = chunk.metadata?.loc?.lines || {};\n    }\n    \n    if (text && text.trim().length > 50) {\n        chunksUsados++;\n        const scorePercent = (score * 100).toFixed(2);\n        \n        contextRag += `\\n=== FRAGMENTO ${chunksUsados} (Relevancia: ${scorePercent}%, Líneas: ${lineas.from || '?'}-${lineas.to || '?'}) ===\\n`;\n        contextRag += text.trim();\n        contextRag += `\\n`;\n    }\n});\n\n// Fallback si no hay chunks\nif (chunksUsados === 0) {\n    contextRag = \"NO SE ENCONTRÓ INFORMACIÓN RELEVANTE EN LA OFERTA PARA ESTOS REQUISITOS.\";\n}\n\nconsole.log('🔍 RAG Preparado:');\nconsole.log('   ├─ Chunks recibidos: ' + items.length);\nconsole.log('   ├─ Chunks usados: ' + chunksUsados);\nconsole.log('   ├─ Tamaño context_rag: ' + contextRag.length + ' chars');\nconsole.log('   └─ Phase: ' + (grupoData.phase || 'N/A'));\n\nreturn [{\n    json: {\n        phase: grupoData.phase || \"Sin Phase\",\n        evaluation_type: grupoData.evaluation_type || \"Technical Evaluation\",\n        requisitos: grupoData.requisitos || [],\n        total_requisitos: grupoData.total_requisitos || 0,\n        context_rag: contextRag,\n        rag_chunks_recibidos: items.length,\n        rag_chunks_usados: chunksUsados,\n        texto_length: contextRag.length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -1760
+      ],
+      "id": "f97a40b3-d36d-4afa-aa78-aab35f6d8dce",
+      "name": "Preparar Contexto RAG"
+    },
+    {
+      "parameters": {
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        2336,
-        -1600
+        2304,
+        -1552
       ],
-      "id": "d04ea69f-2749-4faf-8678-2176ade19eca",
+      "id": "3ade29b4-75f2-4ab0-b06d-4b417f30b420",
       "name": "OpenRouter Chat Model",
       "credentials": {
         "openRouterApi": {
@@ -1023,17 +1062,6 @@
     }
   ],
   "connections": {
-    "Code in JavaScript": {
-      "main": [
-        [
-          {
-            "node": "LLM Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Code in JavaScript1": {
       "main": [
         [
@@ -1072,6 +1100,17 @@
         [
           {
             "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar por Phase": {
+      "main": [
+        [
+          {
+            "node": "Reset Items",
             "type": "main",
             "index": 0
           }
@@ -1166,7 +1205,7 @@
       "main": [
         [
           {
-            "node": "If",
+            "node": "Format for Vectorstore",
             "type": "main",
             "index": 0
           }
@@ -1323,7 +1362,7 @@
         ],
         [
           {
-            "node": "Code in JavaScript",
+            "node": "Preparar Grupo Phase",
             "type": "main",
             "index": 0
           }
@@ -1341,18 +1380,29 @@
         ]
       ]
     },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "If": {
       "main": [
         [
           {
-            "node": "Validador de Ofertas",
+            "node": "Format for Vectorstore",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+            "node": "Format for Vectorstore",
             "type": "main",
             "index": 0
           }
@@ -1403,6 +1453,17 @@
         ]
       ]
     },
+    "Embeddings Ollama3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Upsert Provider Response": {
       "main": [
         [
@@ -1418,7 +1479,7 @@
       "main": [
         [
           {
-            "node": "Reset Items",
+            "node": "Agrupar por Phase",
             "type": "main",
             "index": 0
           }
@@ -1427,21 +1488,53 @@
     },
     "Mistral Cloud Chat Model": {
       "ai_languageModel": [
+        []
+      ]
+    },
+    "Embeddings Cohere": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "Preparar Grupo Phase": {
+      "main": [
         [
           {
-            "node": "LLM Chain",
-            "type": "ai_languageModel",
+            "node": "RAG Query Vectorstore",
+            "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Embeddings Cohere": {
+    "RAG Query Vectorstore": {
+      "main": [
+        [
+          {
+            "node": "Preparar Contexto RAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama RAG": {
       "ai_embedding": [
         [
           {
-            "node": "Insert into Supabase Vectorstore",
+            "node": "RAG Query Vectorstore",
             "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Contexto RAG": {
+      "main": [
+        [
+          {
+            "node": "LLM Chain",
+            "type": "main",
             "index": 0
           }
         ]
@@ -1453,27 +1546,7 @@
       ]
     }
   },
-  "pinData": {
-    "Validador de Ofertas": [
-      {
-        "output": {
-          "modo_usado": "VALIDADOR",
-          "proyecto_detectado": "PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)",
-          "proyecto_valido": true,
-          "proyecto_nota": "The project name matches the user's selection.",
-          "proveedor_detectado": "IDOM",
-          "proveedor_valido": true,
-          "proveedor_nota": "The provider name matches the user's selection.",
-          "tipos_detectados": [
-            "Pre-FEED Deliverables"
-          ],
-          "tipos_validados": true,
-          "tipos_nota": "The document lists several engineering deliverables which correspond to Pre-FEED Deliverables and Technical Evaluation.",
-          "razonamiento": "The File Name and Title found."
-        }
-      }
-    ]
-  },
+  "pinData": {},
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"

@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Paper - BidEval | BeAI Energy</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #12b5b0;
+            --primary-dark: #0a8a86;
+            --text-dark: #1a1a1a;
+            --text-medium: #4a4a4a;
+            --text-light: #6a6a6a;
+            --bg-light: #f8f9fa;
+            --border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: white;
+        }
+
+        .page {
+            width: 210mm;
+            height: 297mm;
+            padding: 20mm 25mm 30mm 25mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            page-break-after: always;
+            page-break-inside: avoid;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .page:last-child {
+            page-break-after: avoid;
+        }
+
+        /* Evitar cortes en elementos importantes */
+        h2, h3, h4 {
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+
+        table, .highlight-box, .stats-grid, .two-columns, .feature-card, svg {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        p {
+            orphans: 3;
+            widows: 3;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        /* SVG responsive */
+        svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15mm;
+            padding-bottom: 5mm;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-text {
+            font-size: 32pt;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 0.9;
+        }
+
+        .logo-text span {
+            display: block;
+        }
+
+        .tagline {
+            font-size: 18pt;
+            font-weight: 300;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+
+        .tagline-small {
+            font-size: 11pt;
+            color: var(--primary);
+            font-weight: 400;
+        }
+
+        .website {
+            font-size: 10pt;
+            color: var(--text-medium);
+            text-align: right;
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 25mm;
+            right: 25mm;
+            font-size: 8pt;
+            color: var(--text-light);
+            padding-top: 5mm;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 28pt;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 5mm;
+            line-height: 1.2;
+        }
+
+        h1 .highlight {
+            color: var(--primary);
+        }
+
+        h2 {
+            font-size: 16pt;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 8mm;
+            margin-bottom: 4mm;
+            padding-bottom: 2mm;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        h3 {
+            font-size: 13pt;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 6mm;
+            margin-bottom: 3mm;
+        }
+
+        h4 {
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-top: 4mm;
+            margin-bottom: 2mm;
+        }
+
+        p {
+            margin-bottom: 3mm;
+            text-align: justify;
+        }
+
+        .lead {
+            font-size: 12pt;
+            color: var(--text-medium);
+            font-weight: 400;
+            line-height: 1.7;
+        }
+
+        .subtitle {
+            font-size: 14pt;
+            color: var(--text-medium);
+            margin-bottom: 10mm;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 5mm;
+            margin-bottom: 4mm;
+        }
+
+        li {
+            margin-bottom: 2mm;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4mm 0 6mm 0;
+            font-size: 10pt;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: 3mm 4mm;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 3mm 4mm;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:nth-child(even) {
+            background: var(--bg-light);
+        }
+
+        /* Boxes */
+        .highlight-box {
+            background: linear-gradient(135deg, #e8f7f7 0%, #f0fafa 100%);
+            border-left: 4px solid var(--primary);
+            padding: 5mm;
+            margin: 5mm 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .stat-box {
+            background: var(--primary);
+            color: white;
+            padding: 5mm;
+            border-radius: 4px;
+            text-align: center;
+            margin: 3mm 0;
+        }
+
+        .stat-box .number {
+            font-size: 24pt;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-box .label {
+            font-size: 9pt;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4mm;
+            margin: 5mm 0;
+        }
+
+        /* Cover page */
+        .cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 250mm;
+            text-align: center;
+        }
+
+        .cover h1 {
+            font-size: 36pt;
+            margin-bottom: 8mm;
+        }
+
+        .cover .subtitle {
+            font-size: 16pt;
+            margin-bottom: 15mm;
+        }
+
+        .cover-meta {
+            margin-top: 20mm;
+            font-size: 10pt;
+            color: var(--text-light);
+        }
+
+        /* Quote */
+        blockquote {
+            border-left: 3px solid var(--primary);
+            padding-left: 5mm;
+            margin: 5mm 0;
+            font-style: italic;
+            color: var(--text-medium);
+        }
+
+        /* Two columns */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8mm;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                margin: 0;
+                padding: 0;
+            }
+
+            .page {
+                margin: 0;
+                padding: 15mm 20mm 25mm 20mm;
+                height: 297mm;
+                width: 210mm;
+                page-break-after: always;
+                page-break-inside: avoid;
+                overflow: hidden;
+            }
+
+            .page:last-child {
+                page-break-after: avoid;
+            }
+
+            .footer {
+                position: absolute;
+                bottom: 10mm;
+            }
+
+            h2, h3, h4 {
+                page-break-after: avoid;
+            }
+
+            table, .highlight-box, .stats-grid, svg, .diagram {
+                page-break-inside: avoid;
+            }
+        }
+
+        .toc {
+            margin: 10mm 0;
+        }
+
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2mm 0;
+            border-bottom: 1px dotted var(--border);
+        }
+
+        .toc-item:hover {
+            background: var(--bg-light);
+        }
+
+        .page-num {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .diagram {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            padding: 5mm;
+            margin: 5mm 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 9pt;
+            white-space: pre;
+            line-height: 1.4;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4mm;
+            margin-bottom: 4mm;
+        }
+
+        .feature-card h4 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 1mm 3mm;
+            border-radius: 3px;
+            font-size: 8pt;
+            font-weight: 600;
+            margin-right: 2mm;
+        }
+
+        .badge.secondary {
+            background: var(--text-medium);
+        }
+    </style>
+</head>
+<body>
+
+<!-- PÁGINA 1: PORTADA -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline">
+                Beyond Artificial<br>
+                Genuinely Human
+            </div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <div class="cover">
+        <h1>BidEval</h1>
+        <p class="subtitle">Transformando la Evaluación de Ofertas<br>en el Sector Energético con IA</p>
+
+        <div class="tagline-small" style="font-size: 14pt; margin-top: 10mm;">
+            Plataforma de Inteligencia Artificial para<br>
+            Evaluación Automática de Propuestas de Proveedores
+        </div>
+
+        <div class="cover-meta">
+            <p><strong>WHITE PAPER</strong></p>
+            <p>Versión 2.1 Beta | Enero 2026</p>
+            <p style="margin-top: 10mm;">
+                BeAI Energy, SL<br>
+                Madrid, España
+            </p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 1</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 2: ÍNDICE Y RESUMEN EJECUTIVO -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>Índice</h2>
+
+    <div class="toc">
+        <div class="toc-item"><span>1. Resumen Ejecutivo</span><span class="page-num">2</span></div>
+        <div class="toc-item"><span>2. El Reto del Procurement en Energía</span><span class="page-num">3</span></div>
+        <div class="toc-item"><span>3. BidEval: Visión General</span><span class="page-num">4</span></div>
+        <div class="toc-item"><span>4. Profundización Técnica</span><span class="page-num">5</span></div>
+        <div class="toc-item"><span>5. Caso de Estudio: H2 La Zaida</span><span class="page-num">6</span></div>
+        <div class="toc-item"><span>6. Análisis de ROI</span><span class="page-num">7</span></div>
+        <div class="toc-item"><span>7. Seguridad y Compliance</span><span class="page-num">8</span></div>
+        <div class="toc-item"><span>8. Guía de Implementación</span><span class="page-num">9</span></div>
+        <div class="toc-item"><span>9. Visión de Futuro</span><span class="page-num">10</span></div>
+        <div class="toc-item"><span>10. Sobre BeAI Energy</span><span class="page-num">10</span></div>
+    </div>
+
+    <h2>1. Resumen Ejecutivo</h2>
+
+    <p class="lead">
+        <strong>BidEval</strong> es una plataforma de inteligencia artificial que automatiza la evaluación de propuestas de proveedores para proyectos de infraestructura energética. En lugar de semanas de trabajo manual comparando documentos, BidEval procesa RFQs y ofertas en minutos, extrayendo requisitos, evaluando cumplimiento y generando rankings objetivos.
+    </p>
+
+    <div class="highlight-box">
+        <strong>Propuesta de valor:</strong> Reducir el tiempo de evaluación de ofertas en un 60%, garantizando consistencia, trazabilidad y total privacidad de datos mediante procesamiento 100% local.
+    </div>
+
+    <h3>Resultados Clave</h3>
+
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="number">-60%</span>
+            <span class="label">Tiempo de evaluación</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">+100h</span>
+            <span class="label">Ahorro por proyecto</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">98%+</span>
+            <span class="label">Precisión IA</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">100%</span>
+            <span class="label">Datos locales</span>
+        </div>
+    </div>
+
+    <h3>Audiencia Objetivo</h3>
+    <p>Este white paper está dirigido a directores de compras, jefes de proyecto, directores técnicos y responsables de procurement en empresas EPC, ingenierías y desarrolladores de proyectos del sector energético.</p>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 2</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 3: EL RETO DEL PROCUREMENT -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>2. El Reto del Procurement en Energía</h2>
+
+    <p class="lead">
+        En proyectos de infraestructura energética —plantas de hidrógeno verde, parques solares, instalaciones BESS— el proceso de selección de proveedores representa uno de los cuellos de botella más críticos del ciclo de proyecto.
+    </p>
+
+    <h3>El Proceso Actual: Lento, Costoso y Propenso a Errores</h3>
+
+    <h4>Tiempo Perdido</h4>
+    <ul>
+        <li>Evaluar 5-7 proveedores para un proyecto típico requiere <strong>2-4 semanas</strong> de trabajo dedicado</li>
+        <li>Cada propuesta contiene 50-200 páginas de documentación técnica y económica</li>
+        <li>La comparación manual de requisitos consume <strong>+100 horas</strong> de ingenieros senior</li>
+    </ul>
+
+    <h4>Costos Ocultos</h4>
+    <ul>
+        <li>Horas de personal técnico cualificado (€80-150/hora)</li>
+        <li>Retrasos en cronogramas de proyecto</li>
+        <li>Oportunidades perdidas por decisiones tardías</li>
+    </ul>
+
+    <h4>Riesgos de Calidad</h4>
+    <ul>
+        <li>Inconsistencias en la evaluación entre proveedores</li>
+        <li>Subjetividad en la interpretación de requisitos</li>
+        <li>Errores humanos por fatiga en documentos extensos</li>
+        <li>Falta de trazabilidad en decisiones</li>
+    </ul>
+
+    <div class="highlight-box">
+        <h4 style="margin-top: 0;">Estadísticas del Mercado</h4>
+        <ul style="margin-bottom: 0;">
+            <li>El <strong>67%</strong> de los profesionales de procurement consideran que el proceso de evaluación es ineficiente</li>
+            <li>El <strong>45%</strong> reporta haber tomado decisiones basadas en información incompleta</li>
+            <li>El costo promedio de una mala selección de proveedor supera el <strong>15%</strong> del valor del contrato</li>
+        </ul>
+    </div>
+
+    <h3>Impacto Económico</h3>
+
+    <table>
+        <tr>
+            <th>Concepto</th>
+            <th>Impacto Típico</th>
+        </tr>
+        <tr>
+            <td>Horas de evaluación manual</td>
+            <td>120+ horas por proyecto</td>
+        </tr>
+        <tr>
+            <td>Costo de personal técnico</td>
+            <td>€12,000 - €18,000 por evaluación</td>
+        </tr>
+        <tr>
+            <td>Retrasos por proceso lento</td>
+            <td>2-4 semanas adicionales</td>
+        </tr>
+        <tr>
+            <td>Riesgo de mala selección</td>
+            <td>15% del valor del contrato</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 3</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 4: BIDEVAL VISIÓN GENERAL -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>3. BidEval: Visión General</h2>
+
+    <p class="lead">
+        BidEval transforma el proceso de evaluación de ofertas mediante inteligencia artificial especializada en el sector energético, combinando procesamiento de documentos, análisis semántico y scoring multicriteria en una única plataforma.
+    </p>
+
+    <h3>Flujo de Trabajo Automatizado</h3>
+
+    <div style="text-align: center; margin: 8mm 0;">
+        <svg viewBox="0 0 520 60" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 520px;">
+            <!-- Box 1: CARGA -->
+            <rect x="5" y="10" width="85" height="40" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="47" y="35" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="11" font-weight="600">1. CARGA</text>
+
+            <!-- Arrow 1 -->
+            <path d="M95 30 L115 30" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="115,30 107,26 107,34" fill="#333"/>
+
+            <!-- Box 2: EXTRACT -->
+            <rect x="120" y="10" width="85" height="40" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="162" y="35" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="11" font-weight="600">2. EXTRACT</text>
+
+            <!-- Arrow 2 -->
+            <path d="M210 30 L230 30" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="230,30 222,26 222,34" fill="#333"/>
+
+            <!-- Box 3: SCORING -->
+            <rect x="235" y="10" width="85" height="40" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="277" y="35" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="11" font-weight="600">3. SCORING</text>
+
+            <!-- Arrow 3 -->
+            <path d="M325 30 L345 30" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="345,30 337,26 337,34" fill="#333"/>
+
+            <!-- Box 4: ANÁLISIS -->
+            <rect x="350" y="10" width="85" height="40" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="392" y="35" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="11" font-weight="600">4. ANÁLISIS</text>
+
+            <!-- Arrow 4 -->
+            <path d="M440 30 L460 30" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="460,30 452,26 452,34" fill="#333"/>
+
+            <!-- Box 5: ACCIÓN -->
+            <rect x="465" y="10" width="85" height="40" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="507" y="35" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="11" font-weight="600">5. ACCIÓN</text>
+        </svg>
+    </div>
+
+    <h3>Comparativa: Antes vs Después</h3>
+
+    <table>
+        <tr>
+            <th>Aspecto</th>
+            <th>Sin BidEval</th>
+            <th>Con BidEval</th>
+        </tr>
+        <tr>
+            <td>Tiempo de evaluación</td>
+            <td>2-4 semanas</td>
+            <td><strong>1-2 días</strong></td>
+        </tr>
+        <tr>
+            <td>Horas de trabajo</td>
+            <td>+100 horas manuales</td>
+            <td><strong>&lt;10 horas supervisión</strong></td>
+        </tr>
+        <tr>
+            <td>Tipo de evaluación</td>
+            <td>Subjetiva, variable</td>
+            <td><strong>Objetiva, trazable</strong></td>
+        </tr>
+        <tr>
+            <td>Gestión de datos</td>
+            <td>Múltiples sistemas</td>
+            <td><strong>Plataforma centralizada</strong></td>
+        </tr>
+        <tr>
+            <td>Seguridad de datos</td>
+            <td>Riesgo de fuga</td>
+            <td><strong>100% local</strong></td>
+        </tr>
+    </table>
+
+    <h3>Módulos Principales</h3>
+
+    <div class="two-columns">
+        <div class="feature-card">
+            <h4>Ingesta de RFQs</h4>
+            <p>OCR automático, extracción de requisitos técnicos y económicos, clasificación inteligente.</p>
+        </div>
+        <div class="feature-card">
+            <h4>Evaluación de Propuestas</h4>
+            <p>Análisis RAG, procesamiento paralelo de hasta 7 proveedores, detección de gaps.</p>
+        </div>
+        <div class="feature-card">
+            <h4>Scoring Multicriteria</h4>
+            <p>12 criterios en 4 categorías, pesos personalizables, ranking automático.</p>
+        </div>
+        <div class="feature-card">
+            <h4>Q&A Automático</h4>
+            <p>Generación de preguntas técnicas por disciplina, gestión de estados.</p>
+        </div>
+        <div class="feature-card">
+            <h4>Comunicaciones</h4>
+            <p>Emails automáticos a proveedores con tonos configurables.</p>
+        </div>
+        <div class="feature-card">
+            <h4>Chat con IA</h4>
+            <p>Consultas en lenguaje natural sobre toda la base de conocimiento.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 4</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 5: PROFUNDIZACIÓN TÉCNICA -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>4. Profundización Técnica</h2>
+
+    <h3>Arquitectura del Sistema</h3>
+
+    <div style="text-align: center; margin: 5mm 0;">
+        <svg viewBox="0 0 320 400" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 320px;">
+            <!-- Usuario (círculo rosa) -->
+            <circle cx="160" cy="25" r="20" fill="#f0a0d0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="29" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">Usuario</text>
+
+            <!-- Flecha 1 -->
+            <path d="M160 45 L160 60" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="160,65 156,57 164,57" fill="#333"/>
+
+            <!-- Navegador Web -->
+            <rect x="80" y="70" width="160" height="28" rx="4" fill="#d8d8f0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="88" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">Navegador Web</text>
+
+            <!-- Flecha 2 -->
+            <path d="M160 98 L160 115" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="160,120 156,112 164,112" fill="#333"/>
+
+            <!-- Motor de Automatización -->
+            <rect x="15" y="125" width="290" height="105" rx="5" fill="#f5f5d0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="142" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">Motor de Automatización</text>
+
+            <!-- Frontend React -->
+            <rect x="80" y="150" width="160" height="25" rx="4" fill="#d8d8f0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="167" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">Frontend React</text>
+
+            <!-- Líneas hacia módulos -->
+            <path d="M160 175 L160 190 M160 190 L55 190 L55 198 M160 190 L115 190 L115 198 M160 190 L205 190 L205 198 M160 190 L265 190 L265 198" stroke="#333" stroke-width="1" fill="none"/>
+
+            <!-- 4 módulos -->
+            <rect x="25" y="200" width="60" height="22" rx="3" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <text x="55" y="215" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">Ingesta RFQ</text>
+
+            <rect x="90" y="200" width="60" height="22" rx="3" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <text x="120" y="215" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">Evaluación</text>
+
+            <rect x="170" y="200" width="60" height="22" rx="3" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <text x="200" y="215" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">Scoring</text>
+
+            <rect x="235" y="200" width="60" height="22" rx="3" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <text x="265" y="215" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">Q&A / Mail</text>
+
+            <!-- Flecha 3 -->
+            <path d="M160 230 L160 250" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="160,255 156,247 164,247" fill="#333"/>
+
+            <!-- IA Local -->
+            <rect x="15" y="260" width="290" height="65" rx="5" fill="#f5f5d0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="275" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">IA Local (100% On-Premise)</text>
+
+            <!-- Modelos LLM -->
+            <rect x="35" y="285" width="110" height="28" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="90" y="303" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="600">Modelos LLM Optimizados</text>
+
+            <!-- Flecha interna -->
+            <path d="M150 299 L165 299" stroke="#333" stroke-width="1.5" fill="none"/>
+            <polygon points="170,299 162,295 162,303" fill="#333"/>
+
+            <!-- Embeddings -->
+            <rect x="175" y="285" width="90" height="28" rx="4" fill="#12b5b0" stroke="#0a8a86" stroke-width="2"/>
+            <text x="220" y="298" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="600">Embeddings</text>
+            <text x="220" y="308" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="600">Vectoriales</text>
+
+            <!-- Flecha 4 -->
+            <path d="M160 325 L160 345" stroke="#333" stroke-width="2" fill="none"/>
+            <polygon points="160,350 156,342 164,342" fill="#333"/>
+
+            <!-- Base de Datos -->
+            <rect x="15" y="355" width="290" height="40" rx="5" fill="#f5f5d0" stroke="#333" stroke-width="2"/>
+            <text x="160" y="368" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="500">Base de Datos</text>
+
+            <!-- PostgreSQL -->
+            <ellipse cx="90" cy="378" rx="35" ry="6" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <rect x="55" y="378" width="70" height="12" fill="#d8d8f0" stroke="none"/>
+            <ellipse cx="90" cy="390" rx="35" ry="5" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <path d="M55 378 L55 390 M125 378 L125 390" stroke="#333" stroke-width="1"/>
+            <text x="90" y="386" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">PostgreSQL</text>
+
+            <!-- Vectorstore -->
+            <ellipse cx="230" cy="378" rx="35" ry="6" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <rect x="195" y="378" width="70" height="12" fill="#d8d8f0" stroke="none"/>
+            <ellipse cx="230" cy="390" rx="35" ry="5" fill="#d8d8f0" stroke="#333" stroke-width="1"/>
+            <path d="M195 378 L195 390 M265 378 L265 390" stroke="#333" stroke-width="1"/>
+            <text x="230" y="386" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="8" font-weight="500">Vectorstore</text>
+        </svg>
+    </div>
+
+    <h3>Sistema de Scoring Multicriteria</h3>
+
+    <p>BidEval implementa un sistema de puntuación con <strong>12 criterios</strong> organizados en <strong>4 categorías</strong> principales, basado en mejores prácticas del sector energético:</p>
+
+    <table>
+        <tr>
+            <th>Categoría</th>
+            <th>Peso</th>
+            <th>Criterios Incluidos</th>
+        </tr>
+        <tr>
+            <td><strong>TÉCNICA</strong></td>
+            <td>35%</td>
+            <td>Eficiencia BOP (12%), Vida útil (8%), Flexibilidad (8%), Pureza/Presión (7%)</td>
+        </tr>
+        <tr>
+            <td><strong>ECONÓMICA</strong></td>
+            <td>35%</td>
+            <td>CAPEX total (18%), OPEX garantizado (12%), Garantías (5%)</td>
+        </tr>
+        <tr>
+            <td><strong>EJECUCIÓN</strong></td>
+            <td>12%</td>
+            <td>Plazo entrega (6%), Track record (3%), Solidez proveedor (3%)</td>
+        </tr>
+        <tr>
+            <td><strong>HSE/ESG</strong></td>
+            <td>18%</td>
+            <td>Seguridad ATEX (12%), Sostenibilidad (6%)</td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 5mm 0;">
+        <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 320px;">
+            <text x="160" y="20" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="13" font-weight="600">Sistema de Scoring Multicriteria</text>
+
+            <!-- Pie chart -->
+            <!-- Técnica 35% (0 to 126 degrees) - azul claro -->
+            <path d="M110 120 L110 50 A70 70 0 0 1 169 162 Z" fill="#c5c5f0" stroke="#333" stroke-width="1.5"/>
+            <text x="135" y="100" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="11" font-weight="600">35%</text>
+
+            <!-- Económica 35% (126 to 252 degrees) - amarillo claro -->
+            <path d="M110 120 L169 162 A70 70 0 0 1 51 162 Z" fill="#f5f5c0" stroke="#333" stroke-width="1.5"/>
+            <text x="110" y="165" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="11" font-weight="600">35%</text>
+
+            <!-- HSE/ESG 18% (252 to 317 degrees) - verde claro -->
+            <path d="M110 120 L51 162 A70 70 0 0 1 58 68 Z" fill="#c5f0c5" stroke="#333" stroke-width="1.5"/>
+            <text x="65" y="115" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="600">18%</text>
+
+            <!-- Ejecución 12% (317 to 360 degrees) - azul medio -->
+            <path d="M110 120 L58 68 A70 70 0 0 1 110 50 Z" fill="#9090e0" stroke="#333" stroke-width="1.5"/>
+            <text x="90" y="65" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="10" font-weight="600">12%</text>
+
+            <!-- Leyenda -->
+            <rect x="200" y="60" width="14" height="14" fill="#c5c5f0" stroke="#333" stroke-width="1"/>
+            <text x="220" y="72" fill="#333" font-family="Inter, sans-serif" font-size="10">Técnica</text>
+
+            <rect x="200" y="85" width="14" height="14" fill="#f5f5c0" stroke="#333" stroke-width="1"/>
+            <text x="220" y="97" fill="#333" font-family="Inter, sans-serif" font-size="10">Económica</text>
+
+            <rect x="200" y="110" width="14" height="14" fill="#c5f0c5" stroke="#333" stroke-width="1"/>
+            <text x="220" y="122" fill="#333" font-family="Inter, sans-serif" font-size="10">HSE/ESG</text>
+
+            <rect x="200" y="135" width="14" height="14" fill="#9090e0" stroke="#333" stroke-width="1"/>
+            <text x="220" y="147" fill="#333" font-family="Inter, sans-serif" font-size="10">Ejecución</text>
+        </svg>
+    </div>
+
+    <div class="highlight-box">
+        <strong>Personalización:</strong> Todos los pesos son completamente configurables. Los valores mostrados corresponden al proyecto H2 La Zaida (hidrógeno verde) y pueden adaptarse a cada vertical o proyecto específico.
+    </div>
+
+    <h3>Tecnología RAG (Retrieval-Augmented Generation)</h3>
+
+    <p>BidEval utiliza tecnología RAG para evaluar propuestas contra requisitos:</p>
+    <ol>
+        <li><strong>Vectorización:</strong> Cada documento se convierte en embeddings semánticos</li>
+        <li><strong>Búsqueda:</strong> Para cada requisito, se recuperan los fragmentos más relevantes</li>
+        <li><strong>Evaluación:</strong> La IA analiza el contexto y determina el nivel de cumplimiento</li>
+        <li><strong>Clasificación:</strong> INCLUIDO, PARCIALMENTE INCLUIDO, NO INCLUIDO, NO APLICA</li>
+    </ol>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 5</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 6: CASO DE ESTUDIO -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>5. Caso de Estudio: Proyecto H2 La Zaida</h2>
+
+    <div class="highlight-box">
+        <h4 style="margin-top: 0;">Contexto del Proyecto</h4>
+        <p style="margin-bottom: 0;">Planta de producción de hidrógeno verde mediante electrólisis, ubicada en Aragón, España. Proyecto de infraestructura crítica para la transición energética europea.</p>
+    </div>
+
+    <h3>Alcance de la Evaluación</h3>
+
+    <table>
+        <tr>
+            <th>Parámetro</th>
+            <th>Valor</th>
+        </tr>
+        <tr>
+            <td>Proveedores evaluados</td>
+            <td><strong>7</strong> (IDOM, TR, SACYR, WORLEY, SENER, TRESCA, EA)</td>
+        </tr>
+        <tr>
+            <td>Requisitos por proveedor</td>
+            <td><strong>150+</strong> requisitos técnicos y económicos</td>
+        </tr>
+        <tr>
+            <td>Páginas analizadas</td>
+            <td><strong>1,000+</strong> páginas de documentación</td>
+        </tr>
+        <tr>
+            <td>Tipos de evaluación</td>
+            <td>Technical, Economic, Pre-FEED, FEED</td>
+        </tr>
+    </table>
+
+    <h3>Resultados Obtenidos</h3>
+
+    <div class="stats-grid">
+        <div class="stat-box">
+            <span class="number">2 días</span>
+            <span class="label">Tiempo total</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">vs 3+ sem</span>
+            <span class="label">Estimación manual</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">50+</span>
+            <span class="label">Preguntas Q&A</span>
+        </div>
+        <div class="stat-box">
+            <span class="number">€15K+</span>
+            <span class="label">Ahorro estimado</span>
+        </div>
+    </div>
+
+    <h3>Métricas de Rendimiento</h3>
+
+    <table>
+        <tr>
+            <th>Proceso</th>
+            <th>Tiempo</th>
+            <th>Mejora vs Manual</th>
+        </tr>
+        <tr>
+            <td>Ingesta RFQ base (100 páginas)</td>
+            <td>5-8 minutos</td>
+            <td><strong>-60%</strong></td>
+        </tr>
+        <tr>
+            <td>Evaluación por proveedor (80 req)</td>
+            <td>4-6 minutos</td>
+            <td><strong>-55%</strong></td>
+        </tr>
+        <tr>
+            <td>Scoring completo (7 proveedores)</td>
+            <td>3-5 minutos</td>
+            <td><strong>100% automatizado</strong></td>
+        </tr>
+        <tr>
+            <td>Generación de Q&A</td>
+            <td>10-20 segundos</td>
+            <td><strong>-65%</strong></td>
+        </tr>
+        <tr>
+            <td>Respuesta de chat</td>
+            <td>2-4 segundos</td>
+            <td><strong>Instantáneo</strong></td>
+        </tr>
+    </table>
+
+    <h3>Valor Generado</h3>
+
+    <div class="two-columns">
+        <div>
+            <h4>Beneficios Cuantitativos</h4>
+            <ul>
+                <li>Ahorro de +100 horas de ingeniería</li>
+                <li>Reducción de €15,000+ en costos</li>
+                <li>Aceleración del cronograma en 2-3 semanas</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Beneficios Cualitativos</h4>
+            <ul>
+                <li>Evaluación 100% consistente</li>
+                <li>Trazabilidad completa de decisiones</li>
+                <li>Identificación temprana de gaps</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 6</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 7: ANÁLISIS DE ROI -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>6. Análisis de ROI</h2>
+
+    <p class="lead">
+        BidEval genera un retorno de inversión positivo desde el primer proyecto, con ahorros significativos en tiempo, costos de personal y reducción de riesgos.
+    </p>
+
+    <h3>Cálculo de Ahorro por Proyecto</h3>
+
+    <p><em>Escenario: Proyecto típico con 5-7 proveedores y 100+ requisitos</em></p>
+
+    <table>
+        <tr>
+            <th>Concepto</th>
+            <th>Sin BidEval</th>
+            <th>Con BidEval</th>
+            <th>Ahorro</th>
+        </tr>
+        <tr>
+            <td>Horas de evaluación</td>
+            <td>120 horas</td>
+            <td>15 horas</td>
+            <td><strong>105 horas</strong></td>
+        </tr>
+        <tr>
+            <td>Costo/hora ingeniero</td>
+            <td>€100</td>
+            <td>€100</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>Costo total evaluación</td>
+            <td>€12,000</td>
+            <td>€1,500</td>
+            <td><strong>€10,500</strong></td>
+        </tr>
+        <tr>
+            <td>Tiempo calendario</td>
+            <td>3-4 semanas</td>
+            <td>2-3 días</td>
+            <td><strong>2-3 semanas</strong></td>
+        </tr>
+    </table>
+
+    <h3>Modelo de Pricing</h3>
+
+    <table>
+        <tr>
+            <th>Tier</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+        </tr>
+        <tr>
+            <td><span class="badge">Starter</span></td>
+            <td>1 proyecto activo, 5 proveedores, soporte email</td>
+            <td>€990/mes</td>
+        </tr>
+        <tr>
+            <td><span class="badge">Professional</span></td>
+            <td>5 proyectos, proveedores ilimitados, soporte prioritario</td>
+            <td>€2,490/mes</td>
+        </tr>
+        <tr>
+            <td><span class="badge secondary">Enterprise</span></td>
+            <td>Ilimitado, instalación on-premise, SLA dedicado</td>
+            <td>Personalizado</td>
+        </tr>
+    </table>
+
+    <h3>Payback Period</h3>
+
+    <div class="highlight-box">
+        <h4 style="margin-top: 0;">ROI desde el Primer Proyecto</h4>
+        <p>Con un ahorro de <strong>€10,500</strong> por proyecto y una suscripción Professional de <strong>€2,490/mes</strong>, el payback se alcanza en el <strong>primer proyecto evaluado</strong>.</p>
+        <p style="margin-bottom: 0;">Para empresas que evalúan 4+ proyectos al año, el ROI anual supera el <strong>400%</strong>.</p>
+    </div>
+
+    <h3>Beneficios No Cuantificados</h3>
+
+    <div class="two-columns">
+        <div>
+            <h4>Reducción de Riesgos</h4>
+            <ul>
+                <li>Decisiones mejor informadas</li>
+                <li>Detección temprana de gaps</li>
+                <li>Menor riesgo de mala selección</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Valor Estratégico</h4>
+            <ul>
+                <li>Mejor posición negociadora</li>
+                <li>Aceleración de cronogramas</li>
+                <li>Compliance y auditoría</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 7</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 8: SEGURIDAD Y COMPLIANCE -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>7. Seguridad y Compliance</h2>
+
+    <div class="highlight-box">
+        <h4 style="margin-top: 0;">Principio Fundamental</h4>
+        <p style="margin-bottom: 0; font-size: 12pt;"><strong>Los datos nunca abandonan el entorno del cliente.</strong> Todo el procesamiento de IA se realiza localmente, sin conexión a APIs cloud externas.</p>
+    </div>
+
+    <h3>Arquitectura de Seguridad</h3>
+
+    <table>
+        <tr>
+            <th>Aspecto</th>
+            <th>Implementación</th>
+        </tr>
+        <tr>
+            <td>Procesamiento de IA</td>
+            <td><strong>100% local</strong>, sin llamadas a APIs cloud</td>
+        </tr>
+        <tr>
+            <td>Almacenamiento de datos</td>
+            <td>Base de datos <strong>on-premise</strong> en servidor del cliente</td>
+        </tr>
+        <tr>
+            <td>Transmisión de datos</td>
+            <td><strong>Solo red interna</strong>, sin tráfico externo</td>
+        </tr>
+        <tr>
+            <td>Control de backups</td>
+            <td><strong>100% del cliente</strong></td>
+        </tr>
+        <tr>
+            <td>Autenticación</td>
+            <td>Sistema local, integrable con SSO corporativo</td>
+        </tr>
+    </table>
+
+    <h3>Ventaja Competitiva: IA Local vs Cloud</h3>
+
+    <table>
+        <tr>
+            <th>Aspecto</th>
+            <th>BidEval (Local)</th>
+            <th>Competencia (Cloud)</th>
+        </tr>
+        <tr>
+            <td>Datos de licitaciones</td>
+            <td><strong>Nunca salen del servidor</strong></td>
+            <td>Enviados a terceros</td>
+        </tr>
+        <tr>
+            <td>Riesgo de filtración</td>
+            <td><strong>Cero</strong></td>
+            <td>Dependiente del proveedor</td>
+        </tr>
+        <tr>
+            <td>Cumplimiento normativo</td>
+            <td><strong>Simplificado</strong></td>
+            <td>Requiere evaluación de terceros</td>
+        </tr>
+        <tr>
+            <td>Auditoría</td>
+            <td><strong>Control total</strong></td>
+            <td>Limitada a logs de proveedor</td>
+        </tr>
+    </table>
+
+    <h3>Cumplimiento Normativo</h3>
+
+    <div class="two-columns">
+        <div>
+            <h4>Compatible con:</h4>
+            <ul>
+                <li>GDPR (Protección de datos UE)</li>
+                <li>Políticas de datos sensibles corporativas</li>
+                <li>Requisitos de confidencialidad en licitaciones</li>
+                <li>Normativas de infraestructura crítica</li>
+            </ul>
+        </div>
+        <div>
+            <h4>Garantías:</h4>
+            <ul>
+                <li>Cero datos transmitidos externamente</li>
+                <li>Cero dependencia de APIs cloud</li>
+                <li>Control total sobre modelos y configuraciones</li>
+                <li>Logs de auditoría completos</li>
+            </ul>
+        </div>
+    </div>
+
+    <blockquote>
+        "En licitaciones de infraestructura crítica, la confidencialidad no es opcional. BidEval garantiza que la información competitiva sensible permanece bajo control total del cliente."
+    </blockquote>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 8</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 9: GUÍA DE IMPLEMENTACIÓN -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>8. Guía de Implementación</h2>
+
+    <h3>Proceso de Adopción</h3>
+
+    <div style="text-align: center; margin: 5mm 0;">
+        <svg viewBox="0 0 500 130" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 500px;">
+            <text x="250" y="15" text-anchor="middle" fill="#333" font-family="Inter, sans-serif" font-size="12" font-weight="600">Proceso de Adopción (4 Semanas)</text>
+
+            <!-- Fondo del Gantt -->
+            <rect x="55" y="28" width="430" height="65" fill="#e8e8f8" rx="4"/>
+
+            <!-- Líneas verticales de semanas -->
+            <line x1="162" y1="28" x2="162" y2="93" stroke="#ccc" stroke-width="1"/>
+            <line x1="270" y1="28" x2="270" y2="93" stroke="#ccc" stroke-width="1"/>
+            <line x1="377" y1="28" x2="377" y2="93" stroke="#ccc" stroke-width="1"/>
+
+            <!-- Etiquetas de días -->
+            <text x="55" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">0</text>
+            <text x="108" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">5</text>
+            <text x="162" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">10</text>
+            <text x="216" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">15</text>
+            <text x="270" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">20</text>
+            <text x="323" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">25</text>
+            <text x="377" y="108" fill="#666" font-family="Inter, sans-serif" font-size="8">30</text>
+
+            <!-- Label "Fases" -->
+            <text x="25" y="65" fill="#666" font-family="Inter, sans-serif" font-size="9">Fases</text>
+
+            <!-- Barras del Gantt -->
+            <!-- Kick-off y Diseño (día 1-7) -->
+            <rect x="60" y="34" width="95" height="20" rx="10" fill="#8080c0" stroke="#6060a0" stroke-width="1"/>
+            <text x="107" y="48" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="500">Kick-off y Diseño</text>
+
+            <!-- Instalación (día 7-14) -->
+            <rect x="135" y="40" width="85" height="20" rx="10" fill="#8080c0" stroke="#6060a0" stroke-width="1"/>
+            <text x="177" y="54" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="500">Instalación</text>
+
+            <!-- Configuración (día 14-21) -->
+            <rect x="205" y="48" width="100" height="20" rx="10" fill="#8080c0" stroke="#6060a0" stroke-width="1"/>
+            <text x="255" y="62" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="500">Configuración</text>
+
+            <!-- Formación (día 21-28) -->
+            <rect x="290" y="56" width="100" height="20" rx="10" fill="#8080c0" stroke="#6060a0" stroke-width="1"/>
+            <text x="340" y="70" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="500">Formación</text>
+
+            <!-- Go-Live (día 28-30) -->
+            <rect x="400" y="64" width="65" height="20" rx="10" fill="#12b5b0" stroke="#0a8a86" stroke-width="1"/>
+            <text x="432" y="78" text-anchor="middle" fill="white" font-family="Inter, sans-serif" font-size="8" font-weight="600">Go-Live</text>
+        </svg>
+    </div>
+
+    <h3>Fases de Implementación</h3>
+
+    <h4>Fase 1: Kick-off y Diseño (Semana 1)</h4>
+    <ul>
+        <li>Reunión de inicio con stakeholders</li>
+        <li>Definición de criterios de scoring específicos</li>
+        <li>Identificación de flujos de trabajo actuales</li>
+        <li>Planificación de infraestructura</li>
+    </ul>
+
+    <h4>Fase 2: Instalación (Semana 2)</h4>
+    <ul>
+        <li>Despliegue de servidor de aplicación</li>
+        <li>Instalación de modelos de IA locales</li>
+        <li>Configuración de base de datos</li>
+        <li>Pruebas de conectividad y rendimiento</li>
+    </ul>
+
+    <h4>Fase 3: Configuración (Semana 3)</h4>
+    <ul>
+        <li>Personalización de criterios de scoring</li>
+        <li>Configuración de pesos por categoría</li>
+        <li>Integración con sistemas existentes (opcional)</li>
+        <li>Pruebas con documentos de ejemplo</li>
+    </ul>
+
+    <h4>Fase 4: Formación (Semana 4)</h4>
+    <ul>
+        <li>Capacitación de usuarios clave (hasta 10 personas)</li>
+        <li>Documentación de procedimientos</li>
+        <li>Prueba piloto con proyecto real</li>
+        <li>Ajustes finales basados en feedback</li>
+    </ul>
+
+    <h3>Requisitos de Infraestructura</h3>
+
+    <table>
+        <tr>
+            <th>Componente</th>
+            <th>Requisito Mínimo</th>
+            <th>Recomendado</th>
+        </tr>
+        <tr>
+            <td>CPU</td>
+            <td>8 cores</td>
+            <td>16+ cores</td>
+        </tr>
+        <tr>
+            <td>RAM</td>
+            <td>16 GB</td>
+            <td>32 GB</td>
+        </tr>
+        <tr>
+            <td>Almacenamiento</td>
+            <td>100 GB SSD</td>
+            <td>500 GB SSD</td>
+        </tr>
+        <tr>
+            <td>Sistema Operativo</td>
+            <td colspan="2">Linux (Ubuntu/CentOS) o Windows Server</td>
+        </tr>
+        <tr>
+            <td>Red</td>
+            <td colspan="2">Acceso interno únicamente, HTTPS</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. Todos los derechos reservados.</span>
+            <span>Página 9</span>
+        </div>
+    </div>
+</div>
+
+<!-- PÁGINA 10: VISIÓN Y ABOUT -->
+<div class="page">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-text" style="font-size: 18pt;">
+                <span>BE</span>
+                <span>AI</span>
+            </div>
+            <div class="tagline-small">Beyond Artificial. Genuinely Human.</div>
+        </div>
+        <div class="website">www.beaienergy.com</div>
+    </div>
+
+    <h2>9. Visión de Futuro</h2>
+
+    <h3>Roadmap 2026-2028</h3>
+
+    <table>
+        <tr>
+            <th>Período</th>
+            <th>Versión</th>
+            <th>Nuevas Funcionalidades</th>
+        </tr>
+        <tr>
+            <td>Q1 2026</td>
+            <td>2.2</td>
+            <td>API REST para integraciones, webhooks, mejoras UI/UX</td>
+        </tr>
+        <tr>
+            <td>Q2 2026</td>
+            <td>2.5</td>
+            <td>Integración ERP/SAP, módulo de contratos, analytics avanzado</td>
+        </tr>
+        <tr>
+            <td>Q3-Q4 2026</td>
+            <td>3.0</td>
+            <td>Multi-idioma (FR, DE, PT), marketplace de templates, modo colaborativo</td>
+        </tr>
+        <tr>
+            <td>2027-2028</td>
+            <td>4.0</td>
+            <td>Predicción de éxito, benchmarking automático, negociación asistida</td>
+        </tr>
+    </table>
+
+    <h3>Visión a Largo Plazo</h3>
+
+    <p>BidEval evoluciona hacia una <strong>Plataforma de Procurement Inteligente para Energía</strong>, cubriendo todo el ciclo de adquisiciones: desde la planificación hasta el seguimiento post-adjudicación.</p>
+
+    <div class="highlight-box">
+        <strong>Meta 2028:</strong> Ser la plataforma de referencia en procurement B2B para el sector energético en Europa y Latinoamérica.
+    </div>
+
+    <h2>10. Sobre BeAI Energy</h2>
+
+    <p class="lead">
+        <strong>BeAI Energy</strong> es una empresa tecnológica especializada en soluciones de Inteligencia Artificial para los sectores energético e industrial. Con sede en Madrid, España, desarrollamos implementaciones personalizadas de IA diseñadas para mejorar la eficiencia operativa e impulsar la transformación digital.
+    </p>
+
+    <h3>Nuestra Misión</h3>
+    <blockquote>
+        "Ser la energía que impulsa a las organizaciones hacia un futuro más inteligente"
+    </blockquote>
+
+    <h3>Nuestro Enfoque</h3>
+    <p><strong>"Beyond Artificial. Genuinely Human."</strong> — Creemos en una IA centrada en las personas que potencia las capacidades humanas, no las reemplaza.</p>
+
+    <h3>Contacto</h3>
+
+    <div class="two-columns">
+        <div>
+            <p><strong>BeAI Energy, SL</strong><br>
+            Calle Cardenal Spínola 2<br>
+            28016 Madrid, España</p>
+        </div>
+        <div>
+            <p><strong>Web:</strong> www.beaienergy.com<br>
+            <strong>Email:</strong> info@beaienergy.com<br>
+            <strong>CEO:</strong> José Salamanca</p>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 10mm; padding-top: 5mm; border-top: 2px solid var(--primary);">
+        <p style="font-size: 14pt; color: var(--primary); font-weight: 600;">¿Listo para transformar tu proceso de evaluación?</p>
+        <p>Solicita una demo en <strong>www.beaienergy.com/bideval</strong></p>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <span>© 2026 BEAI Energy, SL. CIF: ESB22623136. Todos los derechos reservados.</span>
+            <span>Página 10</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

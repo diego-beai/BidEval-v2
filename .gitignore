@@ -57,3 +57,10 @@ jspm_packages/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Data files (CSVs with sensitive/temporary data)
+*.csv
+
+# Temporary files
+*.tmp
+*~
