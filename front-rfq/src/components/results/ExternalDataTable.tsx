@@ -7,6 +7,7 @@ export const ExternalDataTable: React.FC = () => {
     const [data, setData] = useState<any[]>([]);
     const [showFilterPanel, setShowFilterPanel] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const [zoomLevel, setZoomLevel] = useState(100);
     const hasLoadedRef = useRef(false);
     const filterPanelRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +123,11 @@ export const ExternalDataTable: React.FC = () => {
         document.body.removeChild(link);
     };
 
+    // Zoom functions
+    const zoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 150));
+    const zoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 50));
+    const resetZoom = () => setZoomLevel(100);
+
     if (isProcessing) return (
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
             <div className="spinner" style={{ margin: '0 auto 16px', border: '3px solid rgba(0,0,0,0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', width: 24, height: 24, animation: 'spin 1s linear infinite' }}></div>
@@ -204,7 +210,7 @@ export const ExternalDataTable: React.FC = () => {
     const getColumnWidth = (col: string, isProviderColumn: boolean) => {
         if (col === 'project_name') return '200px';
         if (col === 'evaluation_type') return '120px';
-        if (col === 'phase') return '70px';
+        if (col === 'phase') return '115px';
         if (col === 'requirement_text') return '230px';
         if (isProviderColumn) return '240px';
         return '160px';
@@ -313,7 +319,7 @@ export const ExternalDataTable: React.FC = () => {
                         </span>
                     )}
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <button
                         className="btn btnSecondary"
                         onClick={async () => {
@@ -539,7 +545,7 @@ export const ExternalDataTable: React.FC = () => {
             )}
 
             <div style={{ overflow: 'auto', flex: 1, backgroundColor: 'var(--bg-surface)' }}>
-                <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.72rem', tableLayout: 'fixed' }}>
+                <table style={{ width: 'max-content', minWidth: '100%', borderCollapse: 'collapse', fontSize: `${0.72 * zoomLevel / 100}rem`, tableLayout: 'fixed' }}>
                     <thead style={{ position: 'sticky', top: 0, backgroundColor: 'var(--bg-body)', zIndex: 1 }}>
                         <tr>
                             {columns.map(col => {
@@ -554,7 +560,7 @@ export const ExternalDataTable: React.FC = () => {
                                         whiteSpace: 'nowrap',
                                         color: 'var(--color-cyan)',
                                         fontWeight: 700,
-                                        fontSize: '0.75rem',
+                                        fontSize: `${0.75 * zoomLevel / 100}rem`,
                                         width: colWidth,
                                         minWidth: colWidth,
                                         maxWidth: colWidth,
@@ -586,6 +592,7 @@ export const ExternalDataTable: React.FC = () => {
                                             verticalAlign: 'top',
                                             color: 'var(--text-primary)',
                                             lineHeight: '1.2',
+                                            fontSize: `${0.72 * zoomLevel / 100}rem`,
                                             width: colWidth,
                                             minWidth: colWidth,
                                             maxWidth: colWidth,
@@ -606,6 +613,92 @@ export const ExternalDataTable: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Zoom Controls - Bottom Bar */}
+            <div style={{
+                padding: '12px 24px',
+                borderTop: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-surface)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    {filteredData.length} rows
+                </span>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Zoom:</span>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        backgroundColor: 'var(--bg-body)'
+                    }}>
+                        <button
+                            onClick={zoomOut}
+                            disabled={zoomLevel <= 50}
+                            title="Reducir zoom"
+                            style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: zoomLevel <= 50 ? 'var(--text-tertiary)' : 'var(--color-cyan)',
+                                cursor: zoomLevel <= 50 ? 'not-allowed' : 'pointer',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                opacity: zoomLevel <= 50 ? 0.4 : 1,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            −
+                        </button>
+                        <button
+                            onClick={resetZoom}
+                            title="Restablecer zoom (100%)"
+                            style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                borderLeft: '1px solid var(--border-color)',
+                                borderRight: '1px solid var(--border-color)',
+                                background: 'transparent',
+                                color: 'var(--text-primary)',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                minWidth: '55px',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {zoomLevel}%
+                        </button>
+                        <button
+                            onClick={zoomIn}
+                            disabled={zoomLevel >= 150}
+                            title="Aumentar zoom"
+                            style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                background: 'transparent',
+                                color: zoomLevel >= 150 ? 'var(--text-tertiary)' : 'var(--color-cyan)',
+                                cursor: zoomLevel >= 150 ? 'not-allowed' : 'pointer',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                opacity: zoomLevel >= 150 ? 0.4 : 1,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <style>{`
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 .dropdown-item-hover:hover {

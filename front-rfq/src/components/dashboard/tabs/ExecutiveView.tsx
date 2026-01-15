@@ -141,10 +141,11 @@ export const ExecutiveView: React.FC = () => {
 
     const providers = scoringResults.ranking;
 
-    // Get top 3 providers (already sorted by overall_score)
-    const winner = providers[0];
-    const runnerUp = providers[1];
-    const thirdPlace = providers[2];
+    // Get top 3 providers by score (sort a copy to get actual ranking)
+    const sortedByScore = [...providers].sort((a, b) => b.overall_score - a.overall_score);
+    const winner = sortedByScore[0];
+    const runnerUp = sortedByScore[1];
+    const thirdPlace = sortedByScore[2];
 
     // Calculate score gap
     const scoreGap = runnerUp ? winner.overall_score - runnerUp.overall_score : 0;
@@ -209,8 +210,7 @@ export const ExecutiveView: React.FC = () => {
             'TR': '#12b5b0',
             'SACYR': '#ef4444',
             'SENER': '#8b5cf6',
-            'TRESCA': '#ec4899',
-            'TECNICASREUNIDAS': '#12b5b0'
+            'TRESCA': '#ec4899'
         };
 
         const defined = colorMap[id] || PROVIDER_COLORS[id as keyof typeof PROVIDER_COLORS];
@@ -389,7 +389,7 @@ export const ExecutiveView: React.FC = () => {
                                     fontSize: '1.5rem',
                                     fontWeight: 700
                                 }}>
-                                    +{scoreGap.toFixed(2)} pts
+                                    {scoreGap >= 0 ? '+' : ''}{scoreGap.toFixed(2)} pts
                                 </div>
                                 <div style={{
                                     fontSize: '0.75rem',

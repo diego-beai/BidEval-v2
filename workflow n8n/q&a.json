@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3152,
+        -3168,
         176
       ],
-      "id": "91930f75-a6ab-4ec7-bf01-4e030239bc16",
+      "id": "7310a149-8927-430a-9799-31065d9283b5",
       "name": "Webhook Inbound",
       "webhookId": "41c26ac0-0585-4697-91c8-1a4b4851fee3"
     },
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2928,
+        -2944,
         176
       ],
-      "id": "8898c02b-7c7c-48a6-b336-1e8146fb37dc",
+      "id": "484ed7a1-9154-4637-a943-c561b4e479f8",
       "name": "Set Input Params"
     },
     {
@@ -70,10 +70,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2720,
+        -2736,
         176
       ],
-      "id": "be21957f-6fa1-4601-9f1b-b32e919284b5",
+      "id": "c1dbd462-f994-45ed-9a61-09ce5dd2ebb3",
       "name": "Fetch Missing Items",
       "credentials": {
         "supabaseApi": {
@@ -100,10 +100,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2480,
+        -2496,
         176
       ],
-      "id": "221ebb68-295b-466a-ac56-04d28c2e91e5",
+      "id": "51285618-6b53-41e8-9ba7-bb4977cff35d",
       "name": "Fetch Requirement Specs",
       "credentials": {
         "supabaseApi": {
@@ -121,26 +121,26 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -2288,
+        -2304,
         176
       ],
-      "id": "da956236-77d2-4e09-b936-2d5cc6789fb2",
+      "id": "ec63befe-cae6-4123-8f86-8b7ddbaf1194",
       "name": "Consolidate Deficiencies"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Analyze & Classify**: For each deficiency, you MUST use EXACTLY one of these 6 disciplines (no variations allowed):\n    - **Electrical**: cables, power, circuits, transformers, switchgear, UPS, DC systems, grounding, instrumentation\n    - **Mechanical**: machinery, pumps, piping, compressors, heat exchangers, valves, cooling systems, electrolyzers\n    - **Civil**: structures, foundations, concrete, buildings, plot layout, land use, construction\n    - **Process**: chemical processes, P&IDs, flow diagrams, production capacity, purity, pressures, temperatures, storage\n    - **General**: administrative, contracts, project management, schedules, documentation, compliance, HSE, safety, quality assurance\n    - **Cost**: pricing, budgets, CAPEX, OPEX, economic evaluations\n2.  **CRITICAL**: You can ONLY use these exact discipline names: Electrical, Mechanical, Civil, Process, General, Cost. NO other names are allowed (not 'Process Engineering', not 'HSE / Safety', etc.).\n3.  **Language**: All questions and text MUST be in English.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\", \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\", \"Cost\"] },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\", \"enum\": [\"High\", \"Medium\", \"Low\"] }\n        }\n      }\n    }\n  }\n}",
+        "text": "=Generate a MAXIMUM of 20-25 technical audit questions for provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1. **LIMIT**: 15-25 questions MAX. Quality over quantity.\n2. **GROUP**: Combine similar deficiencies into single comprehensive questions.\n3. **PRIORITIZE**: Focus on the most critical gaps affecting project viability.\n4. **DISCIPLINES** (EXACT names only): Electrical, Mechanical, Civil, Process, General, Cost\n5. **IMPORTANCE**: Use \"High\" sparingly (only truly critical). Most should be \"Medium\" or \"Low\".\n6. **Language**: All in English.\n\n### OUTPUT SCHEMA:\n{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"maxItems\": 25,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\", \"enum\": [\"Electrical\", \"Mechanical\", \"Civil\", \"Process\", \"General\", \"Cost\"] },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\", \"enum\": [\"High\", \"Medium\", \"Low\"] }\n        }\n      }\n    }\n  }\n}",
         "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2096,
+        -2112,
         176
       ],
-      "id": "9dbe5792-eda6-4032-ae24-0aa46ba4671c",
+      "id": "1349ebb2-17bf-42d9-97ad-82304ac47598",
       "name": "QA Generation Chain"
     },
     {
@@ -153,10 +153,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2176,
+        -2192,
         384
       ],
-      "id": "0989793e-01e7-4721-92dd-ccdc85cefa70",
+      "id": "aca8e8e6-3a23-44d7-a0c4-899c6203e239",
       "name": "Mistral Model",
       "credentials": {
         "mistralCloudApi": {
@@ -173,10 +173,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1872,
+        -1888,
         384
       ],
-      "id": "4e5961ce-a051-4147-9f5b-097110ebec16",
+      "id": "5e5275ec-3091-4414-9b57-62277337d276",
       "name": "JSON Output Parser"
     },
     {
@@ -188,10 +188,10 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3.1,
       "position": [
-        -1776,
+        -1792,
         176
       ],
-      "id": "4f25bff8-c5f6-41f7-b2a5-5239522d36d0",
+      "id": "80005628-c970-49ae-9492-af72cd753f53",
       "name": "Split Questions List"
     },
     {
@@ -229,10 +229,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1616,
+        -1632,
         176
       ],
-      "id": "d02e0cec-e80c-4963-9c26-455f2d3c8f41",
+      "id": "3e2e04fd-2f56-4cc4-961f-0e7e0dfc2618",
       "name": "Supabase Insert",
       "credentials": {
         "supabaseApi": {
@@ -249,10 +249,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1408,
+        -1424,
         176
       ],
-      "id": "a2d52ae8-b9e1-489e-903c-a8c24fd44173",
+      "id": "aace1027-dd6f-4af9-afd3-74397f893e83",
       "name": "Respond to Webhook1"
     },
     {
@@ -265,10 +265,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3248,
+        -3264,
         -48
       ],
-      "id": "b1e78ee1-5f44-4f22-a27a-0e5c93866611",
+      "id": "b0fc1116-609b-4ead-affe-27f525ad3bed",
       "name": "Sticky Note1"
     }
   ],

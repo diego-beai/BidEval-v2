@@ -204,7 +204,7 @@ export const useScoringStore = create<ScoringState>()(
                     const { data, error } = await supabase
                         .from('ranking_proveedores')
                         .select('*')
-                        .order('overall_score', { ascending: false, nullsFirst: false });
+                        .order('provider_name', { ascending: true });
 
                     if (error) {
                         throw new Error(error.message);

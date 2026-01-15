@@ -128,7 +128,8 @@ export const MailDashboard = () => {
 
     // Filter Q&A items for the selected provider
     const providerKeyMap: Record<string, string> = {
-        'Técnicas Reunidas': 'TECNICASREUNIDAS',
+        'Técnicas Reunidas': 'TR',
+        'TR': 'TR',
         'IDOM': 'IDOM',
         'SACYR': 'SACYR',
         'WORLEY': 'WORLEY',
@@ -152,7 +153,8 @@ export const MailDashboard = () => {
         if (!selectedProvider) return;
 
         const providerMap: Record<string, string> = {
-            'Técnicas Reunidas': 'TECNICASREUNIDAS',
+            'Técnicas Reunidas': 'TR',
+            'TR': 'TR',
             'IDOM': 'IDOM',
             'SACYR': 'SACYR',
             'WORLEY': 'WORLEY',

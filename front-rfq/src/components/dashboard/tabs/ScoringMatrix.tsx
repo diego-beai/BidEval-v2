@@ -180,7 +180,7 @@ export const ScoringMatrix: React.FC = () => {
                     hse_esg: newHseEsg
                 }
             };
-        }).sort((a, b) => b.overall_score - a.overall_score)
+        }).sort((a, b) => a.provider_name.localeCompare(b.provider_name))
           .map((p, idx) => ({ ...p, position: idx + 1 }));
     }, [scoringResults, customWeights, customCategoryWeights]);
 

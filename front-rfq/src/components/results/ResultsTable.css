@@ -92,6 +92,65 @@
   color: var(--accent);
 }
 
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.zoom-btn {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: var(--bg-surface);
+  color: var(--accent);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-btn:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.zoom-btn:last-child {
+  border-left: 1px solid var(--border);
+}
+
+.zoom-level {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.813rem;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.zoom-level:hover {
+  background: var(--bg-surface);
+  color: var(--accent);
+}
+
 /* Filters Section */
 .filters-section {
   padding: 1.5rem;
@@ -418,6 +477,21 @@
   .results-actions {
     width: 100%;
     flex-direction: column;
+  }
+
+  .zoom-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .zoom-btn {
+    flex: 1;
+    padding: 0.625rem 1rem;
+  }
+
+  .zoom-level {
+    flex: 1;
+    min-width: auto;
   }
 
   .export-btn {

@@ -123,7 +123,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const [showFilters, setShowFilters] = useState(false);
 
   // Available providers (sync with existing dashboard)
-  const availableProviders = ['TECNICASREUNIDAS', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];
+  const availableProviders = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -414,6 +414,22 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       case 'Sent': return 'estado-enviada';
       case 'Answered': return 'estado-respondida';
       case 'Discarded': return 'estado-descartada';
+      default: return '';
+    }
+  };
+
+  const getProviderClass = (provider?: string | null) => {
+    if (!provider) return '';
+    const normalized = provider.toUpperCase().trim();
+    switch (normalized) {
+      case 'TR':
+      case 'TECNICASREUNIDAS': return 'provider-tr';
+      case 'IDOM': return 'provider-idom';
+      case 'SACYR': return 'provider-sacyr';
+      case 'EA': return 'provider-ea';
+      case 'SENER': return 'provider-sener';
+      case 'TRESCA': return 'provider-tresca';
+      case 'WORLEY': return 'provider-worley';
       default: return '';
     }
   };
@@ -755,23 +771,18 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             {question.importancia || question.importance}
                           </span>
                         )}
-                        <span className="question-provider">{question.proveedor || question.provider_name}</span>
+                        <span className={`question-provider ${getProviderClass(question.proveedor || question.provider_name)}`}>
+                          {question.proveedor || question.provider_name}
+                        </span>
                       </div>
                       <div className="question-actions-top">
-                        {(() => {
-                          const rawStatus = question.estado || question.status || 'Draft';
-                          const upper = rawStatus.toUpperCase();
-                          const isDraftOrPending = ['DRAFT', 'BORRADOR', 'PENDING', 'PENDIENTE'].includes(upper);
-                          return isDraftOrPending && (
-                            <button
-                              onClick={() => handleDeleteQuestion(question.id)}
-                              className="icon-btn icon-btn-danger"
-                              title="Delete"
-                            >
-                              <Icons.Delete />
-                            </button>
-                          );
-                        })()}
+                        <button
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="icon-btn icon-btn-danger"
+                          title="Delete question"
+                        >
+                          <Icons.Delete />
+                        </button>
                       </div>
                     </div>
 

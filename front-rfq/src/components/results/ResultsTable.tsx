@@ -25,6 +25,9 @@ export function ResultsTable() {
   // Estado para mostrar/ocultar filtros
   const [showFilters, setShowFilters] = useState(false);
 
+  // Estado para el nivel de zoom de la tabla (en porcentaje)
+  const [zoomLevel, setZoomLevel] = useState(100);
+
   // Estado para mostrar/ocultar dropdowns
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
   const [showFaseDropdown, setShowFaseDropdown] = useState(false);
@@ -166,6 +169,19 @@ export function ResultsTable() {
     filters.selectedEvaluations.length > 0 ||
     filters.selectedFases.length > 0 ||
     filters.selectedProviders.length > 0;
+
+  // Funciones de zoom
+  const zoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 10, 150));
+  };
+
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 10, 50));
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(100);
+  };
 
   const handleExportCSV = () => {
     // Usar resultados filtrados para exportación
@@ -319,6 +335,34 @@ export function ResultsTable() {
           >
             Filtros {hasActiveFilters && `(activos)`}
           </button>
+
+          {/* Controles de Zoom */}
+          <div className="zoom-controls">
+            <button
+              onClick={zoomOut}
+              className="zoom-btn"
+              title="Reducir zoom"
+              disabled={zoomLevel <= 50}
+            >
+              −
+            </button>
+            <button
+              onClick={resetZoom}
+              className="zoom-level"
+              title="Restablecer zoom"
+            >
+              {zoomLevel}%
+            </button>
+            <button
+              onClick={zoomIn}
+              className="zoom-btn"
+              title="Aumentar zoom"
+              disabled={zoomLevel >= 150}
+            >
+              +
+            </button>
+          </div>
+
           <button onClick={handleExportCSV} className="export-btn export-csv">
             Exportar CSV
           </button>
@@ -485,7 +529,7 @@ export function ResultsTable() {
       )}
 
       <div className="table-wrapper">
-        <table className="results-table">
+        <table className="results-table" style={{ fontSize: `${zoomLevel * 0.875 / 100}rem` }}>
           <thead>
             <tr>
               <th className="col-id">ID</th>
