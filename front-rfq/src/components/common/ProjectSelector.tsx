@@ -56,7 +56,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
   };
 
   return (
-    <div className={`project-selector ${compact ? 'compact' : ''}`} ref={dropdownRef}>
+    <div className={`project-selector ${compact ? 'compact' : ''}`} ref={dropdownRef} data-tour="project-selector">
       <button
         className={`project-selector-btn ${isOpen ? 'active' : ''} ${!activeProject ? 'placeholder' : ''}`}
         onClick={handleToggle}

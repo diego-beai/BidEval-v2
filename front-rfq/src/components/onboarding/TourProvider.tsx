@@ -23,6 +23,9 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
         }
     }, [hasCompletedTour, startTour]);
 
+    // Navigation logic removed as per user request
+    // The tour will now stay on the main dashboard while highlighting sidebar items
+
     const steps: Step[] = [
         {
             target: 'body',
@@ -121,6 +124,17 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
                 </div>
             ),
             placement: 'right',
+            disableBeacon: true,
+        },
+        {
+            target: '[data-tour="project-selector"]',
+            content: (
+                <div className="tour-content">
+                    <h3>{t('tour.project.title')}</h3>
+                    <p>{t('tour.project.description')}</p>
+                </div>
+            ),
+            placement: 'bottom',
             disableBeacon: true,
         },
         {
@@ -238,8 +252,9 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
                 },
             }}
             floaterProps={{
-                disableAnimation: false,
+                disableAnimation: true,
             }}
+            disableScrolling={true}
         />
     );
 };
