@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useRfqStore } from '../stores/useRfqStore';
+import { useProjectStore } from '../stores/useProjectStore';
 import { uploadMultipleRfqFiles } from '../services/n8n.service';
 
 /**
@@ -20,6 +21,8 @@ export function useRfqProcessing() {
     setError
   } = useRfqStore();
 
+  const { activeProjectId } = useProjectStore();
+
   /**
    * Maneja el upload y procesamiento de múltiples archivos en paralelo
    */
@@ -35,11 +38,19 @@ export function useRfqProcessing() {
       return false;
     }
 
+    // Validar que hay un proyecto activo seleccionado
+    if (!activeProjectId) {
+      setError('No project selected. Please select a project from the sidebar first.');
+      return false;
+    }
+
     try {
       startProcessing(); // Simulation starts automatically there
 
       // Procesar todos los archivos en paralelo con la metadata
+      // Incluye project_id (UUID) para vincular con el proyecto activo
       const { results, message } = await uploadMultipleRfqFiles(selectedFiles, {
+        project_id: activeProjectId,
         proyecto: rfqMetadata.proyecto,
         proveedor: rfqMetadata.proveedor,
         tipoEvaluacion: rfqMetadata.tipoEvaluacion
@@ -59,7 +70,7 @@ export function useRfqProcessing() {
       setError(errorMessage);
       return false;
     }
-  }, [selectedFiles, rfqMetadata, startProcessing, setResults, setError]);
+  }, [selectedFiles, rfqMetadata, activeProjectId, startProcessing, setResults, setError]);
 
   return useMemo(() => ({
     handleUpload,

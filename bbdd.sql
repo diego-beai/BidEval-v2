@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS public.provider_responses (
     requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE CASCADE,
     provider_name TEXT NOT NULL,
     evaluation_value TEXT,
+    score INTEGER, -- Added score column for quantitative evaluation
     comment TEXT,
     file_id TEXT REFERENCES public.document_metadata(id) ON DELETE CASCADE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

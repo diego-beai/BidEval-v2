@@ -3,6 +3,7 @@ import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
+import { useProjectStore } from './useProjectStore';
 import type { ScoringWeights } from '../types/database.types';
 
 // Default weights for scoring criteria
@@ -122,6 +123,15 @@ export const useScoringStore = create<ScoringState>()(
             calculateScoring: async (projectId?: string, providerName?: string) => {
                 const { addToast } = useToastStore.getState();
 
+                // Use active project ID from global store if not provided
+                const activeProjectId = useProjectStore.getState().activeProjectId;
+                const effectiveProjectId = projectId || activeProjectId;
+
+                if (!effectiveProjectId) {
+                    addToast('No project selected. Please select a project first.', 'error');
+                    return;
+                }
+
                 set({ isCalculating: true, error: null });
                 addToast('Calculating provider scores with AI...', 'info');
 
@@ -132,7 +142,7 @@ export const useScoringStore = create<ScoringState>()(
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            project_id: projectId || null,
+                            project_id: effectiveProjectId,
                             provider_name: providerName || '',
                             recalculate_all: !providerName
                         })
@@ -197,13 +207,27 @@ export const useScoringStore = create<ScoringState>()(
                     return;
                 }
 
+                // Get active project ID for filtering
+                const activeProjectId = useProjectStore.getState().activeProjectId;
+
+                // If no project selected, clear scoring data
+                if (!activeProjectId) {
+                    set({
+                        scoringResults: null,
+                        isCalculating: false
+                    });
+                    console.log('[Scoring] No active project, clearing scoring data');
+                    return;
+                }
+
                 set({ isCalculating: true, error: null });
 
                 try {
-                    // Read directly from ranking_proveedores table (has all 12 individual scores)
+                    // Read directly from ranking_proveedores table filtered by project
                     const { data, error } = await supabase
                         .from('ranking_proveedores')
                         .select('*')
+                        .eq('project_id', activeProjectId)
                         .order('provider_name', { ascending: true });
 
                     if (error) {
@@ -258,13 +282,14 @@ export const useScoringStore = create<ScoringState>()(
                         isCalculating: false
                     });
 
-                    console.log('[Scoring] Loaded from ranking_proveedores:', ranking.length, 'providers');
+                    console.log('[Scoring] Loaded', ranking.length, 'providers for project', activeProjectId);
 
                 } catch (err: any) {
                     console.error('[Scoring] Refresh error:', err);
                     set({
                         error: err.message || 'Error loading scores',
-                        isCalculating: false
+                        isCalculating: false,
+                        scoringResults: null
                     });
                 }
             },
@@ -380,6 +405,9 @@ export const useScoringStore = create<ScoringState>()(
                 const { addToast } = useToastStore.getState();
                 const { scoringResults, customWeights } = get();
 
+                // Get active project ID for filtering
+                const activeProjectId = useProjectStore.getState().activeProjectId;
+
                 if (!supabase) {
                     addToast('Supabase not configured', 'error');
                     return;
@@ -387,6 +415,11 @@ export const useScoringStore = create<ScoringState>()(
 
                 if (!scoringResults?.ranking) {
                     addToast('No scoring data to save', 'error');
+                    return;
+                }
+
+                if (!activeProjectId) {
+                    addToast('No project selected', 'error');
                     return;
                 }
 
@@ -462,7 +495,8 @@ export const useScoringStore = create<ScoringState>()(
                                 hse_esg_score: ranking.hse_esg_score,
                                 last_updated: new Date().toISOString()
                             })
-                            .eq('provider_name', ranking.provider_name);
+                            .eq('provider_name', ranking.provider_name)
+                            .eq('project_id', activeProjectId);
 
                         if (error) {
                             console.error('[Scoring] Error updating provider:', ranking.provider_name, error);

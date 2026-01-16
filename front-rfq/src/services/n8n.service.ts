@@ -48,6 +48,7 @@ function fileToBase64(file: File): Promise<string> {
 export async function uploadRfqFile(
   file: File,
   additionalMetadata?: {
+    project_id?: string;
     proyecto?: string;
     proveedor?: string;
     tipoEvaluacion?: string[];
@@ -67,11 +68,14 @@ export async function uploadRfqFile(
       file_title: fileTitle,
       file_url: "",
       file_binary: fileBase64,
+      // Project ID at root level for easy access in n8n
+      project_id: additionalMetadata?.project_id || null,
       metadata: {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
         fileSize: file.size,
         fileId: fileId,
+        ...(additionalMetadata?.project_id && { project_id: additionalMetadata.project_id }),
         ...(additionalMetadata?.proyecto && { proyecto: additionalMetadata.proyecto }),
         ...(additionalMetadata?.proveedor && { proveedor: additionalMetadata.proveedor }),
         ...(additionalMetadata?.tipoEvaluacion && { tipoEvaluacion: additionalMetadata.tipoEvaluacion })
@@ -134,6 +138,7 @@ export async function uploadRfqFile(
 export async function uploadMultipleRfqFiles(
   files: File[],
   additionalMetadata?: {
+    project_id?: string;
     proyecto?: string;
     proveedor?: string;
     tipoEvaluacion?: string[];
@@ -178,9 +183,10 @@ export interface RfqIngestaResponse {
  * Este documento se procesa para extraer requisitos que se compararán con las ofertas
  *
  * @param file - Archivo PDF de la RFQ base
+ * @param projectId - ID del proyecto al que pertenece este documento
  * @returns Información sobre la RFQ procesada
  */
-export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
+export async function uploadRfqBase(file: File, projectId?: string): Promise<RfqIngestaResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
 
@@ -193,7 +199,9 @@ export async function uploadRfqBase(file: File): Promise<RfqIngestaResponse> {
       file_id: fileId,
       file_title: fileTitle,
       file_url: "",
-      file_binary: fileBase64
+      file_binary: fileBase64,
+      // Project ID for multi-project support
+      project_id: projectId || null
     };
 
     console.log('📤 Sending base RFQ to n8n:', {

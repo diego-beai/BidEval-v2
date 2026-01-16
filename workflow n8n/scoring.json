@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6368,
+        -6272,
         -640
       ],
-      "id": "6ea03fca-e24a-42b3-b819-15642109c717",
+      "id": "1bd517bb-bdb1-4a0a-acaf-bf044cdde08a",
       "name": "Webhook Scoring",
       "webhookId": "scoring-eval-webhook-001"
     },
@@ -23,16 +23,22 @@
         "tableId": "rfq_items_master",
         "returnAll": true,
         "filters": {
-          "conditions": []
+          "conditions": [
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
+            }
+          ]
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5712,
+        -5616,
         -736
       ],
-      "id": "091d21af-919a-47f8-b38f-db62540a6683",
+      "id": "5efa5910-8491-487a-abb6-8cddf0aacf3f",
       "name": "Fetch Requirements",
       "credentials": {
         "supabaseApi": {
@@ -47,16 +53,22 @@
         "tableId": "provider_responses",
         "returnAll": true,
         "filters": {
-          "conditions": []
+          "conditions": [
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
+            }
+          ]
         }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5712,
+        -5616,
         -512
       ],
-      "id": "29ed1549-9b58-4f73-a577-ddbddc121a03",
+      "id": "9a45531f-1266-454a-9fab-726a5e3377dc",
       "name": "Fetch Provider Responses",
       "credentials": {
         "supabaseApi": {
@@ -70,10 +82,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -5488,
+        -5392,
         -640
       ],
-      "id": "90f35263-28a7-4d14-9656-c4013efef1ad",
+      "id": "69c547d6-f663-4ead-aa05-5ca59761d18f",
       "name": "Merge Requirements & Responses"
     },
     {
@@ -83,10 +95,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5264,
+        -5168,
         -640
       ],
-      "id": "0a548caa-52a2-4276-a53e-22a4cf21b20d",
+      "id": "5f597cf5-2732-4877-916c-c66555d1b8ec",
       "name": "Prepare Scoring Data"
     },
     {
@@ -98,10 +110,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -5040,
+        -4944,
         -688
       ],
-      "id": "a4a76f19-57b8-479a-bd23-b94bb0c74bd4",
+      "id": "98021e35-dab7-4897-9286-3d15796c7d53",
       "name": "Loop Over Providers"
     },
     {
@@ -114,10 +126,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4768,
+        -4672,
         -672
       ],
-      "id": "8d309da9-e294-4f96-b7a1-14e1107a9d94",
+      "id": "ce56c3c0-528c-418f-b2fa-b74247d744df",
       "name": "Scoring LLM Chain"
     },
     {
@@ -127,10 +139,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4384,
+        -4288,
         -672
       ],
-      "id": "9b63410b-10d1-47c9-a71b-3387631e28be",
+      "id": "df2b7601-90c5-47f9-89f6-fc4f84d073a9",
       "name": "Calculate Weighted Scores"
     },
     {
@@ -142,10 +154,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4144,
+        -4048,
         -672
       ],
-      "id": "8e8ee227-36ce-40e4-af7c-d2c5c45cef73",
+      "id": "ceac8e7a-8aa7-476d-b77a-1fe797855c66",
       "name": "Check Provider Exists",
       "alwaysOutputData": true,
       "credentials": {
@@ -182,10 +194,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3904,
+        -3808,
         -672
       ],
-      "id": "8008b164-d534-4e6d-8fb3-08e786b35381",
+      "id": "e245e1ac-0a90-4607-83fe-82096e526c95",
       "name": "Provider Exists?"
     },
     {
@@ -293,10 +305,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3664,
+        -3568,
         -768
       ],
-      "id": "749fd843-94c6-4f30-9da6-4b96e8b40a2c",
+      "id": "375eb84d-c377-42a8-8257-141de49035e8",
       "name": "Update Ranking",
       "credentials": {
         "supabaseApi": {
@@ -404,10 +416,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3664,
+        -3568,
         -560
       ],
-      "id": "6c5659d6-1265-4da5-a042-31dbafc23758",
+      "id": "3e02758d-baf4-45b6-9df1-96bd5b6e3a96",
       "name": "Insert Ranking",
       "credentials": {
         "supabaseApi": {
@@ -425,10 +437,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -4768,
+        -4672,
         -848
       ],
-      "id": "a2001661-e540-49d5-8227-77a1edfc6c63",
+      "id": "f80a5471-9942-49a4-b1fb-132feacebfaf",
       "name": "Aggregate All Rankings"
     },
     {
@@ -438,10 +450,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4480,
+        -4384,
         -848
       ],
-      "id": "1f7b111d-5071-44cd-a3f0-b5b6b2cc3aa6",
+      "id": "6883132c-a2d1-485d-b911-7bbbed107286",
       "name": "Generate Final Ranking"
     },
     {
@@ -462,10 +474,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4256,
+        -4160,
         -848
       ],
-      "id": "cba1e5ca-24b2-4ec0-8524-946da1cad65e",
+      "id": "64b8a9bf-368d-4961-8d42-ec66184f53da",
       "name": "Respond with Ranking"
     },
     {
@@ -477,10 +489,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -6720,
+        -6624,
         -1232
       ],
-      "id": "3065714c-9350-4327-9e64-e31e230b0bf7",
+      "id": "5ba32913-16ca-4f06-9ffe-0e7d4c14b15e",
       "name": "Workflow Info"
     },
     {
@@ -493,10 +505,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -4864,
+        -4768,
         -1088
       ],
-      "id": "657af488-a911-4873-bf4f-246b46cbe202",
+      "id": "6c541b3c-12f5-4795-8495-b3d455ec37b6",
       "name": "LLM Scoring Info"
     },
     {
@@ -528,33 +540,11 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5936,
+        -5840,
         -640
       ],
-      "id": "0c812b0f-16e4-44be-9e96-c79f24b952a1",
+      "id": "0bfd482b-9d9e-4138-b2bb-f4431b7bc7ff",
       "name": "Set Input Params1"
-    },
-    {
-      "parameters": {
-        "model": "mistral-large-latest",
-        "options": {
-          "temperature": 0.1
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        -5200,
-        -448
-      ],
-      "id": "2a95685a-ac9a-4892-878d-dca70c8215a6",
-      "name": "Mistral Model1",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
-        }
-      }
     },
     {
       "parameters": {
@@ -564,10 +554,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4624,
+        -4528,
         -448
       ],
-      "id": "388d49c2-03e5-471e-962e-a9bdc8a3163a",
+      "id": "56c31da0-e366-4d0c-b025-52a439fbbf28",
       "name": "JSON Output Parser1"
     },
     {
@@ -582,10 +572,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -4880,
+        -4784,
         -464
       ],
-      "id": "b8ba4647-1b45-423f-a08a-4afb62d9b1c1",
+      "id": "d7585411-e34e-4ccc-ad2b-8327ed4cd949",
       "name": "Ollama Scoring Model",
       "credentials": {
         "ollamaApi": {
@@ -611,10 +601,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6160,
+        -6064,
         -640
       ],
-      "id": "a8e9789d-7808-4b8c-bdfe-232a0eed01f4",
+      "id": "aeac889c-238e-43f9-8386-507bf0ad8d82",
       "name": "Delete a row",
       "alwaysOutputData": true,
       "credentials": {

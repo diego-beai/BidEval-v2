@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRfqStore } from '../stores/useRfqStore';
+import { useProjectStore } from '../stores/useProjectStore';
 import { uploadRfqBase } from '../services/n8n.service';
 import { ProcessingStage } from '../types/rfq.types';
 import { ApiError } from '../types/api.types';
@@ -19,6 +20,8 @@ export function useRfqBaseProcessing() {
     setRfqBase,
     setRfqBaseError
   } = useRfqStore();
+
+  const { activeProjectId } = useProjectStore();
 
   const processingTimerRef = useRef<number>();
 
@@ -84,14 +87,20 @@ export function useRfqBaseProcessing() {
       return;
     }
 
+    // Validar que hay un proyecto activo seleccionado
+    if (!activeProjectId) {
+      setRfqBaseError('No project selected. Please select a project from the sidebar first.');
+      return;
+    }
+
     const fileCount = files.length;
 
     try {
       startProcessingRfqBase(fileCount);
       simulateProgress();
 
-      // Procesar todos los archivos en paralelo
-      const uploadPromises = files.map(file => uploadRfqBase(file));
+      // Procesar todos los archivos en paralelo con el project_id
+      const uploadPromises = files.map(file => uploadRfqBase(file, activeProjectId));
       const responses = await Promise.all(uploadPromises);
 
       // Detener simulación de progreso
@@ -125,7 +134,7 @@ export function useRfqBaseProcessing() {
       setRfqBaseError(errorMessage);
       return false;
     }
-  }, [startProcessingRfqBase, simulateProgress, clearProgressTimer, setRfqBase, setRfqBaseError]);
+  }, [activeProjectId, startProcessingRfqBase, simulateProgress, clearProgressTimer, setRfqBase, setRfqBaseError]);
 
   // Cleanup al desmontar
   useEffect(() => {

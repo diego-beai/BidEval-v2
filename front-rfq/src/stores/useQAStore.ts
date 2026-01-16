@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useProjectStore } from './useProjectStore';
 import {
   type QAQuestion,
   type QAFilters,
@@ -9,6 +10,14 @@ import {
   type Importancia
 } from '../types/qa.types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+
+// Requirement details for linking Q&A to source requirements
+export interface RequirementDetails {
+  id: string;
+  requirement_text: string;
+  evaluation_type: string;
+  phase?: string;
+}
 
 interface QAState {
   // Estado
@@ -22,6 +31,10 @@ interface QAState {
   isGenerating: boolean;
   statusMessage: string | null;
 
+  // Requirement cache for linked requirements
+  requirementCache: Record<string, RequirementDetails>;
+  loadingRequirements: Set<string>;
+
   // Realtime
   realtimeChannel: RealtimeChannel | null;
 
@@ -31,6 +44,10 @@ interface QAState {
   updateQuestion: (id: string, updates: Partial<QAQuestion>) => Promise<void>;
   deleteQuestion: (id: string) => Promise<void>;
   bulkUpdateStatus: (ids: string[], estado: EstadoPregunta) => Promise<void>;
+
+  // Requirement details
+  loadRequirementDetails: (requirementId: string) => Promise<RequirementDetails | null>;
+  getRequirementDetails: (requirementId: string) => RequirementDetails | null;
 
   // Filtros
   setFilters: (filters: Partial<QAFilters>) => void;
@@ -76,6 +93,7 @@ function mapQAAuditToQAQuestion(dbItem: any): QAQuestion {
     status: dbItem.status || dbItem.estado,
     importance: dbItem.importance || dbItem.importancia,
     response: dbItem.response || dbItem.respuesta_proveedor,
+    requirement_id: dbItem.requirement_id, // Link to source requirement
     // Alias for frontend compatibility
     project_id: dbItem.project_name || dbItem.project_id,
     proveedor: dbItem.provider_name || dbItem.proveedor,
@@ -99,10 +117,20 @@ export const useQAStore = create<QAState>((set, get) => ({
   filters: initialFilters,
   selectedProjectId: null,
   realtimeChannel: null,
+  requirementCache: {},
+  loadingRequirements: new Set(),
 
   // Cargar preguntas desde Supabase
-  loadQuestions: async (projectId: string) => {
-    set({ isLoading: true, error: null, selectedProjectId: projectId });
+  loadQuestions: async (projectIdParam?: string) => {
+    // Get project info from global store
+    const activeProjectId = useProjectStore.getState().activeProjectId;
+    const activeProject = useProjectStore.getState().getActiveProject();
+
+    // Use parameter or fall back to global store
+    const projectId = projectIdParam || activeProjectId;
+    const projectDisplayName = activeProject?.display_name;
+
+    set({ isLoading: true, error: null, selectedProjectId: projectId || null });
 
     // Si Supabase no está configurado, usar datos mock
     if (!isSupabaseConfigured()) {
@@ -115,24 +143,66 @@ export const useQAStore = create<QAState>((set, get) => ({
       return;
     }
 
+    // If no project selected, clear questions
+    if (!projectId && !projectDisplayName) {
+      console.log('📋 No project selected, clearing Q&A questions');
+      set({
+        questions: [],
+        isLoading: false,
+        error: null
+      });
+      return;
+    }
+
     try {
-      // Asegurar que el project_id está correctamente codificado para URL
-      const encodedProjectId = projectId.trim();
-      
-        console.log('📋 Loading Q&A questions from Supabase:', {
-        projectId: encodedProjectId,
+      console.log('📋 Loading Q&A questions from Supabase:', {
+        projectId: projectId,
+        projectDisplayName: projectDisplayName,
         table: 'qa_audit',
         hasCredentials: isSupabaseConfigured()
       });
-      
-      const { data, error } = await supabase!
-        .from('qa_audit')
-        .select('*')
-        .eq('project_name', encodedProjectId)
-        .order('created_at', { ascending: false });
 
-      console.log('📋 Q&A query result:', {
-        projectId: encodedProjectId,
+      // Try to query by project_id first (UUID), then by project_name (display name)
+      let data: any[] | null = null;
+      let error: any = null;
+
+      // First, try by project_id (UUID)
+      if (projectId) {
+        const result = await supabase!
+          .from('qa_audit')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+
+        data = result.data;
+        error = result.error;
+
+        console.log('📋 Q&A query by project_id result:', {
+          projectId: projectId,
+          dataCount: data?.length || 0,
+          error: error
+        });
+      }
+
+      // If no data found by UUID, try by project_name (display name)
+      if ((!data || data.length === 0) && projectDisplayName) {
+        const result = await supabase!
+          .from('qa_audit')
+          .select('*')
+          .eq('project_name', projectDisplayName)
+          .order('created_at', { ascending: false });
+
+        data = result.data;
+        error = result.error;
+
+        console.log('📋 Q&A query by project_name result:', {
+          projectDisplayName: projectDisplayName,
+          dataCount: data?.length || 0,
+          error: error
+        });
+      }
+
+      console.log('📋 Q&A final query result:', {
         dataCount: data?.length || 0,
         data: data,
         error: error
@@ -359,6 +429,73 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
   },
 
+  // Load requirement details for a linked requirement
+  loadRequirementDetails: async (requirementId: string): Promise<RequirementDetails | null> => {
+    if (!isSupabaseConfigured() || !requirementId) {
+      return null;
+    }
+
+    // Check cache first
+    const cached = get().requirementCache[requirementId];
+    if (cached) {
+      return cached;
+    }
+
+    // Check if already loading
+    const { loadingRequirements } = get();
+    if (loadingRequirements.has(requirementId)) {
+      return null;
+    }
+
+    // Mark as loading
+    set(state => ({
+      loadingRequirements: new Set([...state.loadingRequirements, requirementId])
+    }));
+
+    try {
+      const { data, error } = await (supabase! as any)
+        .from('rfq_items_master')
+        .select('id, requirement_text, evaluation_type, phase')
+        .eq('id', requirementId)
+        .single();
+
+      if (error) {
+        console.error('Error loading requirement details:', error);
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      const requirement: RequirementDetails = {
+        id: data.id,
+        requirement_text: data.requirement_text,
+        evaluation_type: data.evaluation_type,
+        phase: data.phase
+      };
+
+      // Cache the result
+      set(state => ({
+        requirementCache: { ...state.requirementCache, [requirementId]: requirement },
+        loadingRequirements: new Set([...state.loadingRequirements].filter(id => id !== requirementId))
+      }));
+
+      return requirement;
+    } catch (error) {
+      console.error('Error loading requirement details:', error);
+      set(state => ({
+        loadingRequirements: new Set([...state.loadingRequirements].filter(id => id !== requirementId))
+      }));
+      return null;
+    }
+  },
+
+  // Get requirement details from cache (sync)
+  getRequirementDetails: (requirementId: string): RequirementDetails | null => {
+    return get().requirementCache[requirementId] || null;
+  },
+
   // Establecer filtros
   setFilters: (newFilters: Partial<QAFilters>) => {
     set(state => ({
@@ -447,30 +584,44 @@ export const useQAStore = create<QAState>((set, get) => ({
   },
 
   // Suscribirse a cambios en tiempo real
-  subscribeToChanges: (projectId: string) => {
+  subscribeToChanges: (projectIdParam?: string) => {
     if (!isSupabaseConfigured()) {
       console.warn('⚠️ Supabase not configured. Realtime updates disabled.');
       return;
     }
 
-      const channel = supabase!
-        .channel('qa-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'qa_audit',
-            filter: `project_name=eq.${projectId}`
-          },
-          (payload) => {
-            console.log('Q&A change received:', payload);
+    // Get project info from global store
+    const activeProjectId = useProjectStore.getState().activeProjectId;
+    const projectId = projectIdParam || activeProjectId;
 
-            // Reload questions when there are changes
-            get().loadQuestions(projectId);
-          }
-        )
-        .subscribe();
+    if (!projectId) {
+      console.warn('⚠️ No project ID available for realtime subscription.');
+      return;
+    }
+
+    // Unsubscribe from previous channel if exists
+    const existingChannel = get().realtimeChannel;
+    if (existingChannel) {
+      supabase!.removeChannel(existingChannel);
+    }
+
+    // Subscribe to changes for both project_id and project_name columns
+    const channel = supabase!
+      .channel(`qa-changes-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'qa_audit',
+          filter: `project_id=eq.${projectId}`
+        },
+        (payload) => {
+          console.log('Q&A change received (project_id):', payload);
+          get().loadQuestions();
+        }
+      )
+      .subscribe();
 
     set({ realtimeChannel: channel });
   },

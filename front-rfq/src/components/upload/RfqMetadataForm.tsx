@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { useProjectStore } from '../../stores/useProjectStore';
 import './RfqMetadataForm.css';
 
 export interface RfqMetadata {
@@ -14,11 +15,6 @@ interface RfqMetadataFormProps {
   disabled?: boolean;
 }
 
-// Available projects
-const AVAILABLE_PROJECTS = [
-  'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)'
-];
-
 // Tipos de evaluación disponibles
 const EVALUATION_TYPES = [
   'Technical Evaluation',
@@ -28,27 +24,30 @@ const EVALUATION_TYPES = [
 ];
 
 export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMetadataFormProps) {
+  const { projects, getActiveProject } = useProjectStore();
 
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
-  const [isCustomProject, setIsCustomProject] = useState(false);
 
+  const { activeProjectId } = useProjectStore();
   const providers = Object.values(Provider);
+  const activeProject = getActiveProject();
 
-  const handleProjectSelect = (project: string) => {
-    if (project === 'CUSTOM') {
-      setIsCustomProject(true);
-      onChange({ ...metadata, proyecto: '' });
-    } else {
-      setIsCustomProject(false);
-      onChange({ ...metadata, proyecto: project });
+  // Sync with active project from global store when it changes
+  useEffect(() => {
+    if (activeProject?.display_name) {
+      // Always update to match the global active project
+      if (metadata.proyecto !== activeProject.display_name) {
+        console.log('[RfqMetadataForm] Syncing with active project:', activeProject.display_name);
+        onChange({ ...metadata, proyecto: activeProject.display_name });
+      }
     }
-    setShowProjectDropdown(false);
-  };
+  }, [activeProjectId, activeProject?.display_name]);
 
-  const handleCustomProjectChange = (value: string) => {
-    onChange({ ...metadata, proyecto: value });
+  const handleProjectSelect = (project: { id: string; display_name: string }) => {
+    onChange({ ...metadata, proyecto: project.display_name });
+    setShowProjectDropdown(false);
   };
 
   const handleProviderSelect = (provider: Provider) => {
@@ -86,92 +85,52 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
           <label className="metadata-label">
             Project <span className="required">*</span>
           </label>
-          {isCustomProject ? (
-            <div className="metadata-dropdown-container" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input
-                type="text"
-                className="metadata-input"
-                placeholder="Enter project name..."
-                value={metadata.proyecto}
-                onChange={(e) => handleCustomProjectChange(e.target.value)}
-                disabled={disabled}
-                autoFocus
-                style={{ flex: 1, width: 'auto', pointerEvents: 'auto' }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCustomProject(false);
-                  onChange({ ...metadata, proyecto: '' });
-                }}
-                disabled={disabled}
-                style={{
-                  padding: '10px 14px',
-                  minWidth: 'auto',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(232, 238, 245, 0.16)',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--text)',
-                  transition: 'border-color 0.2s ease, background 0.2s ease'
-                }}
-                title="Back to list"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <div className="metadata-dropdown-container">
-              <button
-                type="button"
-                className={`metadata-dropdown-btn ${!metadata.proyecto ? 'placeholder' : ''}`}
-                onClick={() => !disabled && setShowProjectDropdown(!showProjectDropdown)}
-                disabled={disabled}
-              >
-                <span title={metadata.proyecto}>
-                  {metadata.proyecto || 'Select project...'}
-                </span>
-                <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
-              </button>
+          <div className="metadata-dropdown-container">
+            <button
+              type="button"
+              className={`metadata-dropdown-btn ${!metadata.proyecto ? 'placeholder' : ''}`}
+              onClick={() => !disabled && setShowProjectDropdown(!showProjectDropdown)}
+              disabled={disabled}
+            >
+              <span title={metadata.proyecto}>
+                {metadata.proyecto || 'Select project...'}
+              </span>
+              <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
+            </button>
 
-              {showProjectDropdown && (
-                <>
-                  <div
-                    className="dropdown-overlay"
-                    onClick={() => setShowProjectDropdown(false)}
-                  />
-                  <div className="metadata-dropdown-menu">
-                    {AVAILABLE_PROJECTS.map(project => (
+            {showProjectDropdown && (
+              <>
+                <div
+                  className="dropdown-overlay"
+                  onClick={() => setShowProjectDropdown(false)}
+                />
+                <div className="metadata-dropdown-menu">
+                  {projects.length === 0 ? (
+                    <div className="dropdown-item disabled" style={{ color: 'var(--text-tertiary)', cursor: 'default' }}>
+                      No projects available
+                    </div>
+                  ) : (
+                    projects.map(project => (
                       <button
-                        key={project}
+                        key={project.id}
                         type="button"
-                        className={`dropdown-item ${metadata.proyecto === project ? 'selected' : ''}`}
+                        className={`dropdown-item ${metadata.proyecto === project.display_name ? 'selected' : ''}`}
                         onClick={() => handleProjectSelect(project)}
                       >
-                        {project}
-                        {metadata.proyecto === project && (
+                        <span>{project.display_name}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginLeft: '8px' }}>
+                          ({project.document_count} docs)
+                        </span>
+                        {metadata.proyecto === project.display_name && (
                           <span className="check-icon">✓</span>
                         )}
                       </button>
-                    ))}
-                    <div className="dropdown-divider"></div>
-                    <button
-                      type="button"
-                      className="dropdown-item"
-                      onClick={() => handleProjectSelect('CUSTOM')}
-                    >
-                      Other (Custom)
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Campo Proveedor */}

@@ -7,10 +7,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -640,
-        -848
+        -704,
+        -1024
       ],
-      "id": "7bd6d639-22c5-43c6-8384-1d4761e5ed53",
+      "id": "4c2eae7c-dc0b-49cb-a806-80305a8c7251",
       "name": "Code in JavaScript1"
     },
     {
@@ -20,10 +20,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1136,
-        -960
+        1072,
+        -1136
       ],
-      "id": "cc629036-f814-42f0-ac1a-f6d3bde23eb0",
+      "id": "dda9a9e9-735d-461b-bced-285a1cff9777",
       "name": "Base64 a Binary1"
     },
     {
@@ -33,10 +33,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        128,
-        -848
+        64,
+        -1024
       ],
-      "id": "d7f1d26b-a4ac-4921-865b-83dae26654fa",
+      "id": "f6c21f4b-4fe3-4199-9cfe-a4067003ff6f",
       "name": "Base64 a Binary"
     },
     {
@@ -49,10 +49,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -880,
-        -848
+        -944,
+        -1024
       ],
-      "id": "de528297-c9b2-4081-9485-56f889ea3cbd",
+      "id": "7d7da4ea-7076-4826-950d-87e66580d020",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -64,10 +64,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -48,
-        -1904
+        -112,
+        -2080
       ],
-      "id": "f95a20d6-4327-4e99-9f5b-102de2d3dff0",
+      "id": "a0631fa4-dbd5-43d3-b7d9-4b0f02ab1ca3",
       "name": "Respond to Webhook"
     },
     {
@@ -77,10 +77,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        192,
-        -1680
+        128,
+        -1856
       ],
-      "id": "755d4661-dd5a-450f-9979-4b42ab0968a3",
+      "id": "ab3de083-3f00-4a93-ad15-508b003bbfd9",
       "name": "Agrupar por Phase"
     },
     {
@@ -90,10 +90,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        512,
-        -1680
+        448,
+        -1856
       ],
-      "id": "d41ab7b9-aa9c-42b4-969e-841ed2795a43",
+      "id": "ed550af1-e3d4-410c-867c-9b0dfd85aaab",
       "name": "Reset Items"
     },
     {
@@ -101,10 +101,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1808,
-        -848
+        1744,
+        -1024
       ],
-      "id": "e47d0bd7-0c65-47bd-aa82-00d2069382e6",
+      "id": "a6169200-b763-460e-9a91-a177e87ce9fa",
       "name": "Merge1"
     },
     {
@@ -115,10 +115,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2656,
-        -432
+        2592,
+        -608
       ],
-      "id": "b690454c-c2f0-45e8-bd2c-377123d8b026",
+      "id": "f6e07a5f-1a77-4a53-934c-1b3263ab2e40",
       "name": "Structured Output Parser"
     },
     {
@@ -140,13 +140,13 @@
           "timeout": 300000
         }
       },
-      "id": "a3be00b9-9fd5-47c3-bde9-dc46343437a8",
+      "id": "aaa10385-90ff-4b8b-acea-11d381ca89e3",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1344,
-        -1056
+        1280,
+        -1232
       ],
       "retryOnFail": true
     },
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -496,
-        -1632
+        -560,
+        -1808
       ],
-      "id": "d7d5dff4-ddcb-4ccc-9a08-00454a3ae58a",
+      "id": "dcd85e24-ac4d-479c-a79b-c5b3de539f98",
       "name": "Loop Over Items1"
     },
     {
@@ -170,36 +170,36 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -800,
-        -1552
+        -864,
+        -1728
       ],
-      "id": "48d21e73-9ee3-44a7-9577-7a2947893e96",
+      "id": "4dfea55c-b818-4edb-9571-50721bd71030",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Format for Vectorstore (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM\n// =============================================\n\n// 1. RECUPERAR CONTENIDO\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\n\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id || \"unknown\";\n    fileTitle = fileNode.file_title || \"unknown\";\n    proveedor = fileNode.proveedor || \"OTROS\";\n    proyecto = fileNode.proyect_name || \"\";\n    \n    if (fileNode.evaluation && Array.isArray(fileNode.evaluation) && fileNode.evaluation.length > 0) {\n        tipoEval = fileNode.evaluation;\n    } else if (fileNode.evaluation && typeof fileNode.evaluation === 'string') {\n        tipoEval = [fileNode.evaluation];\n    }\n} catch(e) {\n    console.log(\"❌ Error leyendo Set File ID\");\n}\n\n// 3. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
+        "jsCode": "// =============================================\n// NODO: Format for Vectorstore (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM\n// =============================================\n\n// 1. RECUPERAR CONTENIDO\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\nlet projectId = null;\n\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id || \"unknown\";\n    fileTitle = fileNode.file_title || \"unknown\";\n    proveedor = fileNode.proveedor || \"OTROS\";\n    proyecto = fileNode.proyect_name || \"\";\n    projectId = fileNode.project_id || null;\n    \n    if (fileNode.evaluation && Array.isArray(fileNode.evaluation) && fileNode.evaluation.length > 0) {\n        tipoEval = fileNode.evaluation;\n    } else if (fileNode.evaluation && typeof fileNode.evaluation === 'string') {\n        tipoEval = [fileNode.evaluation];\n    }\n} catch(e) {\n    console.log(\"❌ Error leyendo Set File ID\");\n}\n\n// 3. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            project_id: projectId,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2864,
-        -864
+        2800,
+        -1040
       ],
-      "id": "c5be520a-15a9-4c66-829f-e933855edc10",
+      "id": "c79ec7a2-d491-4376-948f-1369c39c6028",
       "name": "Format for Vectorstore"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "94c437f9-d05e-418d-8716-567058256b6a",
+      "id": "2e21271d-e075-4c3a-8b39-5fe5072007c1",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2000,
-        -848
+        1936,
+        -1024
       ]
     },
     {
@@ -209,10 +209,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1552,
-        -960
+        1488,
+        -1136
       ],
-      "id": "a9dc75d3-432f-46a6-8020-d436375cec7d",
+      "id": "ab9332b7-7fbd-402b-8511-36366fe0d4f1",
       "name": "Aggregate OCR Pages"
     },
     {
@@ -243,10 +243,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        912,
-        -848
+        848,
+        -1024
       ],
-      "id": "dd0bfaaa-1095-4604-b952-8bfd56a5724d",
+      "id": "e588a5df-a76f-4299-97e3-66e6678ce874",
       "name": "¿Necesita OCR?"
     },
     {
@@ -257,10 +257,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        352,
-        -848
+        288,
+        -1024
       ],
-      "id": "305eecab-654d-47c7-88b9-faa17d613f97",
+      "id": "76bed1d9-656a-453a-a329-babc933dbe1e",
       "name": "Extract from File"
     },
     {
@@ -270,10 +270,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        -848
+        560,
+        -1024
       ],
-      "id": "e0372e49-2459-456b-b6b7-dbf60bcd4540",
+      "id": "b7ff933b-9274-4519-8479-41e3d0364810",
       "name": "Validar Contenido PDF"
     },
     {
@@ -289,13 +289,13 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "83b52473-af3c-4de1-b2be-c52f07becf29",
+      "id": "8dc57bc1-43d4-4f27-abe8-04981615a417",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        3040,
-        -864
+        2976,
+        -1040
       ],
       "credentials": {
         "supabaseApi": {
@@ -313,10 +313,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        3072,
-        -400
+        3008,
+        -576
       ],
-      "id": "4a693dc3-3044-45f4-a6ad-607646d4d662",
+      "id": "f77b9044-1ad7-4ee7-af9b-d898b877608b",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -345,18 +345,22 @@
               {
                 "name": "project_name",
                 "value": "={{ $json.metadata.project_name }}"
+              },
+              {
+                "name": "project_id",
+                "value": "={{ $json.metadata.project_id }}"
               }
             ]
           }
         }
       },
-      "id": "25eea6cc-6f4d-42a7-8a87-5f50712c4503",
+      "id": "1dbd8ad6-6fb6-4b66-af70-d6edeabb663b",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        3168,
-        -576
+        3104,
+        -752
       ]
     },
     {
@@ -410,18 +414,24 @@
               "name": "evaluation",
               "value": "={{ $json.body.metadata.tipoEvaluacion }}",
               "type": "array"
+            },
+            {
+              "id": "project-id-uuid-field",
+              "name": "project_id",
+              "value": "={{ $json.body.project_id }}",
+              "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "d4134a82-39ae-440f-8f87-08403065ec2a",
+      "id": "331d5c51-cee7-4541-a1e7-495621955b0a",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -448,
-        -848
+        -512,
+        -1024
       ]
     },
     {
@@ -431,13 +441,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "9b3bdcd4-d9f9-4df0-bc90-41491332f8a5",
+      "id": "9bcf4e23-295a-4f24-ab93-4af58dd4312f",
       "name": "Delete Old Doc Rows",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -256,
-        -848
+        -320,
+        -1024
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -467,6 +477,7 @@
             "id": "={{ $('Set File ID').item.json.file_id }}",
             "title": "={{ $('Set File ID').item.json.file_title }}",
             "project_name": "={{ $('Set File ID').item.json.proyect_name }}\n",
+            "project_id": "={{ $('Set File ID').item.json.project_id }}",
             "evaluation_types": "={{ $('Set File ID').item.json.evaluation }}",
             "document_type": "PROPOSAL",
             "provider": "={{ $('Set File ID').item.json.proveedor }}"
@@ -552,10 +563,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -48,
-        -848
+        -112,
+        -1024
       ],
-      "id": "4479ff0a-5dd3-4741-af6e-95e7918235db",
+      "id": "618f2de0-e7e1-4eb4-b0d2-3d57c7464b61",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -581,23 +592,23 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2256,
-        -1760
+        2192,
+        -1936
       ],
-      "id": "092032dc-bdca-4250-9084-442411fe911a",
+      "id": "119bf372-3533-4381-be36-731c41329e9c",
       "name": "LLM Chain"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
       },
-      "id": "15c54c56-4632-45e4-ad14-fba046f5deec",
+      "id": "68d0204a-9a62-445d-ace8-23d3854cb342",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2704,
-        -1632
+        2640,
+        -1808
       ]
     },
     {
@@ -609,10 +620,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        752,
-        -1616
+        688,
+        -1792
       ],
-      "id": "c4edb3c5-8957-4d60-9b2b-d49e1a8a5e33",
+      "id": "aa6aec49-acd5-4e79-8a4a-763ab3ebe911",
       "name": "Loop Over Phases"
     },
     {
@@ -625,10 +636,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1056,
-        -2000
+        -1120,
+        -2176
       ],
-      "id": "0444c3a9-a9df-4e6e-b3ca-56d0b2b02259",
+      "id": "67775caa-f690-45a1-ac4a-831781e88ab1",
       "name": "Sticky Note5"
     },
     {
@@ -643,10 +654,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2416,
-        -432
+        2352,
+        -608
       ],
-      "id": "65d22325-8f63-4a5f-8307-a62e6ebfaf9b",
+      "id": "71d75965-e10a-4c30-9547-89fe34927a56",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -667,10 +678,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2176,
-        -1408
+        2112,
+        -1584
       ],
-      "id": "115590f7-7cb6-42e1-a7ab-ab34709a7815",
+      "id": "f1860969-d9e1-4349-a3db-241318a66ffc",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -727,10 +738,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2192,
-        -848
+        2128,
+        -1024
       ],
-      "id": "cff48a5c-e6ee-4f62-a86c-77931d348f8b",
+      "id": "fc64e299-031b-4179-bda3-b71067303c8d",
       "name": "If"
     },
     {
@@ -750,10 +761,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2464,
-        -640
+        2400,
+        -816
       ],
-      "id": "e666889f-5538-4bdc-824a-401327fe05ba",
+      "id": "229d5e09-8e0b-49b6-9015-90088dea9517",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor"
     },
     {
@@ -764,10 +775,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2656,
-        -848
+        2592,
+        -1024
       ],
-      "id": "17c5b554-0b77-4be2-9b7d-206e1bfaf358",
+      "id": "f6ee56a6-019f-4e30-a74b-74ba3df6bd06",
       "name": "Structured Output Parser4"
     },
     {
@@ -782,10 +793,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        2416,
-        -848
+        2352,
+        -1024
       ],
-      "id": "ec5dd542-75b8-47d2-8047-00b5d885f6b2",
+      "id": "70730a24-2c09-43f9-b568-e7e860d5e411",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -811,10 +822,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2464,
-        -1040
+        2400,
+        -1216
       ],
-      "id": "37b02da2-fd94-4747-8cc4-1214189b6de8",
+      "id": "4305fa95-3daf-4dc5-8b34-7241eb24da20",
       "name": "Validador de Ofertas"
     },
     {
@@ -824,10 +835,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        2960,
-        -608
+        2896,
+        -784
       ],
-      "id": "24f58e36-97af-49a6-9ee0-2be2695d1d85",
+      "id": "a5704146-94a3-4173-83f7-73cfec4d8934",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -872,6 +883,10 @@
             {
               "fieldId": "quoted_value",
               "fieldValue": "={{ $json.quoted_value }}"
+            },
+            {
+              "fieldId": "project_id",
+              "fieldValue": "={{ $('Set File ID').first().json.project_id }}"
             }
           ]
         }
@@ -879,10 +894,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        2992,
-        -1392
+        2928,
+        -1568
       ],
-      "id": "3db41733-e50c-42dd-9ad3-d3b1d01e9e69",
+      "id": "806e4d7c-dfec-48b4-8033-44cb2bc6c4ef",
       "name": "Upsert Provider Response",
       "credentials": {
         "supabaseApi": {
@@ -902,6 +917,11 @@
               "keyName": "evaluation_type",
               "condition": "eq",
               "keyValue": "={{ $json.tipo_evaluacion_actual }}"
+            },
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set File ID').first().json.project_id }}"
             }
           ]
         }
@@ -909,10 +929,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -80,
-        -1680
+        -144,
+        -1856
       ],
-      "id": "5e0e1925-ec50-4ae6-a1ff-16158d233bad",
+      "id": "b5b212c5-1a45-4537-9488-65915b7c1d27",
       "name": "Get many rows1",
       "credentials": {
         "supabaseApi": {
@@ -923,52 +943,15 @@
     },
     {
       "parameters": {
-        "model": "mistral-large-latest",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        2080,
-        -1552
-      ],
-      "id": "99bd000d-b3ee-4dd6-bfea-8f9d0195e698",
-      "name": "Mistral Cloud Chat Model",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
-      "typeVersion": 1,
-      "position": [
-        3072,
-        -656
-      ],
-      "id": "ec599407-8cc2-4185-866d-4fff1299e42b",
-      "name": "Embeddings Cohere",
-      "credentials": {
-        "cohereApi": {
-          "id": "KGv4zlUJIjLdxpnr",
-          "name": "CohereApi account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Grupo de Requisitos por Phase\n// Recibe datos ya agrupados del nodo 'Agrupar por Phase'\n// =============================================\n\n// 1. Obtener el grupo actual (ya viene agrupado por phase)\nconst grupoActual = $input.first().json;\n\nconst phase = grupoActual.phase || \"Sin Phase\";\nconst requisitosDelGrupo = grupoActual.requisitos || [];\nconst textoOfertaCompleto = grupoActual.texto_oferta_completo || \"\";\nconst esOfertaLarga = grupoActual.es_oferta_larga || false;\nconst evaluationType = grupoActual.evaluation_type || \"Technical Evaluation\";\n\nconsole.log(`📋 Procesando grupo: ${evaluationType} - ${phase}`);\nconsole.log(`   ├─ Requisitos en este grupo: ${requisitosDelGrupo.length}`);\nconsole.log(`   ├─ Tamaño texto oferta: ${textoOfertaCompleto.length} chars`);\nconsole.log(`   └─ Modo: ${esOfertaLarga ? 'RAG' : 'DIRECTO'}`);\n\n// 2. Preparar contexto según tamaño de oferta\nlet contextoParaLLM = \"\";\n\nif (esOfertaLarga) {\n    // MODO RAG: Usaremos el vectorstore (se configura después)\n    // Por ahora pasamos una muestra y marcamos para RAG\n    contextoParaLLM = textoOfertaCompleto.substring(0, 8000);\n    console.log(`🔍 Modo RAG: Contexto limitado a 8000 chars (se complementará con retrieval)`);\n} else {\n    // MODO DIRECTO: Pasamos todo el texto\n    contextoParaLLM = textoOfertaCompleto;\n    console.log(`📄 Modo DIRECTO: Pasando texto completo`);\n}\n\n// 3. Formatear requisitos para el LLM\nconst requisitosFormateados = requisitosDelGrupo.map(req => ({\n    id: req.id || \"\",\n    requirement_text: req.requirement_text || req.text || \"NO ESPECIFICADO\",\n    phase: req.phase || phase,\n    evaluation_type: req.evaluation_type || evaluationType\n}));\n\n// 4. Retornar datos preparados para el LLM\nreturn [{\n    json: {\n        // Datos del grupo\n        phase: phase,\n        evaluation_type: evaluationType,\n        \n        // Requisitos del grupo\n        requisitos: requisitosFormateados,\n        total_requisitos: requisitosFormateados.length,\n        \n        // Contexto de la oferta\n        context: contextoParaLLM,\n        texto_length: contextoParaLLM.length,\n        \n        // Flags para el flujo\n        es_oferta_larga: esOfertaLarga,\n        usar_rag: esOfertaLarga\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        -1600
+        1136,
+        -1776
       ],
-      "id": "eafd8daf-fb74-4d88-8402-b44cfa38c002",
+      "id": "6e68c58a-e375-4ed5-a578-38725e625e6b",
       "name": "Preparar Grupo Phase"
     },
     {
@@ -997,10 +980,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1.3,
       "position": [
-        1616,
-        -1760
+        1552,
+        -1936
       ],
-      "id": "3f779749-e442-41ee-b7cd-dcbed64f69de",
+      "id": "0d139c49-8c30-460e-ae26-167f75132bdb",
       "name": "RAG Query Vectorstore",
       "credentials": {
         "supabaseApi": {
@@ -1016,10 +999,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        1680,
-        -1552
+        1616,
+        -1728
       ],
-      "id": "0c81f752-c317-41cc-ae2c-82373a37a482",
+      "id": "faab86e1-b168-4a02-9c04-e5eb5392c3e1",
       "name": "Embeddings Ollama RAG",
       "credentials": {
         "ollamaApi": {
@@ -1035,30 +1018,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1936,
-        -1760
+        1872,
+        -1936
       ],
-      "id": "f97a40b3-d36d-4afa-aa78-aab35f6d8dce",
+      "id": "9cbce43b-c2fb-4128-b021-b73029082b78",
       "name": "Preparar Contexto RAG"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
-      "typeVersion": 1,
-      "position": [
-        2304,
-        -1552
-      ],
-      "id": "3ade29b4-75f2-4ab0-b06d-4b417f30b420",
-      "name": "OpenRouter Chat Model",
-      "credentials": {
-        "openRouterApi": {
-          "id": "4AyUqsh1Z35g6bci",
-          "name": "OpenRouter account"
-        }
-      }
     }
   ],
   "connections": {
@@ -1486,16 +1450,6 @@
         ]
       ]
     },
-    "Mistral Cloud Chat Model": {
-      "ai_languageModel": [
-        []
-      ]
-    },
-    "Embeddings Cohere": {
-      "ai_embedding": [
-        []
-      ]
-    },
     "Preparar Grupo Phase": {
       "main": [
         [
@@ -1538,11 +1492,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "OpenRouter Chat Model": {
-      "ai_languageModel": [
-        []
       ]
     }
   },

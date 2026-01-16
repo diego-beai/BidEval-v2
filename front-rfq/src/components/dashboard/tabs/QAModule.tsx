@@ -2,14 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useQAStore } from '../../../stores/useQAStore';
 import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
+import { useProjectStore } from '../../../stores/useProjectStore';
 import { generateTechnicalAudit } from '../../../services/n8n.service';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
 import './QAModule.css';
-
-// Available projects
-const AVAILABLE_PROJECTS = [
-  'Hydrogen Production Plant – La Zaida, Spain'
-];
 
 // Icons
 const Icons = {
@@ -104,59 +100,81 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     setStatusMessage,
     getGroupedByDisciplina,
     getStats,
-    subscribeToChanges
+    subscribeToChanges,
+    loadRequirementDetails,
+    getRequirementDetails
     // unsubscribeFromChanges - not used currently
   } = useQAStore();
 
   const { addToast } = useToastStore();
   const { addQAItem } = useMailStore();
+  const { projects, activeProjectId, getActiveProject } = useProjectStore();
 
-  const [projectId, setProjectId] = useState<string>(initialProjectId);
+  // Use active project from global store, or initialProjectId as fallback
+  const activeProject = getActiveProject();
+  const [projectId, setProjectId] = useState<string>(activeProject?.display_name || initialProjectId);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [addingToDisciplina, setAddingToDisciplina] = useState<string | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [editedText, setEditedText] = useState<string>('');
   const [expandedDisciplina, setExpandedDisciplina] = useState<Disciplina | null>(null);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
-  const [isCustomProject, setIsCustomProject] = useState(false);
   const [newQuestionTexts, setNewQuestionTexts] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
+
+  // Toggle requirement expansion and load details if needed
+  const handleToggleRequirement = async (questionId: string, requirementId: string | null | undefined) => {
+    const isExpanded = expandedRequirements[questionId];
+
+    if (!isExpanded && requirementId) {
+      // Load requirement details if not in cache
+      if (!getRequirementDetails(requirementId)) {
+        await loadRequirementDetails(requirementId);
+      }
+    }
+
+    setExpandedRequirements(prev => ({
+      ...prev,
+      [questionId]: !isExpanded
+    }));
+  };
 
   // Available providers (sync with existing dashboard)
   const availableProviders = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];
 
-  // Subscribe to real-time changes
+  // Sync with active project from global store
   useEffect(() => {
-    // Update projectId when initialProjectId changes
-    if (initialProjectId !== projectId) {
-      setProjectId(initialProjectId);
+    if (activeProject?.display_name && activeProject.display_name !== projectId) {
+      setProjectId(activeProject.display_name);
     }
-  }, [initialProjectId]);
+  }, [activeProject?.display_name]);
 
+  // Reload questions when activeProjectId changes (global project selector)
   useEffect(() => {
-    // Only load questions if there is a valid projectId
-    if (projectId && projectId.trim()) {
+    console.log('[QAModule] Active project changed:', activeProjectId);
+    if (activeProjectId) {
+      // loadQuestions will use the global store's activeProjectId
+      loadQuestions();
+      subscribeToChanges();
+    } else {
+      // Clear questions when no project selected
+      setQuestions([]);
+    }
+  }, [activeProjectId, loadQuestions, subscribeToChanges, setQuestions]);
+
+  // Subscribe to real-time changes and load questions (for local projectId changes)
+  useEffect(() => {
+    // Only load questions if there is a valid projectId and it's different from activeProjectId
+    if (projectId && projectId.trim() && activeProject?.display_name !== projectId) {
       loadQuestions(projectId);
       subscribeToChanges(projectId);
-    } else if (!projectId) {
-      // Only clear state when there's no project selected
-      setQuestions([]);
     }
   }, [projectId]);
 
-  const handleProjectSelect = (project: string) => {
-    if (project === 'CUSTOM') {
-      setIsCustomProject(true);
-      setProjectId('');
-    } else {
-      setIsCustomProject(false);
-      setProjectId(project);
-    }
+  const handleProjectSelect = (project: { id: string; display_name: string }) => {
+    setProjectId(project.display_name);
     setShowProjectDropdown(false);
-  };
-
-  const handleCustomProjectChange = (value: string) => {
-    setProjectId(value);
   };
 
   // Excel Export - Approved Questions Only
@@ -477,11 +495,11 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <div className="qa-dropdown-container">
                 <button
                   type="button"
-                  className={`qa-dropdown-btn ${!projectId || isCustomProject ? 'placeholder' : ''}`}
+                  className={`qa-dropdown-btn ${!projectId ? 'placeholder' : ''}`}
                   onClick={() => setShowProjectDropdown(!showProjectDropdown)}
                 >
-                  <span title={isCustomProject ? 'Custom Project' : projectId}>
-                    {isCustomProject ? 'Custom Project' : (projectId || 'Select project...')}
+                  <span title={projectId}>
+                    {projectId || 'Select project...'}
                   </span>
                   <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
                 </button>
@@ -493,42 +511,30 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                       onClick={() => setShowProjectDropdown(false)}
                     />
                     <div className="qa-dropdown-menu">
-                      {AVAILABLE_PROJECTS.map(project => (
-                        <button
-                          key={project}
-                          type="button"
-                          className={`dropdown-item ${projectId === project && !isCustomProject ? 'selected' : ''}`}
-                          onClick={() => handleProjectSelect(project)}
-                        >
-                          {project}
-                          {projectId === project && !isCustomProject && (
-                            <span className="check-icon">✓</span>
-                          )}
-                        </button>
-                      ))}
-                      <div className="dropdown-divider"></div>
-                      <button
-                        type="button"
-                        className={`dropdown-item ${isCustomProject ? 'selected' : ''}`}
-                        onClick={() => handleProjectSelect('CUSTOM')}
-                      >
-                        {isCustomProject ? 'Custom (Selected)' : 'Other (Custom)'}
-                      </button>
+                      {projects.length === 0 ? (
+                        <div className="dropdown-item disabled">No projects available</div>
+                      ) : (
+                        projects.map(project => (
+                          <button
+                            key={project.id}
+                            type="button"
+                            className={`dropdown-item ${projectId === project.display_name ? 'selected' : ''}`}
+                            onClick={() => handleProjectSelect(project)}
+                          >
+                            <span>{project.display_name}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginLeft: '8px' }}>
+                              ({project.qa_count} Q&A)
+                            </span>
+                            {projectId === project.display_name && (
+                              <span className="check-icon">✓</span>
+                            )}
+                          </button>
+                        ))
+                      )}
                     </div>
                   </>
                 )}
               </div>
-
-              {isCustomProject && (
-                <input
-                  type="text"
-                  className="qa-input custom-project-input"
-                  placeholder="Enter custom project name..."
-                  value={projectId}
-                  onChange={(e) => handleCustomProjectChange(e.target.value)}
-                  autoFocus
-                />
-              )}
             </div>
 
             {/* Provider Selector */}
@@ -799,6 +805,63 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         <p className="question-text">{question.pregunta_texto || question.question}</p>
                       )}
                     </div>
+
+                    {/* Requirement Origin - Expandable Section */}
+                    {question.requirement_id && (
+                      <div className="requirement-origin">
+                        <button
+                          type="button"
+                          className="requirement-toggle"
+                          onClick={() => handleToggleRequirement(question.id, question.requirement_id)}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className={`toggle-icon ${expandedRequirements[question.id] ? 'expanded' : ''}`}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                          <span>View source requirement</span>
+                        </button>
+
+                        {expandedRequirements[question.id] && (
+                          <div className="requirement-details">
+                            {(() => {
+                              const req = getRequirementDetails(question.requirement_id || '');
+                              if (!req) {
+                                return (
+                                  <div className="requirement-loading">
+                                    <span className="spinner"></span> Loading requirement...
+                                  </div>
+                                );
+                              }
+                              return (
+                                <>
+                                  <div className="requirement-item">
+                                    <strong>Requirement:</strong>
+                                    <p>{req.requirement_text}</p>
+                                  </div>
+                                  <div className="requirement-meta">
+                                    <span className="badge badge-secondary">
+                                      {req.evaluation_type}
+                                    </span>
+                                    {req.phase && (
+                                      <span className="badge badge-secondary">
+                                        {req.phase}
+                                      </span>
+                                    )}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Provider Response */}
                     {(question.respuesta_proveedor || question.response) && (

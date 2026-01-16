@@ -3,6 +3,7 @@ import { DashboardData, DashboardProvider, DashboardRequirement } from '../types
 import { Provider } from '../types/provider.types';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
+import { useProjectStore } from './useProjectStore';
 
 interface DashboardState {
     data: DashboardData | null;
@@ -240,6 +241,19 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
                 return;
             }
 
+            // Get active project ID
+            const activeProjectId = useProjectStore.getState().activeProjectId;
+
+            // If no project selected, show zeros
+            if (!activeProjectId) {
+                set({
+                    totalProposals: 0,
+                    proposalsThisWeek: 0,
+                    proposalsGrowthPercentage: 0
+                });
+                return;
+            }
+
             // Calcular fechas
             const now = new Date();
             const startOfThisWeek = new Date(now);
@@ -249,11 +263,12 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
             const startOfLastWeek = new Date(startOfThisWeek);
             startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
 
-            // Contar total de propuestas (document_type = 'PROPOSAL')
+            // Contar total de propuestas (document_type = 'PROPOSAL') filtradas por proyecto
             const { count: totalCount, error: totalError } = await supabase
                 .from('document_metadata')
                 .select('*', { count: 'exact', head: true })
-                .eq('document_type', 'PROPOSAL');
+                .eq('document_type', 'PROPOSAL')
+                .eq('project_id', activeProjectId);
 
             if (totalError) {
                 console.error('Error fetching total proposals count:', totalError);
@@ -265,22 +280,24 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
                 return;
             }
 
-            // Contar propuestas de esta semana
+            // Contar propuestas de esta semana filtradas por proyecto
             const { count: thisWeekCount, error: thisWeekError } = await supabase
                 .from('document_metadata')
                 .select('*', { count: 'exact', head: true })
                 .eq('document_type', 'PROPOSAL')
+                .eq('project_id', activeProjectId)
                 .gte('created_at', startOfThisWeek.toISOString());
 
             if (thisWeekError) {
                 console.error('Error fetching this week proposals:', thisWeekError);
             }
 
-            // Contar propuestas de la semana pasada
+            // Contar propuestas de la semana pasada filtradas por proyecto
             const { count: lastWeekCount, error: lastWeekError } = await supabase
                 .from('document_metadata')
                 .select('*', { count: 'exact', head: true })
                 .eq('document_type', 'PROPOSAL')
+                .eq('project_id', activeProjectId)
                 .gte('created_at', startOfLastWeek.toISOString())
                 .lt('created_at', startOfThisWeek.toISOString());
 

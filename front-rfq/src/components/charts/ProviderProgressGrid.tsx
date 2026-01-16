@@ -2,6 +2,7 @@ import React, { useMemo, useEffect } from 'react';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import { ProgressRing } from './ProgressRing';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 
 export interface ProviderProgressGridProps {
   selectedProvider?: Provider | '';
@@ -45,16 +46,26 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
   onProviderDataChange
 }) => {
   const { results, tableData, proposalEvaluations, fetchAllTableData, fetchProposalEvaluations } = useRfqStore();
+  const { activeProjectId } = useProjectStore();
 
-  // Load data on mount
+  // Reload data when project changes
   useEffect(() => {
-    if (!tableData || tableData.length === 0) {
+    console.log('[ProviderProgressGrid] Active project changed:', activeProjectId);
+    if (activeProjectId) {
       fetchAllTableData();
-    }
-    if (!proposalEvaluations || proposalEvaluations.length === 0) {
       fetchProposalEvaluations();
     }
-  }, [fetchAllTableData, fetchProposalEvaluations, tableData, proposalEvaluations]);
+  }, [activeProjectId, fetchAllTableData, fetchProposalEvaluations]);
+
+  // Load data on mount if empty
+  useEffect(() => {
+    if ((!tableData || tableData.length === 0) && activeProjectId) {
+      fetchAllTableData();
+    }
+    if ((!proposalEvaluations || proposalEvaluations.length === 0) && activeProjectId) {
+      fetchProposalEvaluations();
+    }
+  }, [fetchAllTableData, fetchProposalEvaluations, tableData, proposalEvaluations, activeProjectId]);
 
   // Calcular el progreso de cada proveedor basado en tableData (RFQ) y proposalEvaluations (propuestas)
   const providerProgress = useMemo(() => {

@@ -3,6 +3,7 @@ import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useScoringStore } from '../../stores/useScoringStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import { supabase } from '../../lib/supabase';
 import './Dashboard.css';
@@ -50,6 +51,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
     const { tableData, proposalEvaluations, pivotTableData, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
 
+    // Project store to listen for project changes
+    const { activeProjectId } = useProjectStore();
+
     // Scoring data from workflow results
     const { scoringResults, refreshScoring } = useScoringStore();
 
@@ -57,21 +61,25 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     useEffect(() => {
         loadDashboardData();
         startRealtimeUpdates();
-        if (!tableData || tableData.length === 0) {
-            fetchAllTableData();
-        }
-        if (!proposalEvaluations || proposalEvaluations.length === 0) {
-            fetchProposalEvaluations();
-        }
-        if (!pivotTableData || pivotTableData.length === 0) {
-            fetchPivotTableData();
-        }
-        if (!providerRanking || providerRanking.length === 0) {
-            fetchProviderRanking();
-        }
+        fetchAllTableData();
+        fetchProposalEvaluations();
+        fetchPivotTableData();
+        fetchProviderRanking();
         // Always refresh scoring results from database to get latest data
         refreshScoring();
     }, [loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring]);
+
+    // Reload all data when active project changes
+    useEffect(() => {
+        console.log('[HomeDashboard] Active project changed to:', activeProjectId);
+        // Reload all data filtered by the new project
+        loadDashboardData();
+        fetchAllTableData();
+        fetchProposalEvaluations();
+        fetchPivotTableData();
+        fetchProviderRanking();
+        refreshScoring();
+    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring]);
 
     // Cleanup realtime updates on unmount
     React.useEffect(() => {
@@ -379,14 +387,27 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
     // Fetch RFQ count and providers count from document_metadata
     useEffect(() => {
+        // IMPORTANT: Immediately reset values to 0 when project changes
+        // This prevents stale data from showing while new data loads
+        setRfqCount(0);
+        setEvaluationTypes(new Set());
+        setProvidersCount(0);
+
         const fetchRfqCount = async () => {
             if (supabase) {
+                // If no project selected, keep zeros
+                if (!activeProjectId) {
+                    console.log('[HomeDashboard] No active project, keeping RFQ count at 0');
+                    return;
+                }
+
                 try {
-                    console.log('Fetching RFQ documents from document_metadata...');
+                    console.log('Fetching RFQ documents from document_metadata for project:', activeProjectId);
                     const { data: rfqDocuments, error: rfqError } = await supabase
                         .from('document_metadata')
                         .select('id, title, project_name, evaluation_types, provider, created_at')
-                        .eq('document_type', 'RFQ');
+                        .eq('document_type', 'RFQ')
+                        .eq('project_id', activeProjectId);
 
                     console.log('RFQ query result:', { rfqDocuments, rfqError });
 
@@ -446,12 +467,19 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         // Fetch unique providers from PROPOSAL documents (offers received)
         const fetchProvidersCount = async () => {
             if (supabase) {
+                // If no project selected, keep zeros (already reset at top of useEffect)
+                if (!activeProjectId) {
+                    console.log('[HomeDashboard] No active project, keeping providers count at 0');
+                    return;
+                }
+
                 try {
-                    console.log('Fetching unique providers from proposals...');
+                    console.log('Fetching unique providers from proposals for project:', activeProjectId);
                     const { data: proposals, error: proposalError } = await supabase
                         .from('document_metadata')
                         .select('provider')
                         .eq('document_type', 'PROPOSAL')
+                        .eq('project_id', activeProjectId)
                         .not('provider', 'is', null);
 
                     if (!proposalError && proposals) {
@@ -477,7 +505,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         fetchRfqCount();
         fetchProvidersCount();
-    }, []);
+    }, [activeProjectId]);
 
     // Calculate metrics from both tableData and proposalEvaluations
     const calculatedMetrics = useMemo(() => {
@@ -735,7 +763,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             </div>
 
             {/* AI Scoring Results - from workflow */}
-            {scoringResults && scoringResults.ranking.length > 0 && (
+            {scoringResults && scoringResults.ranking.length > 0 && (() => {
+                // Calculate top performer dynamically from current ranking
+                const sortedByScore = [...scoringResults.ranking].sort((a, b) => b.overall_score - a.overall_score);
+                const topPerformer = sortedByScore[0];
+
+                return (
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -752,7 +785,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             Top Performer
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                            {scoringResults.statistics.top_performer}
+                            {topPerformer?.provider_name || 'N/A'}
                         </div>
                     </div>
                     <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
@@ -783,7 +816,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         </div>
                     </div>
                 </div>
-            )}
+                );
+            })()}
 
             {/* Quick Stats Row */}
             <div style={{

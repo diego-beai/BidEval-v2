@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3248,
-        -2032
+        -3232,
+        -1968
       ],
-      "id": "a66bf41b-6ee6-4354-87f0-d8959a451ce2",
+      "id": "d3b11696-3439-4ba1-abdf-29ba26747d7b",
       "name": "Sticky Note4"
     },
     {
@@ -23,10 +23,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1488,
-        -1840
+        -1472,
+        -1776
       ],
-      "id": "9af0aea1-5c7e-43cd-addc-00052540853f",
+      "id": "7e5af5bb-615e-48a9-977a-cc6f410bda73",
       "name": "Respond to Webhook5"
     },
     {
@@ -41,10 +41,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -2960,
-        -1472
+        -2944,
+        -1408
       ],
-      "id": "203082ab-8646-4e16-9999-2245a2e94062",
+      "id": "025aca47-aab5-4744-b018-ccf5799bcbb2",
       "name": "Ollama Chat Model3",
       "credentials": {
         "ollamaApi": {
@@ -63,10 +63,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3136,
-        -1840
+        -3120,
+        -1776
       ],
-      "id": "4a9a27f0-8ee5-478c-b8d3-bae680fce13d",
+      "id": "09e1bf8b-7b7f-4e67-aab3-da9fd0e4ed3e",
       "name": "Webhook1",
       "webhookId": "chat-rfq"
     },
@@ -75,13 +75,13 @@
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.body.sessionId }}"
       },
-      "id": "0b684682-1dd1-48a7-bbdf-42d3b2f37666",
+      "id": "5d772cdf-e3b7-4f39-ac17-d3dff16de823",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        -2784,
-        -1616
+        -2768,
+        -1552
       ],
       "notesInFlow": false,
       "credentials": {
@@ -98,10 +98,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2288,
-        -1408
+        -2272,
+        -1344
       ],
-      "id": "5f6406f7-e59d-4e0c-961b-f910dfc6652b",
+      "id": "bca76cbb-4690-4f22-bbab-bd385ab54eb3",
       "name": "Embeddings Ollama",
       "credentials": {
         "ollamaApi": {
@@ -118,13 +118,13 @@
           "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH only. Never respond in Spanish or any other language.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, score, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with scores and comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10), cumplimiento_porcentual (compliance %), technical_score, economical_score, pre_feed_score, feed_score.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor comments on requirements | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING WEIGHTS\n- **Technical Score (40%)**: Technical evaluation criteria\n- **Economical Score (30%)**: Economic/pricing evaluation\n- **Pre-FEED Score (15%)**: Pre-FEED deliverables evaluation\n- **FEED Score (15%)**: FEED deliverables evaluation\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
         }
       },
-      "id": "fc09743c-c16b-4a2f-bc24-12bc7f35b388",
+      "id": "5146128b-e708-4081-b0b6-5b8e4bc91918",
       "name": "Chat AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -2256,
-        -1840
+        -2240,
+        -1776
       ]
     },
     {
@@ -146,10 +146,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -2656,
-        -1616
+        -2640,
+        -1552
       ],
-      "id": "dc8bc7da-c9ab-4539-9211-f8f31fa61cf8",
+      "id": "407371bd-42b8-4650-ae2f-4d72f24dfe98",
       "name": "Revisar-ofertas",
       "credentials": {
         "supabaseApi": {
@@ -177,10 +177,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -2368,
-        -1616
+        -2352,
+        -1552
       ],
-      "id": "1598e077-5c64-41eb-aa26-b0defcbbda04",
+      "id": "3727aaa4-e91b-443d-8fb9-ac3cc3901f9a",
       "name": "Revisar RFQs",
       "credentials": {
         "supabaseApi": {
@@ -196,10 +196,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2576,
-        -1408
+        -2560,
+        -1344
       ],
-      "id": "c9066ebe-ba43-4715-b4e0-69d79d363ed4",
+      "id": "ea3c934e-29e9-4ea2-8dac-61b41eae7475",
       "name": "Embeddings Ollama5",
       "credentials": {
         "ollamaApi": {
@@ -221,10 +221,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -2080,
-        -1616
+        -2064,
+        -1552
       ],
-      "id": "7279c0a9-feac-4c98-9f47-f053a65ed44d",
+      "id": "e7524fe8-2a17-4f89-a0e3-f7c7d07a55ba",
       "name": "query_requirements",
       "credentials": {
         "postgres": {
@@ -246,10 +246,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1952,
-        -1616
+        -1936,
+        -1552
       ],
-      "id": "7c5f454f-3363-4bee-9545-d9cd52c12ac9",
+      "id": "aeee824a-6b38-4b5f-8370-3b90c05a3de5",
       "name": "query_provider_responses",
       "credentials": {
         "postgres": {
@@ -269,10 +269,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1824,
-        -1616
+        -1808,
+        -1552
       ],
-      "id": "b49aa707-95bd-4797-b421-d6e385cafa76",
+      "id": "c4d6be06-e8c1-4656-8fa4-cb02317801c8",
       "name": "query_ranking",
       "credentials": {
         "postgres": {
@@ -294,10 +294,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1696,
-        -1616
+        -1680,
+        -1552
       ],
-      "id": "b5b7d3c6-c6eb-4529-91f5-ae0ac686ccfa",
+      "id": "c7488137-7007-4f04-b68d-a8df8a2c0cff",
       "name": "query_qa_audit",
       "credentials": {
         "postgres": {
@@ -305,18 +305,53 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -2144,
+        -1328
+      ],
+      "id": "94422666-bc93-4d2b-843c-24920bd3330a",
+      "name": "Mistral Cloud Chat Model2",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2048,
+        -1232
+      ],
+      "id": "701a977a-0273-4bb6-a050-ec686a7e9ae7",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AyUqsh1Z35g6bci",
+          "name": "OpenRouter account"
+        }
+      }
     }
   ],
   "connections": {
     "Ollama Chat Model3": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Chat AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Webhook1": {
@@ -438,6 +473,22 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Mistral Cloud Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Chat AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        []
       ]
     }
   },

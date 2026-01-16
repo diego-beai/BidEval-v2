@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { useScoringStore } from '../../../stores/useScoringStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { useProjectStore } from '../../../stores/useProjectStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
 // Individual scoring criteria with readable names
@@ -31,11 +32,13 @@ const CRITERIA_LABELS: Record<string, string> = {
 export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
     const { t } = useLanguageStore();
+    const { activeProjectId } = useProjectStore();
 
-    // Load scoring data on mount
+    // Load scoring data on mount and when project changes
     useEffect(() => {
+        console.log('[ExecutiveView] Active project changed:', activeProjectId);
         refreshScoring();
-    }, [refreshScoring]);
+    }, [refreshScoring, activeProjectId]);
 
     // Calculate dynamic category weights from customWeights
     const categoryWeights = useMemo(() => {
@@ -167,11 +170,10 @@ export const ExecutiveView: React.FC = () => {
         .slice(0, 4) // Limit to top 4 strengths
         .map(c => c.label);
 
-    // Weaknesses: criteria with score <= 5 (need attention)
-    const weaknesses = individualScores
-        .filter(c => c.score <= 5)
+    // Weaknesses: the 3 lowest scoring criteria (regardless of threshold)
+    const weaknesses = [...individualScores]
         .sort((a, b) => a.score - b.score)
-        .slice(0, 4) // Limit to top 4 weaknesses
+        .slice(0, 3) // Take the 3 lowest scores
         .map(c => c.label);
 
     // Prepare radar chart data
@@ -425,11 +427,12 @@ export const ExecutiveView: React.FC = () => {
                                 }}>
                                     {strengths.length > 0 ? strengths.map((s, i) => (
                                         <span key={i} style={{
-                                            background: 'rgba(255, 255, 255, 0.25)',
+                                            background: 'rgba(34, 197, 94, 0.35)',
                                             padding: '4px 10px',
                                             borderRadius: '6px',
                                             fontSize: '0.75rem',
-                                            fontWeight: 600
+                                            fontWeight: 600,
+                                            color: '#bbf7d0'
                                         }}>
                                             {s}
                                         </span>
@@ -467,12 +470,12 @@ export const ExecutiveView: React.FC = () => {
                                 }}>
                                     {weaknesses.length > 0 ? weaknesses.map((w, i) => (
                                         <span key={i} style={{
-                                            background: 'rgba(255, 200, 100, 0.25)',
+                                            background: 'rgba(251, 146, 60, 0.35)',
                                             padding: '4px 10px',
                                             borderRadius: '6px',
                                             fontSize: '0.75rem',
                                             fontWeight: 600,
-                                            color: '#fef3c7'
+                                            color: '#fed7aa'
                                         }}>
                                             {w}
                                         </span>
@@ -480,7 +483,7 @@ export const ExecutiveView: React.FC = () => {
                                         <span style={{
                                             fontSize: '0.8rem',
                                             opacity: 0.7
-                                        }}>No weak categories</span>
+                                        }}>No data available</span>
                                     )}
                                 </div>
                             </div>

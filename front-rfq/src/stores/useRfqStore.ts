@@ -7,6 +7,7 @@ import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
 import { useSessionViewStore } from './useSessionViewStore';
+import { useProjectStore } from './useProjectStore';
 
 /**
  * Información de la RFQ base del cliente
@@ -389,59 +390,65 @@ export const useRfqStore = create<RfqState>()(
 
       fetchAllTableData: async () => {
         set({ isLoadingData: true, error: null });
-        try {
-          // El webhook de n8n simplemente devuelve todos los datos de rfq_items_master
-          // No procesa parámetros, solo hace getAll de Supabase
-          const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
-            method: 'GET', // Cambiar a GET ya que el webhook no procesa body
-            headers: { 'Content-Type': 'application/json' }
-          });
 
-          if (response.ok) {
-            const data = await response.json();
+        // Get active project ID for filtering
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+
+        // If no project selected, clear data
+        if (!activeProjectId) {
+          set({ tableData: [], projects: [], isLoadingData: false });
+          console.log('[fetchAllTableData] No active project, clearing table data');
+          return;
+        }
+
+        try {
+          // Use Supabase directly with project filter (more efficient than n8n for filtered data)
+          if (supabase) {
+            console.log('[fetchAllTableData] Fetching data for project:', activeProjectId);
+            const { data, error } = await supabase
+              .from('rfq_items_master')
+              .select('*')
+              .eq('project_id', activeProjectId)
+              .limit(1000);
+
+            if (error) {
+              throw new Error(`Supabase error: ${error.message}`);
+            }
 
             // Procesar datos para extraer proyectos únicos
-            const projectNames = data.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
+            const projectNames = (data || []).map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
             const projectList = [...new Set(projectNames)];
-            set({ projects: projectList });
 
-            // Guardar todos los datos en tableData
-            set({ tableData: data });
-            console.log('Table data loaded from n8n:', data.length, 'items');
+            set({
+              tableData: data || [],
+              projects: projectList,
+              error: null
+            });
+            console.log('[fetchAllTableData] Loaded', data?.length, 'items for project', activeProjectId);
           } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // Fallback to n8n if Supabase not configured
+            const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+              const allData = await response.json();
+              // Filter client-side by project_id
+              const data = allData.filter((item: any) => item.project_id === activeProjectId);
+
+              const projectNames = data.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
+              const projectList = [...new Set(projectNames)];
+              set({ projects: projectList, tableData: data });
+              console.log('[fetchAllTableData] n8n: loaded', data.length, 'items for project (filtered from', allData.length, ')');
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
           }
         } catch (err: any) {
-          console.error('Error fetching table data from n8n:', err);
-          // Si falla n8n, intentar usar Supabase directamente
-          if (supabase) {
-            try {
-              console.log('Attempting fallback to direct Supabase connection...');
-              const { data: fallbackData, error: fallbackError } = await supabase
-                .from('rfq_items_master')
-                .select('*')
-                .limit(1000);
-
-              if (fallbackError) {
-                throw new Error(`Supabase fallback failed: ${fallbackError.message}`);
-              }
-
-              const projectNames = fallbackData?.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[] || [];
-              const projectList = [...new Set(projectNames)];
-              
-              set({ 
-                tableData: fallbackData || [], 
-                projects: projectList,
-                error: null 
-              });
-              console.log('Fallback successful: loaded', fallbackData?.length, 'items from Supabase');
-            } catch (fallbackErr: any) {
-              console.error('Supabase fallback also failed:', fallbackErr);
-              get().setError(`Connection failed: Both n8n and Supabase unavailable. ${err.message}`);
-            }
-          } else {
-            get().setError(`Connection failed: n8n unavailable and Supabase not configured. ${err.message}`);
-          }
+          console.error('[fetchAllTableData] Error:', err);
+          get().setError(`Error loading table data: ${err.message}`);
+          set({ tableData: [], projects: [] });
         } finally {
           set({ isLoadingData: false });
         }
@@ -449,108 +456,70 @@ export const useRfqStore = create<RfqState>()(
 
         fetchProposalEvaluations: async () => {
         set({ isLoadingData: true, error: null });
+
+        // Get active project ID for filtering
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+
+        // If no project selected, clear data
+        if (!activeProjectId) {
+          set({ proposalEvaluations: [], isLoadingData: false });
+          console.log('[fetchProposalEvaluations] No active project, clearing proposal evaluations');
+          return;
+        }
+
         try {
-          // Intentar obtener datos de provider_responses desde Supabase
           if (supabase) {
             try {
-              // Obtener todas las evaluaciones de proveedores
-              const { data: responsesData, error: responsesError } = await supabase
-                .from('provider_responses')
-                .select(`
-                  id,
-                  requirement_id,
-                  provider_name,
-                  evaluation_value,
-                  comment,
-                  score,
-                  file_id,
-                  updated_at
-                `)
-                .order('updated_at', { ascending: false });
+              // Fetch from document_metadata table where proposals are stored
+              const { data: documentsData, error: documentsError } = await supabase
+                .from('document_metadata')
+                .select('*')
+                .eq('project_id', activeProjectId)
+                .eq('document_type', 'PROPOSAL')
+                .order('created_at', { ascending: false });
 
-              if (responsesError) {
-                throw new Error(`Supabase error fetching responses: ${responsesError.message}`);
+              if (documentsError) {
+                throw new Error(`Supabase error fetching documents: ${documentsError.message}`);
               }
 
-              // Usar los datos ya cargados en tableData si están disponibles
-              const rfqData = get().tableData || [];
-              const rfqMap = new Map();
-              rfqData.forEach((rfq: any) => {
-                rfqMap.set(rfq.id, rfq);
+              // Transform document_metadata into proposal evaluations format
+              // Each document can have multiple evaluation_types, so we expand them
+              const transformedData: any[] = [];
+
+              (documentsData || []).forEach((doc: any) => {
+                const evaluationTypes = doc.evaluation_types || [];
+
+                // Create one entry per evaluation type for this provider
+                evaluationTypes.forEach((evalType: string) => {
+                  transformedData.push({
+                    id: `${doc.id}-${evalType}`,
+                    file_id: doc.id,
+                    provider_name: doc.provider,
+                    evaluation_type: evalType,
+                    project_id: doc.project_id,
+                    project_name: doc.project_name,
+                    file_title: doc.title,
+                    document_type: doc.document_type,
+                    created_at: doc.created_at
+                  });
+                });
               });
 
-              // Transformar los datos para que tengan la estructura esperada
-              const transformedData = (responsesData as any)?.map((item: any) => {
-                const rfqInfo = rfqMap.get(item.requirement_id);
-
-                return {
-                  id: item.id,
-                  requirement_id: item.requirement_id,
-                  provider_name: item.provider_name,
-                  evaluation_value: item.evaluation_value,
-                  comment: item.comment,
-                  score: item.score,
-                  file_id: item.file_id,
-                  updated_at: item.updated_at,
-                  project_name: rfqInfo?.project_name || '',
-                  evaluation_type: rfqInfo?.evaluation_type,
-                  phase: rfqInfo?.phase,
-                  requirement_text: rfqInfo?.requirement_text,
-                  file_title: '',
-                  document_type: 'PROPOSAL'
-                };
-              }) || [];
-
               set({ proposalEvaluations: transformedData });
-              console.log('Proposal evaluations loaded from Supabase:', transformedData.length, 'items');
+              console.log('[fetchProposalEvaluations] Loaded', transformedData.length, 'evaluation items from', documentsData?.length || 0, 'documents for project', activeProjectId);
               return;
             } catch (supabaseError: any) {
-              console.warn('Supabase connection failed, using fallback:', supabaseError.message);
+              console.warn('[fetchProposalEvaluations] Supabase error:', supabaseError.message);
             }
           }
 
-          // Fallback: usar datos mock si no hay conexión a Supabase
-          console.log('Using mock data for proposal evaluations (no Supabase connection)');
-          const mockData = [
-            {
-              id: 'mock-1',
-              requirement_id: 'mock-req-1',
-              provider_name: 'TECNICASREUNIDAS',
-              evaluation_value: '8.5/10',
-              comment: 'Good technical solution',
-              score: 8.5,
-              file_id: 'mock-file-1',
-              updated_at: new Date().toISOString(),
-              project_name: 'Hydrogen Production Plant – La Zaida, Spain',
-              evaluation_type: 'Technical',
-              phase: 'FEED',
-              requirement_text: 'System Efficiency (BOP)',
-              file_title: 'TR_Proposal.pdf',
-              document_type: 'PROPOSAL'
-            },
-            {
-              id: 'mock-2',
-              requirement_id: 'mock-req-2',
-              provider_name: 'IDOM',
-              evaluation_value: '9.0/10',
-              comment: 'Excellent efficiency',
-              score: 9.0,
-              file_id: 'mock-file-2',
-              updated_at: new Date().toISOString(),
-              project_name: 'Hydrogen Production Plant – La Zaida, Spain',
-              evaluation_type: 'Technical',
-              phase: 'FEED',
-              requirement_text: 'System Efficiency (BOP)',
-              file_title: 'IDOM_Proposal.pdf',
-              document_type: 'PROPOSAL'
-            }
-          ];
-
-          set({ proposalEvaluations: mockData });
-          console.log('Proposal evaluations loaded from mock data:', mockData.length, 'items');
+          // Fallback: clear data if no connection
+          set({ proposalEvaluations: [] });
+          console.log('[fetchProposalEvaluations] No Supabase connection, clearing proposal evaluations');
         } catch (err: any) {
-          console.error('Error fetching proposal evaluations:', err);
+          console.error('[fetchProposalEvaluations] Error:', err);
           get().setError(err.message || 'Error loading proposal evaluations');
+          set({ proposalEvaluations: [] });
         } finally {
           set({ isLoadingData: false });
         }
@@ -558,92 +527,88 @@ export const useRfqStore = create<RfqState>()(
 
       refreshProposalEvaluations: async () => {
         if (!supabase) {
-          console.error('Supabase not configured');
+          console.error('[refreshProposalEvaluations] Supabase not configured');
+          return;
+        }
+
+        // Get active project ID for filtering
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+
+        // If no project selected, clear data
+        if (!activeProjectId) {
+          set({ proposalEvaluations: [] });
+          console.log('[refreshProposalEvaluations] No active project, clearing');
           return;
         }
 
         try {
-          // Obtener todas las evaluaciones de proveedores
-          const { data: responsesData, error: responsesError } = await supabase
-            .from('provider_responses')
-            .select(`
-              id,
-              requirement_id,
-              provider_name,
-              evaluation_value,
-              comment,
-              score,
-              file_id,
-              updated_at
-            `)
-            .order('updated_at', { ascending: false });
+          // Fetch from document_metadata table where proposals are stored
+          const { data: documentsData, error: documentsError } = await supabase
+            .from('document_metadata')
+            .select('*')
+            .eq('project_id', activeProjectId)
+            .eq('document_type', 'PROPOSAL')
+            .order('created_at', { ascending: false });
 
-          if (responsesError) {
-            throw new Error(`Supabase error refreshing responses: ${responsesError.message}`);
+          if (documentsError) {
+            throw new Error(`Supabase error fetching documents: ${documentsError.message}`);
           }
 
-          // Obtener información de rfq_items_master para todos los requisitos
-          const requirementIds = [...new Set((responsesData as any)?.map((item: any) => item.requirement_id).filter(Boolean) || [])];
-          const { data: rfqData, error: rfqError } = await supabase
-            .from('rfq_items_master')
-            .select('id, evaluation_type, phase, requirement_text')
-            .in('id', requirementIds);
+          // Transform document_metadata into proposal evaluations format
+          const transformedData: any[] = [];
 
-          if (rfqError) {
-            throw new Error(`Supabase error refreshing RFQ data: ${rfqError.message}`);
-          }
+          (documentsData || []).forEach((doc: any) => {
+            const evaluationTypes = doc.evaluation_types || [];
 
-          // Crear mapa de RFQ items
-          const rfqMap = new Map();
-          (rfqData as any)?.forEach((rfq: any) => {
-            rfqMap.set(rfq.id, rfq);
+            evaluationTypes.forEach((evalType: string) => {
+              transformedData.push({
+                id: `${doc.id}-${evalType}`,
+                file_id: doc.id,
+                provider_name: doc.provider,
+                evaluation_type: evalType,
+                project_id: doc.project_id,
+                project_name: doc.project_name,
+                file_title: doc.title,
+                document_type: doc.document_type,
+                created_at: doc.created_at
+              });
+            });
           });
 
-          // Transformar los datos para que tengan la estructura esperada
-          const transformedData = (responsesData as any)?.map((item: any) => {
-            const rfqInfo = rfqMap.get(item.requirement_id);
-
-            return {
-              id: item.id,
-              requirement_id: item.requirement_id,
-              provider_name: item.provider_name,
-              evaluation_value: item.evaluation_value,
-              comment: item.comment,
-              score: item.score,
-              file_id: item.file_id,
-              updated_at: item.updated_at,
-              project_name: '', // No tenemos esta información sin hacer queries adicionales
-              evaluation_type: rfqInfo?.evaluation_type,
-              phase: rfqInfo?.phase,
-              requirement_text: rfqInfo?.requirement_text,
-              file_title: '', // No tenemos esta información
-              document_type: 'PROPOSAL' // Asumimos que son propuestas
-            };
-          }) || [];
-
           set({ proposalEvaluations: transformedData });
-          console.log('Proposal evaluations refreshed:', transformedData.length, 'items');
+          console.log('[refreshProposalEvaluations] Refreshed', transformedData.length, 'evaluation items from', documentsData?.length || 0, 'documents');
         } catch (err: any) {
-          console.error('Error refreshing proposal evaluations:', err);
+          console.error('[refreshProposalEvaluations] Error:', err);
         }
       },
 
       fetchPivotTableData: async () => {
         if (!supabase) {
-          console.error('Supabase not configured');
+          console.error('[fetchPivotTableData] Supabase not configured');
           return;
         }
 
         set({ isLoadingData: true, error: null });
 
+        // Get active project ID for filtering
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+
+        // If no project selected, clear data
+        if (!activeProjectId) {
+          set({ pivotTableData: [], projects: [], isLoadingData: false });
+          console.log('[fetchPivotTableData] No active project, clearing pivot table data');
+          return;
+        }
+
         // Lista de posibles columnas de proveedores en rfq_items_master
         const PROVIDER_COLUMNS = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY', 'TECNICASREUNIDAS'];
 
         try {
-          // Primero: Obtener todos los datos de rfq_items_master (incluyendo columnas de proveedores)
+          // Obtener datos de rfq_items_master filtrado por proyecto
           const { data: rfqItemsData, error: rfqItemsError } = await supabase
             .from('rfq_items_master')
             .select('*')
+            .eq('project_id', activeProjectId)
             .order('created_at', { ascending: false });
 
           if (rfqItemsError) {
@@ -827,15 +792,26 @@ export const useRfqStore = create<RfqState>()(
 
       fetchProviderRanking: async () => {
         if (!supabase) {
-          console.error('Supabase not configured');
+          console.error('[fetchProviderRanking] Supabase not configured');
+          return;
+        }
+
+        // Get active project ID for filtering
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+
+        // If no project selected, clear data
+        if (!activeProjectId) {
+          set({ providerRanking: [] });
+          console.log('[fetchProviderRanking] No active project, clearing provider ranking');
           return;
         }
 
         try {
-          // Read directly from ranking_proveedores table (has all 12 criterion scores)
+          // Read from ranking_proveedores table filtered by project
           const { data, error } = await supabase
             .from('ranking_proveedores')
             .select('*')
+            .eq('project_id', activeProjectId)
             .order('overall_score', { ascending: false, nullsFirst: false });
 
           if (error) {
@@ -853,14 +829,13 @@ export const useRfqStore = create<RfqState>()(
           }));
 
           set({ providerRanking: mapped });
-          console.log('[useRfqStore] Provider ranking loaded from ranking_proveedores:', mapped.length, 'records');
+          console.log('[fetchProviderRanking] Loaded', mapped.length, 'records for project', activeProjectId);
           if (mapped.length === 0) {
-            console.warn('[useRfqStore] Provider ranking is empty. Run the scoring workflow to populate data.');
-          } else {
-            console.log('[useRfqStore] Provider ranking sample:', mapped[0]);
+            console.warn('[fetchProviderRanking] Provider ranking is empty for this project. Run the scoring workflow to populate data.');
           }
         } catch (err: any) {
-          console.error('[useRfqStore] Error fetching provider ranking:', err);
+          console.error('[fetchProviderRanking] Error:', err);
+          set({ providerRanking: [] });
         }
       },
 

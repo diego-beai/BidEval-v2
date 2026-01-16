@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStore';
+import { useProjectStore } from '../../../stores/useProjectStore';
 import type { ScoringWeights } from '../../../types/database.types';
 
 // Define the 12 scoring criteria with their weights
@@ -44,6 +45,9 @@ export const ScoringMatrix: React.FC = () => {
         isSavingWeights
     } = useScoringStore();
 
+    // Get active project
+    const { activeProjectId } = useProjectStore();
+
     // Track if user has made changes from the saved/default state
     const [isEditingWeights, setIsEditingWeights] = useState(false);
     const hasLoadedRef = useRef(false);
@@ -56,6 +60,12 @@ export const ScoringMatrix: React.FC = () => {
             loadSavedWeights();
         }
     }, [refreshScoring, loadSavedWeights]);
+
+    // Reload scoring when active project changes
+    useEffect(() => {
+        console.log('[ScoringMatrix] Active project changed:', activeProjectId);
+        refreshScoring();
+    }, [activeProjectId, refreshScoring]);
 
     // Check if weights differ from defaults
     const hasCustomWeights = useMemo(() => {
@@ -472,17 +482,12 @@ export const ScoringMatrix: React.FC = () => {
                                         textAlign: 'center',
                                         fontWeight: 700,
                                         fontSize: '0.875rem',
-                                        color: p.position === 1 ? 'var(--color-primary)' : 'var(--text-secondary)',
+                                        color: 'var(--text-secondary)',
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.5px',
                                         borderTopRightRadius: idx === providers.length - 1 ? '10px' : 0,
                                     }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-tertiary)' }}>
-                                                #{p.position}
-                                            </div>
-                                            <div>{p.provider_name}</div>
-                                        </div>
+                                        {p.provider_name}
                                     </th>
                                 ))}
                             </tr>
@@ -688,30 +693,27 @@ export const ScoringMatrix: React.FC = () => {
                                 }}>
                                     OVERALL SCORE:
                                 </td>
-                                {providers.map((p, idx) => {
-                                    const isWinner = p.position === 1;
-                                    return (
-                                        <td key={p.provider_name} style={{
-                                            textAlign: 'center',
-                                            padding: '20px 16px',
-                                            borderBottomRightRadius: idx === providers.length - 1 ? '10px' : 0
+                                {providers.map((p, idx) => (
+                                    <td key={p.provider_name} style={{
+                                        textAlign: 'center',
+                                        padding: '20px 16px',
+                                        borderBottomRightRadius: idx === providers.length - 1 ? '10px' : 0
+                                    }}>
+                                        <div style={{
+                                            fontSize: '1.5rem',
+                                            fontWeight: 700,
+                                            color: getScoreColor(p.overall_score),
+                                            padding: '10px 18px',
+                                            background: 'var(--bg-surface)',
+                                            borderRadius: '10px',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                            display: 'inline-block',
+                                            border: '2px solid var(--border-color)'
                                         }}>
-                                            <div style={{
-                                                fontSize: '1.5rem',
-                                                fontWeight: 700,
-                                                color: isWinner ? 'var(--color-primary)' : getScoreColor(p.overall_score),
-                                                padding: '10px 18px',
-                                                background: 'var(--bg-surface)',
-                                                borderRadius: '10px',
-                                                boxShadow: isWinner ? '0 4px 16px var(--color-primary)30' : '0 2px 8px rgba(0,0,0,0.1)',
-                                                display: 'inline-block',
-                                                border: isWinner ? '2px solid var(--color-primary)' : '2px solid var(--border-color)'
-                                            }}>
-                                                {p.overall_score.toFixed(2)}
-                                            </div>
-                                        </td>
-                                    );
-                                })}
+                                            {p.overall_score.toFixed(2)}
+                                        </div>
+                                    </td>
+                                ))}
                             </tr>
                         </tbody>
                     </table>

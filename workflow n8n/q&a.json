@@ -3,17 +3,17 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-audit",
+        "path": "qa-audit-generator",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3152,
-        176
+        -3168,
+        112
       ],
-      "id": "f3ba6cf3-0cde-4282-89e6-ee79de1ebd55",
+      "id": "395614e3-8fd7-4a89-84f4-08d0d46d8d86",
       "name": "Webhook Inbound",
       "webhookId": "0496e481-bb76-42f1-b3d5-734935b4b631"
     },
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2928,
-        176
+        -2944,
+        112
       ],
-      "id": "2fa8e340-e9a5-4761-936e-60bb02956317",
+      "id": "dcabb7ea-e273-42c9-adb7-dc6c414508a0",
       "name": "Set Input Params"
     },
     {
@@ -63,6 +63,11 @@
               "keyName": "evaluation_value",
               "condition": "neq",
               "keyValue": "INCLUIDO"
+            },
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.project_id }}"
             }
           ]
         }
@@ -70,10 +75,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2720,
-        176
+        -2736,
+        112
       ],
-      "id": "6bab29b5-17e8-4cdf-bb8b-fb5f2c0db9c4",
+      "id": "a59ab3d5-d412-47d8-abe7-098b1425e80b",
       "name": "Fetch Missing Items",
       "credentials": {
         "supabaseApi": {
@@ -100,10 +105,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2480,
-        176
+        -2496,
+        112
       ],
-      "id": "da82a9b4-84d3-4ff0-ae82-185b504c2521",
+      "id": "6176425a-d843-4a51-abb4-8f869c2d5702",
       "name": "Fetch Requirement Specs",
       "credentials": {
         "supabaseApi": {
@@ -121,10 +126,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -2288,
-        176
+        -2304,
+        112
       ],
-      "id": "44a750f8-7964-4442-93f2-714d3fc20a7f",
+      "id": "27a2c959-7f4f-47d7-872d-2824408d4f43",
       "name": "Consolidate Deficiencies"
     },
     {
@@ -137,33 +142,11 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2096,
-        176
+        -2112,
+        112
       ],
-      "id": "9ed2da59-5a79-4d68-88cc-a0c5125ea4d4",
+      "id": "d08c82eb-0350-4f9b-959a-365d1877b6bd",
       "name": "QA Generation Chain"
-    },
-    {
-      "parameters": {
-        "model": "mistral-large-latest",
-        "options": {
-          "temperature": 0
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        -2176,
-        384
-      ],
-      "id": "7986ea64-a6fa-48c3-ab51-6c4106accd79",
-      "name": "Mistral Model",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
-        }
-      }
     },
     {
       "parameters": {
@@ -173,10 +156,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1872,
-        384
+        -1888,
+        320
       ],
-      "id": "94b963eb-820c-42f5-b9bf-c3323bc98813",
+      "id": "ff34666f-7fa0-4451-b893-be3a89024f73",
       "name": "JSON Output Parser"
     },
     {
@@ -188,10 +171,10 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3.1,
       "position": [
-        -1776,
-        176
+        -1792,
+        112
       ],
-      "id": "b193d8bb-271d-4f6d-a664-8e732130c94e",
+      "id": "c59b8bf1-424f-424e-bafb-0b93c5251b4f",
       "name": "Split Questions List"
     },
     {
@@ -216,7 +199,7 @@
               "fieldValue": "={{ $(\"Set Input Params\").first().json.provider }}"
             },
             {
-              "fieldId": "project_name",
+              "fieldId": "project_id",
               "fieldValue": "={{ $(\"Set Input Params\").first().json.project_id }}"
             }
           ]
@@ -225,10 +208,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1616,
-        176
+        -1632,
+        112
       ],
-      "id": "440c83b3-18fd-4017-ba49-3a02f2cbf6a6",
+      "id": "f591a5c9-810a-4149-8e10-4fa1e559d51b",
       "name": "Supabase Insert",
       "credentials": {
         "supabaseApi": {
@@ -245,10 +228,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1408,
-        176
+        -1424,
+        112
       ],
-      "id": "f44ec276-219f-47b3-a0ae-9f642f794197",
+      "id": "ccf04ca7-025a-4f0e-a2c7-54980fadd406",
       "name": "Respond to Webhook1"
     },
     {
@@ -261,10 +244,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3248,
-        -48
+        -3264,
+        -112
       ],
-      "id": "ca569da1-0a7d-4783-8380-19d627aacb80",
+      "id": "6c103723-2715-4e28-b624-e1827bef3670",
       "name": "Sticky Note1"
     },
     {
@@ -279,15 +262,37 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -2112,
-        480
+        -2208,
+        368
       ],
-      "id": "b26e5353-322f-4bfb-a59a-67481aeff9c1",
+      "id": "caf86e88-7428-4ae1-8dad-bcb93a8a49d3",
       "name": "Ollama Model2",
       "credentials": {
         "ollamaApi": {
           "id": "oS2Qqti9oVfsm8XZ",
           "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        464
+      ],
+      "id": "7fd32472-7ed3-4377-ab23-f36f5c8600ba",
+      "name": "Mistral Cloud Chat Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
         }
       }
     }
@@ -359,11 +364,6 @@
         ]
       ]
     },
-    "Mistral Model": {
-      "ai_languageModel": [
-        []
-      ]
-    },
     "JSON Output Parser": {
       "ai_outputParser": [
         [
@@ -398,6 +398,11 @@
       ]
     },
     "Ollama Model2": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Mistral Cloud Chat Model": {
       "ai_languageModel": [
         [
           {

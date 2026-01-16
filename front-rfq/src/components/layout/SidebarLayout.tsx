@@ -6,6 +6,7 @@ import { useActiveSessions } from '../../hooks/useActiveSessions';
 import { useSessionViewStore } from '../../stores/useSessionViewStore';
 import { TourProvider } from '../onboarding/TourProvider';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
+import { ProjectSelector } from '../common/ProjectSelector';
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
@@ -168,6 +169,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         <h2 className="page-title">
                             {t(keyMap[activeView] || 'header.home')}
                         </h2>
+
+                        {/* Global Project Selector */}
+                        <div style={{ marginLeft: '16px' }}>
+                            <ProjectSelector />
+                        </div>
                     </div>
 
                     <div className="header-actions">

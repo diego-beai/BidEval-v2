@@ -29,10 +29,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2720,
-        -768
+        -2736,
+        -784
       ],
-      "id": "7dfb37d4-b7af-4aad-853b-b86fdd280a0b",
+      "id": "cad2378b-caf7-4264-9b50-eecdfbd92ce4",
       "name": "Edit Fields"
     },
     {
@@ -42,10 +42,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2272,
-        -768
+        -2288,
+        -784
       ],
-      "id": "958f844e-19ca-41b8-9533-65172c21bb0a",
+      "id": "49aa36c9-5130-4fb7-8edb-9cb25988acfd",
       "name": "Filter and Aggregate Issues"
     },
     {
@@ -58,29 +58,28 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3232,
-        -1056
+        -3248,
+        -1072
       ],
-      "id": "f256a452-8fb6-4b0e-a761-17f0c9b1f0d1",
+      "id": "dbdcce34-eafa-4218-bffc-90acc06e894b",
       "name": "Sticky Note2"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "2dcca6b6-4d20-4250-9202-7b16ac06f716",
+        "path": "mail",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2944,
-        -768
+        -2960,
+        -784
       ],
-      "id": "b676bb4c-f126-46eb-98e2-d5fc6a854dd7",
+      "id": "74524ec1-42ba-4cd9-8b21-02ee3c6c90b3",
       "name": "Webhook3",
-      "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716",
-      "disabled": true
+      "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716"
     },
     {
       "parameters": {
@@ -97,41 +96,19 @@
           ]
         }
       },
-      "id": "659af2bf-7f3f-4543-aa3e-63dcdb68d20a",
+      "id": "0abf998f-8573-4388-8581-16931dcd65e1",
       "name": "Get Offers",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2496,
-        -768
+        -2512,
+        -784
       ],
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "model": "ministral-8b-latest",
-        "options": {
-          "temperature": 0
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        -1984,
-        -544
-      ],
-      "id": "a04c320e-6cae-4c24-a3b8-018aed83c371",
-      "name": "Mistral Cloud Chat Model2",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
         }
       }
     },
@@ -147,10 +124,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -1680,
-        -544
+        -1696,
+        -560
       ],
-      "id": "77f18f10-e54a-4549-a685-9547c798f0fa",
+      "id": "895e39f6-7693-4162-976f-f4cf52b12b3c",
       "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
@@ -175,10 +152,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2048,
-        -768
+        -2064,
+        -784
       ],
-      "id": "d2b0148f-fb3a-433b-84f4-5cafba1673ba",
+      "id": "da796a4a-86d0-4d0e-b0ec-cf260126d900",
       "name": "Basic LLM Chain"
     },
     {
@@ -189,11 +166,33 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1696,
-        -768
+        -1712,
+        -784
       ],
-      "id": "a5faf233-a824-4c8e-903f-4ec94594bd4d",
+      "id": "f4540a55-4ce3-4a2c-aebc-2bac772387ea",
       "name": "Respond to Webhook3"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -2144,
+        -576
+      ],
+      "id": "4bb687f7-849b-4d99-81a0-f911de96d552",
+      "name": "Mistral Cloud Chat Model1",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
     }
   ],
   "connections": {
@@ -241,20 +240,9 @@
         ]
       ]
     },
-    "Mistral Cloud Chat Model2": {
-      "ai_languageModel": [
-        []
-      ]
-    },
     "Ollama Chat Model": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Basic LLM Chain",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Basic LLM Chain": {
@@ -263,6 +251,17 @@
           {
             "node": "Respond to Webhook3",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]

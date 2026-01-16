@@ -20,6 +20,7 @@ import { ProcessingStage } from './types/rfq.types';
 import { QAModule } from './components/dashboard/tabs/QAModule';
 import { useDashboardStore } from './stores/useDashboardStore';
 import { ToastContainer } from './components/common/ToastContainer';
+import { useProjectStore } from './stores/useProjectStore';
 
 
 type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
@@ -38,12 +39,21 @@ export default function App() {
   }, [activeView]);
 
   const { loadDashboardData } = useDashboardStore();
+  const { loadProjects, getActiveProject } = useProjectStore();
+
+  // Load projects on app mount
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   useEffect(() => {
     if (activeView === 'qa' || activeView === 'decision') {
       loadDashboardData();
     }
   }, [activeView, loadDashboardData]);
+
+  // Get active project for use throughout the app
+  const activeProject = getActiveProject();
   const [uploadTab, setUploadTab] = useState<'rfq' | 'propuestas'>('rfq');
   const { t } = useLanguageStore();
   const [selectedProviderData, setSelectedProviderData] = useState<ProviderEvaluationData | null>(null);
@@ -502,7 +512,7 @@ export default function App() {
 
         {activeView === 'qa' && (
           <div style={{ padding: '24px', overflow: 'auto', height: 'calc(100vh - 140px)' }}>
-            <QAModule projectId={rfqMetadata.proyecto || 'Hydrogen Production Plant – La Zaida, Spain'} />
+            <QAModule projectId={activeProject?.display_name || ''} />
           </div>
         )}
 

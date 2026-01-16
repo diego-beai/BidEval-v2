@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMailStore } from '../../stores/useMailStore';
 import { useQAStore } from '../../stores/useQAStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import './MailDashboard.css';
 
 interface Issue {
@@ -57,14 +58,26 @@ export const MailDashboard = () => {
     // Get approved questions from Q&A store
     const { questions: qaQuestions, loadQuestions: loadQAQuestions } = useQAStore();
 
+    // Get projects from global store
+    const { projects, getActiveProject } = useProjectStore();
+    const activeProject = getActiveProject();
+
     // Local UI State
     const [fontSize, setFontSize] = useState(16);
     const [isEditing, setIsEditing] = useState(false);
 
     // Metadata State (Context/Provider/Tone) selection remains local as it drives the generation
-    const [selectedContext, setSelectedContext] = useState('Hydrogen Production Plant – La Zaida, Spain');
+    // Initialize selectedContext from active project
+    const [selectedContext, setSelectedContext] = useState(activeProject?.display_name || '');
     const [selectedProvider, setSelectedProvider] = useState('');
     const [tone, setTone] = useState('formal');
+
+    // Sync selectedContext with active project changes
+    useEffect(() => {
+        if (activeProject?.display_name) {
+            setSelectedContext(activeProject.display_name);
+        }
+    }, [activeProject?.display_name]);
 
     // Issues selection state (even though UI is hidden, logic remains)
     const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
@@ -210,29 +223,20 @@ export const MailDashboard = () => {
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <select
                                 className="mail-select"
-                                value={selectedContext === 'Hydrogen Production Plant – La Zaida, Spain' ? selectedContext : 'custom'}
-                                onChange={(e) => {
-                                    if (e.target.value === 'custom') {
-                                        setSelectedContext('');
-                                    } else {
-                                        setSelectedContext(e.target.value);
-                                    }
-                                }}
-                            >
-                                <option value="Hydrogen Production Plant – La Zaida, Spain">Hydrogen Production Plant – La Zaida, Spain</option>
-                                <option value="custom">Custom Project...</option>
-                            </select>
-                        </div>
-                        {selectedContext !== 'Hydrogen Production Plant – La Zaida, Spain' && (
-                            <input
-                                type="text"
-                                className="mail-select"
-                                style={{ marginTop: '8px' }}
-                                placeholder="Enter custom project name..."
                                 value={selectedContext}
                                 onChange={(e) => setSelectedContext(e.target.value)}
-                            />
-                        )}
+                            >
+                                {projects.length === 0 ? (
+                                    <option value="">No projects available</option>
+                                ) : (
+                                    projects.map(project => (
+                                        <option key={project.id} value={project.display_name}>
+                                            {project.display_name}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Provider Selection */}
