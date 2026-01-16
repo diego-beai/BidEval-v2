@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DonutChart, DonutChartData } from '../charts/DonutChart';
+import { DonutChart, DonutChartData } from './DonutChart';
 import { useRfqStore } from '../../stores/useRfqStore';
 
 interface RfqSummaryChartProps {
@@ -57,22 +57,22 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
   if (isProcessing) {
     return (
       <div className={`donut-chart-container ${className || ''}`}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '160px',
           color: 'var(--text-secondary)'
         }}>
           <div style={{ textAlign: 'center' }}>
-            <div className="spinner" style={{ 
-              margin: '0 auto 8px', 
-              border: '2px solid rgba(0,0,0,0.1)', 
-              borderTopColor: 'var(--color-primary)', 
-              borderRadius: '50%', 
-              width: 20, 
-              height: 20, 
-              animation: 'spin 1s linear infinite' 
+            <div className="spinner" style={{
+              margin: '0 auto 8px',
+              border: '2px solid rgba(0,0,0,0.1)',
+              borderTopColor: 'var(--color-primary)',
+              borderRadius: '50%',
+              width: 20,
+              height: 20,
+              animation: 'spin 1s linear infinite'
             }}></div>
             <div style={{ fontSize: '0.8rem' }}>Cargando datos...</div>
           </div>
@@ -84,10 +84,10 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
   if (error) {
     return (
       <div className={`donut-chart-container ${className || ''}`}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           height: '160px',
           color: 'var(--color-danger)',
           fontSize: '0.8rem',
@@ -111,13 +111,13 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
           Distribución de RFQs
         </h4>
         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          {totalRequirements > 0 
-            ? `${totalRequirements} requisitos totales` 
+          {totalRequirements > 0
+            ? `${totalRequirements} requisitos totales`
             : 'Sin datos - Configura Supabase'
           }
         </p>
       </div>
-      
+
       <DonutChart
         data={chartData}
         size="medium"
