@@ -213,9 +213,9 @@
         "descriptionType": "manual",
         "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, and provider evaluations. Provide a search_term to filter requirements.",
         "operation": "executeQuery",
-        "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.score, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%' ORDER BY rim.id LIMIT 30;",
+        "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.score, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE (rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%') AND ($2 = '' OR rim.project_id::text = $2) ORDER BY rim.id LIMIT 30;",
         "options": {
-          "queryReplacement": "={{ $fromAI('search_term', 'Keyword to search in requirements', 'string') }}"
+          "queryReplacement": "={{ $fromAI('search_term', 'Keyword to search in requirements', 'string') }}, {{ $json.body.project_id || '' }}"
         }
       },
       "type": "n8n-nodes-base.postgresTool",
@@ -238,9 +238,9 @@
         "descriptionType": "manual",
         "toolDescription": "Query detailed vendor responses with scores and comments. Use to find: evaluation_value, score (numeric), comment, provider_name. Provide provider_name to filter by vendor (IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY) or leave empty for all.",
         "operation": "executeQuery",
-        "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.score, pr.comment, rim.requirement_text, rim.evaluation_type, rim.phase FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') ORDER BY pr.provider_name LIMIT 30;",
+        "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.score, pr.comment, rim.requirement_text, rim.evaluation_type, rim.phase FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') AND ($2 = '' OR pr.project_id::text = $2) ORDER BY pr.provider_name LIMIT 30;",
         "options": {
-          "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}"
+          "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}, {{ $json.body.project_id || '' }}"
         }
       },
       "type": "n8n-nodes-base.postgresTool",
@@ -263,8 +263,10 @@
         "descriptionType": "manual",
         "toolDescription": "Query vendor rankings and scores. Returns: provider_name, overall_score (0-10), cumplimiento_porcentual (compliance %), and category scores: technical_score (40% weight), economical_score (30% weight), pre_feed_score (15%), feed_score (15%). Use for ranking questions and score comparisons.",
         "operation": "executeQuery",
-        "query": "SELECT rp.provider_name, rp.overall_score, rp.cumplimiento_porcentual, rp.technical_score, rp.economical_score, rp.pre_feed_score, rp.feed_score, rp.evaluation_count, rp.last_updated FROM ranking_proveedores rp ORDER BY rp.overall_score DESC;",
-        "options": {}
+        "query": "SELECT rp.provider_name, rp.overall_score, rp.cumplimiento_porcentual, rp.technical_score, rp.economical_score, rp.pre_feed_score, rp.feed_score, rp.evaluation_count, rp.last_updated FROM ranking_proveedores rp WHERE ($1 = '' OR rp.project_id::text = $1) ORDER BY rp.overall_score DESC;",
+        "options": {
+          "queryReplacement": "={{ $json.body.project_id || '' }}"
+        }
       },
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
@@ -286,9 +288,9 @@
         "descriptionType": "manual",
         "toolDescription": "Query Q&A audit for technical questions and responses. Returns: provider_name, discipline (Electrica/Mecanica/Civil/Proceso/General), question, status (Pending/Approved/etc.), importance (High/Medium/Low), response. Use filter_type: 'provider' with filter_value for vendor name, 'discipline' for discipline, 'status' for status, or 'all' for everything.",
         "operation": "executeQuery",
-        "query": "SELECT qa.id, qa.provider_name, qa.discipline, qa.question, qa.status, qa.importance, qa.response, qa.created_at FROM qa_audit qa WHERE ($1 = 'all') OR ($1 = 'provider' AND qa.provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND qa.discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND qa.status ILIKE '%' || $2 || '%') ORDER BY qa.created_at DESC LIMIT 25;",
+        "query": "SELECT qa.id, qa.provider_name, qa.discipline, qa.question, qa.status, qa.importance, qa.response, qa.created_at FROM qa_audit qa WHERE (($1 = 'all') OR ($1 = 'provider' AND qa.provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND qa.discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND qa.status ILIKE '%' || $2 || '%')) AND ($3 = '' OR qa.project_id::text = $3) ORDER BY qa.created_at DESC LIMIT 25;",
         "options": {
-          "queryReplacement": "={{ $fromAI('filter_type', 'Filter type: provider, discipline, status, or all', 'string') }}, {{ $fromAI('filter_value', 'Value to filter by (provider name, discipline, or status)', 'string') }}"
+          "queryReplacement": "={{ $fromAI('filter_type', 'Filter type: provider, discipline, status, or all', 'string') }}, {{ $fromAI('filter_value', 'Value to filter by (provider name, discipline, or status)', 'string') }}, {{ $json.body.project_id || '' }}"
         }
       },
       "type": "n8n-nodes-base.postgresTool",

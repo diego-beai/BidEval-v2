@@ -4,6 +4,16 @@ import { ChatMessage, ChatRole, ChatStatus } from '../types/chat.types';
 import { sendChatMessage, getChatHistory, getLastActiveSession } from '../services/chat.service';
 import { useSessionViewStore } from './useSessionViewStore';
 import { useActivityStore, ActivityType, ActivityStatus } from './useActivityStore';
+import { useProjectStore } from './useProjectStore';
+
+/**
+ * Conversación almacenada por proyecto
+ */
+interface ProjectConversation {
+  messages: ChatMessage[];
+  sessionId: string | null;
+  lastUpdated: number; // timestamp para ordenar
+}
 
 /**
  * Estado del chat
@@ -17,6 +27,10 @@ interface ChatState {
   sessionId: string | null;
   error: string | null;
   historyLoaded: boolean;
+  currentProjectId: string | null;
+
+  // Mapa de conversaciones por proyecto (projectId -> conversación)
+  projectConversations: Record<string, ProjectConversation>;
 
   // Acciones
   toggleChat: () => void;
@@ -28,6 +42,9 @@ interface ChatState {
   markAsRead: () => void;
   loadHistory: (sessionId?: string) => Promise<void>;
   setSessionId: (sessionId: string) => void;
+  handleProjectChange: (newProjectId: string | null) => void;
+  saveCurrentConversation: () => void;
+  loadProjectConversation: (projectId: string | null) => void;
 }
 
 /**
@@ -57,6 +74,8 @@ export const useChatStore = create<ChatState>()(
         sessionId: null,
         error: null,
         historyLoaded: false,
+        currentProjectId: null,
+        projectConversations: {},
 
         toggleChat: () => {
           const currentState = get();
@@ -88,22 +107,44 @@ export const useChatStore = create<ChatState>()(
           }));
 
           try {
-            // Enviar mensaje a n8n
+            // Obtener el proyecto activo para filtrar las respuestas del chat
+            const activeProjectId = useProjectStore.getState().activeProjectId;
+
+            // Enviar mensaje a n8n con el project_id
             const { response, sessionId } = await sendChatMessage(
               trimmedContent,
-              get().sessionId || undefined
+              get().sessionId || undefined,
+              activeProjectId
             );
 
             // Agregar respuesta del asistente
             const assistantMessage = createMessage(ChatRole.ASSISTANT, response);
             const currentState = get();
+
+            const newMessages = [...currentState.messages, assistantMessage];
+
             set((state) => ({
-              messages: [...state.messages, assistantMessage],
+              messages: newMessages,
               status: ChatStatus.IDLE,
               sessionId,
               // Incrementar unread si el chat está cerrado
               unreadCount: currentState.isOpen ? state.unreadCount : state.unreadCount + 1
             }));
+
+            // Guardar la conversación actualizada para el proyecto actual
+            const projectId = currentState.currentProjectId;
+            if (projectId) {
+              set((state) => ({
+                projectConversations: {
+                  ...state.projectConversations,
+                  [projectId]: {
+                    messages: newMessages,
+                    sessionId,
+                    lastUpdated: Date.now()
+                  }
+                }
+              }));
+            }
 
             // Notificar que hay contenido nuevo en el chat
             useSessionViewStore.getState().updateContent('chat');
@@ -140,13 +181,31 @@ export const useChatStore = create<ChatState>()(
           }
         },
 
-        clearMessages: () => set({
-          messages: [],
-          sessionId: null,
-          status: ChatStatus.IDLE,
-          error: null,
-          historyLoaded: true // Mantener en true para no recargar historial anterior
-        }),
+        clearMessages: () => {
+          const state = get();
+          const projectId = state.currentProjectId;
+
+          // Limpiar también del mapa de conversaciones
+          if (projectId) {
+            const { [projectId]: _, ...remainingConversations } = state.projectConversations;
+            set({
+              messages: [],
+              sessionId: null,
+              status: ChatStatus.IDLE,
+              error: null,
+              historyLoaded: true,
+              projectConversations: remainingConversations
+            });
+          } else {
+            set({
+              messages: [],
+              sessionId: null,
+              status: ChatStatus.IDLE,
+              error: null,
+              historyLoaded: true
+            });
+          }
+        },
 
         setError: (error) => set({ error }),
 
@@ -205,30 +264,159 @@ export const useChatStore = create<ChatState>()(
               historyLoaded: true
             });
           }
+        },
+
+        // Guarda la conversación actual en el mapa de proyectos
+        saveCurrentConversation: () => {
+          const state = get();
+          const projectId = state.currentProjectId;
+
+          if (projectId && state.messages.length > 0) {
+            console.log('[ChatStore] Guardando conversación para proyecto:', projectId, '- Mensajes:', state.messages.length);
+            set({
+              projectConversations: {
+                ...state.projectConversations,
+                [projectId]: {
+                  messages: state.messages,
+                  sessionId: state.sessionId,
+                  lastUpdated: Date.now()
+                }
+              }
+            });
+          }
+        },
+
+        // Carga la conversación de un proyecto específico
+        loadProjectConversation: (projectId: string | null) => {
+          const state = get();
+
+          if (!projectId) {
+            console.log('[ChatStore] No hay proyecto, limpiando chat');
+            set({
+              messages: [],
+              sessionId: null,
+              currentProjectId: null,
+              status: ChatStatus.IDLE,
+              error: null,
+              historyLoaded: true,
+              unreadCount: 0
+            });
+            return;
+          }
+
+          const savedConversation = state.projectConversations[projectId];
+
+          if (savedConversation && savedConversation.messages.length > 0) {
+            console.log('[ChatStore] Cargando conversación guardada para proyecto:', projectId, '- Mensajes:', savedConversation.messages.length);
+            set({
+              messages: savedConversation.messages,
+              sessionId: savedConversation.sessionId,
+              currentProjectId: projectId,
+              status: ChatStatus.IDLE,
+              error: null,
+              historyLoaded: true,
+              unreadCount: 0
+            });
+          } else {
+            console.log('[ChatStore] No hay conversación guardada para proyecto:', projectId, '- Iniciando nueva');
+            set({
+              messages: [],
+              sessionId: null,
+              currentProjectId: projectId,
+              status: ChatStatus.IDLE,
+              error: null,
+              historyLoaded: true,
+              unreadCount: 0
+            });
+          }
+        },
+
+        handleProjectChange: (newProjectId: string | null) => {
+          const state = get();
+
+          // Solo actuar si el proyecto cambió
+          if (state.currentProjectId !== newProjectId) {
+            console.log('[ChatStore] Proyecto cambió de', state.currentProjectId, 'a', newProjectId);
+
+            // 1. Guardar la conversación actual antes de cambiar
+            if (state.currentProjectId && state.messages.length > 0) {
+              state.saveCurrentConversation();
+            }
+
+            // 2. Cargar la conversación del nuevo proyecto (o limpiar si no hay)
+            state.loadProjectConversation(newProjectId);
+          }
         }
       }),
       {
         name: 'chat-store',
-        // Solo persistir mensajes y sessionId
+        // Persistir mensajes, sessionId, proyecto actual y mapa de conversaciones
         partialize: (state) => ({
           messages: state.messages,
-          sessionId: state.sessionId
+          sessionId: state.sessionId,
+          currentProjectId: state.currentProjectId,
+          projectConversations: state.projectConversations
         }),
-        // Sanitizar mensajes al rehidratar desde localStorage
+        // Sanitizar mensajes y verificar proyecto al rehidratar desde localStorage
         onRehydrateStorage: () => (state) => {
-          if (state?.messages) {
-            // Filtrar mensajes con contenido inválido
-            const validMessages = state.messages.filter(msg => {
-              try {
-                // Verificar que el contenido sea un string válido
-                return typeof msg.content === 'string' && msg.content.length > 0;
-              } catch {
-                return false;
+          if (state) {
+            // Verificar si el proyecto del chat coincide con el proyecto activo
+            const activeProjectId = useProjectStore.getState().activeProjectId;
+
+            console.log('[ChatStore] Rehidratando - Proyecto del chat:', state.currentProjectId);
+            console.log('[ChatStore] Rehidratando - Proyecto activo:', activeProjectId);
+            console.log('[ChatStore] Rehidratando - Conversaciones guardadas:', Object.keys(state.projectConversations || {}));
+
+            // Si el proyecto cambió, cargar la conversación correcta
+            if (state.currentProjectId !== activeProjectId) {
+              console.log('[ChatStore] Proyecto no coincide, cargando conversación del proyecto activo');
+
+              // Buscar si hay conversación guardada para el proyecto activo
+              if (activeProjectId && state.projectConversations?.[activeProjectId]) {
+                const savedConv = state.projectConversations[activeProjectId];
+                state.messages = savedConv.messages;
+                state.sessionId = savedConv.sessionId;
+                state.currentProjectId = activeProjectId;
+              } else {
+                // No hay conversación guardada, limpiar
+                state.messages = [];
+                state.sessionId = null;
+                state.currentProjectId = activeProjectId;
               }
-            });
-            if (validMessages.length !== state.messages.length) {
-              console.warn('Se limpiaron mensajes de chat inválidos');
-              state.messages = validMessages;
+              state.historyLoaded = true;
+              return;
+            }
+
+            // Filtrar mensajes con contenido inválido
+            if (state.messages) {
+              const validMessages = state.messages.filter(msg => {
+                try {
+                  return typeof msg.content === 'string' && msg.content.length > 0;
+                } catch {
+                  return false;
+                }
+              });
+              if (validMessages.length !== state.messages.length) {
+                console.warn('Se limpiaron mensajes de chat inválidos');
+                state.messages = validMessages;
+              }
+            }
+
+            // Limpiar conversaciones con mensajes inválidos en el mapa
+            if (state.projectConversations) {
+              for (const projectId of Object.keys(state.projectConversations)) {
+                const conv = state.projectConversations[projectId];
+                if (conv.messages) {
+                  const validMessages = conv.messages.filter(msg => {
+                    try {
+                      return typeof msg.content === 'string' && msg.content.length > 0;
+                    } catch {
+                      return false;
+                    }
+                  });
+                  conv.messages = validMessages;
+                }
+              }
             }
           }
         }
@@ -238,3 +426,24 @@ export const useChatStore = create<ChatState>()(
     { name: 'ChatStore' }
   )
 );
+
+// Suscribirse a cambios del proyecto activo
+// Cuando el proyecto cambie, guardar la conversación actual y cargar la del nuevo proyecto
+useProjectStore.subscribe(
+  (state) => state.activeProjectId,
+  (newProjectId) => {
+    useChatStore.getState().handleProjectChange(newProjectId);
+  }
+);
+
+// Verificación inicial al cargar la app
+// Esperar un momento para que ambos stores estén hidratados
+setTimeout(() => {
+  const chatState = useChatStore.getState();
+  const activeProjectId = useProjectStore.getState().activeProjectId;
+
+  if (chatState.currentProjectId !== activeProjectId) {
+    console.log('[ChatStore] Verificación inicial: proyecto no coincide, cargando conversación correcta');
+    useChatStore.getState().handleProjectChange(activeProjectId);
+  }
+}, 100);

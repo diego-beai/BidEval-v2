@@ -16,26 +16,35 @@ interface N8nChatHistoryRow {
 
 /**
  * Genera un ID de sesión único para el chat
+ * Incluye el projectId para separar conversaciones por proyecto
  */
-function generateSessionId(): string {
-  return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+function generateSessionId(projectId?: string | null): string {
+  const projectPart = projectId ? `proj-${projectId.substring(0, 8)}` : 'global';
+  return `chat-${projectPart}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 /**
  * Envía un mensaje al chat de n8n y recibe la respuesta
+ * @param message - El mensaje del usuario
+ * @param sessionId - ID de sesión opcional
+ * @param projectId - ID del proyecto activo para filtrar las respuestas
  */
 export async function sendChatMessage(
   message: string,
-  sessionId?: string
+  sessionId?: string,
+  projectId?: string | null
 ): Promise<{ response: string; sessionId: string }> {
-  const currentSessionId = sessionId || generateSessionId();
+  // Si no hay sessionId, generar uno nuevo que incluya el projectId
+  const currentSessionId = sessionId || generateSessionId(projectId);
 
   try {
     // Payload según el formato esperado por n8n chatTrigger
+    // Incluye project_id para filtrar datos por proyecto
     const payload = {
       action: 'sendMessage',
       sessionId: currentSessionId,
-      chatInput: message
+      chatInput: message,
+      project_id: projectId || ''
     };
 
     const response = await fetchWithTimeout(

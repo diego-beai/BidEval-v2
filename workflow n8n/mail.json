@@ -11,6 +11,12 @@
               "type": "string"
             },
             {
+              "id": "project-id-uuid-field",
+              "name": "project_id",
+              "value": "={{ $json.body.project_id }}",
+              "type": "string"
+            },
+            {
               "id": "2d3a985e-7c5e-4c74-8b5e-407e4d8c83a1",
               "name": "provider_name",
               "value": "={{ $json.body.provider_key }}",
@@ -37,7 +43,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      issuesFound.push({\n        requirement: row.requirement_id || 'Requisito no identificado',\n        status: status || 'VACÍO',\n        comment: row.comment || 'Sin comentarios adicionales'\n      });\n    }\n  }\n}\n\n// 3. Devolvemos un solo objeto con toda la info para el LLM\n// Esto evita el \"undefined\" porque el LLM recibirá estos campos directamente\nreturn {\n  issues: issuesFound,\n  total_count: issuesFound.length,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone\n};"
+        "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      issuesFound.push({\n        requirement: row.requirement_id || 'Requisito no identificado',\n        status: status || 'VACÍO',\n        comment: row.comment || 'Sin comentarios adicionales'\n      });\n    }\n  }\n}\n\n// 3. Devolvemos un solo objeto con toda la info para el LLM\n// Esto evita el \"undefined\" porque el LLM recibirá estos campos directamente\nreturn {\n  issues: issuesFound,\n  total_count: issuesFound.length,\n  project_id: editFields.project_id,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -92,6 +98,11 @@
               "keyName": "provider_name",
               "condition": "eq",
               "keyValue": "={{ $json.provider_name }}"
+            },
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.project_id }}"
             }
           ]
         }

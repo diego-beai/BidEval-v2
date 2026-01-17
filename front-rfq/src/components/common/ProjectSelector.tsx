@@ -21,6 +21,13 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
 
   const activeProject = getActiveProject();
 
+  // Sort projects so "PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)" always appears first
+  const sortedProjects = [...projects].sort((a, b) => {
+    if (a.display_name === 'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)') return -1;
+    if (b.display_name === 'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)') return 1;
+    return 0;
+  });
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -111,7 +118,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
           </div>
 
           <div className="project-list">
-            {projects.length === 0 && !isLoading ? (
+            {sortedProjects.length === 0 && !isLoading ? (
               <div className="no-projects">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -119,7 +126,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                 <span>No projects found</span>
               </div>
             ) : (
-              projects.map((project) => (
+              sortedProjects.map((project) => (
                 <button
                   key={project.id}
                   className={`project-item ${project.id === activeProjectId ? 'active' : ''}`}
