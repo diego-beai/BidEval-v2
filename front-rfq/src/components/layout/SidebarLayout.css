@@ -425,3 +425,22 @@
         /* Single column */
     }
 }
+
+/* Global Processing Indicator Animations */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(18, 181, 176, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(18, 181, 176, 0.1);
+    }
+}

@@ -9,6 +9,7 @@ import {
   type EstadoPregunta,
   type Importancia
 } from '../types/qa.types';
+import type { QANotification } from '../types/database.types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // Requirement details for linking Q&A to source requirements
@@ -35,11 +36,17 @@ interface QAState {
   requirementCache: Record<string, RequirementDetails>;
   loadingRequirements: Set<string>;
 
+  // Notifications
+  notifications: QANotification[];
+  unreadNotificationCount: number;
+  notificationsLoading: boolean;
+
   // Realtime
   realtimeChannel: RealtimeChannel | null;
+  notificationsChannel: RealtimeChannel | null;
 
   // Acciones
-  loadQuestions: (projectId: string) => Promise<void>;
+  loadQuestions: (projectId?: string) => Promise<void>;
   createQuestion: (question: Partial<QAQuestion>) => Promise<void>;
   updateQuestion: (id: string, updates: Partial<QAQuestion>) => Promise<void>;
   deleteQuestion: (id: string) => Promise<void>;
@@ -67,8 +74,15 @@ interface QAState {
   };
 
   // Realtime
-  subscribeToChanges: (projectId: string) => void;
+  subscribeToChanges: (projectId?: string) => void;
   unsubscribeFromChanges: () => void;
+
+  // Notifications
+  loadNotifications: (projectId?: string) => Promise<void>;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  subscribeToNotifications: (projectId?: string) => void;
+  unsubscribeFromNotifications: () => void;
 
   // Reset
   reset: () => void;
@@ -86,7 +100,8 @@ function mapQAAuditToQAQuestion(dbItem: any): QAQuestion {
   return {
     id: dbItem.id,
     created_at: dbItem.created_at,
-    project_name: dbItem.project_name || dbItem.project_id,
+    project_id: dbItem.project_id,  // UUID del proyecto
+    project_name: dbItem.project_id, // Alias para compatibilidad (usa UUID como fallback)
     provider_name: dbItem.provider_name || dbItem.proveedor,
     discipline: dbItem.discipline || dbItem.disciplina,
     question: dbItem.question || dbItem.pregunta_texto,
@@ -95,7 +110,6 @@ function mapQAAuditToQAQuestion(dbItem: any): QAQuestion {
     response: dbItem.response || dbItem.respuesta_proveedor,
     requirement_id: dbItem.requirement_id, // Link to source requirement
     // Alias for frontend compatibility
-    project_id: dbItem.project_name || dbItem.project_id,
     proveedor: dbItem.provider_name || dbItem.proveedor,
     disciplina: dbItem.discipline || dbItem.disciplina,
     pregunta_texto: dbItem.question || dbItem.pregunta_texto,
@@ -117,8 +131,12 @@ export const useQAStore = create<QAState>((set, get) => ({
   filters: initialFilters,
   selectedProjectId: null,
   realtimeChannel: null,
+  notificationsChannel: null,
   requirementCache: {},
   loadingRequirements: new Set(),
+  notifications: [],
+  unreadNotificationCount: 0,
+  notificationsLoading: false,
 
   // Cargar preguntas desde Supabase
   loadQuestions: async (projectIdParam?: string) => {
@@ -215,7 +233,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           hint: error.hint,
           code: error.code,
           table: 'qa_audit',
-          projectId: encodedProjectId
+          projectId: projectId
         });
         
         // If it's a 404 error or table not found, show clearer message
@@ -272,12 +290,15 @@ export const useQAStore = create<QAState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const currentProjectId = get().selectedProjectId;
-      // Use correct DB column names (English)
+      // Get the actual UUID from global store
+      const activeProjectId = useProjectStore.getState().activeProjectId;
+      const currentProjectId = get().selectedProjectId || activeProjectId;
+
+      // Use correct DB column names
       const { data, error } = await (supabase!
         .from('qa_audit') as any)
         .insert([{
-          project_name: question.project_name || question.project_id || currentProjectId,
+          project_id: question.project_id || currentProjectId,  // UUID del proyecto
           provider_name: question.provider_name || question.proveedor,
           discipline: question.discipline || question.disciplina,
           question: question.question || question.pregunta_texto,
@@ -636,9 +657,156 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
   },
 
+  // Notifications - Load from database
+  loadNotifications: async (projectIdParam?: string) => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
+    const activeProjectId = useProjectStore.getState().activeProjectId;
+    const projectId = projectIdParam || activeProjectId;
+
+    if (!projectId) {
+      set({ notifications: [], unreadNotificationCount: 0 });
+      return;
+    }
+
+    set({ notificationsLoading: true });
+
+    try {
+      const { data, error } = await supabase!
+        .from('qa_notifications')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error loading notifications:', error);
+        set({ notificationsLoading: false });
+        return;
+      }
+
+      const notifications = (data || []) as QANotification[];
+      const unreadCount = notifications.filter(n => !n.is_read).length;
+
+      set({
+        notifications,
+        unreadNotificationCount: unreadCount,
+        notificationsLoading: false
+      });
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+      set({ notificationsLoading: false });
+    }
+  },
+
+  // Mark a single notification as read
+  markNotificationRead: async (notificationId: string) => {
+    if (!isSupabaseConfigured()) return;
+
+    try {
+      const { error } = await supabase!
+        .from('qa_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() } as unknown as never)
+        .eq('id', notificationId);
+
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        return;
+      }
+
+      set(state => ({
+        notifications: state.notifications.map(n =>
+          n.id === notificationId ? { ...n, is_read: true, read_at: new Date().toISOString() } : n
+        ),
+        unreadNotificationCount: Math.max(0, state.unreadNotificationCount - 1)
+      }));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  },
+
+  // Mark all notifications as read
+  markAllNotificationsRead: async () => {
+    if (!isSupabaseConfigured()) return;
+
+    const activeProjectId = useProjectStore.getState().activeProjectId;
+    if (!activeProjectId) return;
+
+    try {
+      const { error } = await supabase!
+        .from('qa_notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() } as unknown as never)
+        .eq('project_id', activeProjectId)
+        .eq('is_read', false);
+
+      if (error) {
+        console.error('Error marking all notifications as read:', error);
+        return;
+      }
+
+      set(state => ({
+        notifications: state.notifications.map(n => ({ ...n, is_read: true, read_at: new Date().toISOString() })),
+        unreadNotificationCount: 0
+      }));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  },
+
+  // Subscribe to notification changes
+  subscribeToNotifications: (projectIdParam?: string) => {
+    if (!isSupabaseConfigured()) return;
+
+    const activeProjectId = useProjectStore.getState().activeProjectId;
+    const projectId = projectIdParam || activeProjectId;
+
+    if (!projectId) return;
+
+    // Unsubscribe from previous channel
+    const existingChannel = get().notificationsChannel;
+    if (existingChannel) {
+      supabase!.removeChannel(existingChannel);
+    }
+
+    const channel = supabase!
+      .channel(`qa-notifications-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'qa_notifications',
+          filter: `project_id=eq.${projectId}`
+        },
+        (payload) => {
+          console.log('🔔 New notification received:', payload);
+          const newNotification = payload.new as QANotification;
+          set(state => ({
+            notifications: [newNotification, ...state.notifications],
+            unreadNotificationCount: state.unreadNotificationCount + 1
+          }));
+        }
+      )
+      .subscribe();
+
+    set({ notificationsChannel: channel });
+  },
+
+  // Unsubscribe from notification changes
+  unsubscribeFromNotifications: () => {
+    const { notificationsChannel } = get();
+    if (notificationsChannel && isSupabaseConfigured()) {
+      supabase!.removeChannel(notificationsChannel);
+      set({ notificationsChannel: null });
+    }
+  },
+
   // Reset completo
   reset: () => {
     get().unsubscribeFromChanges();
+    get().unsubscribeFromNotifications();
     set({
       questions: [],
       isLoading: false,
@@ -646,6 +814,9 @@ export const useQAStore = create<QAState>((set, get) => ({
       filters: initialFilters,
       selectedProjectId: null,
       realtimeChannel: null,
+      notificationsChannel: null,
+      notifications: [],
+      unreadNotificationCount: 0,
     });
   },
 }));

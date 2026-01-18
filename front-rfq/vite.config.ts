@@ -59,6 +59,24 @@ export default defineConfig({
         secure: false,
         rewrite: () => '',
       },
+      '/api/n8n/qa-process-responses': {
+        target: 'https://n8n.beaienergy.com/webhook/qa-process-responses',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/qa-send-to-supplier': {
+        target: 'https://n8n.beaienergy.com/webhook/qa-send-to-supplier',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/qa-send-email': {
+        target: 'https://n8n.beaienergy.com/webhook-test/qa-send-email',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
     }
   },
   build: {

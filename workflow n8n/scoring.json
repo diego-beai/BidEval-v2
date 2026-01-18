@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6272,
-        -640
+        -6224,
+        -672
       ],
-      "id": "1bd517bb-bdb1-4a0a-acaf-bf044cdde08a",
+      "id": "80a48fb8-9ff2-4f04-8046-b866ccb7f5dc",
       "name": "Webhook Scoring",
       "webhookId": "scoring-eval-webhook-001"
     },
@@ -35,10 +35,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5616,
-        -736
+        -5568,
+        -768
       ],
-      "id": "5efa5910-8491-487a-abb6-8cddf0aacf3f",
+      "id": "8afc345d-aa14-47f2-b6a7-3582bf7c0461",
       "name": "Fetch Requirements",
       "credentials": {
         "supabaseApi": {
@@ -65,10 +65,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5616,
-        -512
+        -5568,
+        -544
       ],
-      "id": "9a45531f-1266-454a-9fab-726a5e3377dc",
+      "id": "ed0c50db-d0c8-4dce-ad3f-7c82e2fe49bd",
       "name": "Fetch Provider Responses",
       "credentials": {
         "supabaseApi": {
@@ -82,23 +82,23 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -5392,
-        -640
+        -5344,
+        -672
       ],
-      "id": "69c547d6-f663-4ead-aa05-5ca59761d18f",
+      "id": "2d315f51-9d8b-4969-b833-7e97b058d2f8",
       "name": "Merge Requirements & Responses"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\\n// NODO: Preparar Datos para Scoring (v2 - OPTIMIZADO)\\n// Solo envía RESÚMENES estadísticos, no datos crudos\\n// =============================================\\n\\nconst items = $input.all();\\n\\n// Función para inferir categoría del evaluation_type\\nfunction getCategoryFromEvalType(evalType) {\\n    const type = (evalType || '').toLowerCase();\\n    if (type.includes('technical')) return 'TECHNICAL';\\n    if (type.includes('econom')) return 'ECONOMIC';\\n    if (type.includes('pre-feed') || type.includes('pre feed')) return 'EXECUTION';\\n    if (type.includes('feed')) return 'EXECUTION';\\n    if (type.includes('hse') || type.includes('esg')) return 'HSE_ESG';\\n    return 'TECHNICAL';\\n}\\n\\n// Función para clasificar evaluation_value\\nfunction classifyEval(val) {\\n    const v = (val || '').toUpperCase();\\n    if (v.includes('INCLUD') || v.includes('INCLUIDO') || v === 'SI' || v === 'YES') return 'INCLUDED';\\n    if (v.includes('PARCIAL') || v.includes('PARTIAL')) return 'PARTIAL';\\n    if (v.includes('NO INCLUD') || v.includes('NOT INCLUD') || v === 'NO') return 'NOT_INCLUDED';\\n    return 'NO_INFO';\\n}\\n\\n// Separar requirements y responses\\nlet requirements = [];\\nlet responses = [];\\n\\nitems.forEach(item => {\\n    if (item.json.requirement_text || item.json.evaluation_type) {\\n        requirements.push(item.json);\\n    }\\n    if (item.json.provider_name && item.json.requirement_id) {\\n        responses.push(item.json);\\n    }\\n});\\n\\nif (requirements.length === 0 && responses.length === 0) {\\n    items.forEach(item => {\\n        if (Array.isArray(item.json)) {\\n            item.json.forEach(j => {\\n                if (j.requirement_text) requirements.push(j);\\n                if (j.provider_name && j.requirement_id) responses.push(j);\\n            });\\n        }\\n    });\\n}\\n\\nconst providers = [...new Set(responses.map(r => r.provider_name))];\\n\\nlet providerFilter = '';\\ntry {\\n    providerFilter = $('Set Input Params1').first().json.provider_filter || '';\\n} catch(e) {}\\n\\nconst targetProviders = providerFilter \\n    ? providers.filter(p => p.toLowerCase().includes(providerFilter.toLowerCase()))\\n    : providers;\\n\\nconsole.log(`📊 Scoring (Optimizado):`);\\nconsole.log(`   Total Proveedores: ${targetProviders.length}`);\\n\\n// Crear estructura RESUMIDA para evaluación\\nconst evaluationData = targetProviders.map(providerName => {\\n    const providerResponses = responses.filter(r => r.provider_name === providerName);\\n    \\n    // Estructura de RESUMEN por categoría (no datos crudos)\\n    const summary = {\\n        TECHNICAL: { total: 0, included: 0, partial: 0, not_included: 0, no_info: 0, avg_score: 0, scores: [] },\\n        ECONOMIC: { total: 0, included: 0, partial: 0, not_included: 0, no_info: 0, avg_score: 0, scores: [] },\\n        EXECUTION: { total: 0, included: 0, partial: 0, not_included: 0, no_info: 0, avg_score: 0, scores: [] },\\n        HSE_ESG: { total: 0, included: 0, partial: 0, not_included: 0, no_info: 0, avg_score: 0, scores: [] }\\n    };\\n    \\n    providerResponses.forEach(resp => {\\n        const req = requirements.find(r => r.id === resp.requirement_id);\\n        if (!req) return;\\n        \\n        const category = getCategoryFromEvalType(req.evaluation_type);\\n        const evalClass = classifyEval(resp.evaluation_value);\\n        \\n        if (!summary[category]) return;\\n        \\n        summary[category].total++;\\n        if (evalClass === 'INCLUDED') summary[category].included++;\\n        else if (evalClass === 'PARTIAL') summary[category].partial++;\\n        else if (evalClass === 'NOT_INCLUDED') summary[category].not_included++;\\n        else summary[category].no_info++;\\n        \\n        if (resp.score) summary[category].scores.push(resp.score);\\n    });\\n    \\n    // Calcular promedios\\n    Object.keys(summary).forEach(cat => {\\n        const s = summary[cat];\\n        if (s.scores.length > 0) {\\n            s.avg_score = Math.round((s.scores.reduce((a,b) => a+b, 0) / s.scores.length) * 100) / 100;\\n        }\\n        delete s.scores; // No enviar array de scores\\n    });\\n    \\n    return {\\n        provider_name: providerName,\\n        total_responses: providerResponses.length,\\n        category_summary: summary\\n    };\\n});\\n\\nreturn evaluationData.map(data => ({ json: data }));"
+        "jsCode": "// =============================================\n// NODO: Prepare Scoring Data (v4 - New Criteria)\n// Based on RFQ requirements for engineering proposals\n// Categories: TECHNICAL (30%), ECONOMIC (35%), EXECUTION (20%), HSE_COMPLIANCE (15%)\n// =============================================\n\nconst items = $input.all();\n\nconsole.log('📊 Prepare Scoring Data - Starting...');\nconsole.log('   Items received:', items.length);\n\n/* =========================\nGet project_id from webhook\n========================= */\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n    console.log('   📋 Project ID:', projectId);\n} catch (e) {\n    console.log('   ⚠️ Could not get project_id:', e.message);\n}\n\n/* =========================\nHelpers - Map requirements to new criteria categories\n========================= */\nfunction getCriterionFromRequirement(evalType, phase, reqText) {\n    const type = (evalType || '').toLowerCase();\n    const phaseL = (phase || '').toLowerCase();\n    const text = (reqText || '').toLowerCase();\n    \n    // TECHNICAL COMPLETENESS criteria\n    if (type.includes('technical')) {\n        if (text.includes('scope of facilities') || text.includes('hydrogen plant') || text.includes('utilities')) {\n            return 'scope_facilities';\n        }\n        if (text.includes('scope of work') || text.includes('project management') || text.includes('deliverables')) {\n            return 'scope_work';\n        }\n        if (text.includes('p&id') || text.includes('3d model') || text.includes('specification') || text.includes('datasheet')) {\n            return 'deliverables_quality';\n        }\n        return 'scope_work'; // Default technical\n    }\n    \n    // ECONOMIC COMPETITIVENESS criteria\n    if (type.includes('econom')) {\n        if (text.includes('price') || text.includes('€') || text.includes('fee') || text.includes('cost')) {\n            return 'total_price';\n        }\n        if (text.includes('hour') || text.includes('discipline') || text.includes('breakdown')) {\n            return 'price_breakdown';\n        }\n        if (text.includes('optional') || text.includes('geotechnical') || text.includes('topograph') || text.includes('hazid')) {\n            return 'optionals_included';\n        }\n        if (text.includes('capex') || text.includes('opex') || text.includes('aacei') || text.includes('estimate')) {\n            return 'capex_opex_methodology';\n        }\n        return 'total_price'; // Default economic\n    }\n    \n    // HSE & COMPLIANCE criteria\n    if (text.includes('hse') || text.includes('safety') || text.includes('hazop') || text.includes('hazid') || text.includes('atex') || text.includes('qra')) {\n        return 'safety_studies';\n    }\n    if (text.includes('code') || text.includes('standard') || text.includes('compliance') || text.includes('regulation')) {\n        return 'regulatory_compliance';\n    }\n    \n    // EXECUTION CAPABILITY criteria (deliverables phase)\n    if (phaseL.includes('pre-feed') || phaseL.includes('feed') || type.includes('deliverable')) {\n        if (text.includes('schedule') || text.includes('planning') || text.includes('timeline')) {\n            return 'schedule';\n        }\n        if (text.includes('exception') || text.includes('deviation') || text.includes('exclusion')) {\n            return 'exceptions';\n        }\n        return 'resources_allocation';\n    }\n    \n    return 'scope_work'; // Fallback\n}\n\nfunction classifyEval(val) {\n    const v = (val || '').toUpperCase();\n    if (v.includes('INCLUD') || v.includes('INCLUIDO') || v === 'SI' || v === 'YES') return 'INCLUDED';\n    if (v.includes('PARCIAL') || v.includes('PARTIAL')) return 'PARTIAL';\n    if (v.includes('NO INCLUD') || v.includes('NOT INCLUD') || v === 'NO') return 'NOT_INCLUDED';\n    return 'NO_INFO';\n}\n\n/* =========================\nGet data from previous nodes\n========================= */\nlet requirements = [];\nlet responses = [];\n\ntry {\n    const reqItems = $('Fetch Requirements').all();\n    requirements = reqItems.map(item => item.json);\n    console.log('   ✅ Requirements from Fetch Requirements:', requirements.length);\n} catch (e) {\n    console.log('   ⚠️ Could not access Fetch Requirements:', e.message);\n}\n\ntry {\n    const respItems = $('Fetch Provider Responses').all();\n    responses = respItems.map(item => item.json);\n    console.log('   ✅ Responses from Fetch Provider Responses:', responses.length);\n} catch (e) {\n    console.log('   ⚠️ Could not access Fetch Provider Responses:', e.message);\n}\n\nif (requirements.length === 0 || responses.length === 0) {\n    console.log('   🔄 Using fallback: separating from input...');\n    items.forEach(item => {\n        const data = item.json;\n        if (data.requirement_text && !data.provider_name) {\n            requirements.push(data);\n        } else if (data.provider_name && data.requirement_id) {\n            responses.push(data);\n        }\n    });\n}\n\nif (requirements.length === 0) {\n    return [{ json: { error: 'No requirements found', items_received: items.length } }];\n}\nif (responses.length === 0) {\n    return [{ json: { error: 'No responses found', items_received: items.length } }];\n}\n\n/* =========================\nOptimization with MAPS\n========================= */\nconst requirementMap = {};\nrequirements.forEach(r => {\n    if (r.id) requirementMap[r.id] = r;\n});\n\nconst responsesByProvider = {};\nresponses.forEach(r => {\n    if (r.provider_name) {\n        if (!responsesByProvider[r.provider_name]) {\n            responsesByProvider[r.provider_name] = [];\n        }\n        responsesByProvider[r.provider_name].push(r);\n    }\n});\n\nconsole.log('   📊 Providers found:', Object.keys(responsesByProvider).join(', '));\n\n/* =========================\nProvider filter (optional)\n========================= */\nlet providerFilter = '';\ntry {\n    providerFilter = $('Set Input Params1').first().json.provider_filter || '';\n} catch (e) {}\n\nlet providers = Object.keys(responsesByProvider);\nif (providerFilter) {\n    providers = providers.filter(p => p.toLowerCase().includes(providerFilter.toLowerCase()));\n}\n\nif (providers.length === 0) {\n    return [{ json: { error: 'No providers found', filter: providerFilter } }];\n}\n\n/* =========================\nNew Criteria Weights (total = 100%)\n========================= */\nconst CRITERIA_WEIGHTS = {\n    // TECHNICAL COMPLETENESS (30%)\n    scope_facilities: 0.10,\n    scope_work: 0.10,\n    deliverables_quality: 0.10,\n    // ECONOMIC COMPETITIVENESS (35%)\n    total_price: 0.15,\n    price_breakdown: 0.08,\n    optionals_included: 0.07,\n    capex_opex_methodology: 0.05,\n    // EXECUTION CAPABILITY (20%)\n    schedule: 0.08,\n    resources_allocation: 0.06,\n    exceptions: 0.06,\n    // HSE & COMPLIANCE (15%)\n    safety_studies: 0.08,\n    regulatory_compliance: 0.07\n};\n\nconst CATEGORY_WEIGHTS = {\n    TECHNICAL: 0.30,\n    ECONOMIC: 0.35,\n    EXECUTION: 0.20,\n    HSE_COMPLIANCE: 0.15\n};\n\n/* =========================\nEvaluation by Criteria\n========================= */\nconst evaluationData = providers.map(providerName => {\n    const providerResponses = responsesByProvider[providerName] || [];\n    \n    // Initialize criteria summary\n    const criteriaScores = {};\n    Object.keys(CRITERIA_WEIGHTS).forEach(criterion => {\n        criteriaScores[criterion] = { total: 0, included: 0, partial: 0, not_included: 0, no_info: 0, scores: [] };\n    });\n    \n    providerResponses.forEach(resp => {\n        const req = requirementMap[resp.requirement_id];\n        if (!req) return;\n        \n        const criterion = getCriterionFromRequirement(req.evaluation_type, req.phase, req.requirement_text);\n        const evalClass = classifyEval(resp.evaluation_value);\n        \n        const cs = criteriaScores[criterion];\n        if (!cs) return;\n        \n        cs.total++;\n        if (evalClass === 'INCLUDED') cs.included++;\n        else if (evalClass === 'PARTIAL') cs.partial++;\n        else if (evalClass === 'NOT_INCLUDED') cs.not_included++;\n        else cs.no_info++;\n        \n        if (typeof resp.score === 'number') {\n            cs.scores.push(resp.score);\n        }\n    });\n    \n    // Calculate average scores per criterion\n    let globalScore = 0;\n    const criteriaAvgScores = {};\n    \n    Object.keys(criteriaScores).forEach(criterion => {\n        const cs = criteriaScores[criterion];\n        if (cs.scores.length > 0) {\n            cs.avg_score = Math.round((cs.scores.reduce((a, b) => a + b, 0) / cs.scores.length) * 100) / 100;\n        } else if (cs.total > 0) {\n            // Calculate from compliance\n            cs.avg_score = Math.round(((cs.included * 10 + cs.partial * 5) / cs.total) * 100) / 100;\n        } else {\n            cs.avg_score = 0;\n        }\n        criteriaAvgScores[criterion] = cs.avg_score;\n        globalScore += cs.avg_score * (CRITERIA_WEIGHTS[criterion] || 0);\n        delete cs.scores;\n    });\n    \n    globalScore = Math.round(globalScore * 100) / 100;\n    \n    // Calculate category scores\n    const categoryScores = {\n        TECHNICAL: Math.round(((criteriaAvgScores.scope_facilities || 0) + (criteriaAvgScores.scope_work || 0) + (criteriaAvgScores.deliverables_quality || 0)) / 3 * 100) / 100,\n        ECONOMIC: Math.round(((criteriaAvgScores.total_price || 0) + (criteriaAvgScores.price_breakdown || 0) + (criteriaAvgScores.optionals_included || 0) + (criteriaAvgScores.capex_opex_methodology || 0)) / 4 * 100) / 100,\n        EXECUTION: Math.round(((criteriaAvgScores.schedule || 0) + (criteriaAvgScores.resources_allocation || 0) + (criteriaAvgScores.exceptions || 0)) / 3 * 100) / 100,\n        HSE_COMPLIANCE: Math.round(((criteriaAvgScores.safety_studies || 0) + (criteriaAvgScores.regulatory_compliance || 0)) / 2 * 100) / 100\n    };\n    \n    return {\n        provider_name: providerName,\n        project_id: projectId,\n        total_responses: providerResponses.length,\n        global_score: globalScore,\n        category_scores: categoryScores,\n        criteria_scores: criteriaAvgScores,\n        criteria_summary: criteriaScores\n    };\n});\n\n/* =========================\nExecutive Ranking\n========================= */\nevaluationData\n    .sort((a, b) => b.global_score - a.global_score)\n    .forEach((item, index) => {\n        item.rank = index + 1;\n    });\n\nconsole.log('✅ Scoring Data prepared for', evaluationData.length, 'providers');\nconsole.log('   Project ID included:', projectId);\n\nreturn evaluationData.map(data => ({ json: data }));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5168,
-        -640
+        -5120,
+        -672
       ],
-      "id": "5f597cf5-2732-4877-916c-c66555d1b8ec",
+      "id": "7dac02ec-b781-4246-ae88-30e1f446d614",
       "name": "Prepare Scoring Data"
     },
     {
@@ -110,39 +110,39 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -4944,
-        -688
+        -4896,
+        -720
       ],
-      "id": "98021e35-dab7-4897-9286-3d15796c7d53",
+      "id": "40bc72b8-62b5-417a-b7c1-5a416bf89106",
       "name": "Loop Over Providers"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Score this provider based on compliance statistics.\n\n## PROVIDER: {{ $json.provider_name }}\n## TOTAL RESPONSES: {{ $json.total_responses }}\n\n## COMPLIANCE SUMMARY BY CATEGORY:\n{{ JSON.stringify($json.category_summary, null, 2) }}\n\n## CATEGORY WEIGHTS:\n- TECHNICAL: 35%\n- ECONOMIC: 35%\n- EXECUTION: 12%\n- HSE_ESG: 18%\n\n## SCORING RULES:\n- included items = 8 points base\n- partial items = 5 points base\n- not_included items = 2 points base\n- no_info items = 0 points\n- If avg_score > 0, use it instead of calculating\n\n## CALCULATE:\n1. Category score = weighted average of item scores\n2. Overall score = sum(category_score * weight)\n3. Compliance % = (included + partial*0.5) / total * 100\n\n## OUTPUT (JSON only):\n{\n  \"provider_name\": \"string\",\n  \"category_scores\": {\n    \"TECHNICAL\": number,\n    \"ECONOMIC\": number,\n    \"EXECUTION\": number,\n    \"HSE_ESG\": number\n  },\n  \"overall_score\": number,\n  \"compliance_percentage\": number,\n  \"evaluation_summary\": \"1-2 sentences\",\n  \"strengths\": [\"max 3\"],\n  \"weaknesses\": [\"max 3\"]\n}",
+        "text": "=Score this engineering proposal provider based on RFQ compliance.\n\n## PROVIDER: {{ $json.provider_name }}\n## TOTAL RESPONSES: {{ $json.total_responses }}\n\n## CATEGORY SCORES (pre-calculated):\n{{ JSON.stringify($json.category_scores, null, 2) }}\n\n## INDIVIDUAL CRITERIA SCORES:\n{{ JSON.stringify($json.criteria_scores, null, 2) }}\n\n## CRITERIA DETAILS:\n{{ JSON.stringify($json.criteria_summary, null, 2) }}\n\n## EVALUATION CRITERIA (weights):\n### TECHNICAL COMPLETENESS (30%)\n- scope_facilities: 10% - H2 plant, BOP, utilities included\n- scope_work: 10% - PM, studies, deliverables covered\n- deliverables_quality: 10% - P&IDs, specs, 3D model quality\n\n### ECONOMIC COMPETITIVENESS (35%)\n- total_price: 15% - PRE-FEED + FEED + EPC price competitiveness\n- price_breakdown: 8% - Transparent hours/discipline, €/hour\n- optionals_included: 7% - Geotechnical, topographic, 3D, HAZID in base\n- capex_opex_methodology: 5% - AACEI class, estimate robustness\n\n### EXECUTION CAPABILITY (20%)\n- schedule: 8% - Realistic timeline vs requirements\n- resources_allocation: 6% - Coherent hours per discipline\n- exceptions: 6% - Fewer exceptions = better (invert score)\n\n### HSE & COMPLIANCE (15%)\n- safety_studies: 8% - HAZID, HAZOP, QRA, ATEX included\n- regulatory_compliance: 7% - Codes, standards, safety distances\n\n## SCORING RULES:\n- included items = 10 points\n- partial items = 6 points\n- not_included items = 2 points\n- no_info items = 0 points\n- For 'exceptions': FEWER is BETTER (invert: more exceptions = lower score)\n\n## OUTPUT (JSON only):\n{\n  \"provider_name\": \"string\",\n  \"category_scores\": {\n    \"TECHNICAL\": { \"score\": number, \"weight\": 0.30 },\n    \"ECONOMIC\": { \"score\": number, \"weight\": 0.35 },\n    \"EXECUTION\": { \"score\": number, \"weight\": 0.20 },\n    \"HSE_COMPLIANCE\": { \"score\": number, \"weight\": 0.15 }\n  },\n  \"individual_scores\": {\n    \"scope_facilities\": number,\n    \"scope_work\": number,\n    \"deliverables_quality\": number,\n    \"total_price\": number,\n    \"price_breakdown\": number,\n    \"optionals_included\": number,\n    \"capex_opex_methodology\": number,\n    \"schedule\": number,\n    \"resources_allocation\": number,\n    \"exceptions\": number,\n    \"safety_studies\": number,\n    \"regulatory_compliance\": number\n  },\n  \"overall_score\": number,\n  \"compliance_percentage\": number,\n  \"evaluation_summary\": \"1-2 sentences comparing to ideal proposal\",\n  \"strengths\": [\"max 3 specific strengths\"],\n  \"weaknesses\": [\"max 3 specific areas for improvement\"]\n}",
         "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4672,
-        -672
+        -4624,
+        -704
       ],
-      "id": "ce56c3c0-528c-418f-b2fa-b74247d744df",
+      "id": "8e3da58b-a279-4c03-ac07-e0e73345ff00",
       "name": "Scoring LLM Chain"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Calculate Weighted Scores\n// Applies specific weights per criterion\n// Saves all 12 individual criterion scores\n// =============================================\n\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Category weights (Based on H2 La Zaida project requirements)\nconst CATEGORY_WEIGHTS = {\n    'TECHNICAL': 0.35,\n    'ECONOMIC': 0.35,\n    'EXECUTION': 0.12,\n    'HSE_ESG': 0.18\n};\n\n// Detailed criterion weights (12 criteria)\nconst CRITERION_WEIGHTS = {\n    // TECHNICAL (35%)\n    'EFICIENCIA_SISTEMA_BOP': 0.12,\n    'DEGRADACION_VIDA_UTIL': 0.08,\n    'FLEXIBILIDAD_OPERATIVA': 0.08,\n    'PUREZA_PRESION': 0.07,\n    // ECONOMIC (35%)\n    'CAPEX_TOTAL': 0.18,\n    'OPEX_GARANTIZADO': 0.12,\n    'GARANTIAS_PENALIZACIONES': 0.05,\n    // EXECUTION (12%)\n    'PLAZO_ENTREGA': 0.06,\n    'EXPERIENCIA_TRACK_RECORD': 0.03,\n    'SOLIDEZ_PROVEEDOR': 0.03,\n    // HSE_ESG (18%)\n    'SEGURIDAD_ATEX': 0.12,\n    'SOSTENIBILIDAD': 0.06\n};\n\n// Map LLM criterion names to database column names\nconst CRITERION_TO_COLUMN = {\n    'EFICIENCIA_SISTEMA_BOP': 'efficiency_bop_score',\n    'DEGRADACION_VIDA_UTIL': 'degradation_lifetime_score',\n    'FLEXIBILIDAD_OPERATIVA': 'flexibility_score',\n    'PUREZA_PRESION': 'purity_pressure_score',\n    'CAPEX_TOTAL': 'capex_score',\n    'OPEX_GARANTIZADO': 'opex_score',\n    'GARANTIAS_PENALIZACIONES': 'warranties_score',\n    'PLAZO_ENTREGA': 'delivery_time_score',\n    'EXPERIENCIA_TRACK_RECORD': 'track_record_score',\n    'SOLIDEZ_PROVEEDOR': 'provider_strength_score',\n    'SEGURIDAD_ATEX': 'safety_atex_score',\n    'SOSTENIBILIDAD': 'sustainability_score'\n};\n\n// Extract category scores from LLM\nconst categoryScores = llmOutput.category_scores || {};\nconst detailedScores = llmOutput.detailed_scores || {};\n\n// Initialize all 12 individual scores with 0\nconst individualScores = {\n    efficiency_bop_score: 0,\n    degradation_lifetime_score: 0,\n    flexibility_score: 0,\n    purity_pressure_score: 0,\n    capex_score: 0,\n    opex_score: 0,\n    warranties_score: 0,\n    delivery_time_score: 0,\n    track_record_score: 0,\n    provider_strength_score: 0,\n    safety_atex_score: 0,\n    sustainability_score: 0\n};\n\n// Calculate weighted score using detailed weights\nlet weightedScore = 0;\nlet totalWeight = 0;\nlet evaluationCount = 0;\n\n// Extract individual scores from detailed_scores\nif (Object.keys(detailedScores).length > 0) {\n    Object.entries(detailedScores).forEach(([category, criteria]) => {\n        Object.entries(criteria).forEach(([criterion, data]) => {\n            if (criterion === 'category_average') return;\n            \n            const weight = CRITERION_WEIGHTS[criterion] || 0;\n            const score = data?.score || 0;\n            const columnName = CRITERION_TO_COLUMN[criterion];\n            \n            // Save individual score\n            if (columnName) {\n                individualScores[columnName] = Math.round(score * 100) / 100;\n            }\n            \n            if (weight > 0) {\n                weightedScore += score * weight;\n                totalWeight += weight;\n                evaluationCount++;\n            }\n        });\n    });\n} else {\n    // Fallback to category scores\n    Object.entries(categoryScores).forEach(([category, data]) => {\n        const normalizedCategory = category.toUpperCase().replace(/[^A-Z_]/g, '_');\n        const weight = CATEGORY_WEIGHTS[normalizedCategory] || 0.25;\n        const score = data?.score || 0;\n        \n        weightedScore += score * weight;\n        totalWeight += weight;\n        evaluationCount++;\n    });\n}\n\n// Normalize if weights don't sum exactly to 1\nif (totalWeight > 0 && Math.abs(totalWeight - 1) > 0.01) {\n    weightedScore = weightedScore / totalWeight;\n}\n\n// Get project_id\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n} catch(e) {}\n\n// Calculate category averages from individual scores\nconst technicalAvg = (individualScores.efficiency_bop_score + individualScores.degradation_lifetime_score + individualScores.flexibility_score + individualScores.purity_pressure_score) / 4;\nconst economicAvg = (individualScores.capex_score + individualScores.opex_score + individualScores.warranties_score) / 3;\nconst executionAvg = (individualScores.delivery_time_score + individualScores.track_record_score + individualScores.provider_strength_score) / 3;\nconst hseEsgAvg = (individualScores.safety_atex_score + individualScores.sustainability_score) / 2;\n\n// Prepare data for Supabase (matching new schema with 12 individual columns)\nconst rankingData = {\n    provider_name: llmOutput.provider_name,\n    project_id: projectId,\n    // 12 Individual criterion scores\n    ...individualScores,\n    // 4 Aggregated category scores\n    technical_score: Math.round((categoryScores.TECHNICAL?.score || detailedScores.TECHNICAL?.category_average || technicalAvg) * 100) / 100,\n    economic_score: Math.round((categoryScores.ECONOMIC?.score || detailedScores.ECONOMIC?.category_average || economicAvg) * 100) / 100,\n    execution_score: Math.round((categoryScores.EXECUTION?.score || detailedScores.EXECUTION?.category_average || executionAvg) * 100) / 100,\n    hse_esg_score: Math.round((categoryScores.HSE_ESG?.score || detailedScores.HSE_ESG?.category_average || hseEsgAvg) * 100) / 100,\n    // Overall\n    overall_score: Math.round(weightedScore * 100) / 100,\n    compliance_percentage: llmOutput.compliance_percentage || Math.round(weightedScore * 10 * 100) / 100,\n    evaluation_count: evaluationCount,\n    last_updated: new Date().toISOString()\n};\n\nconsole.log(`✅ Detailed Scoring Complete for ${llmOutput.provider_name}:`);\nconsole.log(`   Overall Score: ${rankingData.overall_score}`);\nconsole.log(`   Compliance: ${rankingData.compliance_percentage}%`);\n\nreturn {\n    json: {\n        ranking: rankingData,\n        details: {\n            strengths: llmOutput.strengths || [],\n            weaknesses: llmOutput.weaknesses || [],\n            recommendations: llmOutput.recommendations || [],\n            summary: llmOutput.evaluation_summary || ''\n        },\n        detailed_scores: detailedScores,\n        category_scores: categoryScores,\n        individual_scores: individualScores\n    }\n};"
+        "jsCode": "// =============================================\n// NODE: Calculate Weighted Scores (v4 - New Criteria)\n// Extract and structure scores for database storage\n// =============================================\n\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Get project_id\nlet projectId = null;\ntry { projectId = $('Set Input Params1').first().json.project_id; } catch(e) {}\n\n// Extract category scores\nconst cs = llmOutput.category_scores || {};\nconst tech = (cs.TECHNICAL && cs.TECHNICAL.score) || cs.TECHNICAL || 0;\nconst econ = (cs.ECONOMIC && cs.ECONOMIC.score) || cs.ECONOMIC || 0;\nconst exec = (cs.EXECUTION && cs.EXECUTION.score) || cs.EXECUTION || 0;\nconst hse = (cs.HSE_COMPLIANCE && cs.HSE_COMPLIANCE.score) || cs.HSE_COMPLIANCE || 0;\n\n// Extract individual criterion scores\nconst is = llmOutput.individual_scores || {};\n\nreturn [{\n    json: {\n        ranking: {\n            provider_name: llmOutput.provider_name,\n            project_id: projectId,\n            // Category scores\n            technical_score: tech,\n            economic_score: econ,\n            execution_score: exec,\n            hse_compliance_score: hse,\n            // TECHNICAL COMPLETENESS individual scores (30%)\n            scope_facilities_score: is.scope_facilities || 0,\n            scope_work_score: is.scope_work || 0,\n            deliverables_quality_score: is.deliverables_quality || 0,\n            // ECONOMIC COMPETITIVENESS individual scores (35%)\n            total_price_score: is.total_price || 0,\n            price_breakdown_score: is.price_breakdown || 0,\n            optionals_included_score: is.optionals_included || 0,\n            capex_opex_methodology_score: is.capex_opex_methodology || 0,\n            // EXECUTION CAPABILITY individual scores (20%)\n            schedule_score: is.schedule || 0,\n            resources_allocation_score: is.resources_allocation || 0,\n            exceptions_score: is.exceptions || 0,\n            // HSE & COMPLIANCE individual scores (15%)\n            safety_studies_score: is.safety_studies || 0,\n            regulatory_compliance_score: is.regulatory_compliance || 0,\n            // Overall metrics\n            overall_score: llmOutput.overall_score || 0,\n            compliance_percentage: llmOutput.compliance_percentage || 0,\n            evaluation_count: 1,\n            last_updated: new Date().toISOString()\n        },\n        details: {\n            strengths: llmOutput.strengths || [],\n            weaknesses: llmOutput.weaknesses || [],\n            recommendations: llmOutput.recommendations || [],\n            summary: llmOutput.evaluation_summary || ''\n        },\n        category_scores: cs,\n        individual_scores: is\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4288,
-        -672
+        -4240,
+        -704
       ],
-      "id": "df2b7601-90c5-47f9-89f6-fc4f84d073a9",
+      "id": "66c4607f-937d-47b6-9cfc-f91066a1d51f",
       "name": "Calculate Weighted Scores"
     },
     {
@@ -154,10 +154,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4048,
-        -672
+        -4000,
+        -704
       ],
-      "id": "ceac8e7a-8aa7-476d-b77a-1fe797855c66",
+      "id": "17d55b31-65f0-4fab-90eb-c53128da355e",
       "name": "Check Provider Exists",
       "alwaysOutputData": true,
       "credentials": {
@@ -194,10 +194,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3808,
-        -672
+        -3760,
+        -704
       ],
-      "id": "e245e1ac-0a90-4607-83fe-82096e526c95",
+      "id": "4aa6d9cd-4e3a-4508-ba55-df9c637dcb3d",
       "name": "Provider Exists?"
     },
     {
@@ -220,54 +220,6 @@
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.project_id || null }}"
             },
             {
-              "fieldId": "efficiency_bop_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.efficiency_bop_score || 0 }}"
-            },
-            {
-              "fieldId": "degradation_lifetime_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.degradation_lifetime_score || 0 }}"
-            },
-            {
-              "fieldId": "flexibility_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.flexibility_score || 0 }}"
-            },
-            {
-              "fieldId": "purity_pressure_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.purity_pressure_score || 0 }}"
-            },
-            {
-              "fieldId": "capex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_score || 0 }}"
-            },
-            {
-              "fieldId": "opex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.opex_score || 0 }}"
-            },
-            {
-              "fieldId": "warranties_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.warranties_score || 0 }}"
-            },
-            {
-              "fieldId": "delivery_time_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.delivery_time_score || 0 }}"
-            },
-            {
-              "fieldId": "track_record_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.track_record_score || 0 }}"
-            },
-            {
-              "fieldId": "provider_strength_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.provider_strength_score || 0 }}"
-            },
-            {
-              "fieldId": "safety_atex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_atex_score || 0 }}"
-            },
-            {
-              "fieldId": "sustainability_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.sustainability_score || 0 }}"
-            },
-            {
               "fieldId": "technical_score",
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.technical_score || 0 }}"
             },
@@ -280,8 +232,56 @@
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.execution_score || 0 }}"
             },
             {
-              "fieldId": "hse_esg_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_esg_score || 0 }}"
+              "fieldId": "hse_compliance_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_compliance_score || 0 }}"
+            },
+            {
+              "fieldId": "scope_facilities_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_facilities_score || 0 }}"
+            },
+            {
+              "fieldId": "scope_work_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_work_score || 0 }}"
+            },
+            {
+              "fieldId": "deliverables_quality_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.deliverables_quality_score || 0 }}"
+            },
+            {
+              "fieldId": "total_price_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.total_price_score || 0 }}"
+            },
+            {
+              "fieldId": "price_breakdown_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.price_breakdown_score || 0 }}"
+            },
+            {
+              "fieldId": "optionals_included_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.optionals_included_score || 0 }}"
+            },
+            {
+              "fieldId": "capex_opex_methodology_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_opex_methodology_score || 0 }}"
+            },
+            {
+              "fieldId": "schedule_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.schedule_score || 0 }}"
+            },
+            {
+              "fieldId": "resources_allocation_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.resources_allocation_score || 0 }}"
+            },
+            {
+              "fieldId": "exceptions_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.exceptions_score || 0 }}"
+            },
+            {
+              "fieldId": "safety_studies_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_studies_score || 0 }}"
+            },
+            {
+              "fieldId": "regulatory_compliance_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.regulatory_compliance_score || 0 }}"
             },
             {
               "fieldId": "overall_score",
@@ -305,10 +305,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3568,
-        -768
+        -3520,
+        -800
       ],
-      "id": "375eb84d-c377-42a8-8257-141de49035e8",
+      "id": "a9ab4e42-1d98-4597-ac38-03c8d7d0d66d",
       "name": "Update Ranking",
       "credentials": {
         "supabaseApi": {
@@ -331,54 +331,6 @@
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.project_id || null }}"
             },
             {
-              "fieldId": "efficiency_bop_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.efficiency_bop_score || 0 }}"
-            },
-            {
-              "fieldId": "degradation_lifetime_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.degradation_lifetime_score || 0 }}"
-            },
-            {
-              "fieldId": "flexibility_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.flexibility_score || 0 }}"
-            },
-            {
-              "fieldId": "purity_pressure_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.purity_pressure_score || 0 }}"
-            },
-            {
-              "fieldId": "capex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_score || 0 }}"
-            },
-            {
-              "fieldId": "opex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.opex_score || 0 }}"
-            },
-            {
-              "fieldId": "warranties_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.warranties_score || 0 }}"
-            },
-            {
-              "fieldId": "delivery_time_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.delivery_time_score || 0 }}"
-            },
-            {
-              "fieldId": "track_record_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.track_record_score || 0 }}"
-            },
-            {
-              "fieldId": "provider_strength_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.provider_strength_score || 0 }}"
-            },
-            {
-              "fieldId": "safety_atex_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_atex_score || 0 }}"
-            },
-            {
-              "fieldId": "sustainability_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.sustainability_score || 0 }}"
-            },
-            {
               "fieldId": "technical_score",
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.technical_score || 0 }}"
             },
@@ -391,8 +343,56 @@
               "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.execution_score || 0 }}"
             },
             {
-              "fieldId": "hse_esg_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_esg_score || 0 }}"
+              "fieldId": "hse_compliance_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_compliance_score || 0 }}"
+            },
+            {
+              "fieldId": "scope_facilities_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_facilities_score || 0 }}"
+            },
+            {
+              "fieldId": "scope_work_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_work_score || 0 }}"
+            },
+            {
+              "fieldId": "deliverables_quality_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.deliverables_quality_score || 0 }}"
+            },
+            {
+              "fieldId": "total_price_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.total_price_score || 0 }}"
+            },
+            {
+              "fieldId": "price_breakdown_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.price_breakdown_score || 0 }}"
+            },
+            {
+              "fieldId": "optionals_included_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.optionals_included_score || 0 }}"
+            },
+            {
+              "fieldId": "capex_opex_methodology_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_opex_methodology_score || 0 }}"
+            },
+            {
+              "fieldId": "schedule_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.schedule_score || 0 }}"
+            },
+            {
+              "fieldId": "resources_allocation_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.resources_allocation_score || 0 }}"
+            },
+            {
+              "fieldId": "exceptions_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.exceptions_score || 0 }}"
+            },
+            {
+              "fieldId": "safety_studies_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_studies_score || 0 }}"
+            },
+            {
+              "fieldId": "regulatory_compliance_score",
+              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.regulatory_compliance_score || 0 }}"
             },
             {
               "fieldId": "overall_score",
@@ -416,10 +416,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3568,
-        -560
+        -3520,
+        -592
       ],
-      "id": "3e02758d-baf4-45b6-9df1-96bd5b6e3a96",
+      "id": "2019fe61-51b0-4ab5-ae68-ba7c8df721f9",
       "name": "Insert Ranking",
       "credentials": {
         "supabaseApi": {
@@ -437,23 +437,23 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -4672,
-        -848
+        -4624,
+        -880
       ],
-      "id": "f80a5471-9942-49a4-b1fb-132feacebfaf",
+      "id": "80236db6-6edd-4ec2-8164-9f7c27777c36",
       "name": "Aggregate All Rankings"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details\n// Sorts providers and generates complete response\n// Includes all 12 individual criterion scores\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        detailed_scores: r.detailed_scores || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {}\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => ({\n    position: idx + 1,\n    provider_name: r.ranking.provider_name,\n    overall_score: r.ranking.overall_score,\n    compliance_percentage: r.ranking.compliance_percentage,\n    // Aggregated category scores\n    category_scores: {\n        technical: r.ranking.technical_score,\n        economic: r.ranking.economic_score,\n        execution: r.ranking.execution_score,\n        hse_esg: r.ranking.hse_esg_score\n    },\n    // All 12 individual criterion scores\n    individual_scores: {\n        // TECHNICAL (35%)\n        efficiency_bop: r.ranking.efficiency_bop_score || r.individual_scores?.efficiency_bop_score || 0,\n        degradation_lifetime: r.ranking.degradation_lifetime_score || r.individual_scores?.degradation_lifetime_score || 0,\n        flexibility: r.ranking.flexibility_score || r.individual_scores?.flexibility_score || 0,\n        purity_pressure: r.ranking.purity_pressure_score || r.individual_scores?.purity_pressure_score || 0,\n        // ECONOMIC (35%)\n        capex: r.ranking.capex_score || r.individual_scores?.capex_score || 0,\n        opex: r.ranking.opex_score || r.individual_scores?.opex_score || 0,\n        warranties: r.ranking.warranties_score || r.individual_scores?.warranties_score || 0,\n        // EXECUTION (12%)\n        delivery_time: r.ranking.delivery_time_score || r.individual_scores?.delivery_time_score || 0,\n        track_record: r.ranking.track_record_score || r.individual_scores?.track_record_score || 0,\n        provider_strength: r.ranking.provider_strength_score || r.individual_scores?.provider_strength_score || 0,\n        // HSE/ESG (18%)\n        safety_atex: r.ranking.safety_atex_score || r.individual_scores?.safety_atex_score || 0,\n        sustainability: r.ranking.sustainability_score || r.individual_scores?.sustainability_score || 0\n    },\n    detailed_scores: r.detailed_scores,\n    evaluation: {\n        strengths: r.details.strengths || [],\n        weaknesses: r.details.weaknesses || [],\n        recommendations: r.details.recommendations || [],\n        summary: r.details.summary || ''\n    }\n}));\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    criteria_weights: {\n        TECHNICAL: {\n            total: '35%',\n            efficiency_bop: '12%',\n            degradation_lifetime: '8%',\n            flexibility: '8%',\n            purity_pressure: '7%'\n        },\n        ECONOMIC: {\n            total: '35%',\n            capex: '18%',\n            opex: '12%',\n            warranties: '5%'\n        },\n        EXECUTION: {\n            total: '12%',\n            delivery_time: '6%',\n            track_record: '3%',\n            provider_strength: '3%'\n        },\n        HSE_ESG: {\n            total: '18%',\n            safety_atex: '12%',\n            sustainability: '6%'\n        }\n    }\n};\n\nconsole.log(`🏆 Final Ranking Generated:`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using 12 detailed criteria`\n    }\n};"
+        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details (v4)\n// New criteria based on RFQ requirements\n// Categories: TECHNICAL (30%), ECONOMIC (35%), EXECUTION (20%), HSE_COMPLIANCE (15%)\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {}\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => ({\n    position: idx + 1,\n    provider_name: r.ranking.provider_name,\n    overall_score: r.ranking.overall_score,\n    compliance_percentage: r.ranking.compliance_percentage,\n    // Aggregated category scores\n    category_scores: {\n        technical: r.ranking.technical_score,\n        economic: r.ranking.economic_score,\n        execution: r.ranking.execution_score,\n        hse_compliance: r.ranking.hse_compliance_score\n    },\n    // All individual criterion scores\n    individual_scores: {\n        // TECHNICAL COMPLETENESS (30%)\n        scope_facilities: r.ranking.scope_facilities_score || r.individual_scores?.scope_facilities || 0,\n        scope_work: r.ranking.scope_work_score || r.individual_scores?.scope_work || 0,\n        deliverables_quality: r.ranking.deliverables_quality_score || r.individual_scores?.deliverables_quality || 0,\n        // ECONOMIC COMPETITIVENESS (35%)\n        total_price: r.ranking.total_price_score || r.individual_scores?.total_price || 0,\n        price_breakdown: r.ranking.price_breakdown_score || r.individual_scores?.price_breakdown || 0,\n        optionals_included: r.ranking.optionals_included_score || r.individual_scores?.optionals_included || 0,\n        capex_opex_methodology: r.ranking.capex_opex_methodology_score || r.individual_scores?.capex_opex_methodology || 0,\n        // EXECUTION CAPABILITY (20%)\n        schedule: r.ranking.schedule_score || r.individual_scores?.schedule || 0,\n        resources_allocation: r.ranking.resources_allocation_score || r.individual_scores?.resources_allocation || 0,\n        exceptions: r.ranking.exceptions_score || r.individual_scores?.exceptions || 0,\n        // HSE & COMPLIANCE (15%)\n        safety_studies: r.ranking.safety_studies_score || r.individual_scores?.safety_studies || 0,\n        regulatory_compliance: r.ranking.regulatory_compliance_score || r.individual_scores?.regulatory_compliance || 0\n    },\n    evaluation: {\n        strengths: r.details.strengths || [],\n        weaknesses: r.details.weaknesses || [],\n        recommendations: r.details.recommendations || [],\n        summary: r.details.summary || ''\n    }\n}));\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    criteria_weights: {\n        TECHNICAL_COMPLETENESS: {\n            total: '30%',\n            scope_facilities: '10%',\n            scope_work: '10%',\n            deliverables_quality: '10%'\n        },\n        ECONOMIC_COMPETITIVENESS: {\n            total: '35%',\n            total_price: '15%',\n            price_breakdown: '8%',\n            optionals_included: '7%',\n            capex_opex_methodology: '5%'\n        },\n        EXECUTION_CAPABILITY: {\n            total: '20%',\n            schedule: '8%',\n            resources_allocation: '6%',\n            exceptions: '6%'\n        },\n        HSE_COMPLIANCE: {\n            total: '15%',\n            safety_studies: '8%',\n            regulatory_compliance: '7%'\n        }\n    }\n};\n\nconsole.log(`🏆 Final Ranking Generated:`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using 11 RFQ-aligned criteria`\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4384,
-        -848
+        -4336,
+        -880
       ],
-      "id": "6883132c-a2d1-485d-b911-7bbbed107286",
+      "id": "9911d780-d334-4252-b664-5d1f630357a3",
       "name": "Generate Final Ranking"
     },
     {
@@ -474,30 +474,30 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4160,
-        -848
+        -4112,
+        -880
       ],
-      "id": "64b8a9bf-368d-4961-8d42-ec66184f53da",
+      "id": "52ae6dae-9765-4600-b147-5d93205e9fa1",
       "name": "Respond with Ranking"
     },
     {
       "parameters": {
-        "content": "## Scoring Workflow - Evaluacion de Proveedores\n## Con Criterios Detallados (12 criterios)\n## Based on H2 La Zaida Project Requirements\n\n### Pesos por Categoría:\n\n**TÉCNICA (35%)**\n- Eficiencia Sistema BOP: 12%\n- Degradación/Vida Útil: 8%\n- Flexibilidad Operativa: 8%\n- Pureza y Presión: 7%\n\n**ECONÓMICA (35%)**\n- CAPEX Total: 18%\n- OPEX Garantizado: 12%\n- Garantías/Penalizaciones: 5%\n\n**EJECUCIÓN (12%)**\n- Plazo de Entrega: 6%\n- Track Record: 3%\n- Solidez Proveedor: 3%\n\n**HSE/ESG (18%)**\n- Seguridad ATEX: 12%\n- Sostenibilidad: 6%\n\n### Endpoint:\nPOST /webhook/scoring-evaluation\n```json\n{\n  \"project_id\": \"uuid\",\n  \"provider_name\": \"filter\",\n  \"recalculate_all\": false\n}\n```",
+        "content": "## Scoring Workflow - Provider Evaluation\n## RFQ-Aligned Criteria (11 criteria)\n## Based on Engineering Proposals Requirements\n\n### Category Weights:\n\n**TECHNICAL COMPLETENESS (30%)**\n- Scope of Facilities: 10%\n- Scope of Work: 10%\n- Deliverables Quality: 10%\n\n**ECONOMIC COMPETITIVENESS (35%)**\n- Total Price: 15%\n- Price Breakdown: 8%\n- Optionals Included: 7%\n- CAPEX/OPEX Methodology: 5%\n\n**EXECUTION CAPABILITY (20%)**\n- Schedule: 8%\n- Resources Allocation: 6%\n- Exceptions: 6%\n\n**HSE & COMPLIANCE (15%)**\n- Safety Studies: 8%\n- Regulatory Compliance: 7%\n\n### Endpoint:\nPOST /webhook/scoring-evaluation\n```json\n{\n  \"project_id\": \"uuid\",\n  \"provider_name\": \"filter\",\n  \"recalculate_all\": false\n}\n```",
         "height": 1264,
         "width": 3280
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -6624,
-        -1232
+        -6576,
+        -1264
       ],
-      "id": "5ba32913-16ca-4f06-9ffe-0e7d4c14b15e",
+      "id": "e6f8e8e4-c5f3-4a82-b504-65e2265279d2",
       "name": "Workflow Info"
     },
     {
       "parameters": {
-        "content": "## Scoring con IA\n\nUsa Mistral Large para evaluar:\n- 12 criterios específicos\n- Justificación por criterio\n- Fortalezas y debilidades\n- Recomendaciones\n\nOutput estructurado con JSON Parser",
+        "content": "## AI Scoring\n\nEvaluates engineering proposals using:\n- 11 RFQ-aligned criteria\n- Value-for-money comparison\n- Strengths and weaknesses\n- Recommendations\n\nStructured JSON output",
         "height": 220,
         "width": 320,
         "color": 6
@@ -505,10 +505,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -4768,
-        -1088
+        -4720,
+        -1120
       ],
-      "id": "6c541b3c-12f5-4795-8495-b3d455ec37b6",
+      "id": "30a37d95-a4d0-483e-9253-8b70d00dcee9",
       "name": "LLM Scoring Info"
     },
     {
@@ -518,19 +518,19 @@
             {
               "id": "project_id",
               "name": "project_id",
-              "value": "={{ $json.body.project_id }}",
+              "value": "={{ $('Webhook Scoring').first().json.body.project_id }}",
               "type": "string"
             },
             {
               "id": "provider_filter",
               "name": "provider_filter",
-              "value": "={{ $json.body.provider_name || '' }}",
+              "value": "={{ $('Webhook Scoring').first().json.body.provider_name || '' }}",
               "type": "string"
             },
             {
               "id": "recalculate_all",
               "name": "recalculate_all",
-              "value": "={{ $json.body.recalculate_all || false }}",
+              "value": "={{ $('Webhook Scoring').first().json.body.recalculate_all || false }}",
               "type": "boolean"
             }
           ]
@@ -540,24 +540,24 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5840,
-        -640
+        -5792,
+        -672
       ],
-      "id": "0bfd482b-9d9e-4138-b2bb-f4431b7bc7ff",
+      "id": "ee4d76e5-9c5a-492f-b2ba-c6eea95b382d",
       "name": "Set Input Params1"
     },
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"provider_name\": { \"type\": \"string\" },\n    \"detailed_scores\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"TECHNICAL\": { \"type\": \"object\" },\n        \"ECONOMIC\": { \"type\": \"object\" },\n        \"EXECUTION\": { \"type\": \"object\" },\n        \"HSE_ESG\": { \"type\": \"object\" }\n      }\n    },\n    \"category_scores\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"TECHNICAL\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"score\": { \"type\": \"number\" },\n            \"weight\": { \"type\": \"number\" }\n          }\n        },\n        \"ECONOMIC\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"score\": { \"type\": \"number\" },\n            \"weight\": { \"type\": \"number\" }\n          }\n        },\n        \"EXECUTION\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"score\": { \"type\": \"number\" },\n            \"weight\": { \"type\": \"number\" }\n          }\n        },\n        \"HSE_ESG\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"score\": { \"type\": \"number\" },\n            \"weight\": { \"type\": \"number\" }\n          }\n        }\n      }\n    },\n    \"overall_score\": { \"type\": \"number\" },\n    \"compliance_percentage\": { \"type\": \"number\" },\n    \"evaluation_summary\": { \"type\": \"string\" },\n    \"strengths\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"weaknesses\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    },\n    \"recommendations\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" }\n    }\n  },\n  \"required\": [\"provider_name\", \"category_scores\", \"overall_score\", \"compliance_percentage\"]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"provider_name\": { \"type\": \"string\" },\n    \"category_scores\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"TECHNICAL\": { \"type\": \"object\", \"properties\": { \"score\": { \"type\": \"number\" }, \"weight\": { \"type\": \"number\" } } },\n        \"ECONOMIC\": { \"type\": \"object\", \"properties\": { \"score\": { \"type\": \"number\" }, \"weight\": { \"type\": \"number\" } } },\n        \"EXECUTION\": { \"type\": \"object\", \"properties\": { \"score\": { \"type\": \"number\" }, \"weight\": { \"type\": \"number\" } } },\n        \"HSE_COMPLIANCE\": { \"type\": \"object\", \"properties\": { \"score\": { \"type\": \"number\" }, \"weight\": { \"type\": \"number\" } } }\n      }\n    },\n    \"individual_scores\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"scope_facilities\": { \"type\": \"number\" },\n        \"scope_work\": { \"type\": \"number\" },\n        \"deliverables_quality\": { \"type\": \"number\" },\n        \"total_price\": { \"type\": \"number\" },\n        \"price_breakdown\": { \"type\": \"number\" },\n        \"optionals_included\": { \"type\": \"number\" },\n        \"capex_opex_methodology\": { \"type\": \"number\" },\n        \"schedule\": { \"type\": \"number\" },\n        \"resources_allocation\": { \"type\": \"number\" },\n        \"exceptions\": { \"type\": \"number\" },\n        \"safety_studies\": { \"type\": \"number\" },\n        \"regulatory_compliance\": { \"type\": \"number\" }\n      }\n    },\n    \"overall_score\": { \"type\": \"number\" },\n    \"compliance_percentage\": { \"type\": \"number\" },\n    \"evaluation_summary\": { \"type\": \"string\" },\n    \"strengths\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"weaknesses\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"recommendations\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n  },\n  \"required\": [\"provider_name\", \"category_scores\", \"individual_scores\", \"overall_score\", \"compliance_percentage\"]\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4528,
-        -448
+        -4480,
+        -480
       ],
-      "id": "56c31da0-e366-4d0c-b025-52a439fbbf28",
+      "id": "789ba059-97e7-4c18-8f00-2d18157d131e",
       "name": "JSON Output Parser1"
     },
     {
@@ -572,10 +572,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -4784,
-        -464
+        -4736,
+        -496
       ],
-      "id": "d7585411-e34e-4ccc-ad2b-8327ed4cd949",
+      "id": "7e150cde-5bb2-4fa0-a4c9-5a33e3178c7c",
       "name": "Ollama Scoring Model",
       "credentials": {
         "ollamaApi": {
@@ -601,16 +601,35 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6064,
-        -640
+        -6016,
+        -672
       ],
-      "id": "aeac889c-238e-43f9-8386-507bf0ad8d82",
+      "id": "c8d0c805-27d9-4c28-9df5-f077ab16fdcc",
       "name": "Delete a row",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -4640,
+        -400
+      ],
+      "id": "6b3904f3-189b-4d03-902a-6a2dc4536c75",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "4AyUqsh1Z35g6bci",
+          "name": "OpenRouter account"
         }
       }
     }
@@ -813,13 +832,7 @@
     },
     "Ollama Scoring Model": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Scoring LLM Chain",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Delete a row": {
@@ -828,6 +841,17 @@
           {
             "node": "Set Input Params1",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Scoring LLM Chain",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]

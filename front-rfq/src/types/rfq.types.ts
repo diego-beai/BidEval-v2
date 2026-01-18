@@ -82,3 +82,32 @@ export interface FileMetadata {
   provider?: Provider;
   evaluationType?: string[];
 }
+
+/**
+ * Metadata individual para un archivo en upload múltiple
+ */
+export interface FileUploadMetadata {
+  proyecto: string;
+  proveedor: Provider | '';
+  tipoEvaluacion: string[];
+}
+
+/**
+ * Archivo con metadata individual para upload múltiple
+ */
+export interface FileWithMetadata {
+  file: File;
+  metadata: FileUploadMetadata;
+}
+
+/**
+ * Verifica si un archivo tiene metadata completa
+ */
+export function isFileMetadataComplete(fileWithMeta: FileWithMetadata): boolean {
+  const { metadata } = fileWithMeta;
+  return Boolean(
+    metadata.proyecto &&
+    metadata.proveedor &&
+    metadata.tipoEvaluacion.length > 0
+  );
+}

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { ProcessingStage } from '../../types/rfq.types';
 
@@ -8,7 +8,27 @@ interface ProcessingStatusProps {
 }
 
 export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose }: ProcessingStatusProps) {
-  const { status, isProcessing, results, rfqMetadata } = useRfqStore();
+  const { status, isProcessing, results, rfqMetadata, processingStartTime, processingFileCount } = useRfqStore();
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  // Update elapsed time every second when processing
+  useEffect(() => {
+    if (isProcessing && processingStartTime) {
+      const interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - processingStartTime) / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setElapsedTime(0);
+    }
+  }, [isProcessing, processingStartTime]);
+
+  // Format elapsed time as MM:SS
+  const formatElapsedTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   if (!isProcessing && status.stage === ProcessingStage.IDLE) {
     return null;
@@ -117,7 +137,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
             marginBottom: '8px',
             lineHeight: '1.4'
           }}>
-            {status.message}
+            {isProcessing ? 'Processing your proposals with AI...' : status.message}
           </p>
           {isProcessing && (
             <p style={{
@@ -125,7 +145,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               color: 'var(--text-secondary)',
               margin: 0
             }}>
-              Please wait while we process your request...
+              The n8n workflow is analyzing your documents. This will continue until completion.
             </p>
           )}
 
@@ -252,12 +272,13 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
           )}
         </div>
 
-        {/* Progress Bar */}
+        {/* Elapsed Time Indicator */}
         {isProcessing && (
           <div style={{ width: '100%', maxWidth: '520px' }}>
+            {/* Animated progress bar (indeterminate) */}
             <div
               style={{
-                height: '10px',
+                height: '6px',
                 background: 'var(--bg-hover)',
                 borderRadius: '999px',
                 overflow: 'hidden',
@@ -268,25 +289,14 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               <div
                 style={{
                   height: '100%',
+                  width: '30%',
                   background: 'linear-gradient(90deg, var(--color-primary), var(--color-cyan))',
-                  transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                  width: `${status.progress}%`,
                   borderRadius: '999px',
-                  position: 'relative',
-                  boxShadow: '0 0 10px rgba(18, 181, 176, 0.5)'
-                }}
-              >
-                {/* Shine effect */}
-                <div style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                  animation: 'shimmer 2s infinite'
-                }}></div>
-              </div>
+                  boxShadow: '0 0 10px rgba(18, 181, 176, 0.5)',
+                  animation: 'indeterminateProgress 1.5s ease-in-out infinite'
+                }}
+              ></div>
             </div>
             <div style={{
               display: 'flex',
@@ -297,11 +307,110 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               fontWeight: 600
             }}>
               <span style={{ color: 'var(--text-secondary)' }}>
-                Progress
+                Processing {processingFileCount} file{processingFileCount > 1 ? 's' : ''}
               </span>
-              <span style={{ color: 'var(--color-primary)' }}>
-                {status.progress}%
+              <span style={{
+                color: 'var(--color-primary)',
+                fontFamily: 'monospace',
+                fontSize: '1rem'
+              }}>
+                {formatElapsedTime(elapsedTime)}
               </span>
+            </div>
+
+            {/* Warning banner for long operations */}
+            <div style={{
+              marginTop: '16px',
+              padding: '14px 16px',
+              background: 'rgba(251, 191, 36, 0.1)',
+              border: '1px solid rgba(251, 191, 36, 0.3)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px'
+            }}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fbbf24"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0, marginTop: '2px' }}
+              >
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <div>
+                <p style={{
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  color: '#fbbf24',
+                  margin: '0 0 4px 0'
+                }}>
+                  Do not close this browser window
+                </p>
+                <p style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                  lineHeight: '1.4'
+                }}>
+                  AI document processing typically takes 5-15 minutes per file.
+                  Large or complex PDFs may take up to 30 minutes.
+                  {processingFileCount > 1 && ` Processing ${processingFileCount} files in parallel.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Processing phases indicator */}
+            <div style={{
+              marginTop: '16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '8px'
+            }}>
+              {[
+                { label: 'Upload', time: '< 1 min' },
+                { label: 'OCR', time: '2-5 min' },
+                { label: 'Analysis', time: '5-15 min' },
+                { label: 'Evaluation', time: '5-10 min' }
+              ].map((phase, idx) => {
+                const isActive = elapsedTime >= idx * 120; // Rough estimate
+                return (
+                  <div
+                    key={phase.label}
+                    style={{
+                      flex: 1,
+                      textAlign: 'center',
+                      padding: '8px 4px',
+                      background: isActive ? 'rgba(18, 181, 176, 0.1)' : 'var(--bg-surface-alt)',
+                      borderRadius: '6px',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <div style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      color: isActive ? 'var(--color-cyan)' : 'var(--text-tertiary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      {phase.label}
+                    </div>
+                    <div style={{
+                      fontSize: '0.65rem',
+                      color: 'var(--text-tertiary)',
+                      marginTop: '2px'
+                    }}>
+                      {phase.time}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -336,12 +445,12 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
             opacity: 1;
           }
         }
-        @keyframes shimmer {
+        @keyframes indeterminateProgress {
           0% {
-            transform: translateX(-100%);
+            left: -30%;
           }
           100% {
-            transform: translateX(100%);
+            left: 100%;
           }
         }
       `}</style>

@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
+import { SupplierResponsePage } from './pages/SupplierResponsePage';
 import { ThemeProvider } from './context/ThemeContext';
 import '../styles.css';
 import { initPerformanceMonitoring } from './utils/performance';
@@ -27,7 +29,14 @@ initPerformanceMonitoring();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <BrowserRouter>
+        <Routes>
+          {/* Public route for supplier responses */}
+          <Route path="/respond/:token" element={<SupplierResponsePage />} />
+          {/* Main application */}
+          <Route path="/*" element={<App />} />
+        </Routes>
+      </BrowserRouter>
     </ThemeProvider>
   </StrictMode>
 );

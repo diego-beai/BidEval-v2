@@ -3,7 +3,7 @@ import { useQAStore } from '../../../stores/useQAStore';
 import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
-import { generateTechnicalAudit } from '../../../services/n8n.service';
+import { generateTechnicalAudit, sendQAToSupplier, SendToSupplierResponse } from '../../../services/n8n.service';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
 import './QAModule.css';
 
@@ -78,6 +78,43 @@ const Icons = {
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
+  ),
+  Mail: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </svg>
+  ),
+  Copy: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  ),
+  Link: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  ),
+  Check: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  Bell: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  BellRing: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+      <path d="M4 2C2.8 3.7 2 5.7 2 8" />
+      <path d="M22 8c0-2.3-.8-4.3-2-6" />
+    </svg>
   )
 };
 
@@ -102,8 +139,14 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     getStats,
     subscribeToChanges,
     loadRequirementDetails,
-    getRequirementDetails
-    // unsubscribeFromChanges - not used currently
+    getRequirementDetails,
+    // Notifications
+    notifications,
+    unreadNotificationCount,
+    loadNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    subscribeToNotifications
   } = useQAStore();
 
   const { addToast } = useToastStore();
@@ -122,6 +165,17 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const [newQuestionTexts, setNewQuestionTexts] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
+
+  // Send to Supplier state
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<SendToSupplierResponse | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [sendToProvider, setSendToProvider] = useState<string>('');
+  const [showProviderSelector, setShowProviderSelector] = useState(false);
+
+  // Notifications state
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Toggle requirement expansion and load details if needed
   const handleToggleRequirement = async (questionId: string, requirementId: string | null | undefined) => {
@@ -157,11 +211,14 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       // loadQuestions will use the global store's activeProjectId
       loadQuestions();
       subscribeToChanges();
+      // Load and subscribe to notifications
+      loadNotifications();
+      subscribeToNotifications();
     } else {
       // Clear questions when no project selected
       setQuestions([]);
     }
-  }, [activeProjectId, loadQuestions, subscribeToChanges, setQuestions]);
+  }, [activeProjectId, loadQuestions, subscribeToChanges, setQuestions, loadNotifications, subscribeToNotifications]);
 
   // Subscribe to real-time changes and load questions (for local projectId changes)
   useEffect(() => {
@@ -252,12 +309,21 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       return;
     }
 
+    // Get the actual UUID from the active project
+    const projectUUID = activeProjectId || activeProject?.id;
+
+    if (!projectUUID) {
+      addToast('Could not determine project ID. Please reselect the project.', 'warning');
+      return;
+    }
+
     setGenerating(true);
     setStatusMessage('Analyzing deficiencies and generating technical audit questions...');
 
     try {
       const result = await generateTechnicalAudit({
-        project_id: projectId,
+        project_id: projectUUID,           // UUID real del proyecto
+        project_name: projectId,            // Nombre display del proyecto
         provider: selectedProvider
       });
 
@@ -354,16 +420,23 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       return;
     }
 
+    // Get the actual UUID from the active project
+    const projectUUID = activeProjectId || activeProject?.id;
+
+    if (!projectUUID) {
+      addToast('Could not determine project ID. Please reselect the project.', 'warning');
+      return;
+    }
+
     try {
       await createQuestion({
-        project_name: projectId,
+        project_id: projectUUID,  // UUID del proyecto
         provider_name: providerToUse,
         discipline: disciplina as Disciplina,
         question: text,
         status: 'Draft',
         importance: 'Medium',
-        // Alias for compatibility
-        project_id: projectId,
+        // Alias for frontend compatibility
         proveedor: providerToUse,
         disciplina: disciplina as Disciplina,
         pregunta_texto: text,
@@ -412,6 +485,79 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const handleDeleteQuestion = async (questionId: string) => {
     if (confirm('Are you sure you want to delete this question?')) {
       await deleteQuestion(questionId);
+    }
+  };
+
+  // Send approved questions to supplier
+  const handleSendToSupplier = async () => {
+    if (!sendToProvider) {
+      addToast('Please select a provider to send questions to.', 'warning');
+      return;
+    }
+
+    // Filter approved questions for the selected provider
+    const approvedQuestions = questions.filter(q =>
+      (q.estado || q.status) === 'Approved' &&
+      (q.proveedor || q.provider_name) === sendToProvider
+    );
+
+    if (approvedQuestions.length === 0) {
+      addToast(`No approved questions for ${sendToProvider}. Please approve some questions first.`, 'warning');
+      return;
+    }
+
+    const projectUUID = activeProjectId || activeProject?.id;
+    if (!projectUUID) {
+      addToast('Could not determine project ID. Please reselect the project.', 'warning');
+      return;
+    }
+
+    setIsSending(true);
+
+    try {
+      const result = await sendQAToSupplier({
+        project_id: projectUUID,
+        provider_name: sendToProvider,
+        question_ids: approvedQuestions.map(q => q.id),
+        expires_days: 7
+      });
+
+      setSendResult(result);
+      setShowSendModal(true);
+
+      // Update question statuses to 'Sent'
+      for (const q of approvedQuestions) {
+        await updateQuestion(q.id, { estado: 'Sent' });
+      }
+
+      addToast(`${approvedQuestions.length} questions sent to ${sendToProvider}`, 'success');
+    } catch (err) {
+      console.error('Error sending to supplier:', err);
+      addToast(err instanceof Error ? err.message : 'Error sending questions to supplier', 'error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Get providers with approved questions
+  const getProvidersWithApprovedQuestions = () => {
+    const providers = new Set<string>();
+    questions.forEach(q => {
+      if ((q.estado || q.status) === 'Approved') {
+        const provider = q.proveedor || q.provider_name;
+        if (provider) providers.add(provider);
+      }
+    });
+    return Array.from(providers);
+  };
+
+  // Copy link to clipboard
+  const handleCopyLink = async () => {
+    if (sendResult?.response_link) {
+      await navigator.clipboard.writeText(sendResult.response_link);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+      addToast('Link copied to clipboard', 'success');
     }
   };
 
@@ -601,6 +747,173 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           </div>
 
           <div className="module-section-header-actions">
+            {/* Notifications Button */}
+            <div className="notifications-wrapper">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className={`notification-btn ${unreadNotificationCount > 0 ? 'has-unread' : ''}`}
+                title={`${unreadNotificationCount} unread notifications`}
+              >
+                {unreadNotificationCount > 0 ? <Icons.BellRing /> : <Icons.Bell />}
+                {unreadNotificationCount > 0 && (
+                  <span className="notification-badge">{unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}</span>
+                )}
+              </button>
+
+              {/* Notifications Panel */}
+              {showNotifications && (
+                <>
+                  <div className="dropdown-overlay" onClick={() => setShowNotifications(false)} />
+                  <div className="notifications-panel" onClick={(e) => e.stopPropagation()}>
+                    <div className="notifications-header">
+                      <h4>Notifications</h4>
+                      {unreadNotificationCount > 0 && (
+                        <button
+                          className="mark-all-read-btn"
+                          onClick={() => {
+                            markAllNotificationsRead();
+                          }}
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button
+                        className="close-btn"
+                        onClick={() => setShowNotifications(false)}
+                      >
+                        <Icons.Cancel />
+                      </button>
+                    </div>
+                    <div className="notifications-list">
+                      {notifications.length === 0 ? (
+                        <div className="notifications-empty">
+                          <Icons.Bell />
+                          <p>No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`notification-item ${!notification.is_read ? 'unread' : ''}`}
+                            onClick={() => {
+                              if (!notification.is_read) {
+                                markNotificationRead(notification.id);
+                              }
+                              // Optionally refresh questions to show updated status
+                              loadQuestions();
+                            }}
+                          >
+                            <div className="notification-icon">
+                              {notification.notification_type === 'supplier_responded' && <Icons.Check />}
+                              {notification.notification_type === 'evaluation_updated' && <Icons.Edit />}
+                              {notification.notification_type === 'questions_sent' && <Icons.Send />}
+                            </div>
+                            <div className="notification-content">
+                              <div className="notification-title">{notification.title}</div>
+                              {notification.message && (
+                                <div className="notification-message">{notification.message}</div>
+                              )}
+                              <div className="notification-time">
+                                {new Date(notification.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                            {!notification.is_read && <div className="unread-dot" />}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Send to Supplier Button */}
+            {getProvidersWithApprovedQuestions().length > 0 && (
+              <div className="send-to-supplier-wrapper">
+                <button
+                  onClick={() => {
+                    const providers = getProvidersWithApprovedQuestions();
+                    // Auto-select first provider if only one available
+                    if (providers.length === 1 && !sendToProvider) {
+                      setSendToProvider(providers[0]);
+                    }
+                    setShowProviderSelector(!showProviderSelector);
+                  }}
+                  disabled={isSending}
+                  className="module-btn-primary"
+                  title="Send approved questions to supplier"
+                >
+                  {isSending ? (
+                    <>
+                      <span className="module-spinner"></span>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Icons.Mail />
+                      Send to Supplier
+                    </>
+                  )}
+                </button>
+
+                {/* Provider Selector Popup */}
+                {showProviderSelector && (
+                  <>
+                    <div className="dropdown-overlay" onClick={() => setShowProviderSelector(false)} />
+                    <div className="provider-selector-popup" onClick={(e) => e.stopPropagation()}>
+                      <div className="provider-selector-header">
+                        <h4>Select Provider</h4>
+                        <button
+                          className="close-btn"
+                          onClick={() => setShowProviderSelector(false)}
+                        >
+                          <Icons.Cancel />
+                        </button>
+                      </div>
+                      <div className="provider-selector-list">
+                        {getProvidersWithApprovedQuestions().map(provider => {
+                          const count = questions.filter(q =>
+                            (q.estado || q.status) === 'Approved' &&
+                            (q.proveedor || q.provider_name) === provider
+                          ).length;
+                          return (
+                            <button
+                              key={provider}
+                              className={`provider-option ${sendToProvider === provider ? 'selected' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setSendToProvider(provider);
+                              }}
+                            >
+                              <span className="provider-name">{provider}</span>
+                              <span className="provider-count">{count} questions</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="provider-selector-footer">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (sendToProvider) {
+                              setShowProviderSelector(false);
+                              handleSendToSupplier();
+                            }
+                          }}
+                          disabled={!sendToProvider}
+                          className="btn btnPrimary"
+                        >
+                          <Icons.Send /> Send Questions
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Export All Questions Button */}
             {questions.length > 0 && (
               <button
@@ -1024,6 +1337,81 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           )
         }
       </div>
+
+      {/* Send to Supplier Modal */}
+      {showSendModal && sendResult && (
+        <div className="modal-overlay" onClick={() => setShowSendModal(false)}>
+          <div className="modal-content send-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="send-modal-header">
+              <div className="send-modal-icon success">
+                <Icons.Check />
+              </div>
+              <h2>Questions Sent Successfully</h2>
+              <p>The questionnaire has been prepared for {sendResult.provider_name}</p>
+            </div>
+
+            <div className="send-modal-body">
+              <div className="send-modal-stats">
+                <div className="stat-item">
+                  <span className="stat-value">{sendResult.question_count}</span>
+                  <span className="stat-label">Questions</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{sendResult.provider_name}</span>
+                  <span className="stat-label">Provider</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">
+                    {new Date(sendResult.expires_at).toLocaleDateString()}
+                  </span>
+                  <span className="stat-label">Expires</span>
+                </div>
+              </div>
+
+              <div className="send-modal-link">
+                <label>Response Link (share with supplier)</label>
+                <div className="link-input-group">
+                  <input
+                    type="text"
+                    value={sendResult.response_link}
+                    readOnly
+                    className="link-input"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`copy-btn ${copiedLink ? 'copied' : ''}`}
+                    title="Copy link"
+                  >
+                    {copiedLink ? <Icons.Check /> : <Icons.Copy />}
+                  </button>
+                </div>
+                <p className="link-hint">
+                  Send this link to the supplier. They can access the questionnaire and submit their responses.
+                </p>
+              </div>
+
+              {sendResult.email_html && (
+                <div className="send-modal-email-preview">
+                  <label>Email Preview</label>
+                  <div
+                    className="email-preview-content"
+                    dangerouslySetInnerHTML={{ __html: sendResult.email_html }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="send-modal-footer">
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="btn btnPrimary"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

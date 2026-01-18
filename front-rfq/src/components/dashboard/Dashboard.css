@@ -244,6 +244,11 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     width: 100%;
+    min-height: 500px;
+}
+
+.charts-row-container .widget-card {
+    min-height: 480px;
 }
 
 /* Charts row responsive - apila solo en pantallas muy pequeñas */

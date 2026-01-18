@@ -421,8 +421,9 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
         if (interval) {
             clearInterval(interval);
             (window as any).__dashboardRealtimeInterval = null;
+            // Only update state if we actually had an interval running
+            set({ isRealtimeEnabled: false });
         }
-        set({ isRealtimeEnabled: false });
     },
 
     setRealtimeEnabled: (enabled: boolean) => {

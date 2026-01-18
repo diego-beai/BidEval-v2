@@ -1,0 +1,282 @@
+{
+  "name": "QA Send Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-send-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "webhook-qa-send-email",
+      "name": "Webhook",
+      "webhookId": "qa-send-email-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "to-field",
+              "name": "to",
+              "value": "={{ $json.body.to }}",
+              "type": "string"
+            },
+            {
+              "id": "subject-field",
+              "name": "subject",
+              "value": "={{ $json.body.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "body-field",
+              "name": "email_body",
+              "value": "={{ $json.body.body }}",
+              "type": "string"
+            },
+            {
+              "id": "provider-field",
+              "name": "provider_name",
+              "value": "={{ $json.body.provider_name }}",
+              "type": "string"
+            },
+            {
+              "id": "project-id-field",
+              "name": "project_id",
+              "value": "={{ $json.body.project_id }}",
+              "type": "string"
+            },
+            {
+              "id": "project-name-field",
+              "name": "project_name",
+              "value": "={{ $json.body.project_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -180,
+        0
+      ],
+      "id": "set-fields",
+      "name": "Extract Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-to-email",
+              "leftValue": "={{ $json.to }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "check-subject",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "check-body",
+              "leftValue": "={{ $json.email_body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        40,
+        0
+      ],
+      "id": "if-valid-data",
+      "name": "Validate Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert markdown body to HTML for email\nconst markdownBody = $('Extract Fields').first().json.email_body;\n\n// Simple markdown to HTML conversion\nlet htmlBody = markdownBody\n  // Convert bold\n  .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')\n  // Convert italic\n  .replace(/\\*(.+?)\\*/g, '<em>$1</em>')\n  // Convert bullet points\n  .replace(/^- (.+)$/gm, '<li>$1</li>')\n  // Wrap lists\n  .replace(/(<li>.*<\\/li>\\n?)+/g, '<ul>$&</ul>')\n  // Convert line breaks to paragraphs\n  .split('\\n\\n')\n  .map(p => p.trim())\n  .filter(p => p.length > 0)\n  .map(p => {\n    if (p.startsWith('<ul>') || p.startsWith('<li>')) return p;\n    return `<p>${p}</p>`;\n  })\n  .join('\\n');\n\n// Add email styling\nconst styledHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }\n    p { margin: 0 0 16px 0; }\n    ul { margin: 0 0 16px 0; padding-left: 24px; }\n    li { margin: 4px 0; }\n    strong { font-weight: 600; }\n  </style>\n</head>\n<body>\n${htmlBody}\n</body>\n</html>\n`;\n\nreturn {\n  html_body: styledHtml,\n  to: $('Extract Fields').first().json.to,\n  subject: $('Extract Fields').first().json.subject,\n  provider_name: $('Extract Fields').first().json.provider_name,\n  project_id: $('Extract Fields').first().json.project_id,\n  project_name: $('Extract Fields').first().json.project_name\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        -100
+      ],
+      "id": "convert-to-html",
+      "name": "Convert Markdown to HTML"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html_body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        -100
+      ],
+      "id": "gmail-send",
+      "name": "Gmail Send",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Email sent successfully', to: $json.to, subject: $json.subject }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        700,
+        -100
+      ],
+      "id": "respond-success",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: false, error: 'Missing required fields: to, subject, or body' }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        260,
+        100
+      ],
+      "id": "respond-error",
+      "name": "Respond Error"
+    },
+    {
+      "parameters": {
+        "content": "## QA Send Email Workflow\n\nThis workflow receives email data from the Mail Dashboard and sends it via Gmail.\n\n**Expected POST body:**\n```json\n{\n  \"to\": \"recipient@email.com\",\n  \"subject\": \"Email Subject\",\n  \"body\": \"Email body in Markdown format\",\n  \"provider_name\": \"Provider Name\",\n  \"project_id\": \"project-uuid\",\n  \"project_name\": \"Project Name\"\n}\n```\n\n**IMPORTANT:** Configure Gmail OAuth2 credentials in the Gmail node.",
+        "height": 340,
+        "width": 380,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        -180
+      ],
+      "id": "sticky-note-instructions",
+      "name": "Instructions"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Fields": {
+      "main": [
+        [
+          {
+            "node": "Validate Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Data": {
+      "main": [
+        [
+          {
+            "node": "Convert Markdown to HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Markdown to HTML": {
+      "main": [
+        [
+          {
+            "node": "Gmail Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Send": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+  }
+}

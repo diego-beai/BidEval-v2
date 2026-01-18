@@ -3,31 +3,32 @@ import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStor
 import { useProjectStore } from '../../../stores/useProjectStore';
 import type { ScoringWeights } from '../../../types/database.types';
 
-// Define the 12 scoring criteria with their weights
+// Define the scoring criteria with their weights
+// Based on RFQ requirements for engineering proposals evaluation
 const SCORING_CRITERIA = [
-    // TECHNICAL (40%)
-    { id: 'efficiency_bop', name: 'Efficiency (BOP)', category: 'TECHNICAL', weight: 15, description: 'Total energy consumption (kWh/kg H2)' },
-    { id: 'degradation_lifetime', name: 'Degradation & Lifetime', category: 'TECHNICAL', weight: 10, description: 'Stack replacement hours and annual loss' },
-    { id: 'flexibility', name: 'Operational Flexibility', category: 'TECHNICAL', weight: 10, description: 'Turndown and ramp response speed' },
-    { id: 'purity_pressure', name: 'Purity & Pressure', category: 'TECHNICAL', weight: 5, description: 'Output gas quality and direct pressure' },
-    // ECONOMIC (30%)
-    { id: 'capex', name: 'CAPEX Total', category: 'ECONOMIC', weight: 15, description: 'Purchase price, transport, insurance, commissioning' },
-    { id: 'opex', name: 'OPEX Guaranteed', category: 'ECONOMIC', weight: 10, description: 'Maintenance, consumables, spare parts cost' },
-    { id: 'warranties', name: 'Warranties & Penalties', category: 'ECONOMIC', weight: 5, description: 'Failure coverage and availability penalties' },
-    // EXECUTION (20%)
-    { id: 'delivery_time', name: 'Delivery Time', category: 'EXECUTION', weight: 10, description: 'Lead time from signature to site delivery' },
-    { id: 'track_record', name: 'Track Record', category: 'EXECUTION', weight: 5, description: 'Similar plants installed and operating' },
-    { id: 'provider_strength', name: 'Provider Strength', category: 'EXECUTION', weight: 5, description: 'Financial capacity and local service network' },
-    // HSE/ESG (10%)
-    { id: 'safety_atex', name: 'Safety & ATEX', category: 'HSE/ESG', weight: 5, description: 'Safety certifications and ATEX compliance' },
-    { id: 'sustainability', name: 'Sustainability', category: 'HSE/ESG', weight: 5, description: 'Carbon footprint and material recyclability' },
+    // TECHNICAL COMPLETENESS (30%)
+    { id: 'scope_facilities', name: 'Scope of Facilities', category: 'TECHNICAL', weight: 10, description: 'Hydrogen plant, BOP, utilities included' },
+    { id: 'scope_work', name: 'Scope of Work', category: 'TECHNICAL', weight: 10, description: 'Project management, studies, deliverables covered' },
+    { id: 'deliverables_quality', name: 'Deliverables Quality', category: 'TECHNICAL', weight: 10, description: 'P&IDs, specifications, 3D model quality' },
+    // ECONOMIC COMPETITIVENESS (35%)
+    { id: 'total_price', name: 'Total Price', category: 'ECONOMIC', weight: 15, description: 'PRE-FEED + FEED + EPC price competitiveness' },
+    { id: 'price_breakdown', name: 'Price Breakdown', category: 'ECONOMIC', weight: 8, description: 'Transparent hours/discipline and €/hour' },
+    { id: 'optionals_included', name: 'Optionals Included', category: 'ECONOMIC', weight: 7, description: 'Geotechnical, topographic, 3D, HAZID in base price' },
+    { id: 'capex_opex_methodology', name: 'CAPEX/OPEX Methodology', category: 'ECONOMIC', weight: 5, description: 'AACEI class offered, estimate robustness' },
+    // EXECUTION CAPABILITY (20%)
+    { id: 'schedule', name: 'Schedule', category: 'EXECUTION', weight: 8, description: 'Realistic timeline vs requirements' },
+    { id: 'resources_allocation', name: 'Resources Allocation', category: 'EXECUTION', weight: 6, description: 'Coherent hours per discipline' },
+    { id: 'exceptions', name: 'Exceptions', category: 'EXECUTION', weight: 6, description: 'Fewer exceptions and deviations = better' },
+    // HSE & COMPLIANCE (15%)
+    { id: 'safety_studies', name: 'Safety Studies', category: 'HSE_COMPLIANCE', weight: 8, description: 'HAZID, HAZOP, QRA, ATEX included' },
+    { id: 'regulatory_compliance', name: 'Regulatory Compliance', category: 'HSE_COMPLIANCE', weight: 7, description: 'Codes, standards, safety distances' },
 ];
 
 const CATEGORY_INFO = {
-    'TECHNICAL': { weight: 40, color: '#12b5b0' },
-    'ECONOMIC': { weight: 30, color: '#f59e0b' },
+    'TECHNICAL': { weight: 30, color: '#12b5b0' },
+    'ECONOMIC': { weight: 35, color: '#f59e0b' },
     'EXECUTION': { weight: 20, color: '#3b82f6' },
-    'HSE/ESG': { weight: 10, color: '#8b5cf6' },
+    'HSE_COMPLIANCE': { weight: 15, color: '#8b5cf6' },
 };
 
 export const ScoringMatrix: React.FC = () => {
@@ -85,10 +86,10 @@ export const ScoringMatrix: React.FC = () => {
     // Calculate category weights based on custom weights
     const customCategoryWeights = useMemo(() => {
         return {
-            'TECHNICAL': (customWeights.efficiency_bop || 0) + (customWeights.degradation_lifetime || 0) + (customWeights.flexibility || 0) + (customWeights.purity_pressure || 0),
-            'ECONOMIC': (customWeights.capex || 0) + (customWeights.opex || 0) + (customWeights.warranties || 0),
-            'EXECUTION': (customWeights.delivery_time || 0) + (customWeights.track_record || 0) + (customWeights.provider_strength || 0),
-            'HSE/ESG': (customWeights.safety_atex || 0) + (customWeights.sustainability || 0),
+            'TECHNICAL': (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0),
+            'ECONOMIC': (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0),
+            'EXECUTION': (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0),
+            'HSE_COMPLIANCE': (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0),
         };
     }, [customWeights]);
 
@@ -157,28 +158,28 @@ export const ScoringMatrix: React.FC = () => {
 
             // Calculate new category scores
             const newTechnical = (
-                (individualScores.efficiency_bop * (customWeights.efficiency_bop || 0)) +
-                (individualScores.degradation_lifetime * (customWeights.degradation_lifetime || 0)) +
-                (individualScores.flexibility * (customWeights.flexibility || 0)) +
-                (individualScores.purity_pressure * (customWeights.purity_pressure || 0))
+                (individualScores.scope_facilities * (customWeights.scope_facilities || 0)) +
+                (individualScores.scope_work * (customWeights.scope_work || 0)) +
+                (individualScores.deliverables_quality * (customWeights.deliverables_quality || 0))
             ) / (customCategoryWeights['TECHNICAL'] || 1);
 
             const newEconomic = (
-                (individualScores.capex * (customWeights.capex || 0)) +
-                (individualScores.opex * (customWeights.opex || 0)) +
-                (individualScores.warranties * (customWeights.warranties || 0))
+                (individualScores.total_price * (customWeights.total_price || 0)) +
+                (individualScores.price_breakdown * (customWeights.price_breakdown || 0)) +
+                (individualScores.optionals_included * (customWeights.optionals_included || 0)) +
+                (individualScores.capex_opex_methodology * (customWeights.capex_opex_methodology || 0))
             ) / (customCategoryWeights['ECONOMIC'] || 1);
 
             const newExecution = (
-                (individualScores.delivery_time * (customWeights.delivery_time || 0)) +
-                (individualScores.track_record * (customWeights.track_record || 0)) +
-                (individualScores.provider_strength * (customWeights.provider_strength || 0))
+                (individualScores.schedule * (customWeights.schedule || 0)) +
+                (individualScores.resources_allocation * (customWeights.resources_allocation || 0)) +
+                (individualScores.exceptions * (customWeights.exceptions || 0))
             ) / (customCategoryWeights['EXECUTION'] || 1);
 
-            const newHseEsg = (
-                (individualScores.safety_atex * (customWeights.safety_atex || 0)) +
-                (individualScores.sustainability * (customWeights.sustainability || 0))
-            ) / (customCategoryWeights['HSE/ESG'] || 1);
+            const newHseCompliance = (
+                (individualScores.safety_studies * (customWeights.safety_studies || 0)) +
+                (individualScores.regulatory_compliance * (customWeights.regulatory_compliance || 0))
+            ) / (customCategoryWeights['HSE_COMPLIANCE'] || 1);
 
             return {
                 ...provider,
@@ -187,7 +188,7 @@ export const ScoringMatrix: React.FC = () => {
                     technical: newTechnical,
                     economic: newEconomic,
                     execution: newExecution,
-                    hse_esg: newHseEsg
+                    hse_compliance: newHseCompliance
                 }
             };
         }).sort((a, b) => a.provider_name.localeCompare(b.provider_name))
@@ -214,8 +215,7 @@ export const ScoringMatrix: React.FC = () => {
             border: '1px solid var(--border-color)',
             borderRadius: 'var(--radius-lg)',
             padding: '28px',
-            boxShadow: 'var(--shadow-sm)',
-            animation: 'fadeInUp 0.5s ease-out'
+            boxShadow: 'var(--shadow-sm)'
         }}>
             {/* Header */}
             <div style={{
@@ -385,46 +385,28 @@ export const ScoringMatrix: React.FC = () => {
             </div>
 
 
-            {/* Loading Overlay */}
+            {/* Loading Overlay - Only shown during actual API call */}
             {isCalculating && (
                 <div style={{
-                    position: 'relative',
-                    padding: '60px 20px',
+                    padding: '20px',
                     background: 'var(--bg-surface-alt)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                    marginBottom: '24px'
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
                 }}>
                     <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '20px'
-                    }}>
-                        <div style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            border: '4px solid var(--border-color)',
-                            borderTopColor: 'var(--color-primary)',
-                            animation: 'spin 1s linear infinite'
-                        }}></div>
-                        <div style={{
-                            fontSize: '1rem',
-                            fontWeight: 600,
-                            color: 'var(--text-primary)'
-                        }}>
-                            Calculating AI Scores...
-                        </div>
-                        <div style={{
-                            fontSize: '0.875rem',
-                            color: 'var(--text-secondary)',
-                            textAlign: 'center',
-                            maxWidth: '400px'
-                        }}>
-                            Analyzing provider responses against 12 weighted criteria. Please wait...
-                        </div>
-                    </div>
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        border: '2px solid var(--border-color)',
+                        borderTopColor: 'var(--color-primary)',
+                        animation: 'spin 0.8s linear infinite'
+                    }}></div>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                        Calculating scores...
+                    </span>
                 </div>
             )}
 
@@ -662,7 +644,7 @@ export const ScoringMatrix: React.FC = () => {
                                                 const categoryScore = category === 'TECHNICAL' ? p.scores?.technical :
                                                     category === 'ECONOMIC' ? p.scores?.economic :
                                                     category === 'EXECUTION' ? p.scores?.execution :
-                                                    p.scores?.hse_esg || 0;
+                                                    p.scores?.hse_compliance || 0;
                                                 return (
                                                     <td key={p.provider_name} style={{
                                                         textAlign: 'center',

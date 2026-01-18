@@ -2,19 +2,19 @@ import { useCallback, useMemo } from 'react';
 import { useRfqStore } from '../stores/useRfqStore';
 import { useProjectStore } from '../stores/useProjectStore';
 import { uploadMultipleRfqFiles } from '../services/n8n.service';
+import { isFileMetadataComplete } from '../types/rfq.types';
 
 /**
  * Hook principal para orquestar el procesamiento de Propuestas
  *
  * Maneja:
- * - Upload de múltiples archivos en paralelo
+ * - Upload de múltiples archivos en paralelo con metadata individual
  * - Simulación de progreso durante el procesamiento
  * - Actualización del estado
  */
 export function useRfqProcessing() {
   const {
     selectedFiles,
-    rfqMetadata,
     isProcessing,
     startProcessing,
     setResults,
@@ -25,20 +25,28 @@ export function useRfqProcessing() {
 
   /**
    * Maneja el upload y procesamiento de múltiples archivos en paralelo
+   * Cada archivo tiene su propia metadata individual
    */
   const handleUpload = useCallback(async () => {
+    // Prevent concurrent operations
+    if (isProcessing) {
+      setError('A processing operation is already in progress. Please wait for it to complete.');
+      return false;
+    }
+
     if (selectedFiles.length === 0) {
       setError('No files selected');
       return false;
     }
 
-    // Validar que todos los campos de metadata estén completos
-    if (!rfqMetadata.proyecto || !rfqMetadata.proveedor || rfqMetadata.tipoEvaluacion.length === 0) {
-      setError('Please complete all fields: Project, Provider and Evaluation Types');
+    // Validate that all files have complete metadata
+    const incompleteFiles = selectedFiles.filter(f => !isFileMetadataComplete(f));
+    if (incompleteFiles.length > 0) {
+      setError(`${incompleteFiles.length} file(s) have incomplete metadata. Please configure all files before processing.`);
       return false;
     }
 
-    // Validar que hay un proyecto activo seleccionado
+    // Validate that there is an active project selected
     if (!activeProjectId) {
       setError('No project selected. Please select a project from the sidebar first.');
       return false;
@@ -47,17 +55,45 @@ export function useRfqProcessing() {
     try {
       startProcessing(); // Simulation starts automatically there
 
-      // Procesar todos los archivos en paralelo con la metadata
-      // Incluye project_id (UUID) para vincular con el proyecto activo
-      const { results, message } = await uploadMultipleRfqFiles(selectedFiles, {
-        project_id: activeProjectId,
-        proyecto: rfqMetadata.proyecto,
-        proveedor: rfqMetadata.proveedor,
-        tipoEvaluacion: rfqMetadata.tipoEvaluacion
-      });
+      // Process all files in parallel with individual metadata
+      const response = await uploadMultipleRfqFiles(
+        selectedFiles.map(({ file, metadata }) => ({
+          file,
+          metadata: {
+            proyecto: metadata.proyecto,
+            proveedor: metadata.proveedor as string,
+            tipoEvaluacion: metadata.tipoEvaluacion
+          }
+        })),
+        { project_id: activeProjectId }
+      );
 
-      // Guardar resultados (última respuesta) - stops simulation automatically
-      setResults(results, message);
+      // Check if any files failed
+      if (response.failureCount > 0) {
+        const failedFiles = response.fileResults
+          .filter(r => !r.success)
+          .map(r => r.fileName)
+          .join(', ');
+
+        if (response.successCount === 0) {
+          // All files failed
+          setError(`All ${response.failureCount} files failed to process: ${failedFiles}`);
+          return false;
+        } else {
+          // Partial failure - still save successful results
+          setResults(
+            response.combinedResults,
+            `${response.successCount} of ${response.totalFiles} files processed. Failed: ${failedFiles}`
+          );
+          return true;
+        }
+      }
+
+      // All files succeeded - save combined results
+      setResults(
+        response.combinedResults,
+        `${response.successCount} proposal${response.successCount > 1 ? 's' : ''} processed successfully!`
+      );
 
       return true;
     } catch (error) {
@@ -70,7 +106,7 @@ export function useRfqProcessing() {
       setError(errorMessage);
       return false;
     }
-  }, [selectedFiles, rfqMetadata, activeProjectId, startProcessing, setResults, setError]);
+  }, [selectedFiles, activeProjectId, isProcessing, startProcessing, setResults, setError]);
 
   return useMemo(() => ({
     handleUpload,

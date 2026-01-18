@@ -49,7 +49,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         startRealtimeUpdates
     } = useDashboardStore();
 
-    const { tableData, proposalEvaluations, pivotTableData, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
+    const { tableData, proposalEvaluations, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
 
     // Project store to listen for project changes
     const { activeProjectId } = useProjectStore();
@@ -86,7 +86,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         return () => {
             stopRealtimeUpdates();
         };
-    }, [stopRealtimeUpdates]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Refresh proposal evaluations periodically
     React.useEffect(() => {
@@ -904,29 +905,35 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         borderBottom: '2px solid var(--border-color)',
                         gap: '50px'
                     }}>
-                        {Object.entries(providerEvaluations).map(([providerKey, evals]) => {
-                            // Only show providers with data
-                            const hasData = Object.values(evals).some(count => count > 0);
-                            if (!hasData) return null;
+                        {/* Use scoringResults from useScoringStore for accurate data */}
+                        {scoringResults?.ranking && scoringResults.ranking.length > 0 ? (
+                            scoringResults.ranking.map((provider) => {
+                                const scores = provider.scores || {};
+                                const hasData = (scores.technical || 0) + (scores.economic || 0) + (scores.execution || 0) + (scores.hse_compliance || 0) > 0;
+                                if (!hasData) return null;
 
-                            const evaluations = [
-                                { type: 'Technical (40%)', score: evals['Technical'] || 0, color: '#12b5b0' },
-                                { type: 'Economic (30%)', score: evals['Economic'] || 0, color: '#f59e0b' },
-                                { type: 'Execution (20%)', score: evals['Execution'] || 0, color: '#3b82f6' },
-                                { type: 'HSE/ESG (10%)', score: evals['HSE/ESG'] || 0, color: '#8b5cf6' }
-                            ];
+                                const evaluations = [
+                                    { type: 'Technical (30%)', score: scores.technical || 0, color: '#12b5b0' },
+                                    { type: 'Economic (35%)', score: scores.economic || 0, color: '#f59e0b' },
+                                    { type: 'Execution (20%)', score: scores.execution || 0, color: '#3b82f6' },
+                                    { type: 'HSE (15%)', score: scores.hse_compliance || 0, color: '#8b5cf6' }
+                                ];
 
-                            return (
-                                <StackedBar
-                                    key={providerKey}
-                                    provider={PROVIDER_DISPLAY_NAMES[providerKey as Provider] || providerKey}
-                                    evaluations={evaluations}
-                                />
-                            );
-                        })}
+                                // Get display name from provider name
+                                const normalizedName = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(provider.provider_name)];
+                                const displayName = normalizedName
+                                    ? (PROVIDER_DISPLAY_NAMES[normalizedName] || provider.provider_name)
+                                    : provider.provider_name;
 
-                        {/* Show placeholder if no data */}
-                        {Object.keys(providerEvaluations).length === 0 && (
+                                return (
+                                    <StackedBar
+                                        key={provider.provider_name}
+                                        provider={displayName}
+                                        evaluations={evaluations}
+                                    />
+                                );
+                            })
+                        ) : (
                             <div style={{
                                 width: '100%',
                                 height: '100%',
@@ -936,12 +943,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                 color: 'var(--text-tertiary)',
                                 fontSize: '0.9rem'
                             }}>
-                                No provider data available yet
+                                No scoring data available. Run AI Scoring to generate results.
                             </div>
                         )}
                     </div>
 
-                    {/* Legend */}
+                    {/* Legend - Updated with correct percentages */}
                     <div style={{
                         marginTop: '24px',
                         display: 'flex',
@@ -949,10 +956,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         gap: '16px',
                         justifyContent: 'center'
                     }}>
-                        <LegendItem color="#12b5b0" label="Technical (40%)" />
-                        <LegendItem color="#f59e0b" label="Economic (30%)" />
+                        <LegendItem color="#12b5b0" label="Technical (30%)" />
+                        <LegendItem color="#f59e0b" label="Economic (35%)" />
                         <LegendItem color="#3b82f6" label="Execution (20%)" />
-                        <LegendItem color="#8b5cf6" label="HSE/ESG (10%)" />
+                        <LegendItem color="#8b5cf6" label="HSE (15%)" />
                     </div>
                 </div>
 

@@ -1,18 +1,45 @@
-import { useCallback, memo, useState } from 'react';
+import { useCallback, memo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { validateFile } from '../../utils/validators';
-import { formatFileSize } from '../../utils/formatters';
+import { MultiFileMetadataModal } from './MultiFileMetadataModal';
+import { useRfqProcessing } from '../../hooks/useRfqProcessing';
 
-export const FileUploadZone = memo(function FileUploadZone({ compact = false }: { compact?: boolean }) {
-  const { selectedFiles, addFiles, removeFile, setSelectedFiles, setError, isProcessing } = useRfqStore();
-  const [showFileList, setShowFileList] = useState(false);
+interface FileUploadZoneProps {
+  compact?: boolean;
+  autoOpenModal?: boolean;
+}
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
+export const FileUploadZone = memo(function FileUploadZone({
+  compact = false,
+  autoOpenModal = true
+}: FileUploadZoneProps) {
+  const {
+    selectedFiles,
+    addFiles,
+    removeFile,
+    setSelectedFiles,
+    setError,
+    isProcessing,
+    updateFileMetadata,
+    copyMetadataFromPrevious
+  } = useRfqStore();
+  const { handleUpload } = useRfqProcessing();
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
 
-    // Validar todos los archivos
-    const invalidFiles = acceptedFiles.filter(file => {
+  // Auto-open modal when files are added
+  useEffect(() => {
+    if (autoOpenModal && selectedFiles.length > 0 && !isProcessing) {
+      setShowMetadataModal(true);
+    }
+  }, [selectedFiles.length, autoOpenModal, isProcessing]);
+
+  // Shared validation and add logic
+  const validateAndAddFiles = useCallback((newFiles: File[]) => {
+    if (newFiles.length === 0) return;
+
+    // Validate all files
+    const invalidFiles = newFiles.filter(file => {
       const validation = validateFile(file);
       return !validation.valid;
     });
@@ -23,12 +50,45 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
     }
 
     // Add files (addFiles already limits to max 7)
-    addFiles(acceptedFiles);
+    addFiles(newFiles);
 
-    if (acceptedFiles.length > 7) {
-      setError('Only up to 7 files can be processed. The first available files were added.');
+    const totalAfterAdd = selectedFiles.length + newFiles.length;
+    if (totalAfterAdd > 7) {
+      setError('Only up to 7 files can be processed. Some files were not added.');
     }
-  }, [addFiles, setError]);
+  }, [addFiles, setError, selectedFiles.length]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    validateAndAddFiles(acceptedFiles);
+  }, [validateAndAddFiles]);
+
+  // Handler for adding files from within the modal
+  const handleAddFilesFromModal = useCallback((newFiles: File[]) => {
+    validateAndAddFiles(newFiles);
+  }, [validateAndAddFiles]);
+
+  const handleModalClose = useCallback(() => {
+    setShowMetadataModal(false);
+  }, []);
+
+  const handleModalConfirm = useCallback(async () => {
+    setShowMetadataModal(false);
+    await handleUpload();
+  }, [handleUpload]);
+
+  const handleRemoveFile = useCallback((index: number) => {
+    removeFile(index);
+    // If all files removed, close modal
+    if (selectedFiles.length <= 1) {
+      setShowMetadataModal(false);
+    }
+  }, [removeFile, selectedFiles.length]);
+
+  const handleClearAll = useCallback(() => {
+    setSelectedFiles([]);
+    setError(null);
+    setShowMetadataModal(false);
+  }, [setSelectedFiles, setError]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -39,6 +99,10 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
     multiple: true,
     disabled: isProcessing
   });
+
+  // Calculate total size from FileWithMetadata array
+  const totalSize = selectedFiles.reduce((sum, f) => sum + f.file.size, 0);
+  const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
 
   return (
     <>
@@ -61,8 +125,8 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
             ? 'Processing proposals... This may take a few minutes'
             : selectedFiles.length > 0
               ? selectedFiles.length > 1
-                ? `${selectedFiles.length} files selected (${(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total)`
-                : `${selectedFiles[0].name} (${(selectedFiles[0].size / 1024 / 1024).toFixed(2)} MB)`
+                ? `${selectedFiles.length} files selected (${totalSizeMB} MB total)`
+                : `${selectedFiles[0].file.name} (${(selectedFiles[0].file.size / 1024 / 1024).toFixed(2)} MB)`
               : isDragActive
                 ? 'Drop the PDF files here...'
                 : compact
@@ -72,15 +136,15 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
 
         {selectedFiles.length > 0 && (
           <p className="dropzoneSubtext">
-            {(selectedFiles.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB total
+            {totalSizeMB} MB total
           </p>
         )}
       </div>
 
-      {selectedFiles.length > 1 && (
-        <div style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+      {selectedFiles.length > 0 && !isProcessing && (
+        <div style={{ width: '100%', marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
           <button
-            onClick={() => setShowFileList(true)}
+            onClick={() => setShowMetadataModal(true)}
             className="btn btnSecondary"
             style={{
               minWidth: '140px',
@@ -88,71 +152,33 @@ export const FileUploadZone = memo(function FileUploadZone({ compact = false }: 
               padding: '8px 14px'
             }}
           >
-            View files ({selectedFiles.length})
+            Configure files ({selectedFiles.length})
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="btn btnDanger"
+            style={{
+              fontSize: '12px',
+              padding: '8px 14px'
+            }}
+          >
+            Clear all
           </button>
         </div>
       )}
 
-      {showFileList && (
-        <>
-          <div
-            className="modalOverlay"
-            onClick={() => setShowFileList(false)}
-          />
-          <div className="fileListModal">
-            <div className="fileListModalHeader">
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                Selected Files ({selectedFiles.length})
-              </h3>
-              <button
-                onClick={() => setShowFileList(false)}
-                className="removeBtn"
-                title="Close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="fileListModalBody">
-              {selectedFiles.map((file, index) => (
-                <div key={`${file.name}-${index}`} className="selectedFile">
-                  <div>
-                    <div className="selectedFileName">
-                      {index + 1}. {file.name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
-                      {formatFileSize(file.size)}
-                    </div>
-                  </div>
-                  <button
-                    className="removeBtn"
-                    onClick={() => removeFile(index)}
-                    title="Remove file"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="fileListModalFooter">
-              <button
-                onClick={() => {
-                  setSelectedFiles([]);
-                  setError(null);
-                  setShowFileList(false);
-                }}
-                className="btn btnDanger"
-                style={{
-                  width: '100%',
-                  fontSize: '13px',
-                  padding: '10px 16px'
-                }}
-              >
-                Remove all files
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      {/* Multi-file metadata modal */}
+      <MultiFileMetadataModal
+        files={selectedFiles}
+        open={showMetadataModal}
+        onClose={handleModalClose}
+        onConfirm={handleModalConfirm}
+        onRemoveFile={handleRemoveFile}
+        onUpdateMetadata={updateFileMetadata}
+        onCopyFromPrevious={copyMetadataFromPrevious}
+        onAddFiles={handleAddFilesFromModal}
+        disabled={isProcessing}
+      />
     </>
   );
 });

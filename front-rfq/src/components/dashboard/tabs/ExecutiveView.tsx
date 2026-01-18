@@ -9,24 +9,24 @@ import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
-// Individual scoring criteria with readable names
+// Individual scoring criteria with readable names (RFQ-aligned structure)
 const CRITERIA_LABELS: Record<string, string> = {
-    // TECHNICAL (40%)
-    efficiency_bop: 'Efficiency (BOP)',
-    degradation_lifetime: 'Degradation & Lifetime',
-    flexibility: 'Operational Flexibility',
-    purity_pressure: 'Purity & Pressure',
-    // ECONOMIC (30%)
-    capex: 'CAPEX Total',
-    opex: 'OPEX Guaranteed',
-    warranties: 'Warranties & Penalties',
-    // EXECUTION (20%)
-    delivery_time: 'Delivery Time',
-    track_record: 'Track Record',
-    provider_strength: 'Provider Strength',
-    // HSE/ESG (10%)
-    safety_atex: 'Safety & ATEX',
-    sustainability: 'Sustainability'
+    // TECHNICAL COMPLETENESS (30%)
+    scope_facilities: 'Scope of Facilities',
+    scope_work: 'Scope of Work',
+    deliverables_quality: 'Deliverables Quality',
+    // ECONOMIC COMPETITIVENESS (35%)
+    total_price: 'Total Price',
+    price_breakdown: 'Price Breakdown',
+    optionals_included: 'Optionals Included',
+    capex_opex_methodology: 'CAPEX/OPEX Methodology',
+    // EXECUTION CAPABILITY (20%)
+    schedule: 'Schedule',
+    resources_allocation: 'Resources Allocation',
+    exceptions: 'Exceptions',
+    // HSE & COMPLIANCE (15%)
+    safety_studies: 'Safety Studies',
+    regulatory_compliance: 'Regulatory Compliance'
 };
 
 export const ExecutiveView: React.FC = () => {
@@ -40,29 +40,29 @@ export const ExecutiveView: React.FC = () => {
         refreshScoring();
     }, [refreshScoring, activeProjectId]);
 
-    // Calculate dynamic category weights from customWeights
+    // Calculate dynamic category weights from customWeights (RFQ-aligned structure)
     const categoryWeights = useMemo(() => {
-        const technical = (customWeights.efficiency_bop || 0) +
-                         (customWeights.degradation_lifetime || 0) +
-                         (customWeights.flexibility || 0) +
-                         (customWeights.purity_pressure || 0);
+        const technical = (customWeights.scope_facilities || 0) +
+                         (customWeights.scope_work || 0) +
+                         (customWeights.deliverables_quality || 0);
 
-        const economic = (customWeights.capex || 0) +
-                        (customWeights.opex || 0) +
-                        (customWeights.warranties || 0);
+        const economic = (customWeights.total_price || 0) +
+                        (customWeights.price_breakdown || 0) +
+                        (customWeights.optionals_included || 0) +
+                        (customWeights.capex_opex_methodology || 0);
 
-        const execution = (customWeights.delivery_time || 0) +
-                         (customWeights.track_record || 0) +
-                         (customWeights.provider_strength || 0);
+        const execution = (customWeights.schedule || 0) +
+                         (customWeights.resources_allocation || 0) +
+                         (customWeights.exceptions || 0);
 
-        const hseEsg = (customWeights.safety_atex || 0) +
-                      (customWeights.sustainability || 0);
+        const hseCompliance = (customWeights.safety_studies || 0) +
+                             (customWeights.regulatory_compliance || 0);
 
         return {
             TECHNICAL: technical,
             ECONOMIC: economic,
             EXECUTION: execution,
-            'HSE/ESG': hseEsg
+            'HSE_COMPLIANCE': hseCompliance
         };
     }, [customWeights]);
 
@@ -191,8 +191,8 @@ export const ExecutiveView: React.FC = () => {
             ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.execution ?? 0]))
         },
         {
-            subject: 'HSE/ESG',
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.hse_esg ?? 0]))
+            subject: 'HSE_COMPLIANCE',
+            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.hse_compliance ?? 0]))
         }
     ];
 
@@ -203,22 +203,30 @@ export const ExecutiveView: React.FC = () => {
         id: p.provider_name
     }));
 
-    // Helper for colors
+    // Helper for colors - handles various provider name formats
     const getColor = (id: string, index: number) => {
+        // Normalize provider name for matching (uppercase, no spaces)
+        const normalized = id.toUpperCase().replace(/\s+/g, '');
+
         const colorMap: Record<string, string> = {
-            'EA': '#3b82f6',
-            'WORLEY': '#12b5b0',
+            // Primary names (as stored in DB)
+            'TECNICASREUNIDAS': '#12b5b0',
             'IDOM': '#f59e0b',
+            'SACYR': '#a78bfa',
+            'EA': '#fb923c',
+            'SENER': '#ec4899',
+            'TRESCA': '#22d3ee',
+            'WORLEY': '#fbbf24',
+            // Aliases
             'TR': '#12b5b0',
-            'SACYR': '#ef4444',
-            'SENER': '#8b5cf6',
-            'TRESCA': '#ec4899'
+            'TÉCNICASREUNIDAS': '#12b5b0',
+            'EMPRESARIOSAGRUPADOS': '#fb923c'
         };
 
-        const defined = colorMap[id] || PROVIDER_COLORS[id as keyof typeof PROVIDER_COLORS];
+        const defined = colorMap[normalized] || colorMap[id] || PROVIDER_COLORS[id as keyof typeof PROVIDER_COLORS];
         if (defined) return defined;
 
-        const fallbacks = ['#12b5b0', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981'];
+        const fallbacks = ['#12b5b0', '#f59e0b', '#a78bfa', '#fb923c', '#ec4899', '#22d3ee', '#fbbf24'];
         return fallbacks[index % fallbacks.length];
     };
 
@@ -636,6 +644,7 @@ export const ExecutiveView: React.FC = () => {
                                     fontWeight: 700,
                                     marginBottom: '8px'
                                 }}
+                                formatter={(value: any) => Number(value).toFixed(2)}
                             />
                             <Legend
                                 wrapperStyle={{
@@ -820,7 +829,7 @@ export const ExecutiveView: React.FC = () => {
                                     { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
                                     { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
                                     { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE/ESG', value: categoryWeights['HSE/ESG'], color: 'url(#hse-gradient)' }
+                                    { name: 'HSE & COMPLIANCE', value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
                                 ]}
                                 cx="50%"
                                 cy="50%"
@@ -838,7 +847,7 @@ export const ExecutiveView: React.FC = () => {
                                     { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
                                     { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
                                     { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE/ESG', value: categoryWeights['HSE/ESG'], color: 'url(#hse-gradient)' }
+                                    { name: 'HSE & COMPLIANCE', value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
                                 ].map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--bg-surface)" strokeWidth={3} />
                                 ))}

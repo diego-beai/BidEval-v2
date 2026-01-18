@@ -7,28 +7,32 @@ import { useProjectStore } from './useProjectStore';
 import type { ScoringWeights } from '../types/database.types';
 
 // Default weights for scoring criteria
-// Based on H2 Plant La Zaida project requirements analysis:
-// - TECHNICAL: 35% (92 technical requirements)
-// - ECONOMIC: 35% (94 economic requirements - CAPEX/OPEX critical)
-// - HSE/ESG: 18% (44 safety requirements - ATEX critical for H2)
-// - EXECUTION: 12% (23 project management requirements)
+// Based on RFQ requirements for engineering proposals evaluation
+// Categories:
+// - TECHNICAL COMPLETENESS: 30%
+// - ECONOMIC COMPETITIVENESS: 35%
+// - EXECUTION CAPABILITY: 20%
+// - HSE & COMPLIANCE: 15%
 export const DEFAULT_WEIGHTS: ScoringWeights = {
-    // TECHNICAL (35%)
-    efficiency_bop: 12,        // Electrolyzer efficiency is key for H2
-    degradation_lifetime: 8,   // Stack lifetime important
-    flexibility: 8,            // Intermittent operation capability
-    purity_pressure: 7,        // H2 purity 99.9%, pressure 7-40 barg
-    // ECONOMIC (35%)
-    capex: 18,                 // High initial investment in H2 plants
-    opex: 12,                  // Operational costs (electricity)
-    warranties: 5,             // Guarantees and penalties
-    // HSE/ESG (18%)
-    safety_atex: 12,           // ATEX critical for H2 handling
-    sustainability: 6,         // ESG important but less than safety
-    // EXECUTION (12%)
-    delivery_time: 6,          // FEED deadline 21/02/2025
-    track_record: 3,           // Previous experience
-    provider_strength: 3,      // Financial strength
+    // TECHNICAL COMPLETENESS (30%)
+    scope_facilities: 10,       // Scope of facilities included (H2 plant, BOP, utilities)
+    scope_work: 10,             // Scope of work covered (PM, studies, deliverables)
+    deliverables_quality: 10,   // Quality of deliverables (P&IDs, specs, 3D model)
+
+    // ECONOMIC COMPETITIVENESS (35%)
+    total_price: 15,            // Total price (PRE-FEED + FEED + EPC compared)
+    price_breakdown: 8,         // Transparent breakdown (hours/discipline, €/hour)
+    optionals_included: 7,      // Optionals included in base price
+    capex_opex_methodology: 5,  // CAPEX/OPEX methodology (AACEI class)
+
+    // EXECUTION CAPABILITY (20%)
+    schedule: 8,                // Realistic schedule
+    resources_allocation: 6,    // Resources per discipline (coherent hours)
+    exceptions: 6,              // Exceptions and deviations (fewer = better)
+
+    // HSE & COMPLIANCE (15%)
+    safety_studies: 8,          // Safety studies (HAZID, HAZOP, QRA, ATEX)
+    regulatory_compliance: 7,   // Regulatory compliance (codes, standards)
 };
 
 /**
@@ -41,29 +45,29 @@ export interface ProviderScore {
     compliance_percentage: number;
     // Aggregated category scores
     scores: {
-        technical: number;
-        economic: number;
-        execution: number;
-        hse_esg: number;
+        technical: number;      // Technical Completeness (30%)
+        economic: number;       // Economic Competitiveness (35%)
+        execution: number;      // Execution Capability (20%)
+        hse_compliance: number; // HSE & Compliance (15%)
     };
-    // Individual criterion scores (12 criteria)
+    // Individual criterion scores (11 criteria)
     individual_scores: {
-        // TECHNICAL (40%)
-        efficiency_bop: number;        // 15%
-        degradation_lifetime: number;  // 10%
-        flexibility: number;           // 10%
-        purity_pressure: number;       // 5%
-        // ECONOMIC (30%)
-        capex: number;                 // 15%
-        opex: number;                  // 10%
-        warranties: number;            // 5%
-        // EXECUTION (20%)
-        delivery_time: number;         // 10%
-        track_record: number;          // 5%
-        provider_strength: number;     // 5%
-        // HSE/ESG (10%)
-        safety_atex: number;           // 5%
-        sustainability: number;        // 5%
+        // TECHNICAL COMPLETENESS (30%)
+        scope_facilities: number;       // 10%
+        scope_work: number;             // 10%
+        deliverables_quality: number;   // 10%
+        // ECONOMIC COMPETITIVENESS (35%)
+        total_price: number;            // 15%
+        price_breakdown: number;        // 8%
+        optionals_included: number;     // 7%
+        capex_opex_methodology: number; // 5%
+        // EXECUTION CAPABILITY (20%)
+        schedule: number;               // 8%
+        resources_allocation: number;   // 6%
+        exceptions: number;             // 6%
+        // HSE & COMPLIANCE (15%)
+        safety_studies: number;         // 8%
+        regulatory_compliance: number;  // 7%
     };
     strengths?: string[];
     weaknesses?: string[];
@@ -224,7 +228,7 @@ export const useScoringStore = create<ScoringState>()(
 
                 try {
                     // Read directly from ranking_proveedores table filtered by project
-                    const { data, error } = await supabase
+                    let { data, error } = await supabase
                         .from('ranking_proveedores')
                         .select('*')
                         .eq('project_id', activeProjectId)
@@ -234,37 +238,63 @@ export const useScoringStore = create<ScoringState>()(
                         throw new Error(error.message);
                     }
 
-                    // Transform data to expected format with all 12 individual scores
+                    // Fallback: if no data with project_id, try loading data without project filter
+                    // This handles legacy data that was saved before project_id was implemented
+                    if (!data || data.length === 0) {
+                        console.log('[Scoring] No data with project_id, trying fallback to load all providers...');
+                        const fallback = await supabase
+                            .from('ranking_proveedores')
+                            .select('*')
+                            .order('provider_name', { ascending: true });
+
+                        if (!fallback.error && fallback.data && fallback.data.length > 0) {
+                            data = fallback.data;
+                            console.log('[Scoring] Loaded', data.length, 'providers from fallback (no project filter)');
+                        }
+                    }
+
+                    // Helper to normalize scores to 0-10 scale
+                    // If score > 10, assume it's on 0-100 scale and divide by 10
+                    const normalizeScore = (score: number | null | undefined): number => {
+                        const s = score || 0;
+                        return s > 10 ? s / 10 : s;
+                    };
+
+                    // Transform data to expected format with all individual scores
                     const ranking: ProviderScore[] = (data || []).map((row: any, index: number) => ({
                         provider_name: row.provider_name,
                         position: index + 1,
-                        overall_score: row.overall_score || 0,
+                        overall_score: normalizeScore(row.overall_score),
                         compliance_percentage: row.compliance_percentage || 0,
                         scores: {
-                            technical: row.technical_score || 0,
-                            economic: row.economic_score || 0,
-                            execution: row.execution_score || 0,
-                            hse_esg: row.hse_esg_score || 0
+                            technical: normalizeScore(row.technical_score),
+                            economic: normalizeScore(row.economic_score),
+                            execution: normalizeScore(row.execution_score),
+                            hse_compliance: normalizeScore(row.hse_compliance_score)
                         },
                         individual_scores: {
-                            // TECHNICAL (40%)
-                            efficiency_bop: row.efficiency_bop_score || 0,
-                            degradation_lifetime: row.degradation_lifetime_score || 0,
-                            flexibility: row.flexibility_score || 0,
-                            purity_pressure: row.purity_pressure_score || 0,
-                            // ECONOMIC (30%)
-                            capex: row.capex_score || 0,
-                            opex: row.opex_score || 0,
-                            warranties: row.warranties_score || 0,
-                            // EXECUTION (20%)
-                            delivery_time: row.delivery_time_score || 0,
-                            track_record: row.track_record_score || 0,
-                            provider_strength: row.provider_strength_score || 0,
-                            // HSE/ESG (10%)
-                            safety_atex: row.safety_atex_score || 0,
-                            sustainability: row.sustainability_score || 0
+                            // TECHNICAL COMPLETENESS (30%)
+                            scope_facilities: normalizeScore(row.scope_facilities_score),
+                            scope_work: normalizeScore(row.scope_work_score),
+                            deliverables_quality: normalizeScore(row.deliverables_quality_score),
+                            // ECONOMIC COMPETITIVENESS (35%)
+                            total_price: normalizeScore(row.total_price_score),
+                            price_breakdown: normalizeScore(row.price_breakdown_score),
+                            optionals_included: normalizeScore(row.optionals_included_score),
+                            capex_opex_methodology: normalizeScore(row.capex_opex_methodology_score),
+                            // EXECUTION CAPABILITY (20%)
+                            schedule: normalizeScore(row.schedule_score),
+                            resources_allocation: normalizeScore(row.resources_allocation_score),
+                            exceptions: normalizeScore(row.exceptions_score),
+                            // HSE & COMPLIANCE (15%)
+                            safety_studies: normalizeScore(row.safety_studies_score),
+                            regulatory_compliance: normalizeScore(row.regulatory_compliance_score)
                         }
                     }));
+
+                    // Sort by overall_score descending to get proper ranking
+                    const sortedRanking = [...ranking].sort((a, b) => b.overall_score - a.overall_score);
+                    const topPerformer = sortedRanking[0]?.provider_name || 'N/A';
 
                     set({
                         scoringResults: {
@@ -273,7 +303,7 @@ export const useScoringStore = create<ScoringState>()(
                             statistics: {
                                 total_providers: ranking.length,
                                 average_score: ranking.reduce((sum, r) => sum + r.overall_score, 0) / (ranking.length || 1),
-                                top_performer: ranking[0]?.provider_name || 'N/A',
+                                top_performer: topPerformer,
                                 evaluation_date: new Date().toISOString()
                             },
                             message: 'Loaded from database'
@@ -389,12 +419,23 @@ export const useScoringStore = create<ScoringState>()(
                         throw error;
                     }
 
-                    if (data) {
+                    if (data && data.weights) {
+                        // Merge saved weights with defaults to handle schema migrations
+                        // Only use saved values for keys that exist in DEFAULT_WEIGHTS
+                        const mergedWeights: ScoringWeights = { ...DEFAULT_WEIGHTS };
+                        const savedWeights = data.weights as Record<string, number>;
+
+                        for (const key of Object.keys(DEFAULT_WEIGHTS)) {
+                            if (key in savedWeights && typeof savedWeights[key] === 'number') {
+                                mergedWeights[key as keyof ScoringWeights] = savedWeights[key];
+                            }
+                        }
+
                         set({
-                            customWeights: data.weights as ScoringWeights,
+                            customWeights: mergedWeights,
                             savedWeightsId: data.id
                         });
-                        console.log('[Scoring] Loaded saved weights:', data.weights);
+                        console.log('[Scoring] Loaded saved weights (merged with defaults):', mergedWeights);
                     }
                 } catch (err: any) {
                     console.error('[Scoring] Error loading saved weights:', err);
@@ -439,36 +480,38 @@ export const useScoringStore = create<ScoringState>()(
                             return total + (score * weight / 100);
                         }, 0);
 
-                        // Calculate category scores
-                        const technicalWeight = customWeights.efficiency_bop + customWeights.degradation_lifetime +
-                                               customWeights.flexibility + customWeights.purity_pressure;
-                        const economicWeight = customWeights.capex + customWeights.opex + customWeights.warranties;
-                        const executionWeight = customWeights.delivery_time + customWeights.track_record +
-                                               customWeights.provider_strength;
-                        const hseWeight = customWeights.safety_atex + customWeights.sustainability;
+                        // Calculate category weights from individual criteria
+                        const technicalWeight = customWeights.scope_facilities + customWeights.scope_work +
+                                               customWeights.deliverables_quality;
+                        const economicWeight = customWeights.total_price + customWeights.price_breakdown +
+                                               customWeights.optionals_included + customWeights.capex_opex_methodology;
+                        const executionWeight = customWeights.schedule + customWeights.resources_allocation +
+                                               customWeights.exceptions;
+                        const hseWeight = customWeights.safety_studies + customWeights.regulatory_compliance;
 
+                        // Calculate category scores (weighted average within category)
                         const technicalScore = technicalWeight > 0 ? (
-                            (scores.efficiency_bop * customWeights.efficiency_bop) +
-                            (scores.degradation_lifetime * customWeights.degradation_lifetime) +
-                            (scores.flexibility * customWeights.flexibility) +
-                            (scores.purity_pressure * customWeights.purity_pressure)
+                            (scores.scope_facilities * customWeights.scope_facilities) +
+                            (scores.scope_work * customWeights.scope_work) +
+                            (scores.deliverables_quality * customWeights.deliverables_quality)
                         ) / technicalWeight : 0;
 
                         const economicScore = economicWeight > 0 ? (
-                            (scores.capex * customWeights.capex) +
-                            (scores.opex * customWeights.opex) +
-                            (scores.warranties * customWeights.warranties)
+                            (scores.total_price * customWeights.total_price) +
+                            (scores.price_breakdown * customWeights.price_breakdown) +
+                            (scores.optionals_included * customWeights.optionals_included) +
+                            (scores.capex_opex_methodology * customWeights.capex_opex_methodology)
                         ) / economicWeight : 0;
 
                         const executionScore = executionWeight > 0 ? (
-                            (scores.delivery_time * customWeights.delivery_time) +
-                            (scores.track_record * customWeights.track_record) +
-                            (scores.provider_strength * customWeights.provider_strength)
+                            (scores.schedule * customWeights.schedule) +
+                            (scores.resources_allocation * customWeights.resources_allocation) +
+                            (scores.exceptions * customWeights.exceptions)
                         ) / executionWeight : 0;
 
                         const hseScore = hseWeight > 0 ? (
-                            (scores.safety_atex * customWeights.safety_atex) +
-                            (scores.sustainability * customWeights.sustainability)
+                            (scores.safety_studies * customWeights.safety_studies) +
+                            (scores.regulatory_compliance * customWeights.regulatory_compliance)
                         ) / hseWeight : 0;
 
                         return {
@@ -477,7 +520,7 @@ export const useScoringStore = create<ScoringState>()(
                             technical_score: parseFloat(technicalScore.toFixed(2)),
                             economic_score: parseFloat(economicScore.toFixed(2)),
                             execution_score: parseFloat(executionScore.toFixed(2)),
-                            hse_esg_score: parseFloat(hseScore.toFixed(2))
+                            hse_compliance_score: parseFloat(hseScore.toFixed(2))
                         };
                     });
 
@@ -492,7 +535,7 @@ export const useScoringStore = create<ScoringState>()(
                                 technical_score: ranking.technical_score,
                                 economic_score: ranking.economic_score,
                                 execution_score: ranking.execution_score,
-                                hse_esg_score: ranking.hse_esg_score,
+                                hse_compliance_score: ranking.hse_compliance_score,
                                 last_updated: new Date().toISOString()
                             })
                             .eq('provider_name', ranking.provider_name)
@@ -523,7 +566,29 @@ export const useScoringStore = create<ScoringState>()(
                         lastCalculation: state.lastCalculation,
                         customWeights: state.customWeights,
                         savedWeightsId: state.savedWeightsId
-                    })
+                    }),
+                    // Merge persisted state with defaults to handle schema migrations
+                    merge: (persistedState, currentState) => {
+                        const persisted = persistedState as Partial<ScoringState> | undefined;
+                        if (!persisted) return currentState;
+
+                        // Merge customWeights with defaults - only use persisted values for valid keys
+                        let mergedWeights = { ...DEFAULT_WEIGHTS };
+                        if (persisted.customWeights) {
+                            for (const key of Object.keys(DEFAULT_WEIGHTS)) {
+                                const persistedWeights = persisted.customWeights as unknown as Record<string, number>;
+                                if (key in persistedWeights && typeof persistedWeights[key] === 'number') {
+                                    mergedWeights[key as keyof ScoringWeights] = persistedWeights[key];
+                                }
+                            }
+                        }
+
+                        return {
+                            ...currentState,
+                            ...persisted,
+                            customWeights: mergedWeights
+                        };
+                    }
                 }
             )
         ),

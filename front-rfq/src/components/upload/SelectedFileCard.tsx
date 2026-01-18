@@ -9,20 +9,20 @@ export const SelectedFileCard = memo(function SelectedFileCard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-      {selectedFiles.map((file, index) => (
-        <div key={`${file.name}-${index}`} className="selectedFile">
+      {selectedFiles.map((fileWithMeta, index) => (
+        <div key={`${fileWithMeta.file.name}-${index}`} className="selectedFile">
           <div>
             <div className="selectedFileName">
-              {index + 1}. {file.name}
+              {index + 1}. {fileWithMeta.file.name}
             </div>
             <div style={{ fontSize: '12px', color: 'var(--muted2)', marginTop: '4px' }}>
-              {formatFileSize(file.size)}
+              {formatFileSize(fileWithMeta.file.size)}
             </div>
           </div>
           <button
             className="removeBtn"
             onClick={() => removeFile(index)}
-            title="Eliminar archivo"
+            title="Remove file"
           >
             ×
           </button>

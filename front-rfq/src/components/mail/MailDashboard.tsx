@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useMailStore } from '../../stores/useMailStore';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { API_CONFIG } from '../../config/constants';
 import './MailDashboard.css';
 
 interface Issue {
@@ -65,6 +66,9 @@ export const MailDashboard = () => {
     // Local UI State
     const [fontSize, setFontSize] = useState(16);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
+    const [emailSent, setEmailSent] = useState(false);
+    const [recipientEmail, setRecipientEmail] = useState('');
 
     // Metadata State (Context/Provider/Tone) selection remains local as it drives the generation
     // Initialize selectedContext from active project
@@ -78,6 +82,13 @@ export const MailDashboard = () => {
             setSelectedContext(activeProject.display_name);
         }
     }, [activeProject?.display_name]);
+
+    // Update recipient email when provider changes
+    useEffect(() => {
+        if (selectedProvider) {
+            setRecipientEmail(getProviderEmail(selectedProvider));
+        }
+    }, [selectedProvider]);
 
     // Issues selection state (even though UI is hidden, logic remains)
     const [selectedIssues, setSelectedIssues] = useState<string[]>([]);
@@ -183,6 +194,7 @@ export const MailDashboard = () => {
         }).filter((i): i is string => Boolean(i));
 
         const payload = {
+            project_id: activeProject?.id || '',
             project_name: selectedContext,
             provider_name: selectedProvider,
             provider_key: providerMap[selectedProvider] || selectedProvider.toUpperCase().replace(/\s+/g, ''),
@@ -198,6 +210,47 @@ export const MailDashboard = () => {
     const handleCopy = () => {
         navigator.clipboard.writeText(`${subject}\n\n${body}`);
         alert('Email copied to clipboard!');
+    };
+
+    const handleSendEmail = async () => {
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+            alert('Please enter a valid email address in the "To" field.');
+            return;
+        }
+
+        if (!confirm(`Send email to ${recipientEmail}?`)) {
+            return;
+        }
+
+        setIsSendingEmail(true);
+        setEmailSent(false);
+
+        try {
+            const response = await fetch(API_CONFIG.N8N_QA_SEND_EMAIL_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: recipientEmail,
+                    subject: subject,
+                    body: body,
+                    provider_name: selectedProvider,
+                    project_id: activeProject?.id,
+                    project_name: selectedContext
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send email');
+            }
+
+            setEmailSent(true);
+            alert('Email sent successfully!');
+        } catch (error) {
+            console.error('Error sending email:', error);
+            alert('Failed to send email. Please try again or copy and send manually.');
+        } finally {
+            setIsSendingEmail(false);
+        }
     };
 
     return (
@@ -434,7 +487,17 @@ export const MailDashboard = () => {
                         <div className="email-meta">
                             <div className="meta-row">
                                 <span className="meta-label">To:</span>
-                                <input className="meta-input" value={`${selectedProvider} <${getProviderEmail(selectedProvider)}>`} readOnly />
+                                <input
+                                    className="meta-input"
+                                    value={recipientEmail}
+                                    onChange={(e) => setRecipientEmail(e.target.value)}
+                                    readOnly={!isEditing}
+                                    style={{
+                                        background: isEditing ? 'var(--bg-surface)' : 'transparent',
+                                        cursor: isEditing ? 'text' : 'default'
+                                    }}
+                                    placeholder="recipient@email.com"
+                                />
                             </div>
                             <div className="meta-row">
                                 <span className="meta-label">Subject:</span>
@@ -442,6 +505,11 @@ export const MailDashboard = () => {
                                     className="meta-input subject-input"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
+                                    readOnly={!isEditing}
+                                    style={{
+                                        background: isEditing ? 'var(--bg-surface)' : 'transparent',
+                                        cursor: isEditing ? 'text' : 'default'
+                                    }}
                                 />
                             </div>
                         </div>
@@ -517,7 +585,38 @@ export const MailDashboard = () => {
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
-                                Copy Text
+                                Copy
+                            </button>
+                            <button
+                                className="btn btnPrimary"
+                                onClick={handleSendEmail}
+                                disabled={isSendingEmail}
+                                style={{
+                                    background: emailSent ? '#10b981' : 'linear-gradient(135deg, #12b5b0 0%, #0d9488 100%)',
+                                    minWidth: '120px'
+                                }}
+                            >
+                                {isSendingEmail ? (
+                                    <>
+                                        <span className="spinner-small" style={{ marginRight: '8px' }}></span>
+                                        Sending...
+                                    </>
+                                ) : emailSent ? (
+                                    <>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                        Sent!
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                        </svg>
+                                        Send Email
+                                    </>
+                                )}
                             </button>
                         </div>
                     </>

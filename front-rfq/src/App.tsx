@@ -2,12 +2,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { SidebarLayout } from './components/layout/SidebarLayout';
 import { RfqBaseUploader } from './components/upload/RfqBaseUploader';
 import { FileUploadZone } from './components/upload/FileUploadZone';
-import { RfqMetadataForm } from './components/upload/RfqMetadataForm';
 import { ProcessingStatus } from './components/processing/ProcessingStatus';
 import { ExternalDataTable } from './components/results/ExternalDataTable';
 import { Preloader } from './components/ui/Preloader';
 import { useRfqStore } from './stores/useRfqStore';
-import { useRfqProcessing } from './hooks/useRfqProcessing';
 import { VendorDecisionDashboard } from './components/dashboard/VendorDecisionDashboard';
 import { HomeDashboard } from './components/dashboard/HomeDashboard';
 import { ChatPage } from './components/chat/ChatPage';
@@ -26,12 +24,21 @@ import { useProjectStore } from './stores/useProjectStore';
 type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
 
 export default function App() {
-  const { selectedFiles, reset, isProcessing, error, processingFileCount, rfqMetadata, setRfqMetadata, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
-  const { handleUpload } = useRfqProcessing();
+  const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
   const [activeView, setActiveView] = useState<ViewType>(() => {
     const saved = localStorage.getItem('activeView') as ViewType;
     return saved || 'home';
   });
+
+  // Get selected provider from files (for display in the progress panel)
+  const selectedProvider = useMemo(() => {
+    if (selectedFiles.length === 0) return '';
+    // Get the first file's provider, or the most common one
+    const providers = selectedFiles
+      .map(f => f.metadata.proveedor)
+      .filter(Boolean);
+    return providers[0] || '';
+  }, [selectedFiles]);
 
   // Persist activeView state
   useMemo(() => {
@@ -69,15 +76,15 @@ export default function App() {
     }
   }, [activeView, uploadTab, refreshProposalEvaluations]);
 
-  // Calcular el progreso del proveedor seleccionado
+  // Calculate progress for the selected provider (from files metadata)
   const selectedProviderProgress = useMemo(() => {
-    if (!rfqMetadata.proveedor || !results || results.length === 0) {
+    if (!selectedProvider || !results || results.length === 0) {
       return { count: 0, progress: 0 };
     }
 
     const uniqueEvaluations = new Set<string>();
     results.forEach(result => {
-      const providerEval = result.evaluations[rfqMetadata.proveedor as Provider];
+      const providerEval = result.evaluations[selectedProvider as Provider];
       if (providerEval && providerEval.hasValue) {
         uniqueEvaluations.add(result.evaluation);
       }
@@ -90,7 +97,7 @@ export default function App() {
       count,
       progress: Math.min(progressValue, 100)
     };
-  }, [rfqMetadata.proveedor, results]);
+  }, [selectedProvider, results]);
 
   // Handle routing logic for the Upload View
   const renderUploadView = () => (
@@ -156,17 +163,26 @@ export default function App() {
         {uploadTab === 'propuestas' && (
           <div className="fade-in" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: '32px', width: '100%' }}>
-              {/* Left Column - Form & Upload */}
+              {/* Left Column - Upload Zone */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* Metadata Form */}
-                <RfqMetadataForm
-                  metadata={rfqMetadata}
-                  onChange={setRfqMetadata}
-                  disabled={isProcessing}
-                />
+                {/* Instructions */}
+                <div style={{
+                  textAlign: 'center',
+                  padding: '16px',
+                  background: 'rgba(18, 181, 176, 0.05)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(18, 181, 176, 0.15)'
+                }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Upload Proposal Documents
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    Select PDF files and configure metadata for each file individually
+                  </p>
+                </div>
 
-                {/* File Upload Zone */}
-                <FileUploadZone compact={true} />
+                {/* File Upload Zone - modal opens automatically when files are selected */}
+                <FileUploadZone compact={true} autoOpenModal={true} />
 
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
                   {t('app.upload.supported_providers')}
@@ -238,36 +254,26 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="actions" style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                  <button
-                    onClick={handleUpload}
-                    disabled={selectedFiles.length === 0 || isProcessing}
-                    className={`btn ${error ? 'btnDanger' : 'btnPrimary'}`}
-                  >
-                    {error
-                      ? t('common.error')
-                      : isProcessing
-                        ? `Processing ${processingFileCount} Proposal${processingFileCount > 1 ? 's' : ''}...`
-                        : `${t('upload.btn.process')} ${selectedFiles.length || ''} ${t('upload.proposals')}`
-                    }
-                  </button>
-
-                  {selectedFiles.length > 0 && !isProcessing && (
-                    <button
-                      onClick={reset}
-                      className="btn btnSecondary"
-                    >
-                      {t('common.reset')}
-                    </button>
-                  )}
-                </div>
+                {/* Processing indicator */}
+                {isProcessing && (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '16px',
+                    background: 'rgba(18, 181, 176, 0.08)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(18, 181, 176, 0.2)'
+                  }}>
+                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--accent)', fontWeight: 500 }}>
+                      Processing {processingFileCount} proposal{processingFileCount > 1 ? 's' : ''}...
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Right Column - Provider Details Visualization */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* Large Progress Ring for Selected Provider */}
-                {rfqMetadata.proveedor ? (
+                {selectedProvider ? (
                   <div style={{
                     background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface-alt) 100%)',
                     padding: '32px',
@@ -283,7 +289,7 @@ export default function App() {
                   }}>
                     <div style={{ textAlign: 'center', width: '100%' }}>
                       <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {rfqMetadata.proveedor}
+                        {selectedProvider}
                       </h3>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                         Evaluation Progress
@@ -431,9 +437,11 @@ export default function App() {
               </div>
 
               <ProviderProgressGrid
-                selectedProvider={rfqMetadata.proveedor}
-                onProviderClick={(provider) => {
-                  setRfqMetadata({ ...rfqMetadata, proveedor: provider });
+                selectedProvider={selectedProvider as Provider | ''}
+                onProviderClick={() => {
+                  // When clicking on provider grid, we just update the view
+                  // The actual file metadata is set in the modal
+                  setSelectedProviderData(null);
                 }}
                 onProviderDataChange={setSelectedProviderData}
               />

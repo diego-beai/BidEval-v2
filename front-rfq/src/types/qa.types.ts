@@ -104,7 +104,8 @@ export interface DisciplinaStats {
 
 // Payload for the n8n webhook (audit generation)
 export interface GenerateAuditPayload {
-  project_id: string;
+  project_id: string;      // UUID del proyecto
+  project_name?: string;   // Nombre display del proyecto
   provider: string;
 }
 

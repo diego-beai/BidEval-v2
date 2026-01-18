@@ -1,0 +1,520 @@
+/* Supplier Response Page Styles */
+/* This page uses a LIGHT theme for external suppliers */
+/* All styles use !important to override any global dark theme */
+
+/* Reset any dark theme styles from parent */
+html:has(.supplier-page),
+body:has(.supplier-page) {
+  background: #f8fafc !important;
+}
+
+.supplier-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+  padding: 24px;
+  color: #1e293b !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.supplier-page,
+.supplier-page * {
+  box-sizing: border-box;
+}
+
+/* Force light theme colors on all text elements */
+.supplier-page h1,
+.supplier-page h2,
+.supplier-page h3,
+.supplier-page p,
+.supplier-page span,
+.supplier-page label,
+.supplier-page strong {
+  color: inherit;
+}
+
+.supplier-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Loading State */
+.supplier-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+  color: #1e293b !important;
+}
+
+.supplier-loading p {
+  color: #64748b !important;
+}
+
+.spinner-large {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #12b5b0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Message States */
+.supplier-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 48px;
+  background: white !important;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  color: #1e293b !important;
+}
+
+.supplier-message .message-icon {
+  margin-bottom: 24px;
+}
+
+.supplier-message.error .message-icon svg {
+  color: #ef4444;
+}
+
+.supplier-message.info .message-icon svg {
+  color: #3b82f6;
+}
+
+.supplier-message.success .message-icon svg {
+  color: #22c55e;
+}
+
+.supplier-message h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b !important;
+}
+
+.supplier-message p {
+  margin: 0;
+  font-size: 1rem;
+  color: #64748b !important;
+  max-width: 400px;
+}
+
+.supplier-message .success-detail {
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  color: #166534;
+  font-weight: 500;
+}
+
+/* Header */
+.supplier-header {
+  background: white !important;
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  color: #1e293b !important;
+}
+
+.header-logo {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.header-logo .logo-bid {
+  color: #1e293b;
+}
+
+.header-logo .logo-eval {
+  color: #12b5b0;
+}
+
+.supplier-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b !important;
+}
+
+.supplier-header .project-name {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: #64748b;
+}
+
+.provider-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.provider-badge strong {
+  color: #12b5b0;
+  font-weight: 700;
+}
+
+/* Progress Section */
+.progress-section {
+  background: white !important;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  color: #1e293b !important;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.progress-percent {
+  font-weight: 700;
+  color: #12b5b0;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #12b5b0 0%, #14b8a6 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Instructions */
+.instructions {
+  background: #f0fdfa !important;
+  border: 1px solid #99f6e4 !important;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.instructions h3 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0d9488 !important;
+}
+
+.instructions p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #115e59 !important;
+  line-height: 1.6;
+}
+
+/* Questions Container */
+.questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+/* Question Card - Supplier Page (Light Theme) */
+/* Using .supplier-page scope to ensure these override any global styles */
+.supplier-page .question-card,
+.supplier-page .questions-list .question-card {
+  background: white !important;
+  background-color: white !important;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 2px solid #e2e8f0 !important;
+  transition: border-color 0.2s ease;
+  color: #1e293b !important;
+}
+
+/* Only change border color on hover - no other changes */
+.supplier-page .question-card:hover {
+  border-color: #12b5b0 !important;
+  background: white !important;
+  background-color: white !important;
+  color: #1e293b !important;
+}
+
+.supplier-page .question-card:focus-within {
+  border-color: #12b5b0 !important;
+  background: white !important;
+}
+
+/* Ensure no color changes on hover for any child elements */
+.supplier-page .question-card:hover .question-text,
+.supplier-page .question-card:hover .question-number,
+.supplier-page .question-card:hover .response-area label {
+  color: inherit !important;
+}
+
+/* Ensure all text in supplier question cards is dark */
+.supplier-page .question-card p,
+.supplier-page .question-card span,
+.supplier-page .question-card div,
+.supplier-page .question-card label {
+  color: #1e293b !important;
+}
+
+.supplier-page .question-card .question-number {
+  color: #94a3b8 !important;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.question-number {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.question-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge.discipline {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge.importance {
+  color: white;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  color: #1e293b !important;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.response-area {
+  position: relative;
+}
+
+.response-area label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.response-area textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #fafafa !important;
+  color: #1e293b !important;
+}
+
+.response-area textarea:focus {
+  outline: none;
+  border-color: #12b5b0;
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.15);
+  background: white;
+}
+
+.response-area textarea:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.response-area textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Override any dark theme input styles */
+.supplier-page input,
+.supplier-page textarea,
+.supplier-page select {
+  background-color: #fafafa !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+.supplier-page input:focus,
+.supplier-page textarea:focus,
+.supplier-page select:focus {
+  background-color: white !important;
+  color: #1e293b !important;
+}
+
+.response-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.response-status.answered {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+/* Submit Section */
+.submit-section {
+  background: white !important;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  color: #1e293b !important;
+}
+
+.submit-summary {
+  margin-bottom: 24px;
+}
+
+.submit-summary p {
+  margin: 0;
+  font-size: 1rem;
+  color: #64748b;
+}
+
+.submit-summary strong {
+  color: #1e293b;
+}
+
+.submit-summary .warning-text {
+  color: #f59e0b;
+}
+
+.submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 48px;
+  background: linear-gradient(135deg, #12b5b0 0%, #0d9488 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(18, 181, 176, 0.35);
+}
+
+.submit-button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.submit-warning {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #ef4444;
+}
+
+/* Footer */
+.supplier-footer {
+  text-align: center;
+  padding: 32px 24px;
+  color: #94a3b8;
+}
+
+.supplier-footer p {
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
+}
+
+.supplier-footer .footer-note {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .supplier-page {
+    padding: 16px;
+  }
+
+  .supplier-header {
+    padding: 24px;
+  }
+
+  .supplier-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .submit-button {
+    width: 100%;
+    padding: 14px 24px;
+  }
+}

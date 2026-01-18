@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
-import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem } from '../types/rfq.types';
+import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem, FileWithMetadata, FileUploadMetadata, isFileMetadataComplete } from '../types/rfq.types';
 import { Provider } from '../types/provider.types';
 import { RfqMetadata } from '../components/upload/RfqMetadataForm';
 import { API_CONFIG } from '../config/constants';
@@ -31,11 +31,14 @@ export interface TableFilters {
  * Estado global de la aplicación usando Zustand
  */
 interface RfqState {
-  // File upload state
-  selectedFiles: File[];
-  setSelectedFiles: (files: File[]) => void;
+  // File upload state - now with individual metadata per file
+  selectedFiles: FileWithMetadata[];
+  setSelectedFiles: (files: FileWithMetadata[]) => void;
   addFiles: (files: File[]) => void;
   removeFile: (index: number) => void;
+  updateFileMetadata: (index: number, metadata: Partial<FileUploadMetadata>) => void;
+  allFilesHaveMetadata: () => boolean;
+  copyMetadataFromPrevious: (targetIndex: number) => void;
 
   // RFQ Metadata state
   rfqMetadata: RfqMetadata;
@@ -59,6 +62,7 @@ interface RfqState {
   isProcessing: boolean;
   isLoadingData: boolean;  // For data fetching (doesn't block UI)
   processingFileCount: number;
+  processingStartTime: number | null; // Timestamp when processing started
   status: ProcessingStatus;
 
   // Results state
@@ -168,6 +172,7 @@ export const useRfqStore = create<RfqState>()(
       isProcessing: false,
       isLoadingData: false,
       processingFileCount: 0,
+      processingStartTime: null,
       status: initialStatus,
       rawResults: null,
       results: null,
@@ -220,13 +225,55 @@ export const useRfqStore = create<RfqState>()(
 
       addFiles: (files) => {
         const current = get().selectedFiles;
-        const newFiles = [...current, ...files].slice(0, 7); // Max 7 files
-        set({ selectedFiles: newFiles, error: null });
+        const activeProject = useProjectStore.getState().getActiveProject();
+
+        // Create FileWithMetadata for each new file with default empty metadata
+        const newFilesWithMeta: FileWithMetadata[] = files.map(file => ({
+          file,
+          metadata: {
+            proyecto: activeProject?.display_name || '',
+            proveedor: '' as const,
+            tipoEvaluacion: []
+          }
+        }));
+
+        const combined = [...current, ...newFilesWithMeta].slice(0, 7); // Max 7 files
+        set({ selectedFiles: combined, error: null });
       },
 
       removeFile: (index) => {
         const current = get().selectedFiles;
         set({ selectedFiles: current.filter((_, i) => i !== index) });
+      },
+
+      updateFileMetadata: (index, metadata) => {
+        const current = get().selectedFiles;
+        if (index < 0 || index >= current.length) return;
+
+        const updated = [...current];
+        updated[index] = {
+          ...updated[index],
+          metadata: { ...updated[index].metadata, ...metadata }
+        };
+        set({ selectedFiles: updated });
+      },
+
+      allFilesHaveMetadata: () => {
+        const files = get().selectedFiles;
+        return files.length > 0 && files.every(isFileMetadataComplete);
+      },
+
+      copyMetadataFromPrevious: (targetIndex) => {
+        const current = get().selectedFiles;
+        if (targetIndex <= 0 || targetIndex >= current.length) return;
+
+        const previousMeta = current[targetIndex - 1].metadata;
+        const updated = [...current];
+        updated[targetIndex] = {
+          ...updated[targetIndex],
+          metadata: { ...previousMeta }
+        };
+        set({ selectedFiles: updated });
       },
 
       // RFQ Base file management
@@ -304,28 +351,20 @@ export const useRfqStore = create<RfqState>()(
         });
       },
 
-      startProcessing: (simulate = true) => {
+      startProcessing: (_simulate = true) => {
         const fileCount = get().selectedFiles.length;
         set({
           isProcessing: true,
           processingFileCount: fileCount,
+          processingStartTime: Date.now(), // Track when processing started
           error: null,
           status: {
             stage: ProcessingStage.UPLOADING,
-            progress: 5,
-            message: `Uploading ${fileCount} file${fileCount > 1 ? 's' : ''} to n8n...`
+            progress: 0, // No fake progress - we don't know the real progress
+            message: `Processing ${fileCount} file${fileCount > 1 ? 's' : ''}... This may take several minutes.`
           }
         });
-
-        if (simulate) {
-          get().startSimulation([
-            { threshold: 0.15, stage: ProcessingStage.OCR_PROCESSING, message: 'Extracting text from PDF...' },
-            { threshold: 0.30, stage: ProcessingStage.CLASSIFYING, message: 'Classifying provider and type...' },
-            { threshold: 0.50, stage: ProcessingStage.EMBEDDING, message: 'Generating vector embeddings...' },
-            { threshold: 0.70, stage: ProcessingStage.EVALUATING, message: 'Evaluating items with AI...' },
-            { threshold: 0.90, stage: ProcessingStage.EVALUATING, message: 'Finalizing evaluation...' }
-          ]);
-        }
+        // NOTE: No simulation - we show honest "processing" state until webhook responds
       },
 
       updateStatus: (statusUpdate) => {
@@ -338,15 +377,24 @@ export const useRfqStore = create<RfqState>()(
       setResults: (rawResults: RfqItem[], message?: string) => {
         const transformedResults = transformResults(rawResults);
         const fileCount = get().processingFileCount;
-        const providerName = get().rfqMetadata.proveedor;
+        const selectedFiles = get().selectedFiles;
+
+        // Get unique providers from the files metadata
+        const uniqueProviders = [...new Set(
+          selectedFiles
+            .map(f => f.metadata.proveedor)
+            .filter(Boolean)
+        )];
 
         get().stopSimulation();
 
         // Add success toast notification
         const { addToast } = useToastStore.getState();
-        const toastMessage = providerName
-          ? `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} from ${providerName} processed successfully!`
-          : `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} processed successfully!`;
+        const toastMessage = uniqueProviders.length === 1
+          ? `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} from ${uniqueProviders[0]} processed successfully!`
+          : uniqueProviders.length > 1
+            ? `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} from ${uniqueProviders.length} providers processed successfully!`
+            : `${fileCount} ${fileCount === 1 ? 'proposal' : 'proposals'} processed successfully!`;
 
         addToast(toastMessage, 'success');
 
@@ -355,6 +403,7 @@ export const useRfqStore = create<RfqState>()(
           results: transformedResults,
           isProcessing: false,
           processingFileCount: 0,
+          processingStartTime: null,
           status: {
             stage: ProcessingStage.COMPLETED,
             progress: 100,
@@ -380,6 +429,7 @@ export const useRfqStore = create<RfqState>()(
           error,
           isProcessing: false,
           processingFileCount: 0,
+          processingStartTime: null,
           status: error ? {
             stage: ProcessingStage.ERROR,
             progress: 0,
@@ -843,6 +893,7 @@ export const useRfqStore = create<RfqState>()(
         selectedFiles: [],
         isProcessing: false,
         processingFileCount: 0,
+        processingStartTime: null,
         status: initialStatus,
         rawResults: null,
         results: null,
