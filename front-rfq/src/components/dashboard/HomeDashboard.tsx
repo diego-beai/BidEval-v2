@@ -4,6 +4,7 @@ import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useScoringStore } from '../../stores/useScoringStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useQAStore } from '../../stores/useQAStore';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import { supabase } from '../../lib/supabase';
 import './Dashboard.css';
@@ -57,6 +58,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     // Scoring data from workflow results
     const { scoringResults, refreshScoring } = useScoringStore();
 
+    // Q&A notifications for activity feed
+    const { notifications, loadNotifications, questions, getStats } = useQAStore();
+
     // Load data on mount
     useEffect(() => {
         loadDashboardData();
@@ -67,7 +71,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         fetchProviderRanking();
         // Always refresh scoring results from database to get latest data
         refreshScoring();
-    }, [loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring]);
+        // Load Q&A notifications for activity feed
+        loadNotifications();
+    }, [loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications]);
 
     // Reload all data when active project changes
     useEffect(() => {
@@ -79,7 +85,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         fetchPivotTableData();
         fetchProviderRanking();
         refreshScoring();
-    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring]);
+        loadNotifications();
+    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications]);
 
     // Cleanup realtime updates on unmount
     React.useEffect(() => {
@@ -376,11 +383,80 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             });
         }
 
-        // Sort by timestamp descending and take the 4 most recent
+        // Add Q&A notifications (supplier responses, questions sent, etc.)
+        if (notifications && notifications.length > 0) {
+            notifications.forEach((notification: any) => {
+                const date = new Date(notification.created_at);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffHours / 24);
+
+                let timeAgo = '';
+                if (diffDays > 0) {
+                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                } else if (diffHours > 0) {
+                    timeAgo = `${diffHours}h ago`;
+                } else {
+                    timeAgo = 'Just now';
+                }
+
+                // Determine activity type based on notification type
+                let activityType = 'info';
+                if (notification.notification_type === 'supplier_responded') {
+                    activityType = 'success';
+                } else if (notification.notification_type === 'evaluation_updated') {
+                    activityType = 'warning';
+                }
+
+                activities.push({
+                    title: notification.title || 'Q&A Update',
+                    desc: notification.message || 'Activity in Q&A module',
+                    time: timeAgo,
+                    type: activityType,
+                    timestamp: date.getTime()
+                });
+            });
+        }
+
+        // Add Q&A questions activity (recently answered questions)
+        if (questions && questions.length > 0) {
+            const answeredQuestions = questions.filter((q: any) =>
+                q.estado === 'Answered' || q.estado === 'Resolved' || q.status === 'Answered' || q.status === 'Resolved'
+            );
+
+            answeredQuestions.slice(0, 5).forEach((q: any) => {
+                const date = new Date(q.fecha_respuesta || q.created_at);
+                const now = new Date();
+                const diffMs = now.getTime() - date.getTime();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.floor(diffHours / 24);
+
+                let timeAgo = '';
+                if (diffDays > 0) {
+                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                } else if (diffHours > 0) {
+                    timeAgo = `${diffHours}h ago`;
+                } else {
+                    timeAgo = 'Just now';
+                }
+
+                const status = q.estado || q.status;
+                activities.push({
+                    title: `Q&A ${status} - ${q.proveedor || q.provider_name}`,
+                    desc: (q.pregunta_texto || q.question || '').substring(0, 60) + '...',
+                    time: timeAgo,
+                    type: status === 'Resolved' ? 'success' : 'info',
+                    timestamp: date.getTime()
+                });
+            });
+        }
+
+        // Sort by timestamp descending and take the 5 most recent
         return activities
             .sort((a, b) => b.timestamp - a.timestamp)
-            .slice(0, 4);
-    }, [tableData, proposalEvaluations, t]);
+            .slice(0, 5);
+    }, [tableData, proposalEvaluations, notifications, questions, t]);
 
     const [rfqCount, setRfqCount] = useState(0);
     const [evaluationTypes, setEvaluationTypes] = useState<Set<string>>(new Set());
