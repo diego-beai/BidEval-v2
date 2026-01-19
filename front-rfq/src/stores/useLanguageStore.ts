@@ -189,7 +189,15 @@ const translations: any = {
         'tour.btn.skip': 'Omitir tour',
         'tour.btn.finish': 'Finalizar',
         'tour.btn.close': 'Cerrar',
-        'tour.btn.restart': 'Reiniciar Tour'
+        'tour.btn.restart': 'Reiniciar Tour',
+
+        // Notifications
+        'notifications.title': 'Notificaciones',
+        'notifications.markAllRead': 'Marcar todo como leído',
+        'notifications.empty': 'No hay notificaciones',
+        'notifications.supplierResponded': 'El proveedor ha respondido',
+        'notifications.evaluationUpdated': 'Evaluación actualizada',
+        'notifications.questionsSent': 'Preguntas enviadas'
     },
     en: {
         // ... existing translations
@@ -370,7 +378,15 @@ const translations: any = {
         'tour.btn.skip': 'Skip tour',
         'tour.btn.finish': 'Finish',
         'tour.btn.close': 'Close',
-        'tour.btn.restart': 'Restart Tour'
+        'tour.btn.restart': 'Restart Tour',
+
+        // Notifications
+        'notifications.title': 'Notifications',
+        'notifications.markAllRead': 'Mark all as read',
+        'notifications.empty': 'No notifications',
+        'notifications.supplierResponded': 'Supplier has responded',
+        'notifications.evaluationUpdated': 'Evaluation updated',
+        'notifications.questionsSent': 'Questions sent'
     }
 };
 

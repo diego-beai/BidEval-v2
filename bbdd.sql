@@ -126,6 +126,23 @@ ALTER TABLE public.qa_audit
     ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS response_source TEXT CHECK (response_source IN ('portal', 'manual', 'email'));
 
+-- Agregar columna requirement_id para vincular preguntas QA con requisitos
+ALTER TABLE public.qa_audit
+    ADD COLUMN IF NOT EXISTS requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE SET NULL;
+
+-- Índice para búsquedas por requirement_id
+CREATE INDEX IF NOT EXISTS idx_qa_audit_requirement_id ON public.qa_audit(requirement_id);
+
+-- Status values for qa_audit.status:
+-- 'Draft' - Question created but not yet approved
+-- 'Pending' - Question pending review
+-- 'Approved' - Question approved, ready to send
+-- 'Sent' - Question sent to supplier
+-- 'Answered' - Supplier has responded (needs review)
+-- 'Resolved' - Response reviewed and accepted as satisfactory
+-- 'NeedsMoreInfo' - Response reviewed but needs additional clarification
+-- 'Discarded' - Question discarded/cancelled
+
 -- 6. TABLA QA_PENDIENTE (compatibilidad con el frontend)
 -- Esta tabla mantiene la estructura esperada por el frontend
 CREATE TABLE IF NOT EXISTS public.QA_PENDIENTE (

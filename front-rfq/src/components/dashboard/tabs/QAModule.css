@@ -946,6 +946,18 @@
   border: 1px solid #22c55e;
 }
 
+.estado-resuelta {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border: 1px solid #10b981;
+}
+
+.estado-necesita-info {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  border: 1px solid #f59e0b;
+}
+
 .estado-descartada {
   background-color: rgba(107, 114, 128, 0.1);
   color: #4b5563;
@@ -978,6 +990,7 @@
   gap: 16px;
   padding: 20px;
   background-color: var(--bg-surface-alt);
+  overflow-anchor: auto; /* Maintain scroll position during content changes */
 }
 
 /* Tarjeta de Pregunta */
@@ -989,9 +1002,10 @@
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease; /* Only animate visual props, not layout */
   animation: fadeInUp 0.3s ease-out;
   color: var(--text-primary);
+  contain: layout style; /* Prevent internal changes from causing parent reflow */
 }
 
 .question-card:hover {
@@ -1081,10 +1095,17 @@
 .question-text {
   font-size: 1rem;
   line-height: 1.6;
-  color: var(--text-primary);
+  color: white !important;
   margin: 0;
   white-space: pre-wrap;
   background: transparent;
+}
+
+/* Override for QA Module - ensure white text on dark background */
+.questions-viewer-section .question-text,
+.question-card .question-text,
+.preguntas-list .question-text {
+  color: #ffffff !important;
 }
 
 .question-edit-textarea {
@@ -1159,6 +1180,8 @@
   padding-top: 12px;
   margin-top: 8px;
   border-top: 1px solid var(--border-color);
+  min-height: 44px; /* Prevent layout shift when buttons change */
+  align-items: center;
 }
 
 /* Base button styles */
@@ -1218,6 +1241,30 @@
   border-color: var(--color-error-dark, #dc2626);
 }
 
+/* Success button - green for positive/accepting actions */
+.btnSuccess {
+  background-color: #22c55e;
+  color: white;
+  border-color: #22c55e;
+}
+
+.btnSuccess:hover:not(:disabled) {
+  background-color: #16a34a;
+  border-color: #16a34a;
+}
+
+/* Warning button - orange/amber for caution actions */
+.btnWarning {
+  background-color: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+
+.btnWarning:hover:not(:disabled) {
+  background-color: #d97706;
+  border-color: #d97706;
+}
+
 .btn-sm {
   padding: 6px 14px;
   font-size: 0.85rem;
@@ -1261,6 +1308,15 @@
 
 .status-message.success {
   color: var(--color-success, #10b981);
+}
+
+.status-message.resolved {
+  color: #059669;
+  font-weight: 600;
+}
+
+.status-message.warning {
+  color: #d97706;
 }
 
 .question-actions .btn-sm {

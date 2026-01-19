@@ -280,21 +280,43 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
         return;
       }
 
-      const exportData = questions.map(q => ({
-        'Discipline': q.disciplina || q.discipline,
-        'Importance': q.importancia || q.importance,
-        'Question': q.pregunta_texto || q.question,
-        'Provider': q.proveedor || q.provider_name,
-        'Status': q.estado || q.status,
-        'Project': q.project_name || q.project_id,
-        'Created At': new Date(q.created_at).toLocaleDateString()
-      }));
+      const exportData = questions.map(q => {
+        const response = q.respuesta_proveedor || q.response || '';
+        const responseDate = q.fecha_respuesta ? new Date(q.fecha_respuesta).toLocaleDateString() : '';
+
+        return {
+          'Project': q.project_name || q.project_id || projectId,
+          'Provider': q.proveedor || q.provider_name,
+          'Discipline': q.disciplina || q.discipline,
+          'Importance': q.importancia || q.importance,
+          'Question': q.pregunta_texto || q.question,
+          'Status': q.estado || q.status,
+          'Supplier Response': response,
+          'Response Date': responseDate,
+          'Created At': new Date(q.created_at).toLocaleDateString()
+        };
+      });
 
       const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'All Questions');
 
-      const fileName = `All_Questions_${new Date().toISOString().split('T')[0]}.xlsx`;
+      // Auto-fit column widths for better readability
+      const colWidths = [
+        { wch: 25 },  // Project
+        { wch: 12 },  // Provider
+        { wch: 12 },  // Discipline
+        { wch: 10 },  // Importance
+        { wch: 60 },  // Question
+        { wch: 14 },  // Status
+        { wch: 60 },  // Supplier Response
+        { wch: 12 },  // Response Date
+        { wch: 12 }   // Created At
+      ];
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Q&A Report');
+
+      const fileName = `QA_Report_${projectId || 'All'}_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
       addToast(`${questions.length} questions exported successfully to Excel`, 'success');
     } catch (err) {
@@ -469,8 +491,23 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     setEditedText('');
   };
 
-  const handleUpdateStatus = async (questionId: string, estado: EstadoPregunta) => {
+  const handleUpdateStatus = async (questionId: string, estado: EstadoPregunta, event?: React.MouseEvent) => {
+    // Prevent default behavior and stop propagation to avoid scroll jumps
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    // Save scroll position before update
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+
     await updateQuestion(questionId, { estado });
+
+    // Restore scroll position after state update to prevent jump
+    requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+    });
 
     // When approving, add the question to the Mail store for inclusion in emails
     if (estado === 'Approved') {
@@ -577,6 +614,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       case 'Approved': return 'estado-aprobada';
       case 'Sent': return 'estado-enviada';
       case 'Answered': return 'estado-respondida';
+      case 'Resolved': return 'estado-resuelta';
+      case 'NeedsMoreInfo': return 'estado-necesita-info';
       case 'Discarded': return 'estado-descartada';
       default: return '';
     }
@@ -973,6 +1012,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         <option value="Approved">Approved</option>
                         <option value="Sent">Sent</option>
                         <option value="Answered">Answered</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="NeedsMoreInfo">Needs More Info</option>
                         <option value="Discarded">Discarded</option>
                       </select>
                     </div>
@@ -1220,6 +1261,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                           if (['APPROVED', 'APROBADO', 'APROBADA'].includes(upper)) return 'Approved';
                           if (['SENT', 'ENVIADO', 'ENVIADA'].includes(upper)) return 'Sent';
                           if (['ANSWERED', 'RESPONDIDO', 'RESPONDIDA'].includes(upper)) return 'Answered';
+                          if (['RESOLVED', 'RESUELTO', 'RESUELTA'].includes(upper)) return 'Resolved';
+                          if (['NEEDSMOREINFO', 'NEEDS_MORE_INFO', 'NECESITA_MAS_INFO'].includes(upper)) return 'NeedsMoreInfo';
                           if (['DISCARDED', 'DESCARTADO', 'DESCARTADA'].includes(upper)) return 'Discarded';
                           return s;
                         };
@@ -1236,13 +1279,13 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                                   <Icons.Edit /> Edit
                                 </button>
                                 <button
-                                  onClick={() => handleUpdateStatus(question.id, 'Approved')}
+                                  onClick={(e) => handleUpdateStatus(question.id, 'Approved', e)}
                                   className="btn btnPrimary btn-sm"
                                 >
                                   <Icons.Approve /> Approve
                                 </button>
                                 <button
-                                  onClick={() => handleUpdateStatus(question.id, 'Discarded')}
+                                  onClick={(e) => handleUpdateStatus(question.id, 'Discarded', e)}
                                   className="btn btnDanger btn-sm"
                                 >
                                   <Icons.Discard /> Discard
@@ -1251,7 +1294,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             )}
                             {currentStatus === 'Approved' && (
                               <button
-                                onClick={() => handleUpdateStatus(question.id, 'Sent')}
+                                onClick={(e) => handleUpdateStatus(question.id, 'Sent', e)}
                                 className="btn btnPrimary btn-sm"
                               >
                                 <Icons.Send /> Send
@@ -1263,9 +1306,44 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                               </span>
                             )}
                             {currentStatus === 'Answered' && (
-                              <span className="status-message success">
-                                Question answered
+                              <>
+                                <span className="status-message success" style={{ marginRight: '12px' }}>
+                                  Response received - Review needed
+                                </span>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(question.id, 'Resolved', e)}
+                                  className="btn btnSuccess btn-sm"
+                                  title="Mark response as satisfactory"
+                                >
+                                  <Icons.Approve /> Accept Response
+                                </button>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(question.id, 'NeedsMoreInfo', e)}
+                                  className="btn btnWarning btn-sm"
+                                  title="Request additional information"
+                                >
+                                  <Icons.Edit /> Need More Info
+                                </button>
+                              </>
+                            )}
+                            {currentStatus === 'Resolved' && (
+                              <span className="status-message resolved">
+                                ✓ Response accepted - Issue resolved
                               </span>
+                            )}
+                            {currentStatus === 'NeedsMoreInfo' && (
+                              <>
+                                <span className="status-message warning" style={{ marginRight: '12px' }}>
+                                  Additional clarification requested
+                                </span>
+                                <button
+                                  onClick={(e) => handleUpdateStatus(question.id, 'Resolved', e)}
+                                  className="btn btnSuccess btn-sm"
+                                  title="Mark as resolved after clarification"
+                                >
+                                  <Icons.Approve /> Mark Resolved
+                                </button>
+                              </>
                             )}
                             {currentStatus === 'Discarded' && (
                               <span className="status-message" style={{ color: 'var(--color-error, #ef4444)' }}>

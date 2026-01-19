@@ -334,7 +334,7 @@ body:has(.supplier-page) {
   color: white;
 }
 
-.question-text {
+.supplier-page .question-text {
   font-size: 1.05rem;
   color: #1e293b !important;
   line-height: 1.6;

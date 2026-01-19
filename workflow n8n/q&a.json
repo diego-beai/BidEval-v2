@@ -135,7 +135,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Analyze & Classify**: For each deficiency, determine its specific engineering field.\n    - If it involves cables, power, or circuits -> **Electrical**\n    - If it involves machinery, pumps, or piping -> **Mechanical**\n    - If it involves structures, foundations, or concrete -> **Civil**\n    - If it involves workflows, chemical stages, or P&IDs -> **Process**\n    - Only if it is administrative or multi-disciplinary -> **General**\n2.  **Language**: All questions and text MUST be in English.\n3.  **Strictness**: Do not label everything as \"General\". Be as specific as possible.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"questions\": [\n    {\n      \"discipline\": \"Electrical\" | \"Mechanical\" | \"Civil\" | \"Process\" | \"General\",\n      \"question\": \"The specific question in English\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
+        "text": "=Generate technical audit questions in English based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\n**IMPORTANT**: Each deficiency has an \"id\" field which is the requirement_id. You MUST include this requirement_id with each question you generate, linking the question back to its source deficiency.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n### INSTRUCTIONS:\n1.  **Link to Requirement**: Each question MUST include the \"requirement_id\" (the \"id\" field from the deficiency it relates to).\n2.  **Analyze & Classify**: For each deficiency, determine its specific engineering field.\n    - If it involves cables, power, or circuits -> **Electrical**\n    - If it involves machinery, pumps, or piping -> **Mechanical**\n    - If it involves structures, foundations, or concrete -> **Civil**\n    - If it involves workflows, chemical stages, or P&IDs -> **Process**\n    - Only if it is administrative or multi-disciplinary -> **General**\n3.  **Language**: All questions and text MUST be in English.\n4.  **Strictness**: Do not label everything as \"General\". Be as specific as possible.\n5.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"questions\": [\n    {\n      \"requirement_id\": \"uuid-from-deficiency-id-field\",\n      \"discipline\": \"Electrical\" | \"Mechanical\" | \"Civil\" | \"Process\" | \"General\",\n      \"question\": \"The specific question in English\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
         "hasOutputParser": true,
         "batching": {}
       },
@@ -151,7 +151,7 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"discipline\": { \"type\": \"string\" },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"questions\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"requirement_id\": { \"type\": \"string\" },\n          \"discipline\": { \"type\": \"string\" },\n          \"question\": { \"type\": \"string\" },\n          \"importance\": { \"type\": \"string\" }\n        }\n      }\n    }\n  }\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
@@ -201,6 +201,10 @@
             {
               "fieldId": "project_id",
               "fieldValue": "={{ $(\"Set Input Params\").first().json.project_id }}"
+            },
+            {
+              "fieldId": "requirement_id",
+              "fieldValue": "={{ $json['output.questions'].requirement_id }}"
             }
           ]
         }
@@ -236,7 +240,7 @@
     },
     {
       "parameters": {
-        "content": "## Q&A",
+        "content": "## Q&A Generator\n\n**Updated**: Now includes requirement_id with each question for linking back to requirements.\n\n**Flow**:\n1. Receive project_id and provider\n2. Fetch deficiencies (provider_responses where evaluation != INCLUIDO)\n3. Fetch requirement details for each\n4. Generate questions with LLM (including requirement_id)\n5. Save to qa_audit with requirement_id",
         "height": 656,
         "width": 2048,
         "color": 7

@@ -56,7 +56,7 @@ export interface N8nChatMessage {
 
 // Enums defined before Database interface (used in table definitions)
 export type Disciplina = 'Electrical' | 'Mechanical' | 'Civil' | 'Process' | 'General' | 'Cost'
-export type EstadoPregunta = 'Draft' | 'Pending' | 'Approved' | 'Sent' | 'Answered' | 'Discarded'
+export type EstadoPregunta = 'Draft' | 'Pending' | 'Approved' | 'Sent' | 'Answered' | 'Resolved' | 'NeedsMoreInfo' | 'Discarded'
 export type Importancia = 'High' | 'Medium' | 'Low'
 export type NotificationType = 'supplier_responded' | 'evaluation_updated' | 'questions_sent'
 

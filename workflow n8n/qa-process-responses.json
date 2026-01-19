@@ -2,6 +2,52 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-process-responses",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6816,
+        2384
+      ],
+      "id": "0b982f7b-542d-4095-853d-bb0aa6db2eeb",
+      "name": "Webhook Receive",
+      "webhookId": "qa-process-responses-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "token",
+              "name": "token",
+              "value": "={{ $json.body?.token || $json.token }}",
+              "type": "string"
+            },
+            {
+              "id": "responses",
+              "name": "responses",
+              "value": "={{ $json.body?.responses || $json.responses }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -6592,
+        2384
+      ],
+      "id": "01505869-7c78-4ccc-bc47-16f72e004362",
+      "name": "Set Input Params"
+    },
+    {
+      "parameters": {
         "operation": "getAll",
         "tableId": "qa_response_tokens",
         "limit": 1,
@@ -90,7 +136,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get responses from the original input (Set Input Params node)\nconst responses = $(\"Set Input Params3\").first().json.responses || [];\nconst tokenData = $input.first().json;\n\n// Return each response as a separate item\n// IMPORTANT: Put question_id at ROOT level for easy access in subsequent nodes\nreturn responses.map(response => ({\n  json: {\n    // Token data\n    token_id: tokenData.id,\n    project_id: tokenData.project_id,\n    provider_name: tokenData.provider_name,\n    token: tokenData.token,\n    // Question data at ROOT level for reliable access\n    question_id: response.question_id,\n    response_text: response.response_text,\n    // Keep original structure for backwards compatibility\n    responses: response\n  }\n}));"
+        "jsCode": "// Get responses from the original input and token data\nconst inputParams = $('Set Input Params').first().json;\nconst tokenData = $input.first().json;\n\nconst responses = inputParams.responses || [];\n\n// Return each response as a separate item with all context needed\nreturn responses.map(response => ({\n  json: {\n    // Token data\n    token_id: tokenData.id,\n    project_id: tokenData.project_id,\n    provider_name: tokenData.provider_name,\n    token: tokenData.token,\n    // Question data\n    question_id: response.question_id,\n    response_text: response.response_text\n  }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -100,6 +146,19 @@
       ],
       "id": "34f52977-43eb-48de-84b7-c8513c10e96d",
       "name": "Split Responses"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -5712,
+        2384
+      ],
+      "id": "loop-over-items-node",
+      "name": "Loop Over Items"
     },
     {
       "parameters": {
@@ -139,7 +198,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5712,
+        -5488,
         2384
       ],
       "id": "751ea850-be37-474e-8c8e-2c65031a93a1",
@@ -161,7 +220,7 @@
             {
               "keyName": "id",
               "condition": "eq",
-              "keyValue": "={{ $('Split Responses').item.json.question_id }}"
+              "keyValue": "={{ $('Loop Over Items').item.json.question_id }}"
             }
           ]
         }
@@ -169,11 +228,12 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5504,
+        -5264,
         2384
       ],
-      "id": "ab13ab2f-4405-4c3e-aff9-803f65329512",
+      "id": "fetch-question-details-node",
       "name": "Fetch Question Details",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
@@ -208,7 +268,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -5280,
+        -5040,
         2384
       ],
       "id": "1c65c61c-f6ae-4005-9af6-a87ccfb11b46",
@@ -218,7 +278,7 @@
       "parameters": {
         "operation": "getAll",
         "tableId": "rfq_items_master",
-        "returnAll": true,
+        "limit": 1,
         "filters": {
           "conditions": [
             {
@@ -232,10 +292,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5056,
+        -4816,
         2272
       ],
-      "id": "c57c1496-882d-425b-8ee3-d3c665a71eea",
+      "id": "fetch-requirement-node",
       "name": "Fetch Requirement",
       "alwaysOutputData": true,
       "credentials": {
@@ -261,7 +321,7 @@
             {
               "keyName": "provider_name",
               "condition": "eq",
-              "keyValue": "={{ $('Fetch Question Details').first().json.provider_name }}"
+              "keyValue": "={{ $('Loop Over Items').item.json.provider_name }}"
             }
           ]
         }
@@ -269,7 +329,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4832,
+        -4592,
         2272
       ],
       "id": "104cdf0f-dcdb-43a1-8b6b-fd04e83ca2b1",
@@ -285,14 +345,14 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are a technical evaluation expert. Based on a supplier's clarifying response, re-evaluate if a requirement is now better satisfied.\n\n**ORIGINAL REQUIREMENT:**\n{{ $('Fetch Requirement').first().json.requirement_text }}\n\n**CURRENT EVALUATION:**\nStatus: {{ $json.evaluation_value || 'NO INCLUIDO' }}\nScore: {{ $json.score || 0 }}/10\nComment: {{ $json.comment || 'Not evaluated' }}\n\n**SUPPLIER'S CLARIFYING RESPONSE:**\n{{ $('Split Responses').item.json.response_text }}\n\n**INSTRUCTIONS:**\n1. Analyze if the supplier's response addresses the gaps in the original requirement.\n2. Determine if the evaluation should be improved.\n3. Only improve the score if the response provides substantial new information.\n4. Be conservative - don't upgrade unless clearly justified.\n\n**RESPOND STRICTLY WITH JSON:**\n{\n  \"should_update\": true/false,\n  \"new_evaluation_value\": \"INCLUIDO\" | \"PARCIAL\" | \"NO INCLUIDO\",\n  \"new_score\": 0-10,\n  \"new_comment\": \"Brief explanation of change or why no change\",\n  \"confidence\": 0-100\n}",
+        "text": "=You are a technical evaluation expert. Based on a supplier's clarifying response, re-evaluate if a requirement is now better satisfied.\n\n**ORIGINAL REQUIREMENT:**\n{{ $('Fetch Requirement').first().json.requirement_text }}\n\n**CURRENT EVALUATION:**\nStatus: {{ $json.evaluation_value || 'NO INCLUIDO' }}\nScore: {{ $json.score || 0 }}/10\nComment: {{ $json.comment || 'Not evaluated' }}\n\n**SUPPLIER'S CLARIFYING RESPONSE:**\n{{ $('Loop Over Items').item.json.response_text }}\n\n**INSTRUCTIONS:**\n1. Analyze if the supplier's response addresses the gaps in the original requirement.\n2. Determine if the evaluation should be improved.\n3. Only improve the score if the response provides substantial new information.\n4. Be conservative - don't upgrade unless clearly justified.\n\n**RESPOND STRICTLY WITH JSON:**\n{\n  \"should_update\": true/false,\n  \"new_evaluation_value\": \"INCLUIDO\" | \"PARCIAL\" | \"NO INCLUIDO\",\n  \"new_score\": 0-10,\n  \"new_comment\": \"Brief explanation of change or why no change\",\n  \"confidence\": 0-100\n}",
         "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4624,
+        -4368,
         2272
       ],
       "id": "87563561-188e-4b4a-b9c3-6d8a1e4477ae",
@@ -333,7 +393,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4400,
+        -4144,
         2272
       ],
       "id": "0df91ee6-025d-4020-9b51-440eabe3f30e",
@@ -354,7 +414,7 @@
             {
               "keyName": "provider_name",
               "condition": "eq",
-              "keyValue": "={{ $('Fetch Question Details').first().json.provider_name }}"
+              "keyValue": "={{ $('Loop Over Items').item.json.provider_name }}"
             }
           ]
         },
@@ -378,7 +438,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4176,
+        -3920,
         2192
       ],
       "id": "0c0b1bd9-3d92-4cac-9ffb-e2bc4c34feb7",
@@ -391,19 +451,37 @@
       }
     },
     {
-      "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "destinationFieldName": "results",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.aggregate",
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        -3952,
+        -3920,
+        2352
+      ],
+      "id": "no-op-skip-update",
+      "name": "Skip Update"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -4816,
+        2496
+      ],
+      "id": "no-op-no-requirement",
+      "name": "No Requirement"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3696,
         2384
       ],
-      "id": "f701fdb3-8eac-49c8-9e85-096cff890554",
-      "name": "Aggregate Results"
+      "id": "merge-loop-results",
+      "name": "Merge Results"
     },
     {
       "parameters": {
@@ -415,7 +493,7 @@
             {
               "keyName": "token",
               "condition": "eq",
-              "keyValue": "={{ $(\"Set Input Params3\").first().json.token }}"
+              "keyValue": "={{ $('Set Input Params').first().json.token }}"
             }
           ]
         },
@@ -435,7 +513,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3744,
+        -3472,
         2384
       ],
       "id": "b6837914-621c-4e3f-8e2d-92a0d0c94da0",
@@ -471,11 +549,11 @@
             },
             {
               "fieldId": "message",
-              "fieldValue": "={{ $('Aggregate Results').first().json.results.length || 0 }} question(s) answered via the supplier portal"
+              "fieldValue": "={{ $('Set Input Params').first().json.responses.length || 0 }} question(s) answered via the supplier portal"
             },
             {
               "fieldId": "metadata",
-              "fieldValue": "={{ JSON.stringify({ response_count: $('Aggregate Results').first().json.results.length || 0, token_id: $('Set Input Params3').first().json.token }) }}"
+              "fieldValue": "={{ JSON.stringify({ response_count: $('Set Input Params').first().json.responses.length || 0, token: $('Set Input Params').first().json.token }) }}"
             }
           ]
         }
@@ -483,7 +561,7 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3520,
+        -3248,
         2384
       ],
       "id": "notification-create-node",
@@ -498,63 +576,17 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Responses processed and evaluations updated\",\n  \"processed_count\": {{ $('Aggregate Results').first().json.results.length || 0 }}\n}",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Responses processed and evaluations updated\",\n  \"processed_count\": {{ $('Set Input Params').first().json.responses.length || 0 }}\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -3296,
+        -3024,
         2384
       ],
       "id": "384f789c-f9d0-4348-b93e-694e3b79fb94",
       "name": "Respond Success"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "qa-process-responses",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -6816,
-        2384
-      ],
-      "id": "0b982f7b-542d-4095-853d-bb0aa6db2eeb",
-      "name": "Webhook Receive1",
-      "webhookId": "qa-process-responses-webhook"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "token",
-              "name": "token",
-              "value": "={{ $json.body?.token || $json.token }}",
-              "type": "string"
-            },
-            {
-              "id": "responses",
-              "name": "responses",
-              "value": "={{ $json.body?.responses || $json.responses }}",
-              "type": "array"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -6592,
-        2384
-      ],
-      "id": "01505869-7c78-4ccc-bc47-16f72e004362",
-      "name": "Set Input Params3"
     },
     {
       "parameters": {
@@ -564,11 +596,11 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4624,
+        -4368,
         2512
       ],
       "id": "79676c1b-7476-4966-afef-7908ed5459bd",
-      "name": "JSON Output Parser2"
+      "name": "JSON Output Parser"
     },
     {
       "parameters": {
@@ -580,11 +612,11 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -4624,
+        -4368,
         2640
       ],
       "id": "017664d3-18ab-45fc-a0fa-5057beae051c",
-      "name": "Mistral Cloud Chat Model4",
+      "name": "Mistral Cloud Chat Model",
       "credentials": {
         "mistralCloudApi": {
           "id": "tDjuOnF6lpADMmd5",
@@ -594,22 +626,44 @@
     },
     {
       "parameters": {
-        "content": "## QA Process Responses Workflow\n\n**Purpose:** Process supplier responses, save them to qa_audit, and re-evaluate requirements using LLM.\n\n**Input (POST body):**\n```json\n{\n  \"token\": \"abc123xyz...\",\n  \"responses\": [\n    {\n      \"question_id\": \"uuid\",\n      \"response_text\": \"Supplier's answer...\"\n    }\n  ]\n}\n```\n\n**Process:**\n1. Validate token (not expired, not used)\n2. For each response:\n   - **Save response to qa_audit** (response, status=Answered, responded_at)\n   - If linked to a requirement:\n     - Fetch current evaluation\n     - Use LLM to re-evaluate based on supplier response\n     - Update provider_responses if confidence >= 70%\n3. Mark token as responded\n\n**Tables Updated:**\n- `qa_audit` - response, status, responded_at, response_source\n- `provider_responses` - evaluation_value, score, comment (if re-evaluated)\n- `qa_response_tokens` - status, responded_at",
-        "height": 520,
-        "width": 400,
+        "content": "## QA Process Responses Workflow\n\n**Purpose:** Process supplier responses using a Loop for reliable item-by-item processing.\n\n**Data Model:**\n- `qa_audit.requirement_id` links to `rfq_items_master.id`\n- This allows re-evaluation of requirements based on supplier responses\n\n**Input (POST body):**\n```json\n{\n  \"token\": \"abc123xyz...\",\n  \"responses\": [\n    {\n      \"question_id\": \"uuid\",\n      \"response_text\": \"Supplier's answer...\"\n    }\n  ]\n}\n```\n\n**Process:**\n1. Validate token (not expired, not used)\n2. Split responses into items\n3. **Loop Over Items** - process each response:\n   - Save response to qa_audit\n   - Fetch question details (including requirement_id)\n   - If has requirement_id:\n     - Fetch requirement from rfq_items_master\n     - Fetch current evaluation\n     - Re-evaluate with LLM\n     - Update if confidence >= 70%\n4. After loop: Mark token as responded\n5. Create notification\n6. Respond with success\n\n**Tables Updated:**\n- `qa_audit` - response, status, responded_at, response_source\n- `provider_responses` - evaluation_value, score, comment\n- `qa_response_tokens` - status, responded_at\n- `qa_notifications` - new notification created",
+        "height": 700,
+        "width": 450,
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
         -6816,
-        1920
+        1760
       ],
       "id": "e2350e1d-9947-4111-8dc6-e81280e79415",
-      "name": "Sticky Note6"
+      "name": "Sticky Note"
     }
   ],
   "connections": {
+    "Webhook Receive": {
+      "main": [
+        [
+          {
+            "node": "Set Input Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Input Params": {
+      "main": [
+        [
+          {
+            "node": "Validate Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Validate Token": {
       "main": [
         [
@@ -641,6 +695,24 @@
     },
     "Split Responses": {
       "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Mark Token Responded",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Save Response to QA Audit",
@@ -683,7 +755,7 @@
         ],
         [
           {
-            "node": "Aggregate Results",
+            "node": "No Requirement",
             "type": "main",
             "index": 0
           }
@@ -734,7 +806,7 @@
         ],
         [
           {
-            "node": "Aggregate Results",
+            "node": "Skip Update",
             "type": "main",
             "index": 0
           }
@@ -745,18 +817,40 @@
       "main": [
         [
           {
-            "node": "Aggregate Results",
+            "node": "Merge Results",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Aggregate Results": {
+    "Skip Update": {
       "main": [
         [
           {
-            "node": "Mark Token Responded",
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Requirement": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
@@ -785,29 +879,7 @@
         ]
       ]
     },
-    "Webhook Receive1": {
-      "main": [
-        [
-          {
-            "node": "Set Input Params3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Input Params3": {
-      "main": [
-        [
-          {
-            "node": "Validate Token",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "JSON Output Parser2": {
+    "JSON Output Parser": {
       "ai_outputParser": [
         [
           {
@@ -818,7 +890,7 @@
         ]
       ]
     },
-    "Mistral Cloud Chat Model4": {
+    "Mistral Cloud Chat Model": {
       "ai_languageModel": [
         [
           {
