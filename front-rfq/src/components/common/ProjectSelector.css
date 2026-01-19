@@ -248,6 +248,123 @@
   min-width: 220px;
 }
 
+/* New Project Button */
+.new-project-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 8px);
+  margin: 4px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(18, 181, 176, 0.1), rgba(18, 181, 176, 0.05));
+  border: 1px dashed var(--color-primary, #12b5b0);
+  border-radius: 8px;
+  color: var(--color-primary, #12b5b0);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-project-btn:hover {
+  background: linear-gradient(135deg, rgba(18, 181, 176, 0.15), rgba(18, 181, 176, 0.1));
+  border-style: solid;
+}
+
+.new-project-btn svg {
+  flex-shrink: 0;
+}
+
+/* Create Project Form */
+.create-project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-surface-alt, #f8f9fa);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.create-project-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  color: var(--text-primary, #1a1a2e);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.create-project-input:focus {
+  border-color: var(--color-primary, #12b5b0);
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.15);
+}
+
+.create-project-input::placeholder {
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.create-project-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-project-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.create-project-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-project-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.create-project-btn.confirm {
+  background: var(--color-primary, #12b5b0);
+  color: white;
+}
+
+.create-project-btn.confirm:hover:not(:disabled) {
+  background: #0fa09b;
+}
+
+.create-project-btn.cancel {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.create-project-btn.cancel:hover:not(:disabled) {
+  background: var(--bg-hover, #f0f1f3);
+  color: var(--text-primary, #1a1a2e);
+}
+
+.create-project-btn .loading-indicator {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .project-dropdown {
