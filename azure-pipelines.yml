@@ -23,9 +23,11 @@ stages:
               
               echo "Deploying BidEval..."
               
-              docker compose down bideval 2>/dev/null || true
+              docker stop bideval 2>/dev/null || true
+              docker rm -f bideval 2>/dev/null || true
+              
               docker compose build bideval
-              docker compose up -d --force-recreate bideval
+              docker compose up -d bideval
               
               echo "Deployment complete!"
             displayName: 'Deploy with Docker Compose'
