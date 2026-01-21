@@ -1,0 +1,37 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: Default
+  demands:
+    - agent.name -equals MacBichos-Mac-Studio
+
+stages:
+  - stage: Deploy
+    displayName: 'Deploy BidEval'
+    jobs:
+      - job: DeployApp
+        displayName: 'Deploy'
+        steps:
+          - checkout: self
+            clean: false
+
+          - script: |
+              set -e
+              
+              echo "Deploying BidEval..."
+              
+              docker compose down bideval 2>/dev/null || true
+              docker compose build bideval
+              docker compose up -d --force-recreate bideval
+              
+              echo "Deployment complete!"
+            displayName: 'Deploy with Docker Compose'
+            workingDirectory: $(Build.SourcesDirectory)
+            timeoutInMinutes: 10
+            env:
+              VITE_SUPABASE_URL: $(VITE_SUPABASE_URL)
+              VITE_SUPABASE_ANON_KEY: $(VITE_SUPABASE_ANON_KEY)
+              VITE_N8N_WEBHOOK_URL: $(VITE_N8N_WEBHOOK_URL)
