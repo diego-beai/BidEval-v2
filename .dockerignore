@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# Dependencies
+front-rfq/node_modules
+node_modules
+
+# Build outputs (we rebuild in Docker)
+front-rfq/dist
+dist
+
+# Development files
+*.log
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (we use Docker env vars)
+.env
+.env.local
+.env.*.local
+front-rfq/.env.local
+
+# Test files
+coverage
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentation (optional - uncomment to include)
+# docs/
+
+# N8N workflows (not needed for frontend container)
+# Uncomment if you want to include them
+# workflow n8n/
+
+# Database scripts (not needed for frontend container)
+bbdd.sql

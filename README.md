@@ -1,538 +1,440 @@
-# RFQ Processor - Frontend
+# BidEval - RFQ Processing & Supplier Evaluation Platform
 
-Frontend web para el procesamiento automático de RFQs (Request for Quotations) con análisis de múltiples proveedores utilizando el workflow de n8n con IA.
+Sistema integral para el procesamiento automatizado de RFQs (Request for Quotations) y evaluación de propuestas de proveedores del sector energético EPC, utilizando IA y workflows de N8N.
 
-## 🚀 Características
+## Arquitectura del Sistema
 
-- **Drag & Drop**: Interfaz intuitiva para cargar archivos PDF
-- **Procesamiento Inteligente**: Integración con workflow n8n que incluye:
-  - OCR automático para PDFs escaneados
-  - Clasificación de proveedores con IA
-  - Detección de tipos de evaluación
-  - Análisis de ítems con LLM
-- **Visualización de Resultados**: Tabla dinámica con evaluaciones por proveedor
-- **Exportación**: Descarga de resultados en formato CSV
-- **Diseño Profesional**: Interfaz oscura moderna con gradientes y animaciones
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         BIDEVAL ARCHITECTURE                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   ┌──────────────┐         ┌──────────────┐         ┌────────────┐ │
+│   │   Frontend   │ ──────> │   N8N        │ ──────> │  Supabase  │ │
+│   │   (React)    │ Webhook │   Workflows  │   SQL   │  (Postgres)│ │
+│   │   Port 3002  │ <────── │   + Ollama   │ <────── │  + pgvector│ │
+│   └──────────────┘         └──────────────┘         └────────────┘ │
+│                                   │                                 │
+│                                   v                                 │
+│                            ┌──────────────┐                        │
+│                            │   Ollama     │                        │
+│                            │   (LLM/RAG)  │                        │
+│                            │   Qwen3, etc │                        │
+│                            └──────────────┘                        │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-## 🛠️ Stack Tecnológico
+## Caracteristicas Principales
 
-- **React 18** - Framework UI
-- **TypeScript** - Type safety
-- **Vite** - Build tool y dev server
-- **Zustand** - State management
-- **TanStack Table** - Tablas avanzadas
-- **React Dropzone** - Upload de archivos
-- **CSS Custom Properties** - Sistema de diseño consistente
+### Frontend Dashboard
+- **Drag & Drop Upload**: Carga de PDFs con procesamiento paralelo (hasta 7 archivos)
+- **Multi-Proyecto**: Gestión de múltiples proyectos de evaluación
+- **Tabla de Evaluación**: Comparativa de proveedores por requisito
+- **Sistema de Scoring**: Ranking ponderado de proveedores
+- **Q&A Audit**: Generación automática de preguntas técnicas
+- **Chat IA**: Consultas en lenguaje natural sobre los datos
+- **Export CSV**: Descarga de resultados
 
-## 📋 Requisitos Previos
+### Backend (N8N Workflows)
+- **OCR Automático**: Extracción de texto de PDFs escaneados
+- **Clasificación IA**: Detección automática de proveedor y tipo de evaluación
+- **Análisis RAG**: Búsqueda semántica con embeddings vectoriales (4096 dim)
+- **Scoring Inteligente**: Evaluación ponderada por categorías
+- **Email Automation**: Envío de Q&A a proveedores via Gmail API
 
-- Node.js >= 18.x
-- npm >= 9.x
-- n8n workflow activo y accesible
+---
 
-## 🔧 Instalación
+## Stack Tecnológico
 
-1. **Instalar dependencias**:
-   ```bash
-   npm install
-   ```
+### Frontend (`/front-rfq`)
+| Tecnología | Versión | Uso |
+|------------|---------|-----|
+| React | 18.x | Framework UI |
+| TypeScript | 5.x | Type safety |
+| Vite | 5.4 | Build tool |
+| Zustand | 5.x | State management |
+| TanStack Table | 8.x | Tablas avanzadas |
+| Recharts | 2.x | Visualizaciones |
+| React Dropzone | 14.x | Upload de archivos |
 
-2. **Configurar variables de entorno**:
-   Copia el archivo `.env.example` a `.env.local` y ajusta la URL del webhook:
-   ```bash
-   cp .env.example .env.local
-   ```
+### Backend (N8N)
+| Tecnología | Uso |
+|------------|-----|
+| N8N | Orchestración de workflows |
+| Ollama | LLM local (Qwen3, Mistral) |
+| Supabase | Base de datos PostgreSQL |
+| pgvector | Embeddings vectoriales |
+| Gmail API | Envío de emails |
 
-   Edita `.env.local`:
-   ```env
-   VITE_N8N_WEBHOOK_URL=http://localhost:5678/webhook-test/rfq
-   ```
+---
 
-3. **Configurar Base de Datos**:
-   Copia y ejecuta el siguiente script SQL en el editor de Supabase para generar la estructura completa:
+## Flujos de N8N
 
-   ```sql
-   -- 0. TABLA DE PROYECTOS (Normalización de nombres)
-   CREATE TABLE IF NOT EXISTS public.projects (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       name TEXT NOT NULL UNIQUE, -- Nombre normalizado (sin caracteres especiales, mayúsculas)
-       display_name TEXT NOT NULL, -- Nombre para mostrar (puede tener caracteres especiales)
-       description TEXT,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+### 1. `ingesta-rfqs.json` - Ingesta de Documentos RFQ
+**Webhook:** `/webhook/ingesta-rfq`
 
-   -- Índice para búsquedas rápidas por nombre
-   CREATE INDEX IF NOT EXISTS idx_projects_name ON public.projects(name);
-   CREATE INDEX IF NOT EXISTS idx_projects_display_name ON public.projects(display_name);
+**Función:** Procesa documentos RFQ base del cliente para extraer requisitos.
 
-   -- 1. REGISTRO GLOBAL DE DOCUMENTOS
-   CREATE TABLE IF NOT EXISTS public.document_metadata (
-       id TEXT PRIMARY KEY,
-       title TEXT,
-       project_id UUID REFERENCES public.projects(id) ON DELETE SET NULL,
-       document_type TEXT NOT NULL,
-       provider TEXT,
-       evaluation_types TEXT[],
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+**Pipeline:**
+1. Recibe PDF en Base64 via webhook
+2. Convierte a binario y extrae texto (OCR si necesario)
+3. Clasifica tipos de evaluación con IA (Mistral 7B):
+   - Technical Evaluation
+   - Economical Evaluation
+   - Pre-FEED Deliverables
+   - FEED Deliverables
+4. Detecta nombre del proyecto
+5. Extrae requisitos estructurados por fase
+6. Almacena en `rfq_items_master`
 
-   -- 2. TABLAS VECTORIALES (Vectores de 4096)
-   -- Aceptan los 4096 de Qwen3, solo que no llevan índice (perfecto para <10k filas)
-   CREATE TABLE IF NOT EXISTS public.rfq (
-       id BIGSERIAL PRIMARY KEY,
-       content TEXT,
-       metadata JSONB,
-       embedding vector(4096) 
-   );
+**LLM Usado:** Mistral 7B (Ollama) para clasificación
 
-   CREATE TABLE IF NOT EXISTS public.proposals (
-       id BIGSERIAL PRIMARY KEY,
-       content TEXT,
-       metadata JSONB,
-       embedding vector(4096)
-   );
+---
 
-   -- 3. REQUISITOS MAESTROS
-   CREATE TABLE IF NOT EXISTS public.rfq_items_master (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       file_id TEXT REFERENCES public.document_metadata(id) ON DELETE CASCADE,
-       project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-       evaluation_type TEXT NOT NULL,
-       phase TEXT,
-       requirement_text TEXT NOT NULL,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+### 2. `ingesta-ofertas.json` - Procesamiento de Propuestas
+**Webhook:** `/webhook/ofertas-proveedores`
 
-   -- Índice para búsquedas por proyecto
-   CREATE INDEX IF NOT EXISTS idx_rfq_items_master_project_id ON public.rfq_items_master(project_id);
+**Función:** Procesa propuestas de proveedores y las compara con requisitos RFQ.
 
-   -- 4. EVALUACIONES DE PROVEEDORES
-   CREATE TABLE IF NOT EXISTS public.provider_responses (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE CASCADE,
-       provider_name TEXT NOT NULL,
-       evaluation_value TEXT,
-       score INTEGER, -- Added score column for quantitative evaluation
-       comment TEXT,
-       file_id TEXT REFERENCES public.document_metadata(id) ON DELETE CASCADE,
-       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       CONSTRAINT unique_requirement_provider UNIQUE(requirement_id, provider_name)
-   );
+**Pipeline:**
+1. Recibe PDF de propuesta en Base64
+2. Valida proveedor y tipo de evaluación con IA
+3. Genera embeddings del documento (Qwen3-embedding:8b)
+4. Almacena chunks en vectorstore `proposals`
+5. Para cada requisito del RFQ:
+   - Busca contexto relevante via RAG
+   - Evalúa cumplimiento con LLM (Mistral Large)
+   - Asigna score (0-10) y clasificación (INCLUIDO/PARCIAL/NO INCLUIDO)
+6. Guarda evaluaciones en `provider_responses`
 
-   -- 5. AUDITORÍA TÉCNICA (Q&A)
-   CREATE TABLE IF NOT EXISTS public.qa_audit (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE SET NULL,
-       project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
-       provider_name TEXT NOT NULL,
-       discipline TEXT,
-       question TEXT NOT NULL,
-       importance TEXT CHECK (importance IN ('High', 'Medium', 'Low')),
-       status TEXT DEFAULT 'Pending',
-       response TEXT,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+**LLMs Usados:**
+- Qwen3-embedding:8b (embeddings)
+- Mistral Large (evaluación)
+- Mistral 7B (validación)
 
-   -- Índice para búsquedas por proyecto
-   CREATE INDEX IF NOT EXISTS idx_qa_audit_project_id ON public.qa_audit(project_id);
+---
 
-   -- 6. TABLA QA_PENDIENTE (compatibilidad con el frontend)
-   -- Esta tabla mantiene la estructura esperada por el frontend
-   CREATE TABLE IF NOT EXISTS public.QA_PENDIENTE (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       project_id TEXT NOT NULL, -- Mantenemos TEXT para compatibilidad, pero debería referenciar projects
-       proveedor TEXT NOT NULL,
-       disciplina TEXT CHECK (disciplina IN ('Eléctrica', 'Mecánica', 'Civil', 'Proceso', 'General')),
-       pregunta_texto TEXT NOT NULL,
-       estado TEXT CHECK (estado IN ('Borrador', 'Pendiente', 'Aprobada', 'Enviada', 'Respondida', 'Descartada')) DEFAULT 'Borrador',
-       importancia TEXT CHECK (importancia IN ('Alta', 'Media', 'Baja')),
-       respuesta_proveedor TEXT,
-       fecha_respuesta TIMESTAMP WITH TIME ZONE,
-       notas_internas TEXT
-   );
+### 3. `scoring.json` - Evaluación y Ranking de Proveedores
+**Webhook:** `/webhook/scoring-evaluation`
 
-   -- Índices para QA_PENDIENTE
-   CREATE INDEX IF NOT EXISTS idx_qa_pendiente_project_id ON public.QA_PENDIENTE(project_id);
-   CREATE INDEX IF NOT EXISTS idx_qa_pendiente_proveedor ON public.QA_PENDIENTE(proveedor);
-   CREATE INDEX IF NOT EXISTS idx_qa_pendiente_estado ON public.QA_PENDIENTE(estado);
+**Función:** Calcula puntuaciones ponderadas y genera ranking de proveedores.
 
-   -- Función para actualizar updated_at en projects
-   CREATE OR REPLACE FUNCTION update_projects_updated_at()
-   RETURNS TRIGGER AS $$
-   BEGIN
-       NEW.updated_at = NOW();
-       RETURN NEW;
-   END;
-   $$ LANGUAGE plpgsql;
+**Pipeline:**
+1. Obtiene requisitos y respuestas del proyecto
+2. Agrupa por proveedor
+3. Calcula scores por criterio:
 
-   -- Trigger para actualizar updated_at automáticamente
-   CREATE TRIGGER trigger_update_projects_updated_at
-       BEFORE UPDATE ON public.projects
-       FOR EACH ROW
-       EXECUTE FUNCTION update_projects_updated_at();
+| Categoría | Peso | Criterios |
+|-----------|------|-----------|
+| **Technical** | 30% | scope_facilities (10%), scope_work (10%), deliverables_quality (10%) |
+| **Economic** | 35% | total_price (15%), price_breakdown (8%), optionals (7%), capex_opex (5%) |
+| **Execution** | 20% | schedule (8%), resources (6%), exceptions (6%) |
+| **HSE & Compliance** | 15% | safety_studies (8%), regulatory (7%) |
 
-   -- Función helper para normalizar nombres de proyectos
-   -- Convierte nombres con caracteres especiales a formato normalizado
-   CREATE OR REPLACE FUNCTION normalize_project_name(display_name TEXT)
-   RETURNS TEXT AS $$
-   BEGIN
-       RETURN UPPER(
-           REGEXP_REPLACE(
-               REGEXP_REPLACE(display_name, '[^\w\s]', '', 'g'), -- Elimina caracteres especiales
-               '\s+', '_', 'g' -- Reemplaza espacios múltiples con guión bajo
-           )
-       );
-   END;
-   $$ LANGUAGE plpgsql IMMUTABLE;
+4. Genera evaluación con LLM (fortalezas, debilidades)
+5. Almacena en `ranking_proveedores`
 
-   -- Función para obtener o crear un proyecto
-   -- Útil para migraciones y para asegurar que los proyectos se crean correctamente
-   CREATE OR REPLACE FUNCTION get_or_create_project(
-       p_display_name TEXT,
-       p_description TEXT DEFAULT NULL
-   )
-   RETURNS UUID AS $$
-   DECLARE
-       v_project_id UUID;
-       v_normalized_name TEXT;
-   BEGIN
-       -- Normalizar el nombre
-       v_normalized_name := normalize_project_name(p_display_name);
-       
-       -- Buscar si ya existe
-       SELECT id INTO v_project_id
-       FROM public.projects
-       WHERE name = v_normalized_name OR display_name = p_display_name
-       LIMIT 1;
-       
-       -- Si no existe, crearlo
-       IF v_project_id IS NULL THEN
-           INSERT INTO public.projects (name, display_name, description)
-           VALUES (v_normalized_name, p_display_name, p_description)
-           RETURNING id INTO v_project_id;
-       END IF;
-       
-       RETURN v_project_id;
-   END;
-   $$ LANGUAGE plpgsql;
+---
 
-   -- Vista para facilitar consultas con nombres de proyectos
-   CREATE OR REPLACE VIEW v_projects_with_stats AS
-   SELECT 
-       p.id,
-       p.name,
-       p.display_name,
-       p.description,
-       p.created_at,
-       p.updated_at,
-       COUNT(DISTINCT dm.id) as document_count,
-       COUNT(DISTINCT rim.id) as requirement_count,
-       COUNT(DISTINCT qa.id) as qa_count
-   FROM public.projects p
-   LEFT JOIN public.document_metadata dm ON dm.project_id = p.id
-   LEFT JOIN public.rfq_items_master rim ON rim.project_id = p.id
-   LEFT JOIN public.qa_audit qa ON qa.project_id = p.id
-   GROUP BY p.id, p.name, p.display_name, p.description, p.created_at, p.updated_at;
+### 4. `chat.json` - Agente de Chat IA
+**Webhook:** `/webhook/chat-rfq`
 
-   -- ============================================
-   -- TABLA DE RANKING DE PROVEEDORES
-   -- ============================================
-   CREATE TABLE IF NOT EXISTS public.ranking_proveedores (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       provider_name TEXT NOT NULL,
-       project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
-       cumplimiento_porcentual DECIMAL(5,2) DEFAULT 0, -- Porcentaje de cumplimiento (0-100)
-       technical_score DECIMAL(3,1) DEFAULT 0, -- Puntaje técnico (0-10)
-       economical_score DECIMAL(3,1) DEFAULT 0, -- Puntaje económico (0-10)
-       pre_feed_score DECIMAL(3,1) DEFAULT 0, -- Puntaje Pre-FEED (0-10)
-       feed_score DECIMAL(3,1) DEFAULT 0, -- Puntaje FEED (0-10)
-       overall_score DECIMAL(3,1) DEFAULT 0, -- Puntaje general (0-10)
-       evaluation_count INTEGER DEFAULT 0, -- Número de evaluaciones realizadas
-       last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-   );
+**Función:** Chatbot para consultas sobre proyectos RFQ en lenguaje natural.
 
-   -- Índices para mejor rendimiento
-   CREATE INDEX IF NOT EXISTS idx_ranking_provider_name ON public.ranking_proveedores(provider_name);
-   CREATE INDEX IF NOT EXISTS idx_ranking_project_id ON public.ranking_proveedores(project_id);
-   CREATE INDEX IF NOT EXISTS idx_ranking_cumplimiento ON public.ranking_proveedores(cumplimiento_porcentual);
+**Herramientas disponibles:**
+| Herramienta | Tipo | Descripción |
+|-------------|------|-------------|
+| `consultar_ofertas_proveedores` | Vector Search | Busca en documentos de propuestas |
+| `consultar_documentos_rfq` | Vector Search | Busca en documentos RFQ originales |
+| `query_requirements` | SQL | Consulta requisitos y respuestas |
+| `query_provider_responses` | SQL | Consulta evaluaciones por proveedor |
+| `query_ranking` | SQL | Obtiene ranking de proveedores |
+| `query_qa_audit` | SQL | Consulta preguntas Q&A pendientes |
 
-   -- Función para actualizar automáticamente overall_score
-   CREATE OR REPLACE FUNCTION update_overall_score()
-   RETURNS TRIGGER AS $$
-   BEGIN
-       NEW.overall_score = (
-           COALESCE(NEW.technical_score, 0) +
-           COALESCE(NEW.economical_score, 0) +
-           COALESCE(NEW.pre_feed_score, 0) +
-           COALESCE(NEW.feed_score, 0)
-       ) / NULLIF(NEW.evaluation_count, 0);
+**LLM Usado:** Qwen3:8b con memoria PostgreSQL
 
-       -- Si no hay evaluaciones, el score es 0
-       IF NEW.evaluation_count = 0 THEN
-           NEW.overall_score = 0;
-       END IF;
+---
 
-       RETURN NEW;
-   END;
-   $$ LANGUAGE plpgsql;
+### 5. `q&a.json` - Generación de Auditoría Técnica
+**Webhook:** `/webhook/qa-audit-generator`
 
-   -- Trigger para actualizar overall_score automáticamente
-   CREATE OR REPLACE TRIGGER trigger_update_overall_score
-       BEFORE INSERT OR UPDATE ON public.ranking_proveedores
-       FOR EACH ROW
-       EXECUTE FUNCTION update_overall_score();
+**Función:** Genera preguntas técnicas para items faltantes o parciales.
 
-   -- ============================================
-   -- VISTA: ranking_proveedores_por_tipo
-   -- Vista que calcula scores por tipo de evaluación para cada proveedor
-   -- Esta vista es usada por el frontend para mostrar gráficos de scoring
-   -- ============================================
-   CREATE OR REPLACE VIEW public.ranking_proveedores_por_tipo AS
-   WITH provider_scores AS (
-       SELECT
-           r.provider_name,
-           m.project_id,
-           m.evaluation_type,
-           COUNT(r.id) as items_evaluados,
-           COALESCE(AVG(r.score), 0) as avg_score
-       FROM provider_responses r
-       JOIN rfq_items_master m ON r.requirement_id = m.id
-       WHERE r.score IS NOT NULL
-       GROUP BY r.provider_name, m.project_id, m.evaluation_type
-   ),
-   aggregated_scores AS (
-       SELECT
-           provider_name,
-           project_id,
-           -- Technical Evaluation score
-           COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Technical%' THEN avg_score END), 0) as technical_score,
-           -- Economical Evaluation score
-           COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Econom%' THEN avg_score END), 0) as economical_score,
-           -- Pre-FEED score
-           COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%Pre-FEED%' OR evaluation_type ILIKE '%Pre FEED%' THEN avg_score END), 0) as pre_feed_score,
-           -- FEED score (excluding Pre-FEED)
-           COALESCE(MAX(CASE WHEN evaluation_type ILIKE '%FEED%' AND evaluation_type NOT ILIKE '%Pre-FEED%' AND evaluation_type NOT ILIKE '%Pre FEED%' THEN avg_score END), 0) as feed_score,
-           -- Total items evaluados
-           SUM(items_evaluados) as total_items
-       FROM provider_scores
-       GROUP BY provider_name, project_id
-   )
-   SELECT
-       provider_name,
-       project_id,
-       ROUND(technical_score::numeric, 2) as technical_score,
-       ROUND(economical_score::numeric, 2) as economical_score,
-       ROUND(pre_feed_score::numeric, 2) as pre_feed_score,
-       ROUND(feed_score::numeric, 2) as feed_score,
-       ROUND(((technical_score * 0.4 + economical_score * 0.3 + pre_feed_score * 0.15 + feed_score * 0.15))::numeric, 2) as overall_score,
-       ROUND(((technical_score + economical_score + pre_feed_score + feed_score) / 4 * 10)::numeric, 2) as cumplimiento_porcentual,
-       total_items as evaluation_count
-   FROM aggregated_scores
-   ORDER BY overall_score DESC;
+**Pipeline:**
+1. Obtiene items no incluidos/parciales del proveedor
+2. Agrupa deficiencias con requisitos originales
+3. Genera preguntas técnicas con IA, clasificadas por:
+   - **Disciplina:** Electrical, Mechanical, Civil, Process, General
+   - **Importancia:** High, Medium, Low
+4. Vincula cada pregunta al `requirement_id` original
+5. Almacena en `qa_audit`
 
-   -- ============================================
-   -- VISTA LEGACY: ranking_proveedores_simple (para compatibilidad)
-   -- ============================================
-   CREATE OR REPLACE VIEW public.ranking_proveedores_simple AS
-   SELECT
-     m.project_id,
-     r.provider_name,
-     count(r.id) as total_items_evaluados,
-     sum(r.score) as puntos_totales,
-     round(
-       sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
-       2
-     ) as cumplimiento_porcentual
-   FROM
-     rfq_items_master m
-     JOIN provider_responses r ON m.id = r.requirement_id
-   GROUP BY
-     m.project_id,
-     r.provider_name
-   ORDER BY cumplimiento_porcentual DESC;
-   ```
+---
 
-4. **Iniciar servidor de desarrollo**:
-   ```bash
-   npm run dev
-   ```
+### 6. `qa-send-to-supplier.json` - Envío de Q&A a Proveedores
+**Webhook:** `/webhook/qa-send-to-supplier`
 
-   La aplicación estará disponible en `http://localhost:3000`
+**Función:** Genera tokens de acceso y envía emails con enlaces de respuesta.
 
-## 🏗️ Build para Producción
+**Pipeline:**
+1. Genera token único de 64 caracteres
+2. Almacena token con fecha de expiración en `qa_response_tokens`
+3. Actualiza estado de preguntas a "Sent"
+4. Genera HTML del email con preguntas
+5. Envía via Gmail API
+
+---
+
+### 7. `mail.json` - Composición de Emails
+**Webhook:** `/webhook/mail`
+
+**Función:** Genera emails profesionales basados en issues detectados.
+
+**Pipeline:**
+1. Filtra items faltantes del proveedor
+2. Combina con preguntas Q&A seleccionadas
+3. Genera contenido del email con LLM
+4. Aplica tono seleccionado (formal, amigable, urgente)
+
+---
+
+### 8. `qa-process-responses.json` - Procesamiento de Respuestas
+**Webhook:** `/webhook/qa-process-responses`
+
+**Función:** Procesa respuestas de proveedores y mapea a preguntas originales.
+
+---
+
+### 9. `Workflow-completo.json` - Workflow Principal
+**Webhook:** `/webhook/tabla`
+
+**Función:** Workflow principal que integra todas las funcionalidades para la vista de tabla comparativa.
+
+---
+
+## Estructura del Proyecto
+
+```
+BidEval-dock/
+├── front-rfq/                    # Frontend React
+│   ├── src/
+│   │   ├── components/           # Componentes React
+│   │   │   ├── charts/          # Gráficos de scoring
+│   │   │   ├── chat/            # Interfaz de chat IA
+│   │   │   ├── dashboard/       # Dashboard principal
+│   │   │   ├── layout/          # Header, Footer, Layout
+│   │   │   ├── mail/            # Composición de emails
+│   │   │   ├── processing/      # Estados de procesamiento
+│   │   │   ├── results/         # Tablas de resultados
+│   │   │   └── upload/          # Upload de archivos
+│   │   ├── config/
+│   │   │   └── constants.ts     # Configuración API
+│   │   ├── services/
+│   │   │   ├── api.service.ts   # Fetch con retry
+│   │   │   ├── n8n.service.ts   # Integración N8N
+│   │   │   └── chat.service.ts  # Servicio de chat
+│   │   ├── stores/              # Zustand stores (14)
+│   │   ├── types/               # TypeScript types
+│   │   └── utils/               # Utilidades
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── .env.example
+│   └── .env.local               # Variables de entorno
+│
+├── workflow n8n/                 # Flujos N8N (JSON)
+│   ├── ingesta-rfqs.json        # Ingesta RFQ
+│   ├── ingesta-ofertas.json     # Ingesta propuestas
+│   ├── scoring.json             # Scoring proveedores
+│   ├── chat.json                # Chat IA
+│   ├── q&a.json                 # Generación Q&A
+│   ├── qa-send-to-supplier.json # Envío Q&A
+│   ├── mail.json                # Composición emails
+│   └── Workflow-completo.json   # Workflow principal
+│
+├── bbdd.sql                      # Schema de base de datos
+├── docker-compose.yml            # Orquestación Docker
+├── Dockerfile                    # Build frontend
+└── .dockerignore
+```
+
+---
+
+## Instalación y Configuración
+
+### Requisitos Previos
+- Docker & Docker Compose
+- Node.js >= 18.x (solo desarrollo)
+- Instancia de N8N con Ollama
+- Cuenta Supabase
+
+### Opción 1: Docker (Recomendado)
 
 ```bash
-npm run build
+# 1. Clonar repositorio
+git clone https://github.com/tu-usuario/BidEval-dock.git
+cd BidEval-dock
+
+# 2. Configurar variables de entorno
+cp front-rfq/.env.example front-rfq/.env.local
+# Editar .env.local con tus credenciales
+
+# 3. Levantar servicios
+docker-compose up -d
+
+# 4. Acceder a la aplicación
+# Frontend: http://localhost:3002
 ```
 
-Los archivos optimizados se generarán en la carpeta `dist/`
+### Opción 2: Desarrollo Local
 
-Para previsualizar el build:
 ```bash
-npm run preview
+# 1. Instalar dependencias
+cd front-rfq
+npm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local
+
+# 3. Iniciar servidor de desarrollo
+npm run dev
 ```
 
-## 📁 Estructura del Proyecto
+### Configuración de N8N
 
+1. Importar workflows desde `/workflow n8n/` en tu instancia N8N
+2. Configurar credenciales:
+   - Supabase API
+   - Ollama (local o remoto)
+   - Gmail API (para emails)
+3. Activar workflows
+
+### Configuración de Base de Datos
+
+Ejecutar el script `bbdd.sql` en tu instancia Supabase para crear:
+- Tablas principales
+- Vistas de ranking
+- Funciones helper
+- Índices optimizados
+
+---
+
+## Variables de Entorno
+
+```env
+# Supabase
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu_clave_anonima
+
+# N8N Webhooks
+VITE_N8N_WEBHOOK_URL=https://n8n.tudominio.com/webhook/tabla
 ```
-src/
-├── components/          # Componentes React
-│   ├── layout/         # Layout (Header, Footer, AppLayout)
-│   ├── upload/         # Componentes de upload
-│   ├── processing/     # Estado de procesamiento
-│   ├── results/        # Tabla de resultados
-│   └── ui/             # Componentes UI reutilizables
-├── config/             # Configuración y constantes
-├── hooks/              # Custom React hooks
-├── services/           # Servicios de API
-├── stores/             # Zustand stores
-├── types/              # Definiciones TypeScript
-├── utils/              # Utilidades (validators, formatters, etc)
-├── App.tsx             # Componente principal
-└── main.tsx            # Punto de entrada
-```
 
-## 🔌 Integración con n8n
+---
 
-### Configuración del Webhook
+## Proveedores Soportados
 
-El frontend se comunica con n8n a través de un webhook POST que:
+| Proveedor | Código | Color UI |
+|-----------|--------|----------|
+| Técnicas Reunidas | TR, TECNICASREUNIDAS | Teal |
+| IDOM | IDOM | Green |
+| SACYR | SACYR | Purple |
+| Empresarios Agrupados | EA | Orange |
+| SENER | SENER | Pink |
+| TRESCA | TRESCA | Cyan |
+| WORLEY | WORLEY | Amber |
 
-1. Recibe el archivo PDF
-2. Procesa el documento (OCR si es necesario)
-3. Clasifica el proveedor y tipo de evaluación
-4. Evalúa los ítems de RFQ
-5. Devuelve un array de resultados
+---
 
-### Datos Enviados al Webhook
+## Tipos de Evaluación
 
-⚠️ **IMPORTANTE**: El frontend ahora soporta **procesamiento paralelo de múltiples archivos** (hasta 7 archivos simultáneos).
+| Tipo | Peso | Descripción |
+|------|------|-------------|
+| Technical Evaluation | 40% | Cumplimiento técnico del scope |
+| Economical Evaluation | 30% | Análisis de precios y costos |
+| Pre-FEED Deliverables | 15% | Entregables fase conceptual |
+| FEED Deliverables | 15% | Entregables fase básica |
 
-Cada archivo se envía como una petición POST JSON independiente a `http://localhost:5678/webhook/rfq`:
+---
 
-```json
+## API de Webhooks
+
+### Subir Archivo
+```http
+POST /webhook/tabla
+Content-Type: application/json
+
 {
-  "file_id": "rfq-1735478123456-abc123def",
-  "file_title": "oferta_sacyr.pdf",
-  "file_url": "",
-  "file_binary": "JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCB...",
-  "metadata": {
-    "uploadedAt": "2025-12-29T10:30:00.000Z",
-    "fileName": "oferta_sacyr.pdf",
-    "fileSize": 2048576,
-    "fileId": "rfq-1735478123456-abc123def"
-  }
+  "file_id": "rfq-1234567890",
+  "file_title": "propuesta_idom.pdf",
+  "file_binary": "<base64>",
+  "project_id": "uuid",
+  "proveedor": "IDOM",
+  "evaluation": "Technical Evaluation"
 }
 ```
 
-**Campos:**
-- `file_id`: ID único generado automáticamente
-- `file_title`: Nombre del archivo original
-- `file_url`: Vacío (se mantiene por compatibilidad)
-- `file_binary`: Contenido del PDF en base64 **sin prefijo** `data:application/pdf;base64,`
-- `metadata`: Información adicional del archivo
+### Generar Scoring
+```http
+POST /webhook/scoring-evaluation
+Content-Type: application/json
 
-**Procesamiento Paralelo:**
-Cuando el usuario selecciona múltiples archivos (2-7 PDFs):
-1. El frontend envía **todas las peticiones en paralelo** usando `Promise.all()`
-2. Cada archivo se procesa independientemente en n8n
-3. El frontend espera a que **todas** terminen
-4. Se muestra **solo la última respuesta** (que contiene todos los datos actualizados)
-
-**Ejemplo de acceso en n8n:**
-```javascript
-// Webhook recibe JSON
-$json.file_id        // "rfq-1735478123456-abc123def"
-$json.file_title     // "oferta_sacyr.pdf"
-$json.file_binary    // Base64 del PDF
-$json.metadata.fileSize  // 2048576
-```
-
-### Formato de Respuesta Esperado
-```json
-[
-  {
-    "id": 1,
-    "item": "Descripción del ítem",
-    "fase": "FEED",
-    "Evaluation": "Technical Evaluation",
-    "TECNICASREUNIDAS": "INCLUIDO - Descripción | Ref: Pág 12",
-    "IDOM": "NO COTIZADO",
-    "SACYR": "45.000 EUR - Precio fijo | Ref: Tabla 3.2",
-    ...
-  }
-]
-```
-
-### Proveedores Soportados
-
-- **Técnicas Reunidas** (TR, TECNICASREUNIDAS)
-- **IDOM**
-- **SACYR**
-- **Empresarios Agrupados** (EA)
-- **SENER**
-- **TRESCA**
-- **WORLEY**
-
-## 🎨 Personalización
-
-### Colores y Tema
-
-Los colores están definidos en `styles.css` usando CSS Custom Properties:
-
-```css
-:root {
-  --bg0: #070a0c;
-  --bg1: #0b1014;
-  --card: rgba(14, 20, 26, 0.84);
-  --text: #e8eef5;
-  --muted: rgba(232, 238, 245, 0.70);
-  --accent: #12b5b0;
-  --danger: #ff5d5d;
-  --ok: #41d17a;
+{
+  "project_id": "uuid",
+  "provider_filter": "IDOM"  // opcional
 }
 ```
 
-Para cambiar los colores, modifica estos valores en `styles.css`.
+### Chat
+```http
+POST /webhook/chat-rfq
+Content-Type: application/json
 
-### Configuración de API
+{
+  "chatInput": "Which provider has the highest technical score?",
+  "sessionId": "session-uuid"
+}
+```
 
-Edita `src/config/constants.ts` para ajustar:
-- Tamaño máximo de archivo
-- Timeout de requests
-- Tipos de archivo permitidos
-- Nombres de proveedores
+---
 
+## Scripts Disponibles
 
-## 🐛 Troubleshooting
+```bash
+# Desarrollo
+npm run dev          # Servidor de desarrollo (port 3002)
+npm run build        # Build de producción
+npm run preview      # Preview del build
+npm run lint         # Linter
+
+# Docker
+docker-compose up -d         # Levantar servicios
+docker-compose down          # Detener servicios
+docker-compose logs -f       # Ver logs
+docker-compose build         # Rebuild imágenes
+```
+
+---
+
+## Troubleshooting
 
 ### Error: "Request timeout"
-- El webhook de n8n está tardando más de 10 minutos
-- Verifica que n8n esté corriendo
-- Revisa la configuración de timeout en `constants.ts`
+- Aumentar timeout en `constants.ts` (default: 30 min)
+- Verificar que N8N esté corriendo
+- Revisar logs de Ollama
 
 ### Error: "No se recibieron resultados"
-- Verifica que el workflow de n8n esté activo
-- Comprueba que la URL del webhook sea correcta
-- Revisa los logs de n8n para errores
+- Verificar workflows activos en N8N
+- Comprobar URLs de webhooks
+- Revisar credenciales de Supabase
 
-### Archivo no se sube
-- Verifica que sea un archivo PDF válido
-- Comprueba que el tamaño sea menor a 50MB
-- Revisa la consola del navegador para errores CORS
+### Error CORS en desarrollo
+- Verificar configuración de proxy en `vite.config.ts`
+- Asegurar que N8N permite el origen
 
-## 📝 Scripts Disponibles
+---
 
-- `npm run dev` - Inicia servidor de desarrollo
-- `npm run build` - Genera build de producción
-- `npm run preview` - Previsualiza build de producción
-- `npm run lint` - Ejecuta linter de código
+## Licencia
 
-## 📄 Licencia
-
-Este proyecto es privado y confidencial.
-
-
+Proyecto privado y confidencial - BEAI Energy

@@ -1,0 +1,135 @@
+# ========================================
+# BidEval - Docker Compose Configuration
+# ========================================
+#
+# Este archivo orquesta todos los servicios necesarios para ejecutar BidEval.
+#
+# Servicios incluidos:
+# - frontend: Dashboard React (puerto 3002)
+# - n8n: Workflow automation (puerto 5678) - OPCIONAL
+# - ollama: LLM local (puerto 11434) - OPCIONAL
+#
+# La base de datos (Supabase) se asume externa/cloud.
+#
+# USO:
+#   docker-compose up -d              # Iniciar todos los servicios
+#   docker-compose up -d frontend     # Solo frontend
+#   docker-compose logs -f            # Ver logs
+#   docker-compose down               # Detener servicios
+#
+# ========================================
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Frontend - React Dashboard
+  # ========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_N8N_WEBHOOK_URL=${VITE_N8N_WEBHOOK_URL}
+    container_name: bideval-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_N8N_WEBHOOK_URL=${VITE_N8N_WEBHOOK_URL}
+      - N8N_WEBHOOK_URL=${VITE_N8N_WEBHOOK_URL}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - bideval-network
+
+  # ========================================
+  # N8N - Workflow Automation (OPCIONAL)
+  # ========================================
+  # Descomenta esta sección si quieres ejecutar N8N localmente
+  # en lugar de usar una instancia externa.
+  #
+  # n8n:
+  #   image: n8nio/n8n:latest
+  #   container_name: bideval-n8n
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5678:5678"
+  #   environment:
+  #     - N8N_BASIC_AUTH_ACTIVE=true
+  #     - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+  #     - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-admin}
+  #     - N8N_HOST=0.0.0.0
+  #     - N8N_PORT=5678
+  #     - N8N_PROTOCOL=http
+  #     - WEBHOOK_URL=${N8N_WEBHOOK_BASE_URL:-http://localhost:5678}
+  #     - GENERIC_TIMEZONE=Europe/Madrid
+  #     - TZ=Europe/Madrid
+  #     # Conexión a Ollama
+  #     - OLLAMA_HOST=http://ollama:11434
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #     - ./workflow n8n:/home/node/workflows:ro
+  #   depends_on:
+  #     - ollama
+  #   networks:
+  #     - bideval-network
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+  # ========================================
+  # Ollama - LLM Local (OPCIONAL)
+  # ========================================
+  # Descomenta esta sección si quieres ejecutar Ollama localmente.
+  # Requiere GPU para mejor rendimiento.
+  #
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: bideval-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   # Descomenta para usar GPU NVIDIA
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: 1
+  #   #           capabilities: [gpu]
+  #   networks:
+  #     - bideval-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  bideval-network:
+    driver: bridge
+
+# ========================================
+# Volumes (para servicios opcionales)
+# ========================================
+volumes:
+  n8n_data:
+    driver: local
+  ollama_data:
+    driver: local
