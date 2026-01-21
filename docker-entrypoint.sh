@@ -9,8 +9,10 @@ set -e
 echo "Starting BidEval Frontend..."
 
 # Replace environment variables in nginx config
-if [ -n "$N8N_WEBHOOK_URL" ]; then
-    echo "Configuring N8N webhook proxy: $N8N_WEBHOOK_URL"
+if [ -n "$VITE_N8N_WEBHOOK_URL" ]; then
+    echo "Configuring N8N webhook proxy: $VITE_N8N_WEBHOOK_URL"
+    # Export N8N_WEBHOOK_URL for envsubst (nginx.conf uses this variable name)
+    export N8N_WEBHOOK_URL="$VITE_N8N_WEBHOOK_URL"
     envsubst '${N8N_WEBHOOK_URL}' < /etc/nginx/nginx.conf > /etc/nginx/nginx.conf.tmp
     mv /etc/nginx/nginx.conf.tmp /etc/nginx/nginx.conf
 else

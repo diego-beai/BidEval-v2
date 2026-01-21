@@ -59,7 +59,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     const { scoringResults, refreshScoring } = useScoringStore();
 
     // Q&A notifications for activity feed
-    const { notifications, loadNotifications, questions, getStats } = useQAStore();
+    const { notifications, loadNotifications, questions } = useQAStore();
 
     // Load data on mount
     useEffect(() => {

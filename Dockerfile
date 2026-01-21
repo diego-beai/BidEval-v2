@@ -1,8 +1,4 @@
-# ========================================
-# BidEval Frontend - Multi-stage Dockerfile
-# ========================================
 
-# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -29,9 +25,7 @@ ENV VITE_N8N_WEBHOOK_URL=$VITE_N8N_WEBHOOK_URL
 # Build the application
 RUN npm run build
 
-# ========================================
-# Stage 2: Production with Nginx
-# ========================================
+
 FROM nginx:alpine AS production
 
 # Install envsubst for runtime env variable substitution
