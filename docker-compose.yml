@@ -15,9 +15,6 @@ services:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - VITE_N8N_WEBHOOK_URL=${VITE_N8N_WEBHOOK_URL}
-      # - N8N_WEBHOOK_URL=${VITE_N8N_WEBHOOK_URL}
-    env_file:
-      - .env
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
       interval: 30s
