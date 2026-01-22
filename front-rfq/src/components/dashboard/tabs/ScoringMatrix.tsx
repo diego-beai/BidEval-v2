@@ -43,7 +43,8 @@ export const ScoringMatrix: React.FC = () => {
         resetWeights: storeResetWeights,
         saveScoresWithWeights,
         loadSavedWeights,
-        isSavingWeights
+        isSavingWeights,
+        reset: resetScoringStore
     } = useScoringStore();
 
     // Get active project
@@ -65,8 +66,14 @@ export const ScoringMatrix: React.FC = () => {
     // Reload scoring when active project changes
     useEffect(() => {
         console.log('[ScoringMatrix] Active project changed:', activeProjectId);
-        refreshScoring();
-    }, [activeProjectId, refreshScoring]);
+        // Reset scoring data immediately when project changes to avoid showing stale data
+        if (activeProjectId) {
+            refreshScoring();
+        } else {
+            // Clear scoring data if no project selected
+            resetScoringStore();
+        }
+    }, [activeProjectId, refreshScoring, resetScoringStore]);
 
     // Check if weights differ from defaults
     const hasCustomWeights = useMemo(() => {

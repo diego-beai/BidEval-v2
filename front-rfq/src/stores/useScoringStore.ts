@@ -238,19 +238,14 @@ export const useScoringStore = create<ScoringState>()(
                         throw new Error(error.message);
                     }
 
-                    // Fallback: if no data with project_id, try loading data without project filter
-                    // This handles legacy data that was saved before project_id was implemented
+                    // If no data found for this project, show empty state (no fallback to other projects)
                     if (!data || data.length === 0) {
-                        console.log('[Scoring] No data with project_id, trying fallback to load all providers...');
-                        const fallback = await supabase
-                            .from('ranking_proveedores')
-                            .select('*')
-                            .order('provider_name', { ascending: true });
-
-                        if (!fallback.error && fallback.data && fallback.data.length > 0) {
-                            data = fallback.data;
-                            console.log('[Scoring] Loaded', data.length, 'providers from fallback (no project filter)');
-                        }
+                        console.log('[Scoring] No scoring data found for project:', activeProjectId);
+                        set({
+                            scoringResults: null,
+                            isCalculating: false
+                        });
+                        return;
                     }
 
                     // Helper to normalize scores to 0-10 scale
@@ -562,8 +557,8 @@ export const useScoringStore = create<ScoringState>()(
                 {
                     name: 'scoring-storage',
                     partialize: (state) => ({
-                        scoringResults: state.scoringResults,
-                        lastCalculation: state.lastCalculation,
+                        // Don't persist scoringResults - it should be loaded fresh per project
+                        // Only persist weight configuration which is global
                         customWeights: state.customWeights,
                         savedWeightsId: state.savedWeightsId
                     }),
@@ -585,8 +580,11 @@ export const useScoringStore = create<ScoringState>()(
 
                         return {
                             ...currentState,
-                            ...persisted,
-                            customWeights: mergedWeights
+                            // Only restore weight-related persisted data, not scoring results
+                            customWeights: mergedWeights,
+                            savedWeightsId: persisted.savedWeightsId || null
+                            // scoringResults and lastCalculation are intentionally NOT restored
+                            // They should be loaded fresh per project
                         };
                     }
                 }
