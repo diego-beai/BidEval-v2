@@ -20,6 +20,7 @@ export interface QAQuestion {
   status: EstadoPregunta; // Mapped from estado
   importance?: Importancia | null; // Mapped from importancia
   response?: string | null; // Mapped from respuesta_proveedor
+  parent_question_id?: string | null; // For thread/conversation support
   // Additional fields for frontend compatibility
   project_id?: string; // Alias of project_name
   proveedor?: string; // Alias of provider_name
@@ -45,6 +46,7 @@ export interface QAAuditDB {
   importance?: Importancia | null;
   response?: string | null;
   requirement_id?: string | null;
+  parent_question_id?: string | null; // For thread/conversation support
 }
 
 // Function to map from DB to frontend
@@ -59,6 +61,7 @@ export function mapQAAuditToQAQuestion(dbItem: QAAuditDB): QAQuestion {
     status: dbItem.status,
     importance: dbItem.importance,
     response: dbItem.response,
+    parent_question_id: dbItem.parent_question_id,
     // Alias for frontend compatibility
     project_id: dbItem.project_name,
     proveedor: dbItem.provider_name,
@@ -83,6 +86,7 @@ export function mapQAQuestionToQAAudit(frontendItem: Partial<QAQuestion>): Parti
     importance: frontendItem.importance || frontendItem.importancia,
     response: frontendItem.response || frontendItem.respuesta_proveedor,
     requirement_id: frontendItem.requirement_id,
+    parent_question_id: frontendItem.parent_question_id,
   };
 }
 

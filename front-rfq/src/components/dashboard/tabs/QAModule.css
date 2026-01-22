@@ -922,6 +922,18 @@
   border: 1px solid #ef4444;
 }
 
+.badge-original {
+  background-color: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  border: 1px solid #94a3b8;
+}
+
+.badge-followup {
+  background-color: rgba(147, 51, 234, 0.1);
+  color: #9333ea;
+  border: 1px solid #a855f7;
+}
+
 /* Estados - Outlined Style */
 .estado-borrador {
   background-color: rgba(14, 165, 233, 0.1);
@@ -2644,3 +2656,499 @@
 
 /* No additional overrides needed - all styles now use CSS variables
    that automatically change based on the theme */
+
+/* =====================================================
+   THREAD / CONVERSATION STYLES
+   For Q&A follow-up questions
+   ===================================================== */
+
+.question-thread {
+  position: relative;
+}
+
+.question-thread.has-thread {
+  margin-bottom: 0;
+}
+
+.follow-up-questions {
+  margin-left: 24px;
+  padding-left: 20px;
+  border-left: 2px solid var(--color-cyan, #12b5b0);
+  margin-top: 0;
+}
+
+.follow-up-card,
+.follow-up-standalone {
+  position: relative;
+  background: var(--bg-surface-alt);
+  border-left: 3px solid var(--color-cyan, #12b5b0) !important;
+}
+
+.is-follow-up {
+  /* Visual indicator that this is a follow-up question */
+}
+
+.follow-up-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.follow-up-line {
+  display: none;
+}
+
+.follow-up-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: rgba(18, 181, 176, 0.15);
+  color: var(--color-cyan, #12b5b0);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   FOLLOW-UP MODAL STYLES
+   ===================================================== */
+
+.follow-up-modal {
+  max-width: 600px;
+  width: 90%;
+}
+
+.follow-up-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.follow-up-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.follow-up-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.parent-question-context {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-surface-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.context-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.context-section label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+}
+
+.context-section.response {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.context-section.response label {
+  color: var(--color-success, #10b981);
+}
+
+.context-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.follow-up-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.follow-up-input-section label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.follow-up-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.follow-up-textarea:focus {
+  outline: none;
+  border-color: var(--color-cyan, #12b5b0);
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.15);
+}
+
+.follow-up-textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.follow-up-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =====================================================
+   CONVERSATION HISTORY STYLES
+   For viewing thread history in follow-up questions
+   ===================================================== */
+
+/* Thread toggle button - styled like a badge */
+.badge-btn.thread-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(147, 51, 234, 0.1);
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  border-radius: 6px;
+  color: #a855f7;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.badge-btn.thread-toggle-btn:hover {
+  background: rgba(147, 51, 234, 0.2);
+  border-color: #a855f7;
+}
+
+.badge-btn.thread-toggle-btn.active {
+  background: rgba(147, 51, 234, 0.25);
+  border-color: #a855f7;
+}
+
+.badge-btn.thread-toggle-btn .thread-count {
+  opacity: 0.8;
+}
+
+/* Thread Timeline View */
+.conversation-thread-view {
+  margin: 16px 0;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(18, 181, 176, 0.05) 100%);
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  border-radius: 12px;
+  animation: slideDown 0.25s ease-out;
+}
+
+.thread-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.thread-exchange {
+  display: flex;
+  gap: 12px;
+}
+
+.thread-step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 24px;
+}
+
+.thread-step-indicator .step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.thread-step-indicator .step-line {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(to bottom, #a855f7, rgba(147, 51, 234, 0.2));
+  margin-top: 8px;
+  min-height: 20px;
+}
+
+.thread-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thread-question-box,
+.thread-response-box {
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.thread-question-box {
+  background: rgba(59, 130, 246, 0.08);
+  border-left: 3px solid #3b82f6;
+}
+
+.thread-response-box {
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 3px solid #10b981;
+}
+
+.thread-box-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thread-question-box .thread-box-header {
+  color: #3b82f6;
+}
+
+.thread-response-box .thread-box-header {
+  color: #10b981;
+}
+
+.thread-question-box p,
+.thread-response-box p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.thread-current-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(147, 51, 234, 0.3);
+  color: #a855f7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.thread-current-indicator svg {
+  animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+/* Thread loading and empty states */
+.thread-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 0.85rem;
+}
+
+.thread-loading .spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(18, 181, 176, 0.2);
+  border-top-color: var(--color-cyan, #12b5b0);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.thread-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--color-text-muted, #94a3b8);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Legacy styles kept for compatibility */
+.conversation-history-section {
+  margin-bottom: 12px;
+}
+
+.history-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--color-cyan, #12b5b0);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.history-toggle-btn:hover {
+  background: rgba(18, 181, 176, 0.1);
+}
+
+.history-toggle-btn .toggle-icon {
+  transition: transform 0.2s ease;
+}
+
+.history-toggle-btn .toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.conversation-history-content {
+  margin-top: 12px;
+  padding: 16px;
+  background: var(--bg-surface-alt);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  animation: slideDown 0.2s ease-out;
+}
+
+.history-item {
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.history-item:first-child {
+  padding-top: 0;
+}
+
+.history-question,
+.history-response {
+  margin-bottom: 8px;
+}
+
+.history-question:last-child,
+.history-response:last-child {
+  margin-bottom: 0;
+}
+
+.history-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.history-question .history-label {
+  color: var(--color-primary, #3b82f6);
+}
+
+.history-response .history-label {
+  color: var(--color-success, #10b981);
+}
+
+.history-question p,
+.history-response p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.history-response p {
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border-left: 2px solid var(--color-success, #10b981);
+  border-radius: 4px;
+}

@@ -493,6 +493,136 @@ body:has(.supplier-page) {
   color: #cbd5e1;
 }
 
+/* =====================================================
+   CONVERSATION HISTORY STYLES
+   For viewing thread history in follow-up questions
+   ===================================================== */
+
+.supplier-page .follow-up-question {
+  border-left: 4px solid #12b5b0 !important;
+  background: #fafffe !important;
+}
+
+.supplier-page .conversation-history-section {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.supplier-page .history-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  color: #0d9488;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.supplier-page .history-toggle-btn:hover {
+  background: #ccfbf1;
+  border-color: #5eead4;
+}
+
+.supplier-page .history-toggle-btn .toggle-icon {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.supplier-page .history-toggle-btn .toggle-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.supplier-page .history-count {
+  color: #64748b;
+  font-weight: 400;
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+
+.supplier-page .conversation-history-content {
+  margin-top: 16px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.supplier-page .history-item {
+  padding: 16px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.supplier-page .history-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.supplier-page .history-item:first-child {
+  padding-top: 0;
+}
+
+.supplier-page .history-question,
+.supplier-page .history-response {
+  margin-bottom: 12px;
+}
+
+.supplier-page .history-question:last-child,
+.supplier-page .history-response:last-child {
+  margin-bottom: 0;
+}
+
+.supplier-page .history-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.supplier-page .history-question .history-label {
+  color: #3b82f6 !important;
+}
+
+.supplier-page .history-response .history-label {
+  color: #22c55e !important;
+}
+
+.supplier-page .history-question p,
+.supplier-page .history-response p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1e293b !important;
+  line-height: 1.6;
+}
+
+.supplier-page .history-response p {
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+  border-radius: 6px;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .supplier-page {
@@ -516,5 +646,15 @@ body:has(.supplier-page) {
   .submit-button {
     width: 100%;
     padding: 14px 24px;
+  }
+
+  .supplier-page .history-toggle-btn {
+    flex-wrap: wrap;
+  }
+
+  .supplier-page .history-count {
+    width: 100%;
+    margin-left: 22px;
+    margin-top: 4px;
   }
 }

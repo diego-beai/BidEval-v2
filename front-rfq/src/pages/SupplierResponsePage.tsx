@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useLanguageStore } from '../stores/useLanguageStore';
 import './SupplierResponsePage.css';
 
 interface Question {
@@ -10,6 +11,13 @@ interface Question {
   importance: 'High' | 'Medium' | 'Low';
   provider_name: string;
   project_id: string;
+  parent_question_id?: string | null;
+}
+
+interface ConversationItem {
+  id: string;
+  question: string;
+  response?: string | null;
 }
 
 interface TokenData {
@@ -36,6 +44,7 @@ const N8N_PROCESS_RESPONSES_URL = import.meta.env.DEV
 
 export function SupplierResponsePage() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useLanguageStore();
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
@@ -44,6 +53,10 @@ export function SupplierResponsePage() {
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // Conversation history state
+  const [conversationHistory, setConversationHistory] = useState<Record<string, ConversationItem[]>>({});
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
 
   // Load token data and questions
   const loadData = useCallback(async () => {
@@ -111,10 +124,10 @@ export function SupplierResponsePage() {
         setProjectData(projectResult as ProjectData);
       }
 
-      // 4. Get questions
+      // 4. Get questions (including parent_question_id and response)
       const { data: questionsResult, error: questionsError } = await db
         .from('qa_audit')
-        .select('id, question, discipline, importance, provider_name, project_id')
+        .select('id, question, discipline, importance, provider_name, project_id, parent_question_id, response')
         .in('id', tokenInfo.question_ids);
 
       if (questionsError) {
@@ -132,6 +145,42 @@ export function SupplierResponsePage() {
         initialResponses[q.id] = '';
       });
       setResponses(initialResponses);
+
+      // 5. Load conversation history for questions that are follow-ups
+      const historyMap: Record<string, ConversationItem[]> = {};
+      for (const q of questionsData) {
+        if (q.parent_question_id) {
+          // Load the full thread (all ancestors)
+          const thread: ConversationItem[] = [];
+          let currentParentId: string | null | undefined = q.parent_question_id;
+
+          while (currentParentId) {
+            const { data: parentResult } = await db
+              .from('qa_audit')
+              .select('id, question, response, parent_question_id')
+              .eq('id', currentParentId)
+              .single();
+
+            const parentData = parentResult as { id: string; question: string; response?: string | null; parent_question_id?: string | null } | null;
+
+            if (parentData) {
+              thread.unshift({
+                id: parentData.id,
+                question: parentData.question,
+                response: parentData.response
+              });
+              currentParentId = parentData.parent_question_id;
+            } else {
+              break;
+            }
+          }
+
+          if (thread.length > 0) {
+            historyMap[q.id] = thread;
+          }
+        }
+      }
+      setConversationHistory(historyMap);
 
       setPageState('valid');
 
@@ -213,6 +262,14 @@ export function SupplierResponsePage() {
       case 'Low': return '#22c55e';
       default: return '#64748b';
     }
+  };
+
+  // Toggle conversation history expansion
+  const toggleHistoryExpansion = (questionId: string) => {
+    setExpandedHistory(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }));
   };
 
   // Render loading state
@@ -378,9 +435,11 @@ export function SupplierResponsePage() {
         {/* Questions */}
         <div className="questions-container">
           {questions.map((question, index) => (
-            <div key={question.id} className="question-card">
+            <div key={question.id} className={`question-card ${question.parent_question_id ? 'follow-up-question' : ''}`}>
               <div className="question-header">
-                <span className="question-number">Question {index + 1}</span>
+                <span className="question-number">
+                  {question.parent_question_id ? t('supplier.followup_question') : `${t('supplier.question')} ${index + 1}`}
+                </span>
                 <div className="question-badges">
                   <span className="badge discipline">{question.discipline}</span>
                   <span
@@ -391,6 +450,53 @@ export function SupplierResponsePage() {
                   </span>
                 </div>
               </div>
+
+              {/* Conversation History for Follow-up Questions */}
+              {conversationHistory[question.id] && conversationHistory[question.id].length > 0 && (
+                <div className="conversation-history-section">
+                  <button
+                    className="history-toggle-btn"
+                    onClick={() => toggleHistoryExpansion(question.id)}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className={`toggle-icon ${expandedHistory[question.id] ? 'expanded' : ''}`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    <span>
+                      {expandedHistory[question.id]
+                        ? t('supplier.hide_history')
+                        : t('supplier.view_history')}
+                    </span>
+                    <span className="history-count">
+                      ({conversationHistory[question.id].length} {t('supplier.previous_exchanges')})
+                    </span>
+                  </button>
+
+                  {expandedHistory[question.id] && (
+                    <div className="conversation-history-content">
+                      {conversationHistory[question.id].map((historyItem, hIndex) => (
+                        <div key={historyItem.id} className="history-item">
+                          <div className="history-question">
+                            <span className="history-label">{t('supplier.previous_question')} #{hIndex + 1}</span>
+                            <p>{historyItem.question}</p>
+                          </div>
+                          <div className="history-response">
+                            <span className="history-label">{t('supplier.your_previous_response')}</span>
+                            <p>{historyItem.response || t('supplier.no_response')}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <p className="question-text">{question.question}</p>
 

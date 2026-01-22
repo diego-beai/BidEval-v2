@@ -48,6 +48,7 @@ interface QAState {
   // Acciones
   loadQuestions: (projectId?: string) => Promise<void>;
   createQuestion: (question: Partial<QAQuestion>) => Promise<void>;
+  createFollowUpQuestion: (parentQuestionId: string, questionText: string) => Promise<void>;
   updateQuestion: (id: string, updates: Partial<QAQuestion>) => Promise<void>;
   deleteQuestion: (id: string) => Promise<void>;
   bulkUpdateStatus: (ids: string[], estado: EstadoPregunta) => Promise<void>;
@@ -111,6 +112,7 @@ function mapQAAuditToQAQuestion(dbItem: any): QAQuestion {
     importance: dbItem.importance || dbItem.importancia,
     response: dbItem.response || dbItem.respuesta_proveedor,
     requirement_id: dbItem.requirement_id, // Link to source requirement
+    parent_question_id: dbItem.parent_question_id, // For thread/conversation support
     // Alias for frontend compatibility
     proveedor: dbItem.provider_name || dbItem.proveedor,
     disciplina: dbItem.discipline || dbItem.disciplina,
@@ -336,6 +338,75 @@ export const useQAStore = create<QAState>((set, get) => ({
       }));
     } catch (error) {
       console.error('Error creating question:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        isLoading: false
+      });
+    }
+  },
+
+  // Crear pregunta de seguimiento (para hilos de conversación)
+  createFollowUpQuestion: async (parentQuestionId: string, questionText: string) => {
+    if (!isSupabaseConfigured()) {
+      set({ error: null });
+      return;
+    }
+
+    set({ isLoading: true, error: null });
+
+    try {
+      // Get the parent question to copy its properties
+      const parentQuestion = get().questions.find(q => q.id === parentQuestionId);
+      if (!parentQuestion) {
+        throw new Error('Parent question not found');
+      }
+
+      // Get the actual UUID from global store
+      const activeProjectId = useProjectStore.getState().activeProjectId;
+      const currentProjectId = get().selectedProjectId || activeProjectId;
+
+      // Create follow-up question with same project, provider, discipline as parent
+      const { data, error } = await (supabase!
+        .from('qa_audit') as any)
+        .insert([{
+          project_id: parentQuestion.project_id || currentProjectId,
+          provider_name: parentQuestion.provider_name || parentQuestion.proveedor,
+          discipline: parentQuestion.discipline || parentQuestion.disciplina,
+          question: questionText,
+          status: 'Draft', // Follow-up starts as Draft, needs approval before sending
+          importance: parentQuestion.importance || parentQuestion.importancia || 'Medium',
+          parent_question_id: parentQuestionId,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Also update the parent question status to NeedsMoreInfo
+      await (supabase!
+        .from('qa_audit') as any)
+        .update({ status: 'NeedsMoreInfo' })
+        .eq('id', parentQuestionId);
+
+      // Map the returned data to include both English and Spanish field aliases
+      const mappedData = mapQAAuditToQAQuestion(data);
+
+      // Update state: change parent status and add new follow-up question
+      const currentQuestions = get().questions;
+      const updatedQuestions: QAQuestion[] = currentQuestions.map(q =>
+        q.id === parentQuestionId
+          ? { ...q, status: 'NeedsMoreInfo' as EstadoPregunta, estado: 'NeedsMoreInfo' as EstadoPregunta }
+          : q
+      );
+      updatedQuestions.push(mappedData);
+
+      set({
+        questions: updatedQuestions,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error('Error creating follow-up question:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false

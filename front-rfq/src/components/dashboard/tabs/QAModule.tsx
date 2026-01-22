@@ -5,7 +5,9 @@ import { useToastStore } from '../../../stores/useToastStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { generateTechnicalAudit, sendQAToSupplier, SendToSupplierResponse } from '../../../services/n8n.service';
+import { supabase } from '../../../lib/supabase';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
+import { mapQAAuditToQAQuestion } from '../../../types/qa.types';
 import './QAModule.css';
 
 // Icons
@@ -129,6 +131,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     filters,
     loadQuestions,
     createQuestion,
+    createFollowUpQuestion,
     updateQuestion,
     deleteQuestion,
     setFilters,
@@ -178,6 +181,17 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
   // Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // Follow-up question modal state
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpParentId, setFollowUpParentId] = useState<string | null>(null);
+  const [followUpText, setFollowUpText] = useState('');
+  const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
+
+  // Conversation history state (for viewing thread history in follow-ups)
+  const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
+  const [loadedThreadHistory, setLoadedThreadHistory] = useState<Record<string, QAQuestion[]>>({});
+  const [loadingThread, setLoadingThread] = useState<Record<string, boolean>>({});
 
   // Handle opening provider selector dropdown
   const handleOpenProviderSelector = () => {
@@ -546,6 +560,132 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const handleDeleteQuestion = async (questionId: string) => {
     if (confirm('Are you sure you want to delete this question?')) {
       await deleteQuestion(questionId);
+    }
+  };
+
+  // Open follow-up question modal
+  const handleOpenFollowUp = (questionId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    setFollowUpParentId(questionId);
+    setFollowUpText('');
+    setShowFollowUpModal(true);
+  };
+
+  // Submit follow-up question
+  const handleSubmitFollowUp = async () => {
+    if (!followUpParentId || !followUpText.trim()) return;
+
+    setIsCreatingFollowUp(true);
+    try {
+      await createFollowUpQuestion(followUpParentId, followUpText.trim());
+      addToast(t('qa.thread.created_draft'), 'success');
+      setShowFollowUpModal(false);
+      setFollowUpParentId(null);
+      setFollowUpText('');
+    } catch (error) {
+      console.error('Error creating follow-up:', error);
+      addToast('Error creating follow-up question', 'error');
+    } finally {
+      setIsCreatingFollowUp(false);
+    }
+  };
+
+  // Get parent question for display in modal
+  const getParentQuestion = (parentId: string | null) => {
+    if (!parentId) return null;
+    return questions.find(q => q.id === parentId);
+  };
+
+  // Get follow-up questions for a parent question
+  // Uses raw questions from store directly to ensure we find follow-ups even when filtering
+  const getFollowUpQuestions = (parentId: string) => {
+    const allQuestions = useQAStore.getState().questions;
+    return allQuestions.filter(q => q.parent_question_id === parentId);
+  };
+
+  // Check if a question has follow-ups
+  // Uses raw questions from store directly to ensure we find follow-ups even when filtering
+  const hasFollowUps = (questionId: string) => {
+    const allQuestions = useQAStore.getState().questions;
+    return allQuestions.some(q => q.parent_question_id === questionId);
+  };
+
+  // Get full conversation thread (all ancestors from a question to the root)
+  // Uses raw questions from store directly to ensure we find parents even when filtering
+  const getConversationThread = (questionId: string): QAQuestion[] => {
+    // Access raw questions directly from store to avoid filtering issues
+    const allQuestions = useQAStore.getState().questions;
+    const thread: QAQuestion[] = [];
+    let currentQuestion = allQuestions.find(q => q.id === questionId);
+
+    while (currentQuestion?.parent_question_id) {
+      const parent = allQuestions.find(q => q.id === currentQuestion!.parent_question_id);
+      if (parent) {
+        thread.unshift(parent);
+        currentQuestion = parent;
+      } else {
+        break;
+      }
+    }
+
+    return thread;
+  };
+
+  // Load thread history from Supabase
+  const loadThreadHistory = async (questionId: string, parentQuestionId: string) => {
+    if (loadedThreadHistory[questionId] || loadingThread[questionId]) return;
+
+    setLoadingThread(prev => ({ ...prev, [questionId]: true }));
+
+    try {
+      const thread: QAQuestion[] = [];
+      let currentParentId: string | null = parentQuestionId;
+
+      // Walk up the chain of parent questions
+      while (currentParentId) {
+        const { data, error } = await (supabase!
+          .from('qa_audit') as any)
+          .select('*')
+          .eq('id', currentParentId)
+          .single();
+
+        if (error || !data) break;
+
+        const mappedQuestion = mapQAAuditToQAQuestion(data);
+        thread.unshift(mappedQuestion);
+        currentParentId = data.parent_question_id as string | null;
+      }
+
+      setLoadedThreadHistory(prev => ({ ...prev, [questionId]: thread }));
+    } catch (error) {
+      console.error('Error loading thread history:', error);
+    } finally {
+      setLoadingThread(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
+
+  // Toggle conversation history expansion
+  const toggleHistoryExpansion = async (questionId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const isExpanding = !expandedHistory[questionId];
+    setExpandedHistory(prev => ({
+      ...prev,
+      [questionId]: isExpanding
+    }));
+
+    // Load thread history when expanding if not already loaded
+    if (isExpanding) {
+      const question = useQAStore.getState().questions.find(q => q.id === questionId);
+      if (question?.parent_question_id && !loadedThreadHistory[questionId]) {
+        await loadThreadHistory(questionId, question.parent_question_id);
+      }
     }
   };
 
@@ -1196,11 +1336,17 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             {/* Question List (Expandable) */}
             {expandedDisciplina === group.disciplina && (
               <div className="preguntas-list">
+                {/* Show all questions - follow-ups will have thread view */}
                 {group.preguntas.map((question) => (
-                  <div key={question.id} className="question-card">
+                  <div key={question.id} className={`question-thread ${hasFollowUps(question.id) ? 'has-thread' : ''} ${question.parent_question_id ? 'is-follow-up' : ''}`}>
+                  <div className={`question-card ${question.parent_question_id ? 'follow-up-standalone' : ''}`}>
                     {/* Question Header */}
                     <div className="question-header">
                       <div className="question-meta">
+                        {/* Question type badge: ORIGINAL or FOLLOW-UP */}
+                        <span className={`badge ${question.parent_question_id ? 'badge-followup' : 'badge-original'}`}>
+                          {question.parent_question_id ? t('qa.thread.follow_up_label') : t('qa.badge.original')}
+                        </span>
                         <span className={`badge ${getEstadoClass(question.estado || question.status)}`}>
                           {getStatusLabel(question.estado || question.status || '')}
                         </span>
@@ -1212,6 +1358,18 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         <span className={`question-provider ${getProviderClass(question.proveedor || question.provider_name)}`}>
                           {question.proveedor || question.provider_name}
                         </span>
+                        {/* Thread View Button - for questions that are follow-ups */}
+                        {question.parent_question_id && (
+                          <button
+                            className={`badge-btn thread-toggle-btn ${expandedHistory[question.id] ? 'active' : ''}`}
+                            onClick={(e) => toggleHistoryExpansion(question.id, e)}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            {expandedHistory[question.id] ? t('qa.thread.hide_history') : t('qa.thread.view_thread')}
+                          </button>
+                        )}
                       </div>
                       <div className="question-actions-top">
                         <button
@@ -1223,6 +1381,63 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         </button>
                       </div>
                     </div>
+
+                    {/* Expanded Conversation History for main cards */}
+                    {expandedHistory[question.id] && question.parent_question_id && (
+                      <div className="conversation-thread-view">
+                        {loadingThread[question.id] ? (
+                          <div className="thread-loading">
+                            <span className="spinner-small"></span>
+                            {t('common.loading')}
+                          </div>
+                        ) : (loadedThreadHistory[question.id] || []).length > 0 ? (
+                          <>
+                            <div className="thread-timeline">
+                              {(loadedThreadHistory[question.id] || []).map((historyItem, index) => (
+                                <div key={historyItem.id} className="thread-exchange">
+                                  <div className="thread-step-indicator">
+                                    <span className="step-number">{index + 1}</span>
+                                    <span className="step-line"></span>
+                                  </div>
+                                  <div className="thread-content">
+                                    <div className="thread-question-box">
+                                      <div className="thread-box-header">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <circle cx="12" cy="12" r="10" />
+                                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                                        </svg>
+                                        <span>{t('qa.thread.previous_question')}</span>
+                                      </div>
+                                      <p>{historyItem.question || historyItem.pregunta_texto}</p>
+                                    </div>
+                                    <div className="thread-response-box">
+                                      <div className="thread-box-header">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                        </svg>
+                                        <span>{t('qa.thread.previous_response')}</span>
+                                      </div>
+                                      <p>{historyItem.response || historyItem.respuesta_proveedor || t('qa.thread.no_response_yet')}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="thread-current-indicator">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="6 9 12 15 18 9" />
+                              </svg>
+                              <span>{t('qa.thread.current_question')}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="thread-empty">
+                            {t('qa.thread.no_history')}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Question Content */}
                     <div className="question-body">
@@ -1396,7 +1611,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                                   <Icons.Approve /> {t('qa.btn.accept_response')}
                                 </button>
                                 <button
-                                  onClick={(e) => handleUpdateStatus(question.id, 'NeedsMoreInfo', e)}
+                                  onClick={(e) => handleOpenFollowUp(question.id, e)}
                                   className="btn btnWarning btn-sm"
                                   title={t('qa.btn.need_more_info')}
                                 >
@@ -1432,6 +1647,146 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         );
                       })()}
                     </div>
+                  </div>
+
+                  {/* Follow-up questions (thread) */}
+                  {getFollowUpQuestions(question.id).length > 0 && (
+                    <div className="follow-up-questions">
+                      {getFollowUpQuestions(question.id).map((followUp) => (
+                        <div key={followUp.id} className="question-card follow-up-card">
+                          <div className="question-header">
+                            <div className="question-meta">
+                              <span className="follow-up-badge">{t('qa.thread.follow_up_label')}</span>
+                              <span className={`badge ${getEstadoClass(followUp.estado || followUp.status)}`}>
+                                {getStatusLabel(followUp.estado || followUp.status || '')}
+                              </span>
+                              {/* View Thread Button - next to badges */}
+                              {followUp.parent_question_id && getConversationThread(followUp.id).length > 0 && (
+                                <button
+                                  className={`badge-btn thread-toggle-btn ${expandedHistory[followUp.id] ? 'active' : ''}`}
+                                  onClick={(e) => toggleHistoryExpansion(followUp.id, e)}
+                                >
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                  </svg>
+                                  {expandedHistory[followUp.id] ? t('qa.thread.hide_history') : t('qa.thread.view_thread')}
+                                  <span className="thread-count">({getConversationThread(followUp.id).length})</span>
+                                </button>
+                              )}
+                            </div>
+                            <div className="question-actions-top">
+                              <button
+                                onClick={() => handleDeleteQuestion(followUp.id)}
+                                className="icon-btn icon-btn-danger"
+                                title={t('qa.confirm.delete')}
+                              >
+                                <Icons.Delete />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded Conversation History */}
+                          {expandedHistory[followUp.id] && followUp.parent_question_id && (
+                            <div className="conversation-thread-view">
+                              <div className="thread-timeline">
+                                {getConversationThread(followUp.id).map((historyItem, index) => (
+                                  <div key={historyItem.id} className="thread-exchange">
+                                    <div className="thread-step-indicator">
+                                      <span className="step-number">{index + 1}</span>
+                                      <span className="step-line"></span>
+                                    </div>
+                                    <div className="thread-content">
+                                      <div className="thread-question-box">
+                                        <div className="thread-box-header">
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                                          </svg>
+                                          <span>{t('qa.thread.previous_question')}</span>
+                                        </div>
+                                        <p>{historyItem.question || historyItem.pregunta_texto}</p>
+                                      </div>
+                                      <div className="thread-response-box">
+                                        <div className="thread-box-header">
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                                          </svg>
+                                          <span>{t('qa.thread.previous_response')}</span>
+                                        </div>
+                                        <p>{historyItem.response || historyItem.respuesta_proveedor || t('qa.thread.no_response_yet')}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="thread-current-indicator">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                                <span>{t('qa.thread.current_question')}</span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="question-body">
+                            <p className="question-text">{followUp.question || followUp.pregunta_texto}</p>
+                          </div>
+                          {(followUp.response || followUp.respuesta_proveedor) && (
+                            <div className="question-response">
+                              <strong>{t('qa.question.response')}</strong>
+                              <p>{followUp.response || followUp.respuesta_proveedor}</p>
+                            </div>
+                          )}
+                          <div className="question-actions">
+                            {(() => {
+                              const status = followUp.estado || followUp.status;
+                              if (status === 'Draft' || status === 'Pending') {
+                                return (
+                                  <>
+                                    <button onClick={(e) => handleUpdateStatus(followUp.id, 'Approved', e)} className="btn btnPrimary btn-sm">
+                                      <Icons.Approve /> {t('qa.btn.approve')}
+                                    </button>
+                                    <button onClick={(e) => handleUpdateStatus(followUp.id, 'Discarded', e)} className="btn btnDanger btn-sm">
+                                      <Icons.Discard /> {t('qa.btn.discard')}
+                                    </button>
+                                  </>
+                                );
+                              }
+                              if (status === 'Approved') {
+                                return (
+                                  <span className="status-message">{t('qa.status.waiting')}</span>
+                                );
+                              }
+                              if (status === 'Answered') {
+                                return (
+                                  <>
+                                    <button onClick={(e) => handleUpdateStatus(followUp.id, 'Resolved', e)} className="btn btnSuccess btn-sm">
+                                      <Icons.Approve /> {t('qa.btn.accept_response')}
+                                    </button>
+                                    <button onClick={(e) => handleOpenFollowUp(followUp.id, e)} className="btn btnWarning btn-sm">
+                                      <Icons.Edit /> {t('qa.btn.need_more_info')}
+                                    </button>
+                                  </>
+                                );
+                              }
+                              if (status === 'Resolved') {
+                                return <span className="status-message resolved">{t('qa.status.resolved')}</span>;
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   </div>
                 ))}
 
@@ -1563,6 +1918,81 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                 className="btn btnPrimary"
               >
                 {t('qa.modal.btn_done')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Follow-up Question Modal */}
+      {showFollowUpModal && followUpParentId && (
+        <div className="modal-overlay" onClick={() => setShowFollowUpModal(false)}>
+          <div className="modal-content follow-up-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="follow-up-modal-header">
+              <h2>{t('qa.thread.follow_up')}</h2>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowFollowUpModal(false)}
+              >
+                <Icons.Cancel />
+              </button>
+            </div>
+
+            <div className="follow-up-modal-body">
+              {/* Show parent question and response */}
+              {(() => {
+                const parentQuestion = getParentQuestion(followUpParentId);
+                if (!parentQuestion) return null;
+                return (
+                  <div className="parent-question-context">
+                    <div className="context-section">
+                      <label>{t('qa.thread.original_question')}</label>
+                      <p className="context-text">{parentQuestion.question || parentQuestion.pregunta_texto}</p>
+                    </div>
+                    {(parentQuestion.response || parentQuestion.respuesta_proveedor) && (
+                      <div className="context-section response">
+                        <label>{t('qa.question.response')}</label>
+                        <p className="context-text">{parentQuestion.response || parentQuestion.respuesta_proveedor}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Follow-up question textarea */}
+              <div className="follow-up-input-section">
+                <label>{t('qa.thread.follow_up')}</label>
+                <textarea
+                  value={followUpText}
+                  onChange={(e) => setFollowUpText(e.target.value)}
+                  placeholder={t('qa.thread.write_follow_up')}
+                  rows={4}
+                  className="follow-up-textarea"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="follow-up-modal-footer">
+              <button
+                onClick={() => setShowFollowUpModal(false)}
+                className="btn btnSecondary"
+                disabled={isCreatingFollowUp}
+              >
+                {t('qa.btn.cancel')}
+              </button>
+              <button
+                onClick={handleSubmitFollowUp}
+                className="btn btnPrimary"
+                disabled={!followUpText.trim() || isCreatingFollowUp}
+              >
+                {isCreatingFollowUp ? (
+                  <span className="loading-spinner-small"></span>
+                ) : (
+                  <>
+                    <Icons.Send /> {t('qa.thread.send_follow_up')}
+                  </>
+                )}
               </button>
             </div>
           </div>
