@@ -199,12 +199,12 @@ export const ExecutiveView: React.FC = () => {
         }
     ];
 
-    // Prepare bar chart data (overall scores)
+    // Prepare bar chart data (overall scores) - sorted by score descending
     const barChartData = providers.map(p => ({
         name: p.provider_name,
         score: p.overall_score,
         id: p.provider_name
-    }));
+    })).sort((a, b) => b.score - a.score);
 
     // Helper for colors - handles various provider name formats
     const getColor = (id: string, index: number) => {

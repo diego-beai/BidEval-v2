@@ -7,7 +7,7 @@ export const API_CONFIG = {
   // URL del webhook de ofertas de proveedores (usa proxy en desarrollo)
   N8N_WEBHOOK_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/ofertas-proveedores' : (import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.beaienergy.com/webhook/ofertas-proveedores'),
   // URL del webhook de ingesta de RFQ base del cliente (usa proxy en desarrollo)
-  N8N_RFQ_INGESTA_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/ingesta-rfq' : (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook/ingesta-rfq'),
+  N8N_RFQ_INGESTA_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/ingesta-rfq' : (import.meta.env.VITE_N8N_RFQ_INGESTA_URL || 'https://n8n.beaienergy.com/webhook/ingesta-rfq'),
   // URL del webhook de chat de n8n (usa proxy en desarrollo)
   N8N_CHAT_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/chat-rfq' : (import.meta.env.VITE_N8N_CHAT_URL || 'https://n8n.beaienergy.com/webhook/chat-rfq'),
   // URL del webhook para ver tabla adicional (usa proxy en desarrollo)
@@ -23,7 +23,7 @@ export const API_CONFIG = {
   // URL del webhook para procesar respuestas del proveedor
   N8N_QA_PROCESS_RESPONSES_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/qa-process-responses' : (import.meta.env.VITE_N8N_QA_PROCESS_RESPONSES_URL || 'https://n8n.beaienergy.com/webhook/qa-process-responses'),
   // URL del webhook para enviar email Q&A (desde Mail Dashboard)
-  N8N_QA_SEND_EMAIL_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook-test/qa-send-email' : (import.meta.env.VITE_N8N_QA_SEND_EMAIL_URL || 'https://n8n.beaienergy.com/webhook/qa-send-email'),
+  N8N_QA_SEND_EMAIL_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/qa-send-email' : (import.meta.env.VITE_N8N_QA_SEND_EMAIL_URL || 'https://n8n.beaienergy.com/webhook/qa-send-email'),
   // URL del webhook para procesar respuesta de email con IA
   N8N_QA_PROCESS_EMAIL_RESPONSE_URL: import.meta.env.DEV ? 'https://n8n.beaienergy.com/webhook/qa-process-email-response' : (import.meta.env.VITE_N8N_QA_PROCESS_EMAIL_RESPONSE_URL || 'https://n8n.beaienergy.com/webhook/qa-process-email-response'),
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto (procesamiento de PDFs puede tardar hasta 30 min)

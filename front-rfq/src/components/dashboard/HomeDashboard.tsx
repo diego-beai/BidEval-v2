@@ -993,9 +993,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         borderBottom: '2px solid var(--border-color)',
                         gap: '50px'
                     }}>
-                        {/* Use scoringResults from useScoringStore for accurate data */}
+                        {/* Use scoringResults from useScoringStore for accurate data - sorted by score */}
                         {scoringResults?.ranking && scoringResults.ranking.length > 0 ? (
-                            scoringResults.ranking.map((provider) => {
+                            [...scoringResults.ranking].sort((a, b) => b.overall_score - a.overall_score).map((provider) => {
                                 const scores = provider.scores || {};
                                 const hasData = (scores.technical || 0) + (scores.economic || 0) + (scores.execution || 0) + (scores.hse_compliance || 0) > 0;
                                 if (!hasData) return null;
