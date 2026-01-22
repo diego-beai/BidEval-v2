@@ -376,6 +376,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           question: questionText,
           status: 'Draft', // Follow-up starts as Draft, needs approval before sending
           importance: parentQuestion.importance || parentQuestion.importancia || 'Medium',
+          requirement_id: parentQuestion.requirement_id || null, // Inherit requirement from parent
           parent_question_id: parentQuestionId,
           created_at: new Date().toISOString()
         }])
