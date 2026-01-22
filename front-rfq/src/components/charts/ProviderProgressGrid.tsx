@@ -3,6 +3,7 @@ import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
 import { ProgressRing } from './ProgressRing';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 
 export interface ProviderProgressGridProps {
   selectedProvider?: Provider | '';
@@ -47,6 +48,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
 }) => {
   const { results, tableData, proposalEvaluations, fetchAllTableData, fetchProposalEvaluations } = useRfqStore();
   const { activeProjectId } = useProjectStore();
+  const { t } = useLanguageStore();
 
   // Reload data when project changes
   useEffect(() => {
@@ -259,7 +261,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                {count}/4 types
+                {count}/4 {t('chart.types')}
               </div>
             </div>
           </div>

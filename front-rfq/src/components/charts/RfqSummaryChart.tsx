@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DonutChart, DonutChartData } from './DonutChart';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 
 interface RfqSummaryChartProps {
   className?: string;
@@ -9,6 +10,7 @@ interface RfqSummaryChartProps {
 export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) => {
   const { pivotTableData, fetchPivotTableData, isProcessing, error } = useRfqStore();
   const [chartData, setChartData] = useState<DonutChartData[]>([]);
+  const { t } = useLanguageStore();
 
   useEffect(() => {
     // Cargar datos si no existen
@@ -22,7 +24,7 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
     if (pivotTableData && pivotTableData.length > 0) {
       // Contar RFQs por tipo de evaluación
       const evaluationCounts = pivotTableData.reduce((acc: Record<string, number>, item) => {
-        const evalType = item.evaluation_type || 'Sin categorizar';
+        const evalType = item.evaluation_type || t('chart.uncategorized');
         acc[evalType] = (acc[evalType] || 0) + 1;
         return acc;
       }, {});
@@ -74,7 +76,7 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
               height: 20,
               animation: 'spin 1s linear infinite'
             }}></div>
-            <div style={{ fontSize: '0.8rem' }}>Cargando datos...</div>
+            <div style={{ fontSize: '0.8rem' }}>{t('chart.loading_data')}</div>
           </div>
         </div>
       </div>
@@ -94,8 +96,8 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
           textAlign: 'center'
         }}>
           <div>
-            <div style={{ marginBottom: '8px' }}>⚠️ Error de conexión</div>
-            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>No se pudieron cargar los datos</div>
+            <div style={{ marginBottom: '8px' }}>⚠️ {t('chart.connection_error')}</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{t('chart.could_not_load')}</div>
           </div>
         </div>
       </div>
@@ -108,12 +110,12 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
     <div className={`donut-chart-container ${className || ''}`}>
       <div style={{ marginBottom: '16px', textAlign: 'center' }}>
         <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Distribución de RFQs
+          {t('chart.rfq_distribution')}
         </h4>
         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
           {totalRequirements > 0
-            ? `${totalRequirements} requisitos totales`
-            : 'Sin datos - Configura Supabase'
+            ? `${totalRequirements} ${t('chart.total_requirements')}`
+            : t('chart.no_data_configure')
           }
         </p>
       </div>
@@ -136,8 +138,8 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
           color: 'var(--text-secondary)',
           textAlign: 'center'
         }}>
-          <div style={{ fontWeight: 600, marginBottom: '4px' }}>🔍 Solución:</div>
-          <div>Verifica la configuración de Supabase y que las tablas rfq_items_master y provider_responses contengan datos.</div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>🔍 {t('chart.solution')}</div>
+          <div>{t('chart.verify_supabase_rfq')}</div>
         </div>
       )}
     </div>

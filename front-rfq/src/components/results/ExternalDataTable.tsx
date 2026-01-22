@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRfqStore, TableFilters } from '../../stores/useRfqStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import * as XLSX from 'xlsx';
 
 export const ExternalDataTable: React.FC = () => {
@@ -23,6 +24,8 @@ export const ExternalDataTable: React.FC = () => {
         error,
         isProcessing
     } = useRfqStore();
+
+    const { t } = useLanguageStore();
 
     // Sync pivotTableData with internal data state - use direct Supabase data
     useEffect(() => {
@@ -160,7 +163,7 @@ export const ExternalDataTable: React.FC = () => {
             </p>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button className="btn btnSecondary" onClick={fetchPivotTableData}>
-                    Reload Data
+                    {t('table.reload_data')}
                 </button>
                 {tableFilters.project_name && (
                     <button
@@ -170,7 +173,7 @@ export const ExternalDataTable: React.FC = () => {
                             loadData();
                         }}
                     >
-                        Clear Project Filter
+                        {t('table.clear_project_filter')}
                     </button>
                 )}
                 {projects.length === 0 && (
@@ -312,7 +315,7 @@ export const ExternalDataTable: React.FC = () => {
         <div style={{ padding: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-surface)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Requirements & Provider Evaluations</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{t('table.title')}</h3>
                     {activeFilterCount > 0 && (
                         <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--color-cyan)', color: '#000', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
                             {activeFilterCount} filters active
@@ -334,7 +337,7 @@ export const ExternalDataTable: React.FC = () => {
                             // Then reload data
                             await fetchPivotTableData();
                         }}
-                        title="Reload Data & Reset Filters"
+                        title={t('table.reload_data')}
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M23 4v6h-6" />
@@ -351,7 +354,7 @@ export const ExternalDataTable: React.FC = () => {
                         style={showFilterPanel ? { backgroundColor: 'var(--color-cyan)', color: '#000', borderColor: 'var(--color-cyan)' } : {}}
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
-                        Filters
+                        {t('table.filters')}
                     </button>
                     <button
                         onClick={downloadCSV}
@@ -370,7 +373,7 @@ export const ExternalDataTable: React.FC = () => {
                         }}
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                        CSV
+                        {t('table.csv')}
                     </button>
                     <button
                         onClick={downloadExcel}
@@ -389,7 +392,7 @@ export const ExternalDataTable: React.FC = () => {
                         }}
                     >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                        Excel
+                        {t('table.excel')}
                     </button>
                 </div>
             </div>
@@ -411,7 +414,7 @@ export const ExternalDataTable: React.FC = () => {
 
                     {/* Project Filter - Now a Dropdown */}
                     <div style={{ flex: '1 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>Project Name</label>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>{t('table.project_name')}</label>
                         <select
                             style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer' }}
                             value={tableFilters.project_name}
@@ -421,7 +424,7 @@ export const ExternalDataTable: React.FC = () => {
                                 // El filtrado se hace automáticamente en el componente basado en tableFilters.project_name
                             }}
                         >
-                            <option value="">Select Project...</option>
+                            <option value="">{t('table.select_project')}</option>
                             {projects.map(p => (
                                 <option key={p} value={p}>{p}</option>
                             ))}
@@ -429,7 +432,7 @@ export const ExternalDataTable: React.FC = () => {
                     </div>
 
                     <FilterDropdown
-                        label="Evaluation Type"
+                        label={t('table.evaluation_type')}
                         id="eval"
                         options={filterOptions.evaluations}
                         selected={tableFilters.evaluation_type}
@@ -438,7 +441,7 @@ export const ExternalDataTable: React.FC = () => {
 
                     {/* RFQ Requirement Searchable Autocomplete */}
                     <div style={{ position: 'relative', flex: '2 1 300px' }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>Phase</label>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>{t('table.phase')}</label>
                         <div style={{ position: 'relative' }}>
                             <input
                                 type="text"
@@ -569,10 +572,10 @@ export const ExternalDataTable: React.FC = () => {
                                     }}>
                                         {(
                                             {
-                                                'project_name': 'Project',
-                                                'evaluation_type': 'Evaluation Type',
-                                                'phase': 'Phase',
-                                                'requirement_text': 'Requirement'
+                                                'project_name': t('table.project'),
+                                                'evaluation_type': t('table.evaluation_type'),
+                                                'phase': t('table.phase'),
+                                                'requirement_text': t('table.requirement')
                                             }[col] || col.replace(/_/g, ' ')
                                         )}
                                     </th>
@@ -624,14 +627,14 @@ export const ExternalDataTable: React.FC = () => {
                 alignItems: 'center'
             }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {filteredData.length} rows
+                    {filteredData.length} {t('table.rows')}
                 </span>
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                 }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Zoom:</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('table.zoom')}</span>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',

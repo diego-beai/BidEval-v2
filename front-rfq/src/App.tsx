@@ -30,15 +30,20 @@ export default function App() {
     return saved || 'home';
   });
 
-  // Get selected provider from files (for display in the progress panel)
+  // Track clicked provider from the grid (separate from files)
+  const [clickedProvider, setClickedProvider] = useState<string>('');
+
+  // Get selected provider - prioritize clicked provider, then fall back to files
   const selectedProvider = useMemo(() => {
+    // If a provider was clicked in the grid, use that
+    if (clickedProvider) return clickedProvider;
+    // Otherwise, get from files being uploaded
     if (selectedFiles.length === 0) return '';
-    // Get the first file's provider, or the most common one
     const providers = selectedFiles
       .map(f => f.metadata.proveedor)
       .filter(Boolean);
     return providers[0] || '';
-  }, [selectedFiles]);
+  }, [clickedProvider, selectedFiles]);
 
   // Persist activeView state
   useMemo(() => {
@@ -174,10 +179,10 @@ export default function App() {
                   border: '1px solid rgba(18, 181, 176, 0.15)'
                 }}>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    Upload Proposal Documents
+                    {t('proposal.upload_title')}
                   </h4>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    Select PDF files and configure metadata for each file individually
+                    {t('proposal.upload_subtitle')}
                   </p>
                 </div>
 
@@ -223,7 +228,7 @@ export default function App() {
                         color: 'var(--color-error)',
                         marginBottom: '4px'
                       }}>
-                        Processing Error
+                        {t('proposal.processing_error')}
                       </div>
                       <div style={{
                         fontSize: '0.875rem',
@@ -378,7 +383,7 @@ export default function App() {
                           {4 - (selectedProviderData?.count || selectedProviderProgress.count)}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          Remaining
+                          {t('proposal.remaining')}
                         </div>
                       </div>
                     </div>
@@ -390,7 +395,7 @@ export default function App() {
                       margin: 0,
                       maxWidth: '260px'
                     }}>
-                      Upload evaluation documents to increase progress
+                      {t('proposal.upload_hint')}
                     </p>
                   </div>
                 ) : (
@@ -412,7 +417,7 @@ export default function App() {
                       <line x1="8" y1="21" x2="16" y2="21"></line>
                       <line x1="12" y1="17" x2="12" y2="21"></line>
                     </svg>
-                    <p style={{ margin: 0 }}>Select a provider below to view detailed progress</p>
+                    <p style={{ margin: 0 }}>{t('proposal.select_provider')}</p>
                   </div>
                 )}
               </div>
@@ -429,19 +434,18 @@ export default function App() {
             }}>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Provider Progress
+                  {t('proposal.provider_progress')}
                 </h3>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Click on a provider to view detailed evaluation status
+                  {t('proposal.provider_progress_hint')}
                 </p>
               </div>
 
               <ProviderProgressGrid
                 selectedProvider={selectedProvider as Provider | ''}
-                onProviderClick={() => {
-                  // When clicking on provider grid, we just update the view
-                  // The actual file metadata is set in the modal
-                  setSelectedProviderData(null);
+                onProviderClick={(provider) => {
+                  // When clicking on provider grid, select that provider
+                  setClickedProvider(provider);
                 }}
                 onProviderDataChange={setSelectedProviderData}
               />

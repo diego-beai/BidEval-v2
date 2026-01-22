@@ -9,30 +9,33 @@ import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
-// Individual scoring criteria with readable names (RFQ-aligned structure)
-const CRITERIA_LABELS: Record<string, string> = {
+// Function to get translated criteria labels
+const getCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
     // TECHNICAL COMPLETENESS (30%)
-    scope_facilities: 'Scope of Facilities',
-    scope_work: 'Scope of Work',
-    deliverables_quality: 'Deliverables Quality',
+    scope_facilities: t('criteria.scope_facilities'),
+    scope_work: t('criteria.scope_work'),
+    deliverables_quality: t('criteria.deliverables_quality'),
     // ECONOMIC COMPETITIVENESS (35%)
-    total_price: 'Total Price',
-    price_breakdown: 'Price Breakdown',
-    optionals_included: 'Optionals Included',
-    capex_opex_methodology: 'CAPEX/OPEX Methodology',
+    total_price: t('criteria.total_price'),
+    price_breakdown: t('criteria.price_breakdown'),
+    optionals_included: t('criteria.optionals_included'),
+    capex_opex_methodology: t('criteria.capex_opex_methodology'),
     // EXECUTION CAPABILITY (20%)
-    schedule: 'Schedule',
-    resources_allocation: 'Resources Allocation',
-    exceptions: 'Exceptions',
+    schedule: t('criteria.schedule'),
+    resources_allocation: t('criteria.resources_allocation'),
+    exceptions: t('criteria.exceptions'),
     // HSE & COMPLIANCE (15%)
-    safety_studies: 'Safety Studies',
-    regulatory_compliance: 'Regulatory Compliance'
-};
+    safety_studies: t('criteria.safety_studies'),
+    regulatory_compliance: t('criteria.regulatory_compliance')
+});
 
 export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
     const { t } = useLanguageStore();
     const { activeProjectId } = useProjectStore();
+
+    // Get translated criteria labels
+    const CRITERIA_LABELS = useMemo(() => getCriteriaLabels(t), [t]);
 
     // Load scoring data on mount and when project changes
     useEffect(() => {
@@ -93,7 +96,7 @@ export const ExecutiveView: React.FC = () => {
                     fontWeight: 600,
                     color: 'var(--text-primary)'
                 }}>
-                    Calculating AI Scores...
+                    {t('executive.calculating')}
                 </div>
                 <div style={{
                     fontSize: '0.875rem',
@@ -101,7 +104,7 @@ export const ExecutiveView: React.FC = () => {
                     textAlign: 'center',
                     maxWidth: '300px'
                 }}>
-                    Evaluating providers across 12 criteria. This may take a moment.
+                    {t('executive.calculating_subtitle')}
                 </div>
                 <style>{`
                     @keyframes spin {
@@ -124,7 +127,7 @@ export const ExecutiveView: React.FC = () => {
                 color: 'var(--text-secondary)',
                 gap: '16px'
             }}>
-                <div>No scoring data available. Run the scoring workflow to generate results.</div>
+                <div>{t('executive.no_data')}</div>
                 <button
                     onClick={() => refreshScoring()}
                     style={{
@@ -136,7 +139,7 @@ export const ExecutiveView: React.FC = () => {
                         cursor: 'pointer'
                     }}
                 >
-                    Refresh Data
+                    {t('executive.refresh')}
                 </button>
             </div>
         );
@@ -179,19 +182,19 @@ export const ExecutiveView: React.FC = () => {
     // Prepare radar chart data
     const radarData = [
         {
-            subject: 'TECHNICAL',
+            subject: t('category.technical'),
             ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.technical ?? 0]))
         },
         {
-            subject: 'ECONOMIC',
+            subject: t('category.economic'),
             ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.economic ?? 0]))
         },
         {
-            subject: 'EXECUTION',
+            subject: t('category.execution'),
             ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.execution ?? 0]))
         },
         {
-            subject: 'HSE_COMPLIANCE',
+            subject: t('category.hse_compliance'),
             ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.hse_compliance ?? 0]))
         }
     ];
@@ -328,7 +331,7 @@ export const ExecutiveView: React.FC = () => {
                                         fontSize: '0.9rem',
                                         fontWeight: 600
                                     }}>
-                                        Score: <span style={{ fontSize: '1.3rem', marginLeft: '8px' }}>{winner.overall_score.toFixed(2)}</span>
+                                        {t('executive.score')}: <span style={{ fontSize: '1.3rem', marginLeft: '8px' }}>{winner.overall_score.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -351,7 +354,7 @@ export const ExecutiveView: React.FC = () => {
                                 }}
                                 onClick={() => {
                                     if (window.confirm(`${t('executive.award')} ${winner.provider_name}?`)) {
-                                        alert(`Contract awarded to ${winner.provider_name}! \nTotal Score: ${winner.overall_score.toFixed(2)}`);
+                                        alert(`${t('executive.contract_awarded')} ${winner.provider_name}! \n${t('executive.total_score')}: ${winner.overall_score.toFixed(2)}`);
                                     }
                                 }}
                                 onMouseEnter={(e) => {
@@ -393,20 +396,20 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Lead Margin vs {runnerUp?.provider_name || 'N/A'}
+                                    {t('executive.lead_margin')} {runnerUp?.provider_name || 'N/A'}
                                 </div>
                                 <div style={{
                                     fontSize: '1.5rem',
                                     fontWeight: 700
                                 }}>
-                                    {scoreGap >= 0 ? '+' : ''}{scoreGap.toFixed(2)} pts
+                                    {scoreGap >= 0 ? '+' : ''}{scoreGap.toFixed(2)} {t('executive.pts')}
                                 </div>
                                 <div style={{
                                     fontSize: '0.75rem',
                                     opacity: 0.8,
                                     marginTop: '4px'
                                 }}>
-                                    {runnerUp ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : 0}% advantage
+                                    {runnerUp ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : 0}% {t('executive.advantage')}
                                 </div>
                             </div>
 
@@ -425,7 +428,7 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Key Strengths
+                                    {t('executive.key_strengths')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
@@ -448,7 +451,7 @@ export const ExecutiveView: React.FC = () => {
                                         <span style={{
                                             fontSize: '0.8rem',
                                             opacity: 0.7
-                                        }}>No dominant categories</span>
+                                        }}>{t('executive.no_strengths')}</span>
                                     )}
                                 </div>
                             </div>
@@ -468,7 +471,7 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Areas to Review
+                                    {t('executive.areas_review')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
@@ -491,7 +494,7 @@ export const ExecutiveView: React.FC = () => {
                                         <span style={{
                                             fontSize: '0.8rem',
                                             opacity: 0.7
-                                        }}>No data available</span>
+                                        }}>{t('executive.no_data_available')}</span>
                                     )}
                                 </div>
                             </div>
@@ -511,7 +514,7 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Top Rankings
+                                    {t('executive.top_rankings')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
@@ -753,7 +756,7 @@ export const ExecutiveView: React.FC = () => {
                                     fontWeight: 700,
                                     marginBottom: '8px'
                                 }}
-                                formatter={(value: any) => [`${Number(value).toFixed(2)}`, 'Score']}
+                                formatter={(value: any) => [`${Number(value).toFixed(2)}`, t('executive.score')]}
                             />
                             <Bar
                                 dataKey="score"
@@ -792,14 +795,14 @@ export const ExecutiveView: React.FC = () => {
                 }}>
                     <div>
                         <div className="widget-title" style={{ margin: '0 0 6px 0' }}>
-                            Criteria Weight Distribution
+                            {t('executive.criteria_weight')}
                         </div>
                         <div style={{
                             fontSize: '0.875rem',
                             color: 'var(--text-secondary)',
                             fontWeight: 500
                         }}>
-                            Scoring impact by category
+                            {t('executive.scoring_impact')}
                         </div>
                     </div>
                 </div>
@@ -826,10 +829,10 @@ export const ExecutiveView: React.FC = () => {
                             </defs>
                             <Pie
                                 data={[
-                                    { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
-                                    { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
-                                    { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE & COMPLIANCE', value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
+                                    { name: t('category.technical'), value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
+                                    { name: t('category.economic'), value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
+                                    { name: t('category.execution'), value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
+                                    { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
                                 ]}
                                 cx="50%"
                                 cy="50%"
@@ -844,10 +847,10 @@ export const ExecutiveView: React.FC = () => {
                                 animationDuration={800}
                             >
                                 {[
-                                    { name: 'TECHNICAL', value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
-                                    { name: 'ECONOMIC', value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
-                                    { name: 'EXECUTION', value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: 'HSE & COMPLIANCE', value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
+                                    { name: t('category.technical'), value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
+                                    { name: t('category.economic'), value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
+                                    { name: t('category.execution'), value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
+                                    { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
                                 ].map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--bg-surface)" strokeWidth={3} />
                                 ))}
@@ -865,7 +868,7 @@ export const ExecutiveView: React.FC = () => {
                                     fontSize: '0.875rem',
                                     fontWeight: 600
                                 }}
-                                formatter={(value: any) => [`${value}%`, 'Weight']}
+                                formatter={(value: any) => [`${value}%`, t('executive.weight')]}
                             />
                             <Legend
                                 verticalAlign="bottom"

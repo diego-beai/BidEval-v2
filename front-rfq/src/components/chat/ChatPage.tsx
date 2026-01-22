@@ -339,7 +339,7 @@ export const ChatPage: React.FC = () => {
                 <button
                     onClick={() => clearMessages()}
                     className="action-btn"
-                    title="Clear Conversation"
+                    title={t('chat.clear_conversation')}
                     style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
                 >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -363,7 +363,7 @@ export const ChatPage: React.FC = () => {
                 </div>
             ) : validMessages.length === 0 ? (
                 <div className="chat-welcome">
-                    <h1>How can I help you?</h1>
+                    <h1>{t('chat.welcome')}</h1>
                 </div>
             ) : (
                 <div className="chat-messages">
@@ -384,7 +384,7 @@ export const ChatPage: React.FC = () => {
                                 <button
                                     className="copy-btn-message"
                                     onClick={() => handleCopy(msg.content)}
-                                    title="Copy to clipboard"
+                                    title={t('chat.copy_clipboard')}
                                 >
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -434,10 +434,10 @@ export const ChatPage: React.FC = () => {
 
                     <div className="chat-input-actions">
                         <div className="action-buttons-left">
-                            <button className="action-btn" title="Attach">
+                            <button className="action-btn" title={t('chat.attach')}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
                             </button>
-                            <button className="action-btn" title="Search">
+                            <button className="action-btn" title={t('chat.search')}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                             </button>
                         </div>

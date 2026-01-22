@@ -39,7 +39,7 @@ export const VendorDecisionDashboard: React.FC = () => {
                     fontSize: '1rem',
                     fontWeight: 500
                 }}>
-                    Loading Scoring Analysis...
+                    {t('dashboard.loading')}
                 </p>
                 <style>{`
                     @keyframes spin {

@@ -86,15 +86,17 @@
 
 /* Provider Selector Popup */
 .provider-selector-popup {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   width: 280px;
-  max-height: calc(100vh - 100px);
+  max-height: 300px;
   background: var(--bg-surface, #1a1a1a);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   z-index: 1001;
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: fadeInScale 0.15s ease-out;
@@ -503,6 +505,8 @@
   bottom: 0;
   z-index: 1000;
   background: transparent;
+  /* Allow scroll events to pass through */
+  touch-action: auto;
 }
 
 .check-icon {
@@ -2359,8 +2363,33 @@
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 10px;
   padding: 16px;
-  background: white;
+  background: #ffffff !important;
   font-size: 12px;
+  color: #1f2937 !important;
+}
+
+/* Force readable text colors in email preview */
+.email-preview-content,
+.email-preview-content * {
+  color: #1f2937 !important;
+}
+
+.email-preview-content table,
+.email-preview-content td,
+.email-preview-content th,
+.email-preview-content p,
+.email-preview-content span,
+.email-preview-content div {
+  color: #1f2937 !important;
+}
+
+.email-preview-content a {
+  color: #0d9488 !important;
+}
+
+.email-preview-content th {
+  background: #f3f4f6 !important;
+  font-weight: 600;
 }
 
 .send-modal-footer {

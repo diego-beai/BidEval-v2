@@ -242,7 +242,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                     e.currentTarget.style.background = 'rgba(18, 181, 176, 0.1)';
                                     e.currentTarget.style.borderColor = 'rgba(18, 181, 176, 0.3)';
                                 }}
-                                title="Click to view processing status"
+                                title={t('sidebar.click_view_status')}
                             >
                                 {/* Spinner */}
                                 <div style={{
@@ -261,7 +261,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                     color: '#12b5b0',
                                     whiteSpace: 'nowrap'
                                 }}>
-                                    Processing {processingFileCount > 1 ? `${processingFileCount} files` : 'file'}...
+                                    {t('sidebar.processing_files').replace('{count}', processingFileCount.toString())}
                                 </span>
 
                                 {/* Elapsed time */}

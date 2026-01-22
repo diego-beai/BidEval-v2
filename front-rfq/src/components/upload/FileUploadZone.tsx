@@ -1,6 +1,7 @@
 import { useCallback, memo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import { validateFile } from '../../utils/validators';
 import { MultiFileMetadataModal } from './MultiFileMetadataModal';
 import { useRfqProcessing } from '../../hooks/useRfqProcessing';
@@ -25,6 +26,7 @@ export const FileUploadZone = memo(function FileUploadZone({
     copyMetadataFromPrevious
   } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
+  const { t } = useLanguageStore();
   const [showMetadataModal, setShowMetadataModal] = useState(false);
 
   // Auto-open modal when files are added
@@ -122,16 +124,16 @@ export const FileUploadZone = memo(function FileUploadZone({
 
         <p className={`dropzonePrompt ${compact ? 'dropzonePrompt--compact' : ''}`}>
           {isProcessing
-            ? 'Processing proposals... This may take a few minutes'
+            ? t('dropzone.processing')
             : selectedFiles.length > 0
               ? selectedFiles.length > 1
-                ? `${selectedFiles.length} files selected (${totalSizeMB} MB total)`
-                : `${selectedFiles[0].file.name} (${(selectedFiles[0].file.size / 1024 / 1024).toFixed(2)} MB)`
+                ? t('dropzone.files_selected').replace('{count}', selectedFiles.length.toString()).replace('{size}', totalSizeMB)
+                : t('dropzone.file_selected').replace('{name}', selectedFiles[0].file.name).replace('{size}', (selectedFiles[0].file.size / 1024 / 1024).toFixed(2))
               : isDragActive
-                ? 'Drop the PDF files here...'
+                ? t('dropzone.drop_here')
                 : compact
-                  ? 'Drag PDF files or click to select'
-                  : 'Drag and drop PDF files here (up to 7), or click to select'}
+                  ? t('dropzone.drag_compact')
+                  : t('dropzone.drag_full')}
         </p>
 
         {selectedFiles.length > 0 && (
@@ -152,7 +154,7 @@ export const FileUploadZone = memo(function FileUploadZone({
               padding: '8px 14px'
             }}
           >
-            Configure files ({selectedFiles.length})
+            {t('dropzone.configure_files').replace('{count}', selectedFiles.length.toString())}
           </button>
           <button
             onClick={handleClearAll}
@@ -162,7 +164,7 @@ export const FileUploadZone = memo(function FileUploadZone({
               padding: '8px 14px'
             }}
           >
-            Clear all
+            {t('dropzone.clear_all')}
           </button>
         </div>
       )}

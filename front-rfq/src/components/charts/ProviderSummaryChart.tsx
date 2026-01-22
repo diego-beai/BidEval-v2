@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DonutChart, DonutChartData } from './DonutChart';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 
 interface ProviderSummaryChartProps {
   className?: string;
@@ -10,6 +11,7 @@ interface ProviderSummaryChartProps {
 export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ className }) => {
   const { providerRanking, fetchProviderRanking, isProcessing, error } = useRfqStore();
   const [chartData, setChartData] = useState<DonutChartData[]>([]);
+  const { t } = useLanguageStore();
 
   useEffect(() => {
     // Cargar datos si no existen
@@ -90,7 +92,7 @@ export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ clas
               height: 20, 
               animation: 'spin 1s linear infinite' 
             }}></div>
-            <div style={{ fontSize: '0.8rem' }}>Cargando proveedores...</div>
+            <div style={{ fontSize: '0.8rem' }}>{t('chart.loading_providers')}</div>
           </div>
         </div>
       </div>
@@ -110,8 +112,8 @@ export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ clas
           textAlign: 'center'
         }}>
           <div>
-            <div style={{ marginBottom: '8px' }}>⚠️ Error de conexión</div>
-            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>No se pudieron cargar los datos</div>
+            <div style={{ marginBottom: '8px' }}>⚠️ {t('chart.connection_error')}</div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{t('chart.could_not_load')}</div>
           </div>
         </div>
       </div>
@@ -125,12 +127,12 @@ export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ clas
     <div className={`donut-chart-container ${className || ''}`}>
       <div style={{ marginBottom: '16px', textAlign: 'center' }}>
         <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Proveedores Activos
+          {t('chart.active_providers')}
         </h4>
         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          {totalProviders > 0 
-            ? `${activeProviders} proveedores con datos` 
-            : 'Sin datos - Configura Supabase'
+          {totalProviders > 0
+            ? `${activeProviders} ${t('chart.providers_with_data')}`
+            : t('chart.no_data_configure')
           }
         </p>
       </div>
@@ -153,8 +155,8 @@ export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ clas
           color: 'var(--text-secondary)',
           textAlign: 'center'
         }}>
-          <div style={{ fontWeight: 600, marginBottom: '4px' }}>🔍 Solución:</div>
-          <div>Verifica la configuración de Supabase y que la tabla ranking_proveedores contenga datos.</div>
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>🔍 {t('chart.solution')}</div>
+          <div>{t('chart.verify_supabase')}</div>
         </div>
       )}
     </div>

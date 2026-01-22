@@ -333,11 +333,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 let timeAgo = '';
                 if (diffDays > 0) {
-                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                    timeAgo = diffDays === 1 ? t('home.activity.yesterday') : `${diffDays} ${t('home.activity.days_ago')}`;
                 } else if (diffHours > 0) {
-                    timeAgo = `${diffHours}h ago`;
+                    timeAgo = `${diffHours}h`;
                 } else {
-                    timeAgo = 'Just now';
+                    timeAgo = t('home.activity.just_now');
                 }
 
                 const provider = item.Provider || item.provider;
@@ -346,7 +346,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 activities.push({
                     title: provider
                         ? `${t('home.activity.offer_received')} - ${provider}`
-                        : `New ${evalType || 'RFQ'} item`,
+                        : `${evalType || 'RFQ'}`,
                     desc: item.requirement_text?.substring(0, 50) || `${item.phase || 'General'} - ${evalType || 'Evaluation'}`,
                     time: timeAgo,
                     type: provider ? 'success' : 'info',
@@ -366,15 +366,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 let timeAgo = '';
                 if (diffDays > 0) {
-                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                    timeAgo = diffDays === 1 ? t('home.activity.yesterday') : `${diffDays} ${t('home.activity.days_ago')}`;
                 } else if (diffHours > 0) {
-                    timeAgo = `${diffHours}h ago`;
+                    timeAgo = `${diffHours}h`;
                 } else {
-                    timeAgo = 'Just now';
+                    timeAgo = t('home.activity.just_now');
                 }
 
                 activities.push({
-                    title: `Proposal evaluated - ${item.provider_name}`,
+                    title: `${t('home.activity.proposal_evaluated')} - ${item.provider_name}`,
                     desc: `${item.requirement_text || item.evaluation_type || 'Requirement'}: ${item.evaluation_value} (${item.score}/10)`,
                     time: timeAgo,
                     type: 'success',
@@ -394,24 +394,36 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 let timeAgo = '';
                 if (diffDays > 0) {
-                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                    timeAgo = diffDays === 1 ? t('home.activity.yesterday') : `${diffDays} ${t('home.activity.days_ago')}`;
                 } else if (diffHours > 0) {
-                    timeAgo = `${diffHours}h ago`;
+                    timeAgo = `${diffHours}h`;
                 } else {
-                    timeAgo = 'Just now';
+                    timeAgo = t('home.activity.just_now');
                 }
 
                 // Determine activity type based on notification type
                 let activityType = 'info';
+                let translatedTitle = notification.title || t('home.activity.qa_update');
+
                 if (notification.notification_type === 'supplier_responded') {
                     activityType = 'success';
+                    translatedTitle = t('home.activity.supplier_responded');
+                } else if (notification.notification_type === 'questions_sent') {
+                    translatedTitle = t('home.activity.questions_sent');
                 } else if (notification.notification_type === 'evaluation_updated') {
                     activityType = 'warning';
+                    translatedTitle = t('home.activity.evaluation_updated');
+                }
+
+                // Translate message if it contains specific patterns
+                let translatedMessage = notification.message || t('home.activity.qa_activity');
+                if (notification.message && notification.message.includes('response(s) received')) {
+                    translatedMessage = notification.message.replace('response(s) received', t('home.activity.response_received'));
                 }
 
                 activities.push({
-                    title: notification.title || 'Q&A Update',
-                    desc: notification.message || 'Activity in Q&A module',
+                    title: translatedTitle,
+                    desc: translatedMessage,
                     time: timeAgo,
                     type: activityType,
                     timestamp: date.getTime()
@@ -434,11 +446,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 let timeAgo = '';
                 if (diffDays > 0) {
-                    timeAgo = diffDays === 1 ? 'Yesterday' : `${diffDays} days ago`;
+                    timeAgo = diffDays === 1 ? t('home.activity.yesterday') : `${diffDays} ${t('home.activity.days_ago')}`;
                 } else if (diffHours > 0) {
-                    timeAgo = `${diffHours}h ago`;
+                    timeAgo = `${diffHours}h`;
                 } else {
-                    timeAgo = 'Just now';
+                    timeAgo = t('home.activity.just_now');
                 }
 
                 const status = q.estado || q.status;
@@ -786,9 +798,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             <div style={{ width: '100%', marginBottom: '10px' }}>
                 <div className="stats-grid">
                 <DashboardCard
-                    title="Total Processed"
+                    title={t('home.card.total_processed')}
                     value={dashboardMetrics.systemHealth.totalProcessed.toString()}
-                    trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% this week (${proposalsThisWeek} proposals)`}
+                    trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% ${t('home.card.this_week')} (${proposalsThisWeek} ${t('home.card.proposals')})`}
                     isPositiveTrend={proposalsGrowthPercentage >= 0}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -801,9 +813,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="var(--color-primary)"
                 />
                 <DashboardCard
-                    title="RFQs Processed"
+                    title={t('home.card.rfqs_processed')}
                     value={dashboardMetrics.activeRfqs.toString()}
-                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% coverage`}
+                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% ${t('home.card.coverage')}`}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -812,9 +824,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="#f59e0b"
                 />
                 <DashboardCard
-                    title="AI Accuracy"
+                    title={t('home.card.ai_accuracy')}
                     value={`${dashboardMetrics.systemHealth.accuracyRate}%`}
-                    trend="Excellent performance"
+                    trend={t('home.card.excellent_performance')}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
@@ -825,9 +837,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="var(--color-cyan)"
                 />
                 <DashboardCard
-                    title="Automation"
+                    title={t('home.card.automation')}
                     value={`${dashboardMetrics.systemHealth.automationLevel}%`}
-                    trend="Very high"
+                    trend={t('home.card.very_high')}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -859,7 +871,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 }}>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            Top Performer
+                            {t('home.scoring.top_performer')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                             {topPerformer?.provider_name || 'N/A'}
@@ -867,7 +879,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            Average Score
+                            {t('home.scoring.avg_score')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
                             {scoringResults.statistics.average_score.toFixed(1)}/10
@@ -875,7 +887,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            Compliance Rate
+                            {t('home.scoring.compliance_rate')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>
                             {(() => {
@@ -886,7 +898,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            Providers Evaluated
+                            {t('home.scoring.providers_evaluated')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
                             {scoringResults.statistics.total_providers}
@@ -910,7 +922,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             }}>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        Average Time
+                        {t('home.card.avg_time')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
                         {dashboardMetrics.avgProcessingTime}
@@ -918,7 +930,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 </div>
                 <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        Completed Today
+                        {t('home.card.completed_today')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-cyan)' }}>
                         {dashboardMetrics.completedToday}
@@ -926,7 +938,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 </div>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        Active Providers
+                        {t('home.card.active_providers')}
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
                         {providersCount}
@@ -948,10 +960,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <div>
                             <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                AI Scoring by Provider
+                                {t('home.scoring.title')}
                             </h3>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                Weighted scores from workflow
+                                {t('home.scoring.subtitle')}
                             </span>
                         </div>
                         <div style={{
@@ -1019,7 +1031,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                 color: 'var(--text-tertiary)',
                                 fontSize: '0.9rem'
                             }}>
-                                No scoring data available. Run AI Scoring to generate results.
+                                {t('home.scoring.no_data')}
                             </div>
                         )}
                     </div>
@@ -1032,10 +1044,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         gap: '16px',
                         justifyContent: 'center'
                     }}>
-                        <LegendItem color="#12b5b0" label="Technical (30%)" />
-                        <LegendItem color="#f59e0b" label="Economic (35%)" />
-                        <LegendItem color="#3b82f6" label="Execution (20%)" />
-                        <LegendItem color="#8b5cf6" label="HSE (15%)" />
+                        <LegendItem color="#12b5b0" label={`${t('home.scoring.technical')} (30%)`} />
+                        <LegendItem color="#f59e0b" label={`${t('home.scoring.economic')} (35%)`} />
+                        <LegendItem color="#3b82f6" label={`${t('home.scoring.execution')} (20%)`} />
+                        <LegendItem color="#8b5cf6" label={`${t('home.scoring.hse')} (15%)`} />
                     </div>
                 </div>
 
@@ -1059,7 +1071,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                 {t('home.activity.title')}
                             </h3>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                Recent activity
+                                {t('home.activity.recent_activity')}
                             </span>
                         </div>
                         <div style={{

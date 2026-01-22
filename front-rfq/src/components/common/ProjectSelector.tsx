@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useProjectStore, Project } from '../../stores/useProjectStore';
 import { useToastStore } from '../../stores/useToastStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import './ProjectSelector.css';
 
 interface ProjectSelectorProps {
@@ -19,6 +20,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
   } = useProjectStore();
 
   const { addToast } = useToastStore();
+  const { t } = useLanguageStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -85,12 +87,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
     const trimmedName = newProjectName.trim();
 
     if (!trimmedName) {
-      addToast('Please enter a project name', 'warning');
+      addToast(t('project.enter_name'), 'warning');
       return;
     }
 
     if (trimmedName.length < 3) {
-      addToast('Project name must be at least 3 characters', 'warning');
+      addToast(t('project.name_min_chars'), 'warning');
       return;
     }
 
@@ -99,7 +101,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
       p => p.display_name.toLowerCase() === trimmedName.toLowerCase()
     );
     if (existingProject) {
-      addToast('A project with this name already exists', 'warning');
+      addToast(t('project.already_exists'), 'warning');
       setActiveProject(existingProject.id);
       setIsCreating(false);
       setIsOpen(false);
@@ -112,16 +114,16 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
       const newProject = await createProject(trimmedName);
 
       if (newProject) {
-        addToast(`Project "${trimmedName}" created successfully`, 'success');
+        addToast(`${t('project.created_success')}: "${trimmedName}"`, 'success');
         setIsCreating(false);
         setNewProjectName('');
         setIsOpen(false);
       } else {
-        addToast('Error creating project', 'error');
+        addToast(t('project.error_creating'), 'error');
       }
     } catch (err) {
       console.error('Error creating project:', err);
-      addToast('Error creating project', 'error');
+      addToast(t('project.error_creating'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -168,12 +170,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
           </svg>
 
           <span className="project-name" title={activeProject?.display_name}>
-            {isLoading ? 'Loading...' : (activeProject?.display_name ? formatProjectName(activeProject.display_name) : 'Select Project')}
+            {isLoading ? t('project.loading') : (activeProject?.display_name ? formatProjectName(activeProject.display_name) : t('project.select'))}
           </span>
 
           {activeProject && !compact && (
             <span className="project-stats">
-              {activeProject.document_count} docs
+              {activeProject.document_count} {t('project.docs')}
             </span>
           )}
         </div>
@@ -196,7 +198,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
       {isOpen && (
         <div className="project-dropdown">
           <div className="project-dropdown-header">
-            <span>Select Project</span>
+            <span>{t('project.select')}</span>
             {isLoading && <span className="loading-indicator" />}
           </div>
 
@@ -206,7 +208,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
-                <span>No projects found</span>
+                <span>{t('project.no_projects')}</span>
               </div>
             ) : (
               sortedProjects.map((project) => (
@@ -275,7 +277,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                 ref={inputRef}
                 type="text"
                 className="create-project-input"
-                placeholder="Enter project name..."
+                placeholder={t('project.enter_name_placeholder')}
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -295,7 +297,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}
-                  Create
+                  {t('project.create')}
                 </button>
                 <button
                   className="create-project-btn cancel"
@@ -306,7 +308,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
-                  Cancel
+                  {t('project.cancel')}
                 </button>
               </div>
             </div>
@@ -316,7 +318,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              New Project
+              {t('project.new')}
             </button>
           )}
         </div>

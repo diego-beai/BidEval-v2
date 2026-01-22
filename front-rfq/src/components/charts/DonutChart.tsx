@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import './DonutChart.css';
 
 export interface DonutChartData {
@@ -34,6 +35,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   className = ''
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const { t } = useLanguageStore();
 
   const sizeInPx = SIZE_MAP[size];
   const strokeWidth = size === 'small' ? 12 : size === 'medium' ? 16 : 20;
@@ -53,7 +55,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         offset: 0,
         length: circumference,
         color: 'rgba(100, 116, 139, 0.2)',
-        data: { label: 'No data', value: 0, color: 'rgba(100, 116, 139, 0.2)' },
+        data: { label: t('chart.no_data'), value: 0, color: 'rgba(100, 116, 139, 0.2)' },
         index: -1
       }];
     }
@@ -162,7 +164,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
               ) : (
                 <>
                   <span className="donut-center-value">{centerText || total}</span>
-                  <span className="donut-center-label">Total</span>
+                  <span className="donut-center-label">{t('chart.total')}</span>
                 </>
               )}
             </div>

@@ -302,11 +302,11 @@ export function RfqBaseUploader() {
                   }}>
                     {t('upload.rfq_loaded')}
                   </h3>
-                  <span style={{ 
-                    fontSize: '0.85rem', 
-                    color: 'var(--text-secondary)' 
+                  <span style={{
+                    fontSize: '0.85rem',
+                    color: 'var(--text-secondary)'
                   }}>
-                    Document processed successfully
+                    {t('upload.doc_processed')}
                   </span>
                 </div>
                 <div style={{
@@ -391,7 +391,7 @@ export function RfqBaseUploader() {
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    Ready for comparison
+                    {t('upload.ready_comparison')}
                   </div>
                 </div>
                 <button 
@@ -565,7 +565,7 @@ export function RfqBaseUploader() {
           <div style={{ textAlign: 'center', width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {dashboardStats ? 'Document Overview' : 'Requirements Analysis'}
+                {dashboardStats ? t('upload.doc_overview') : t('upload.requirements_analysis')}
               </h3>
               {dashboardStats && (
                 <button
@@ -582,7 +582,7 @@ export function RfqBaseUploader() {
                     transform: isRefreshingStats ? 'rotate(360deg)' : 'none',
                     animation: isRefreshingStats ? 'spin 1s linear infinite' : 'none'
                   }}
-                  title={isRefreshingStats ? "Refreshing..." : "Refresh dashboard data"}
+                  title={isRefreshingStats ? t('upload.refreshing') : t('upload.refresh_data')}
                   onMouseEnter={(e) => !isRefreshingStats && (e.currentTarget.style.color = 'var(--color-primary)')}
                   onMouseLeave={(e) => !isRefreshingStats && (e.currentTarget.style.color = 'var(--text-secondary)')}
                 >
@@ -595,10 +595,10 @@ export function RfqBaseUploader() {
               )}
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {dashboardStats ? 'RFQ documents by evaluation type' : 'Evaluation types found in uploaded RFQ'}
+              {dashboardStats ? t('upload.rfq_by_type') : 'Evaluation types found in uploaded RFQ'}
               {dashboardStats && (
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', display: 'block', marginTop: '4px' }}>
-                  Auto-updates every 30s
+                  {t('upload.auto_updates')}
                 </span>
               )}
             </p>
@@ -836,10 +836,10 @@ export function RfqBaseUploader() {
         }}>
           <div style={{ textAlign: 'center', width: '100%' }}>
             <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Ready to Process
+              {t('upload.ready_process')}
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Upload your RFQ documents to begin analysis
+              {t('upload.upload_begin')}
             </p>
           </div>
 
@@ -854,8 +854,8 @@ export function RfqBaseUploader() {
 
           <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', maxWidth: '280px', margin: 0 }}>
             {dashboardStats
-              ? 'Distribution of RFQ documents across evaluation types in the database'
-              : 'Upload an RFQ document to see its evaluation type breakdown'
+              ? t('upload.distribution_desc')
+              : t('upload.upload_see_breakdown')
             }
           </p>
         </div>

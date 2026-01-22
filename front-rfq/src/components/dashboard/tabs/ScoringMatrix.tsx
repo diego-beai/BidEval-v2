@@ -1,28 +1,47 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
+import { useLanguageStore } from '../../../stores/useLanguageStore';
 import type { ScoringWeights } from '../../../types/database.types';
 
-// Define the scoring criteria with their weights
+// Define the scoring criteria with their weights (ids only - names/descriptions come from translations)
 // Based on RFQ requirements for engineering proposals evaluation
-const SCORING_CRITERIA = [
+const SCORING_CRITERIA_IDS = [
     // TECHNICAL COMPLETENESS (30%)
-    { id: 'scope_facilities', name: 'Scope of Facilities', category: 'TECHNICAL', weight: 10, description: 'Hydrogen plant, BOP, utilities included' },
-    { id: 'scope_work', name: 'Scope of Work', category: 'TECHNICAL', weight: 10, description: 'Project management, studies, deliverables covered' },
-    { id: 'deliverables_quality', name: 'Deliverables Quality', category: 'TECHNICAL', weight: 10, description: 'P&IDs, specifications, 3D model quality' },
+    { id: 'scope_facilities', category: 'TECHNICAL', weight: 10 },
+    { id: 'scope_work', category: 'TECHNICAL', weight: 10 },
+    { id: 'deliverables_quality', category: 'TECHNICAL', weight: 10 },
     // ECONOMIC COMPETITIVENESS (35%)
-    { id: 'total_price', name: 'Total Price', category: 'ECONOMIC', weight: 15, description: 'PRE-FEED + FEED + EPC price competitiveness' },
-    { id: 'price_breakdown', name: 'Price Breakdown', category: 'ECONOMIC', weight: 8, description: 'Transparent hours/discipline and €/hour' },
-    { id: 'optionals_included', name: 'Optionals Included', category: 'ECONOMIC', weight: 7, description: 'Geotechnical, topographic, 3D, HAZID in base price' },
-    { id: 'capex_opex_methodology', name: 'CAPEX/OPEX Methodology', category: 'ECONOMIC', weight: 5, description: 'AACEI class offered, estimate robustness' },
+    { id: 'total_price', category: 'ECONOMIC', weight: 15 },
+    { id: 'price_breakdown', category: 'ECONOMIC', weight: 8 },
+    { id: 'optionals_included', category: 'ECONOMIC', weight: 7 },
+    { id: 'capex_opex_methodology', category: 'ECONOMIC', weight: 5 },
     // EXECUTION CAPABILITY (20%)
-    { id: 'schedule', name: 'Schedule', category: 'EXECUTION', weight: 8, description: 'Realistic timeline vs requirements' },
-    { id: 'resources_allocation', name: 'Resources Allocation', category: 'EXECUTION', weight: 6, description: 'Coherent hours per discipline' },
-    { id: 'exceptions', name: 'Exceptions', category: 'EXECUTION', weight: 6, description: 'Fewer exceptions and deviations = better' },
+    { id: 'schedule', category: 'EXECUTION', weight: 8 },
+    { id: 'resources_allocation', category: 'EXECUTION', weight: 6 },
+    { id: 'exceptions', category: 'EXECUTION', weight: 6 },
     // HSE & COMPLIANCE (15%)
-    { id: 'safety_studies', name: 'Safety Studies', category: 'HSE_COMPLIANCE', weight: 8, description: 'HAZID, HAZOP, QRA, ATEX included' },
-    { id: 'regulatory_compliance', name: 'Regulatory Compliance', category: 'HSE_COMPLIANCE', weight: 7, description: 'Codes, standards, safety distances' },
+    { id: 'safety_studies', category: 'HSE_COMPLIANCE', weight: 8 },
+    { id: 'regulatory_compliance', category: 'HSE_COMPLIANCE', weight: 7 },
 ];
+
+// Function to get translated criteria
+const getScoringCriteria = (t: (key: string) => string) => SCORING_CRITERIA_IDS.map(c => ({
+    ...c,
+    name: t(`criteria.${c.id}`),
+    description: t(`criteria.${c.id}.desc`)
+}));
+
+// Function to get translated category name
+const getCategoryName = (category: string, t: (key: string) => string): string => {
+    const categoryMap: Record<string, string> = {
+        'TECHNICAL': t('scoring.category.technical'),
+        'ECONOMIC': t('scoring.category.economic'),
+        'EXECUTION': t('scoring.category.execution'),
+        'HSE_COMPLIANCE': t('scoring.category.hse_compliance')
+    };
+    return categoryMap[category] || category;
+};
 
 const CATEGORY_INFO = {
     'TECHNICAL': { weight: 30, color: '#12b5b0' },
@@ -49,6 +68,10 @@ export const ScoringMatrix: React.FC = () => {
 
     // Get active project
     const { activeProjectId } = useProjectStore();
+    const { t } = useLanguageStore();
+
+    // Get translated scoring criteria
+    const SCORING_CRITERIA = useMemo(() => getScoringCriteria(t), [t]);
 
     // Track if user has made changes from the saved/default state
     const [isEditingWeights, setIsEditingWeights] = useState(false);
@@ -240,7 +263,7 @@ export const ScoringMatrix: React.FC = () => {
                         fontWeight: 700,
                         color: 'var(--text-primary)'
                     }}>
-                        Provider Scoring Matrix
+                        {t('scoring.title')}
                     </h3>
                     <p style={{
                         margin: 0,
@@ -248,10 +271,10 @@ export const ScoringMatrix: React.FC = () => {
                         color: 'var(--text-secondary)',
                         fontWeight: 500
                     }}>
-                        AI-evaluated scores across 12 criteria
+                        {t('scoring.subtitle')}
                         {lastCalculation && (
                             <span style={{ marginLeft: '12px', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                                Last updated: {new Date(lastCalculation).toLocaleString()}
+                                {t('scoring.last_updated')}: {new Date(lastCalculation).toLocaleString()}
                             </span>
                         )}
                     </p>
@@ -309,7 +332,7 @@ export const ScoringMatrix: React.FC = () => {
                                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                                 <path d="M3 3v5h5"></path>
                             </svg>
-                            Reset
+                            {t('scoring.reset')}
                         </button>
                     )}
                     {/* Save weights button */}
@@ -338,7 +361,7 @@ export const ScoringMatrix: React.FC = () => {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
                                         <path d="M21 12a9 9 0 11-6.219-8.56"></path>
                                     </svg>
-                                    Saving...
+                                    {t('scoring.saving')}
                                 </>
                             ) : (
                                 <>
@@ -347,7 +370,7 @@ export const ScoringMatrix: React.FC = () => {
                                         <polyline points="17 21 17 13 7 13 7 21"></polyline>
                                         <polyline points="7 3 7 8 15 8"></polyline>
                                     </svg>
-                                    Save
+                                    {t('scoring.save')}
                                 </>
                             )}
                         </button>
@@ -376,7 +399,7 @@ export const ScoringMatrix: React.FC = () => {
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}>
                                     <path d="M21 12a9 9 0 11-6.219-8.56"></path>
                                 </svg>
-                                Calculating...
+                                {t('scoring.calculating')}
                             </>
                         ) : (
                             <>
@@ -384,7 +407,7 @@ export const ScoringMatrix: React.FC = () => {
                                     <path d="M23 4v6h-6M1 20v-6h6"></path>
                                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"></path>
                                 </svg>
-                                Recalculate AI Scoring
+                                {t('scoring.recalculate')}
                             </>
                         )}
                     </button>
@@ -412,7 +435,7 @@ export const ScoringMatrix: React.FC = () => {
                         animation: 'spin 0.8s linear infinite'
                     }}></div>
                     <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                        Calculating scores...
+                        {t('scoring.loading')}
                     </span>
                 </div>
             )}
@@ -427,9 +450,9 @@ export const ScoringMatrix: React.FC = () => {
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '16px', opacity: 0.5 }}>
                         <path d="M3 3h18v18H3zM9 3v18M3 9h18M3 15h18"></path>
                     </svg>
-                    <h4 style={{ margin: '0 0 8px 0', fontWeight: 600 }}>No Scoring Data Available</h4>
+                    <h4 style={{ margin: '0 0 8px 0', fontWeight: 600 }}>{t('scoring.no_data')}</h4>
                     <p style={{ margin: 0, fontSize: '0.875rem' }}>
-                        Click "Recalculate AI Scoring" to evaluate providers based on their RFQ responses.
+                        {t('scoring.no_data_hint')}
                     </p>
                 </div>
             )}
@@ -451,7 +474,7 @@ export const ScoringMatrix: React.FC = () => {
                                     letterSpacing: '0.5px',
                                     borderTopLeftRadius: '10px'
                                 }}>
-                                    Criterion
+                                    {t('scoring.criteria')}
                                 </th>
                                 <th style={{
                                     width: '8%',
@@ -463,7 +486,7 @@ export const ScoringMatrix: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    Weight
+                                    {t('scoring.weight')}
                                 </th>
                                 {providers.map((p, idx) => (
                                     <th key={p.provider_name} style={{
@@ -499,7 +522,7 @@ export const ScoringMatrix: React.FC = () => {
                                                 color: info.color,
                                                 borderLeft: `4px solid ${info.color}`
                                             }}>
-                                                {category} ({categoryWeight}%)
+                                                {getCategoryName(category, t)} ({categoryWeight}%)
                                                 {categoryChanged && (
                                                     <span style={{
                                                         marginLeft: '8px',
@@ -507,7 +530,7 @@ export const ScoringMatrix: React.FC = () => {
                                                         color: 'var(--text-tertiary)',
                                                         fontWeight: 500
                                                     }}>
-                                                        (default: {defaultCategoryWeight}%)
+                                                        ({t('scoring.default')}: {defaultCategoryWeight}%)
                                                     </span>
                                                 )}
                                             </td>
@@ -642,7 +665,7 @@ export const ScoringMatrix: React.FC = () => {
                                         {/* Category Subtotal */}
                                         <tr style={{ background: `${info.color}08` }}>
                                             <td style={{ padding: '12px 16px', fontWeight: 600, color: info.color }}>
-                                                {category} Average
+                                                {getCategoryName(category, t)} {t('scoring.average')}
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>
                                                 <span style={{ fontWeight: 700, color: info.color }}>{categoryWeight}%</span>
@@ -680,7 +703,7 @@ export const ScoringMatrix: React.FC = () => {
                                     color: 'var(--text-primary)',
                                     borderBottomLeftRadius: '10px'
                                 }}>
-                                    OVERALL SCORE:
+                                    {t('scoring.overall')}:
                                 </td>
                                 {providers.map((p, idx) => (
                                     <td key={p.provider_name} style={{

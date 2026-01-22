@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useMailStore } from '../../stores/useMailStore';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import { API_CONFIG } from '../../config/constants';
 import './MailDashboard.css';
 
@@ -58,6 +59,9 @@ export const MailDashboard = () => {
 
     // Get approved questions from Q&A store
     const { questions: qaQuestions, loadQuestions: loadQAQuestions } = useQAStore();
+
+    // Get translation function
+    const { t } = useLanguageStore();
 
     // Get projects from global store
     const { projects, getActiveProject } = useProjectStore();
@@ -207,18 +211,35 @@ export const MailDashboard = () => {
         generateDraft(payload);
     };
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(`${subject}\n\n${body}`);
-        alert('Email copied to clipboard!');
+    const handleCopy = async () => {
+        const textToCopy = `${subject}\n\n${body}`;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(textToCopy);
+            } else {
+                // Fallback for HTTP
+                const textArea = document.createElement('textarea');
+                textArea.value = textToCopy;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            alert(t('mail.alert.copy_success'));
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
     };
 
     const handleSendEmail = async () => {
         if (!recipientEmail || !recipientEmail.includes('@')) {
-            alert('Please enter a valid email address in the "To" field.');
+            alert(t('mail.alert.enter_email'));
             return;
         }
 
-        if (!confirm(`Send email to ${recipientEmail}?`)) {
+        if (!confirm(`${t('mail.alert.confirm_send')} ${recipientEmail}?`)) {
             return;
         }
 
@@ -244,10 +265,10 @@ export const MailDashboard = () => {
             }
 
             setEmailSent(true);
-            alert('Email sent successfully!');
+            alert(t('mail.alert.send_success'));
         } catch (error) {
             console.error('Error sending email:', error);
-            alert('Failed to send email. Please try again or copy and send manually.');
+            alert(t('mail.alert.send_failed'));
         } finally {
             setIsSendingEmail(false);
         }
@@ -265,14 +286,14 @@ export const MailDashboard = () => {
                             <path d="M2 2l7.586 7.586"></path>
                             <circle cx="11" cy="11" r="2"></circle>
                         </svg>
-                        Mail Configuration
+                        {t('mail.config')}
                     </h2>
                 </div>
 
                 <div className="config-body">
                     {/* Context */}
                     <div className="mail-form-group">
-                        <label className="mail-label">Project</label>
+                        <label className="mail-label">{t('mail.project')}</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <select
                                 className="mail-select"
@@ -280,7 +301,7 @@ export const MailDashboard = () => {
                                 onChange={(e) => setSelectedContext(e.target.value)}
                             >
                                 {projects.length === 0 ? (
-                                    <option value="">No projects available</option>
+                                    <option value="">{t('common.no_projects')}</option>
                                 ) : (
                                     projects.map(project => (
                                         <option key={project.id} value={project.display_name}>
@@ -294,7 +315,7 @@ export const MailDashboard = () => {
 
                     {/* Provider Selection */}
                     <div className="mail-form-group">
-                        <label className="mail-label">Recipient Provider</label>
+                        <label className="mail-label">{t('mail.provider')}</label>
                         <select
                             className="mail-select"
                             value={selectedProvider}
@@ -303,7 +324,7 @@ export const MailDashboard = () => {
                                 setSelectedIssues([]); // Reset issues on provider change
                             }}
                         >
-                            <option value="">Select Provider...</option>
+                            <option value="">{t('mail.provider.select')}</option>
                             {providers.map(p => (
                                 <option key={p} value={p}>{p}</option>
                             ))}
@@ -315,26 +336,30 @@ export const MailDashboard = () => {
 
                     {/* Tone Selection */}
                     <div className="mail-form-group">
-                        <label className="mail-label">Tone</label>
+                        <label className="mail-label">{t('mail.tone')}</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            {['Formal', 'Urgent', 'Friendly'].map(t => (
+                            {[
+                                { key: 'formal', label: t('mail.tone.formal') },
+                                { key: 'urgent', label: t('mail.tone.urgent') },
+                                { key: 'friendly', label: t('mail.tone.friendly') }
+                            ].map(toneOption => (
                                 <button
-                                    key={t}
-                                    onClick={() => setTone(t.toLowerCase())}
+                                    key={toneOption.key}
+                                    onClick={() => setTone(toneOption.key)}
                                     style={{
                                         padding: '8px 12px',
                                         flex: 1,
                                         borderRadius: 'var(--radius-md)',
-                                        border: tone === t.toLowerCase() ? '1px solid var(--color-cyan)' : '1px solid var(--border-color)',
-                                        background: tone === t.toLowerCase() ? 'rgba(18, 181, 176, 0.1)' : 'transparent',
-                                        color: tone === t.toLowerCase() ? 'var(--color-cyan)' : 'var(--text-secondary)',
+                                        border: tone === toneOption.key ? '1px solid var(--color-cyan)' : '1px solid var(--border-color)',
+                                        background: tone === toneOption.key ? 'rgba(18, 181, 176, 0.1)' : 'transparent',
+                                        color: tone === toneOption.key ? 'var(--color-cyan)' : 'var(--text-secondary)',
                                         cursor: 'pointer',
                                         fontSize: '0.85rem',
                                         fontWeight: 500,
                                         transition: 'all 0.2s'
                                     }}
                                 >
-                                    {t}
+                                    {toneOption.label}
                                 </button>
                             ))}
                         </div>
@@ -345,7 +370,7 @@ export const MailDashboard = () => {
                         <div className="qa-section">
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                                 <label className="mail-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    Technical Questions
+                                    {t('mail.tech_questions')}
                                     <span style={{
                                         padding: '2px 8px',
                                         background: selectedQAItemsForProvider.length > 0 ? 'var(--color-cyan)' : 'var(--border-color)',
@@ -358,8 +383,8 @@ export const MailDashboard = () => {
                                     </span>
                                 </label>
                                 <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button onClick={selectAllQAItems} className="btn-mini">All</button>
-                                    <button onClick={deselectAllQAItems} className="btn-mini">None</button>
+                                    <button onClick={selectAllQAItems} className="btn-mini">{t('mail.btn.all')}</button>
+                                    <button onClick={deselectAllQAItems} className="btn-mini">{t('mail.btn.none')}</button>
                                 </div>
                             </div>
 
@@ -403,9 +428,9 @@ export const MailDashboard = () => {
                     {selectedProvider && filteredQAItems.length === 0 && (
                         <div className="qa-empty-state">
                             <QAIcons.QA />
-                            <p>No Q&A items for {selectedProvider}</p>
+                            <p>{t('mail.no_qa_items')} {selectedProvider}</p>
                             {pendingQAItems.length > 0 && (
-                                <span className="qa-hint">{pendingQAItems.length} items for other providers</span>
+                                <span className="qa-hint">{pendingQAItems.length} {t('mail.other_items')}</span>
                             )}
                         </div>
                     )}
@@ -416,7 +441,7 @@ export const MailDashboard = () => {
                         onClick={handleGenerate}
                         style={{ marginTop: 'auto', padding: '12px' }}
                     >
-                        {isGenerating ? 'Drafting Email...' : hasGenerated ? 'Regenerate Draft' : 'Generate Draft'}
+                        {isGenerating ? t('mail.btn.drafting') : hasGenerated ? t('mail.btn.regenerate') : t('mail.btn.generate')}
                     </button>
                 </div>
             </div>
@@ -426,8 +451,8 @@ export const MailDashboard = () => {
                 {isGenerating && (
                     <div className="generating-overlay">
                         <div className="ai-spinner"></div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>AI Agent is drafting your email...</div>
-                        <p style={{ marginTop: '8px', color: 'rgba(255,255,255,0.7)' }}>Analyzing context and formatting issues</p>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{t('mail.ai_drafting')}</div>
+                        <p style={{ marginTop: '8px', color: 'rgba(255,255,255,0.7)' }}>{t('mail.analyzing')}</p>
                     </div>
                 )}
 
@@ -449,8 +474,8 @@ export const MailDashboard = () => {
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                         </div>
-                        <h3 style={{ color: '#dc2626' }}>Generation Failed</h3>
-                        <p>Failed to generate draft. Please try again.</p>
+                        <h3 style={{ color: '#dc2626' }}>{t('mail.generation_failed')}</h3>
+                        <p>{t('mail.generation_failed_desc')}</p>
                     </div>
                 ) : !hasGenerated && !isGenerating ? (
                     <div className="mail-empty-state">
@@ -470,23 +495,23 @@ export const MailDashboard = () => {
                                 <polyline points="22,6 12,13 2,6"></polyline>
                             </svg>
                         </div>
-                        <h3>Ready to Draft</h3>
-                        <p style={{ maxWidth: '300px' }}>Select a provider and issues on the left to generate a professional email draft powered by AI.</p>
+                        <h3>{t('mail.empty.title')}</h3>
+                        <p style={{ maxWidth: '300px' }}>{t('mail.empty.desc')}</p>
                     </div>
                 ) : (
                     <>
                         <div className="editor-toolbar">
-                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>Draft Preview</span>
+                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t('mail.preview.header')}</span>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <span style={{ fontSize: '0.8rem', padding: '4px 8px', background: 'var(--bg-hover)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
-                                    {tone.charAt(0).toUpperCase() + tone.slice(1)} Tone
+                                    {t(`mail.tone.${tone}`)} {t('mail.tone_label')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="email-meta">
                             <div className="meta-row">
-                                <span className="meta-label">To:</span>
+                                <span className="meta-label">{t('mail.preview.to')}</span>
                                 <input
                                     className="meta-input"
                                     value={recipientEmail}
@@ -496,11 +521,11 @@ export const MailDashboard = () => {
                                         background: isEditing ? 'var(--bg-surface)' : 'transparent',
                                         cursor: isEditing ? 'text' : 'default'
                                     }}
-                                    placeholder="recipient@email.com"
+                                    placeholder={t('mail.recipient_placeholder')}
                                 />
                             </div>
                             <div className="meta-row">
-                                <span className="meta-label">Subject:</span>
+                                <span className="meta-label">{t('mail.preview.subject')}</span>
                                 <input
                                     className="meta-input subject-input"
                                     value={subject}
@@ -574,18 +599,18 @@ export const MailDashboard = () => {
                                             </>
                                         )}
                                     </svg>
-                                    {isEditing ? 'Done' : 'Edit'}
+                                    {isEditing ? t('mail.btn.done') : t('mail.btn.edit')}
                                 </button>
                             </div>
                             <button className="btn btnSecondary" onClick={() => setHasGenerated(false)}>
-                                Discard
+                                {t('mail.btn.discard')}
                             </button>
                             <button className="btn btnSecondary" onClick={handleCopy}>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
-                                Copy
+                                {t('mail.btn.copy_short')}
                             </button>
                             <button
                                 className="btn btnPrimary"
@@ -599,14 +624,14 @@ export const MailDashboard = () => {
                                 {isSendingEmail ? (
                                     <>
                                         <span className="spinner-small" style={{ marginRight: '8px' }}></span>
-                                        Sending...
+                                        {t('mail.btn.sending')}
                                     </>
                                 ) : emailSent ? (
                                     <>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
                                             <polyline points="20 6 9 17 4 12"></polyline>
                                         </svg>
-                                        Sent!
+                                        {t('mail.btn.sent')}
                                     </>
                                 ) : (
                                     <>
@@ -614,7 +639,7 @@ export const MailDashboard = () => {
                                             <line x1="22" y1="2" x2="11" y2="13"></line>
                                             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                                         </svg>
-                                        Send Email
+                                        {t('mail.btn.send')}
                                     </>
                                 )}
                             </button>

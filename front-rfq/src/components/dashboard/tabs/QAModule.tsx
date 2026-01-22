@@ -3,6 +3,7 @@ import { useQAStore } from '../../../stores/useQAStore';
 import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
+import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { generateTechnicalAudit, sendQAToSupplier, SendToSupplierResponse } from '../../../services/n8n.service';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
 import './QAModule.css';
@@ -152,6 +153,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const { addToast } = useToastStore();
   const { addQAItem } = useMailStore();
   const { projects, activeProjectId, getActiveProject } = useProjectStore();
+  const { t } = useLanguageStore();
 
   // Use active project from global store, or initialProjectId as fallback
   const activeProject = getActiveProject();
@@ -177,39 +179,12 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   // Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Refs for dropdown positioning
-  const providerSelectorBtnRef = React.useRef<HTMLButtonElement>(null);
-  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
-
-  // Calculate popup position when opening
+  // Handle opening provider selector dropdown
   const handleOpenProviderSelector = () => {
     const providers = getProvidersWithApprovedQuestions();
     if (providers.length === 1 && !sendToProvider) {
       setSendToProvider(providers[0]);
     }
-
-    if (providerSelectorBtnRef.current) {
-      const rect = providerSelectorBtnRef.current.getBoundingClientRect();
-      const popupWidth = 280;
-      const popupHeight = 300; // Approximate max height
-
-      // Calculate position - prefer below, but flip to above if not enough space
-      let top = rect.bottom + 8;
-      let left = rect.right - popupWidth;
-
-      // Check if popup would go below viewport
-      if (top + popupHeight > window.innerHeight - 20) {
-        top = rect.top - popupHeight - 8;
-      }
-
-      // Ensure popup stays within viewport horizontally
-      if (left < 20) {
-        left = 20;
-      }
-
-      setPopupPosition({ top, left });
-    }
-
     setShowProviderSelector(!showProviderSelector);
   };
 
@@ -255,6 +230,19 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       setQuestions([]);
     }
   }, [activeProjectId, loadQuestions, subscribeToChanges, setQuestions, loadNotifications, subscribeToNotifications]);
+
+  // Close dropdowns on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (showProviderSelector) setShowProviderSelector(false);
+      if (showFilters) setShowFilters(false);
+      if (showNotifications) setShowNotifications(false);
+      if (showProjectDropdown) setShowProjectDropdown(false);
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [showProviderSelector, showFilters, showNotifications, showProjectDropdown]);
 
   // Subscribe to real-time changes and load questions (for local projectId changes)
   useEffect(() => {
@@ -624,13 +612,33 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     return Array.from(providers);
   };
 
-  // Copy link to clipboard
+  // Copy link to clipboard (with fallback for HTTP)
   const handleCopyLink = async () => {
     if (sendResult?.response_link) {
-      await navigator.clipboard.writeText(sendResult.response_link);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-      addToast('Link copied to clipboard', 'success');
+      try {
+        // Try modern clipboard API first (requires HTTPS)
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(sendResult.response_link);
+        } else {
+          // Fallback for HTTP: use textarea + execCommand
+          const textArea = document.createElement('textarea');
+          textArea.value = sendResult.response_link;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          textArea.style.top = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        }
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+        addToast('Link copied to clipboard', 'success');
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        addToast('Failed to copy link. Please copy manually.', 'error');
+      }
     }
   };
 
@@ -676,23 +684,61 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   const groupedQuestions = getGroupedByDisciplina();
   const stats = getStats();
 
-  // Discipline name mapping
-  const disciplineMap: Record<string, string> = {
-    'Electrical': 'Electrical',
-    'Mechanical': 'Mechanical',
-    'Civil': 'Civil',
-    'Process': 'Process',
-    'General': 'General',
-    'Cost': 'Cost'
+  // Discipline name mapping - uses translations (handles various cases)
+  const getDisciplineLabel = (discipline: string): string => {
+    const normalized = discipline?.toLowerCase() || '';
+    const disciplineMap: Record<string, string> = {
+      'electrical': t('discipline.electrical'),
+      'mechanical': t('discipline.mechanical'),
+      'civil': t('discipline.civil'),
+      'process': t('discipline.process'),
+      'general': t('discipline.general'),
+      'cost': t('discipline.cost')
+    };
+    return disciplineMap[normalized] || discipline;
+  };
+
+  // Status translation mapping (handles various cases)
+  const getStatusLabel = (status: string): string => {
+    const normalized = status?.toLowerCase() || '';
+    const statusMap: Record<string, string> = {
+      'draft': t('status.draft'),
+      'pending': t('status.pending'),
+      'approved': t('status.approved'),
+      'sent': t('status.sent'),
+      'answered': t('status.answered'),
+      'resolved': t('status.resolved'),
+      'needsmoreinfo': t('status.needs_more_info'),
+      'discarded': t('status.discarded')
+    };
+    return statusMap[normalized] || status;
+  };
+
+  // Priority/Importance translation mapping (handles various cases)
+  const getPriorityLabel = (priority: string): string => {
+    const normalized = priority?.toLowerCase() || '';
+    const priorityMap: Record<string, string> = {
+      'high': t('priority.high'),
+      'medium': t('priority.medium'),
+      'low': t('priority.low'),
+      'alta': t('priority.high'),
+      'media': t('priority.medium'),
+      'baja': t('priority.low'),
+      // Handle PRIORITY.X format from database
+      'priority.high': t('priority.high'),
+      'priority.medium': t('priority.medium'),
+      'priority.low': t('priority.low')
+    };
+    return priorityMap[normalized] || priority;
   };
 
   return (
     <div className="module-container">
       {/* Main Header */}
       <div className="module-main-header">
-        <h1 className="module-main-title">Q&A Management</h1>
+        <h1 className="module-main-title">{t('qa.title')}</h1>
         <p className="module-main-subtitle">
-          Generate intelligent questions and manage technical audits
+          {t('qa.subtitle')}
         </p>
       </div>
 
@@ -702,8 +748,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           <div className="module-section-header-content">
             <Icons.Paper />
             <div>
-              <h2 className="module-section-title">Technical Audit Generator</h2>
-              <p className="module-section-subtitle">Generate AI-powered questions based on provider deficiencies</p>
+              <h2 className="module-section-title">{t('qa.generator.title')}</h2>
+              <p className="module-section-subtitle">{t('qa.generator.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -712,7 +758,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           <div className="form-grid">
             {/* Project Selector */}
             <div className="form-group">
-              <label className="form-label">Project</label>
+              <label className="form-label">{t('qa.generator.project')}</label>
               <div className="qa-dropdown-container">
                 <button
                   type="button"
@@ -720,7 +766,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   onClick={() => setShowProjectDropdown(!showProjectDropdown)}
                 >
                   <span title={projectId}>
-                    {projectId || 'Select project...'}
+                    {projectId || t('qa.generator.select_project')}
                   </span>
                   <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
                 </button>
@@ -733,7 +779,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                     />
                     <div className="qa-dropdown-menu">
                       {projects.length === 0 ? (
-                        <div className="dropdown-item disabled">No projects available</div>
+                        <div className="dropdown-item disabled">{t('common.no_projects')}</div>
                       ) : (
                         projects.map(project => (
                           <button
@@ -760,13 +806,13 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
             {/* Provider Selector */}
             <div className="form-group">
-              <label className="form-label">Provider</label>
+              <label className="form-label">{t('qa.generator.provider')}</label>
               <select
                 value={selectedProvider}
                 onChange={(e) => setSelectedProvider(e.target.value)}
                 className="qa-select"
               >
-                <option value="">Select Provider</option>
+                <option value="">{t('qa.generator.select_provider')}</option>
                 {availableProviders.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -783,10 +829,10 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               {isGenerating ? (
                 <>
                   <span className="module-spinner"></span>
-                  Generating Audit...
+                  {t('qa.generator.btn_generating')}
                 </>
               ) : (
-                'Generate Technical Audit'
+                t('qa.generator.btn_generate')
               )}
             </button>
 
@@ -794,10 +840,10 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <button
                 onClick={handleExportExcel}
                 className="module-btn-secondary"
-                title="Export approved questions to Excel"
+                title={t('qa.generator.btn_export')}
               >
                 <Icons.Download />
-                Export to Excel
+                {t('qa.generator.btn_export')}
               </button>
             )}
           </div>
@@ -816,8 +862,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
         <div className="module-section-header">
           <div className="module-section-header-content">
             <div>
-              <h2 className="module-section-title">Questions Management</h2>
-              <p className="module-section-subtitle">View and manage generated questions by discipline</p>
+              <h2 className="module-section-title">{t('qa.questions.title')}</h2>
+              <p className="module-section-subtitle">{t('qa.questions.subtitle')}</p>
             </div>
           </div>
 
@@ -827,7 +873,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className={`notification-btn ${unreadNotificationCount > 0 ? 'has-unread' : ''}`}
-                title={`${unreadNotificationCount} unread notifications`}
+                title={`${unreadNotificationCount} ${t('notifications.title').toLowerCase()}`}
               >
                 {unreadNotificationCount > 0 ? <Icons.BellRing /> : <Icons.Bell />}
                 {unreadNotificationCount > 0 && (
@@ -841,7 +887,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   <div className="dropdown-overlay" onClick={() => setShowNotifications(false)} />
                   <div className="notifications-panel" onClick={(e) => e.stopPropagation()}>
                     <div className="notifications-header">
-                      <h4>Notifications</h4>
+                      <h4>{t('notifications.title')}</h4>
                       {unreadNotificationCount > 0 && (
                         <button
                           className="mark-all-read-btn"
@@ -849,7 +895,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             markAllNotificationsRead();
                           }}
                         >
-                          Mark all read
+                          {t('notifications.markAllRead')}
                         </button>
                       )}
                       <button
@@ -863,7 +909,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                       {notifications.length === 0 ? (
                         <div className="notifications-empty">
                           <Icons.Bell />
-                          <p>No notifications yet</p>
+                          <p>{t('notifications.empty')}</p>
                         </div>
                       ) : (
                         notifications.map((notification) => (
@@ -906,21 +952,20 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             {getProvidersWithApprovedQuestions().length > 0 && (
               <div className="send-to-supplier-wrapper">
                 <button
-                  ref={providerSelectorBtnRef}
                   onClick={handleOpenProviderSelector}
                   disabled={isSending}
                   className="module-btn-primary"
-                  title="Send approved questions to supplier"
+                  title={t('qa.questions.btn_send')}
                 >
                   {isSending ? (
                     <>
                       <span className="module-spinner"></span>
-                      Sending...
+                      {t('qa.questions.btn_sending')}
                     </>
                   ) : (
                     <>
                       <Icons.Mail />
-                      Send to Supplier
+                      {t('qa.questions.btn_send')}
                     </>
                   )}
                 </button>
@@ -932,10 +977,9 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                     <div
                       className="provider-selector-popup"
                       onClick={(e) => e.stopPropagation()}
-                      style={popupPosition ? { top: popupPosition.top, left: popupPosition.left } : undefined}
                     >
                       <div className="provider-selector-header">
-                        <h4>Select Provider</h4>
+                        <h4>{t('qa.modal.select_provider')}</h4>
                         <button
                           className="close-btn"
                           onClick={() => setShowProviderSelector(false)}
@@ -960,7 +1004,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                               }}
                             >
                               <span className="provider-name">{provider}</span>
-                              <span className="provider-count">{count} questions</span>
+                              <span className="provider-count">{count} {t('common.questions')}</span>
                             </button>
                           );
                         })}
@@ -978,7 +1022,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                           disabled={!sendToProvider}
                           className="btn btnPrimary"
                         >
-                          <Icons.Send /> Send Questions
+                          <Icons.Send /> {t('qa.modal.send_questions')}
                         </button>
                       </div>
                     </div>
@@ -992,10 +1036,10 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <button
                 onClick={handleExportAllQuestions}
                 className="module-btn-primary"
-                title="Export all questions to Excel"
+                title={t('qa.questions.btn_export_all')}
               >
                 <Icons.Download />
-                Export All Questions
+                {t('qa.questions.btn_export_all')}
               </button>
             )}
 
@@ -1006,7 +1050,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                 className={`btn btnSecondary qa-filter-toggle-btn ${showFilters ? 'active' : ''}`}
               >
                 <Icons.Filter />
-                Filters
+                {t('qa.questions.btn_filters')}
                 {Object.values(filters).some(v => v !== null) && <span className="filter-dot" />}
               </button>
 
@@ -1015,18 +1059,18 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   <div className="dropdown-overlay" onClick={() => setShowFilters(false)} />
                   <div className="qa-filters-menu card">
                     <div className="filter-menu-header">
-                      <h4>Search Filters</h4>
-                      <button onClick={clearFilters} className="text-btn btn-sm">Clear All</button>
+                      <h4>{t('qa.filters.title')}</h4>
+                      <button onClick={clearFilters} className="text-btn btn-sm">{t('qa.filters.clear')}</button>
                     </div>
 
                     <div className="filter-group">
-                      <label>Provider</label>
+                      <label>{t('qa.filters.provider')}</label>
                       <select
                         value={filters.proveedor || ''}
                         onChange={(e) => setFilters({ proveedor: e.target.value || null })}
                         className="filter-select"
                       >
-                        <option value="">All Providers</option>
+                        <option value="">{t('qa.filters.all_providers')}</option>
                         {availableProviders.map(p => (
                           <option key={p} value={p}>{p}</option>
                         ))}
@@ -1034,35 +1078,35 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                     </div>
 
                     <div className="filter-group">
-                      <label>Status</label>
+                      <label>{t('qa.filters.status')}</label>
                       <select
                         value={filters.estado || ''}
                         onChange={(e) => setFilters({ estado: e.target.value as EstadoPregunta || null })}
                         className="filter-select"
                       >
-                        <option value="">All Statuses</option>
-                        <option value="Draft">Draft</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Sent">Sent</option>
-                        <option value="Answered">Answered</option>
-                        <option value="Resolved">Resolved</option>
-                        <option value="NeedsMoreInfo">Needs More Info</option>
-                        <option value="Discarded">Discarded</option>
+                        <option value="">{t('qa.filters.all_statuses')}</option>
+                        <option value="Draft">{t('status.draft')}</option>
+                        <option value="Pending">{t('status.pending')}</option>
+                        <option value="Approved">{t('status.approved')}</option>
+                        <option value="Sent">{t('status.sent')}</option>
+                        <option value="Answered">{t('status.answered')}</option>
+                        <option value="Resolved">{t('status.resolved')}</option>
+                        <option value="NeedsMoreInfo">{t('status.needs_more_info')}</option>
+                        <option value="Discarded">{t('status.discarded')}</option>
                       </select>
                     </div>
 
                     <div className="filter-group">
-                      <label>Importance</label>
+                      <label>{t('qa.filters.importance')}</label>
                       <select
                         value={filters.importancia || ''}
                         onChange={(e) => setFilters({ importancia: e.target.value as Importancia || null })}
                         className="filter-select"
                       >
-                        <option value="">All Importances</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
+                        <option value="">{t('qa.filters.all_importances')}</option>
+                        <option value="High">{t('importance.high')}</option>
+                        <option value="Medium">{t('importance.medium')}</option>
+                        <option value="Low">{t('importance.low')}</option>
                       </select>
                     </div>
                   </div>
@@ -1077,19 +1121,19 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
           <div className="module-stats-grid">
             <div className="module-stat-card">
               <div className="module-stat-value">{stats.total}</div>
-              <div className="module-stat-label">Total Questions</div>
+              <div className="module-stat-label">{t('qa.questions.total')}</div>
             </div>
             <div className="module-stat-card">
               <div className="module-stat-value">{stats.porEstado['Approved'] || 0}</div>
-              <div className="module-stat-label">Approved</div>
+              <div className="module-stat-label">{t('qa.questions.approved')}</div>
             </div>
             <div className="module-stat-card">
               <div className="module-stat-value">{stats.porEstado['Pending'] || 0}</div>
-              <div className="module-stat-label">Pending</div>
+              <div className="module-stat-label">{t('qa.questions.pending')}</div>
             </div>
             <div className="module-stat-card">
               <div className="module-stat-value">{stats.porImportancia?.['High'] || 0}</div>
-              <div className="module-stat-label">High Importance</div>
+              <div className="module-stat-label">{t('qa.questions.high_importance')}</div>
             </div>
           </div>
         )}
@@ -1130,17 +1174,17 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               )}
             >
               <div className="disciplina-info">
-                <h3 className="disciplina-name">{disciplineMap[group.disciplina] || group.disciplina}</h3>
+                <h3 className="disciplina-name">{getDisciplineLabel(group.disciplina)}</h3>
                 <div className="disciplina-badges">
-                  <span className="badge badge-total">{group.stats.total} questions</span>
+                  <span className="badge badge-total">{group.stats.total} {t('common.questions')}</span>
                   {group.stats.borradores > 0 && (
-                    <span className="badge badge-borrador">{group.stats.borradores} drafts</span>
+                    <span className="badge badge-borrador">{group.stats.borradores} {t('common.drafts')}</span>
                   )}
                   {group.stats.aprobadas > 0 && (
-                    <span className="badge badge-aprobada">{group.stats.aprobadas} approved</span>
+                    <span className="badge badge-aprobada">{group.stats.aprobadas} {t('status.approved').toLowerCase()}</span>
                   )}
                   {group.stats.alta > 0 && (
-                    <span className="badge badge-alta">{group.stats.alta} high</span>
+                    <span className="badge badge-alta">{group.stats.alta} {t('common.high')}</span>
                   )}
                 </div>
               </div>
@@ -1158,11 +1202,11 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                     <div className="question-header">
                       <div className="question-meta">
                         <span className={`badge ${getEstadoClass(question.estado || question.status)}`}>
-                          {question.estado || question.status}
+                          {getStatusLabel(question.estado || question.status || '')}
                         </span>
                         {(question.importancia || question.importance) && (
                           <span className={`badge ${getImportanciaClass(question.importancia || question.importance)}`}>
-                            {question.importancia || question.importance}
+                            {getPriorityLabel(question.importancia || question.importance || '')}
                           </span>
                         )}
                         <span className={`question-provider ${getProviderClass(question.proveedor || question.provider_name)}`}>
@@ -1173,7 +1217,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         <button
                           onClick={() => handleDeleteQuestion(question.id)}
                           className="icon-btn icon-btn-danger"
-                          title="Delete question"
+                          title={t('qa.confirm.delete')}
                         >
                           <Icons.Delete />
                         </button>
@@ -1213,7 +1257,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                           >
                             <polyline points="6 9 12 15 18 9" />
                           </svg>
-                          <span>View source requirement</span>
+                          <span>{t('qa.questions.view_source')}</span>
                         </button>
 
                         {expandedRequirements[question.id] && (
@@ -1223,14 +1267,14 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                               if (!req) {
                                 return (
                                   <div className="requirement-loading">
-                                    <span className="spinner"></span> Loading requirement...
+                                    <span className="spinner"></span> {t('qa.questions.loading_req')}
                                   </div>
                                 );
                               }
                               return (
                                 <>
                                   <div className="requirement-item">
-                                    <strong>Requirement:</strong>
+                                    <strong>{t('clarification.table.req')}:</strong>
                                     <p>{req.requirement_text}</p>
                                   </div>
                                   <div className="requirement-meta">
@@ -1254,16 +1298,16 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                     {/* Provider Response */}
                     {(question.respuesta_proveedor || question.response) && (
                       <div className="question-response">
-                        <strong>Response:</strong>
+                        <strong>{t('qa.question.response')}</strong>
                         <p>{question.respuesta_proveedor || question.response}</p>
-                        <small>Answered on {new Date(question.fecha_respuesta || '').toLocaleDateString()}</small>
+                        <small>{t('qa.question.answered_on')} {new Date(question.fecha_respuesta || '').toLocaleDateString()}</small>
                       </div>
                     )}
 
                     {/* Internal Notes */}
                     {question.notas_internas && (
                       <div className="question-notes">
-                        <strong>Internal notes:</strong>
+                        <strong>{t('qa.question.internal_notes')}</strong>
                         <p>{question.notas_internas}</p>
                       </div>
                     )}
@@ -1276,13 +1320,13 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             onClick={() => handleSaveQuestion(question.id)}
                             className="btn btnPrimary btn-sm"
                           >
-                            <Icons.Save /> Save
+                            <Icons.Save /> {t('qa.btn.save')}
                           </button>
                           <button
                             onClick={handleCancelEdit}
                             className="btn btnSecondary btn-sm"
                           >
-                            <Icons.Cancel /> Cancel
+                            <Icons.Cancel /> {t('qa.btn.cancel')}
                           </button>
                         </>
                       ) : (() => {
@@ -1310,19 +1354,19 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                                   onClick={() => handleEditQuestion(question)}
                                   className="btn btnSecondary btn-sm"
                                 >
-                                  <Icons.Edit /> Edit
+                                  <Icons.Edit /> {t('qa.btn.edit')}
                                 </button>
                                 <button
                                   onClick={(e) => handleUpdateStatus(question.id, 'Approved', e)}
                                   className="btn btnPrimary btn-sm"
                                 >
-                                  <Icons.Approve /> Approve
+                                  <Icons.Approve /> {t('qa.btn.approve')}
                                 </button>
                                 <button
                                   onClick={(e) => handleUpdateStatus(question.id, 'Discarded', e)}
                                   className="btn btnDanger btn-sm"
                                 >
-                                  <Icons.Discard /> Discard
+                                  <Icons.Discard /> {t('qa.btn.discard')}
                                 </button>
                               </>
                             )}
@@ -1331,57 +1375,57 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                                 onClick={(e) => handleUpdateStatus(question.id, 'Sent', e)}
                                 className="btn btnPrimary btn-sm"
                               >
-                                <Icons.Send /> Send
+                                <Icons.Send /> {t('qa.btn.send')}
                               </button>
                             )}
                             {currentStatus === 'Sent' && (
                               <span className="status-message">
-                                Waiting for response...
+                                {t('qa.status.waiting')}
                               </span>
                             )}
                             {currentStatus === 'Answered' && (
                               <>
                                 <span className="status-message success" style={{ marginRight: '12px' }}>
-                                  Response received - Review needed
+                                  {t('qa.status.review_needed')}
                                 </span>
                                 <button
                                   onClick={(e) => handleUpdateStatus(question.id, 'Resolved', e)}
                                   className="btn btnSuccess btn-sm"
-                                  title="Mark response as satisfactory"
+                                  title={t('qa.btn.accept_response')}
                                 >
-                                  <Icons.Approve /> Accept Response
+                                  <Icons.Approve /> {t('qa.btn.accept_response')}
                                 </button>
                                 <button
                                   onClick={(e) => handleUpdateStatus(question.id, 'NeedsMoreInfo', e)}
                                   className="btn btnWarning btn-sm"
-                                  title="Request additional information"
+                                  title={t('qa.btn.need_more_info')}
                                 >
-                                  <Icons.Edit /> Need More Info
+                                  <Icons.Edit /> {t('qa.btn.need_more_info')}
                                 </button>
                               </>
                             )}
                             {currentStatus === 'Resolved' && (
                               <span className="status-message resolved">
-                                ✓ Response accepted - Issue resolved
+                                {t('qa.status.resolved')}
                               </span>
                             )}
                             {currentStatus === 'NeedsMoreInfo' && (
                               <>
                                 <span className="status-message warning" style={{ marginRight: '12px' }}>
-                                  Additional clarification requested
+                                  {t('qa.status.more_info')}
                                 </span>
                                 <button
                                   onClick={(e) => handleUpdateStatus(question.id, 'Resolved', e)}
                                   className="btn btnSuccess btn-sm"
-                                  title="Mark as resolved after clarification"
+                                  title={t('qa.btn.mark_resolved')}
                                 >
-                                  <Icons.Approve /> Mark Resolved
+                                  <Icons.Approve /> {t('qa.btn.mark_resolved')}
                                 </button>
                               </>
                             )}
                             {currentStatus === 'Discarded' && (
                               <span className="status-message" style={{ color: 'var(--color-error, #ef4444)' }}>
-                                Discarded
+                                {t('qa.status.discarded')}
                               </span>
                             )}
                           </>
@@ -1396,7 +1440,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   {addingToDisciplina === group.disciplina ? (
                     <div className="new-question-input card">
                       <textarea
-                        placeholder="Write your question here..."
+                        placeholder={t('qa.questions.write_question')}
                         value={newQuestionTexts[group.disciplina] || ''}
                         onChange={(e) => setNewQuestionTexts(prev => ({
                           ...prev,
@@ -1411,13 +1455,13 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                           onClick={() => handleAddManualQuestion(group.disciplina)}
                           className="btn btnPrimary btn-sm"
                         >
-                          <Icons.Save /> Save Question
+                          <Icons.Save /> {t('qa.btn.save')}
                         </button>
                         <button
                           onClick={() => setAddingToDisciplina(null)}
                           className="btn btnSecondary btn-sm"
                         >
-                          <Icons.Cancel /> Cancel
+                          <Icons.Cancel /> {t('qa.btn.cancel')}
                         </button>
                       </div>
                     </div>
@@ -1426,7 +1470,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                       onClick={() => setAddingToDisciplina(group.disciplina)}
                       className="btn btnSecondary btn-sm add-manual-btn"
                     >
-                      + Add another question
+                      {t('qa.questions.add_question')}
                     </button>
                   )}
                 </div>
@@ -1443,8 +1487,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <div className="module-empty-icon">
                 <Icons.Paper />
               </div>
-              <h3 className="module-empty-title">No questions generated</h3>
-              <p className="module-empty-text">Select a project and provider, then click "Generate Technical Audit"</p>
+              <h3 className="module-empty-title">{t('qa.questions.no_questions')}</h3>
+              <p className="module-empty-text">{t('qa.questions.no_questions_hint')}</p>
             </div>
           )
         }
@@ -1458,30 +1502,30 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
               <div className="send-modal-icon success">
                 <Icons.Check />
               </div>
-              <h2>Questions Sent Successfully</h2>
-              <p>The questionnaire has been prepared for {sendResult.provider_name}</p>
+              <h2>{t('qa.modal.success_title')}</h2>
+              <p>{t('qa.modal.success_subtitle')} {sendResult.provider_name}</p>
             </div>
 
             <div className="send-modal-body">
               <div className="send-modal-stats">
                 <div className="stat-item">
                   <span className="stat-value">{sendResult.question_count}</span>
-                  <span className="stat-label">Questions</span>
+                  <span className="stat-label">{t('qa.modal.questions')}</span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-value">{sendResult.provider_name}</span>
-                  <span className="stat-label">Provider</span>
+                  <span className="stat-label">{t('qa.modal.provider')}</span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-value">
                     {new Date(sendResult.expires_at).toLocaleDateString()}
                   </span>
-                  <span className="stat-label">Expires</span>
+                  <span className="stat-label">{t('qa.modal.expires')}</span>
                 </div>
               </div>
 
               <div className="send-modal-link">
-                <label>Response Link (share with supplier)</label>
+                <label>{t('qa.modal.link_label')}</label>
                 <div className="link-input-group">
                   <input
                     type="text"
@@ -1492,19 +1536,19 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   <button
                     onClick={handleCopyLink}
                     className={`copy-btn ${copiedLink ? 'copied' : ''}`}
-                    title="Copy link"
+                    title={t('qa.toast.link_copied')}
                   >
                     {copiedLink ? <Icons.Check /> : <Icons.Copy />}
                   </button>
                 </div>
                 <p className="link-hint">
-                  Send this link to the supplier. They can access the questionnaire and submit their responses.
+                  {t('qa.modal.link_hint')}
                 </p>
               </div>
 
               {sendResult.email_html && (
                 <div className="send-modal-email-preview">
-                  <label>Email Preview</label>
+                  <label>{t('qa.modal.email_preview')}</label>
                   <div
                     className="email-preview-content"
                     dangerouslySetInnerHTML={{ __html: sendResult.email_html }}
@@ -1518,7 +1562,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                 onClick={() => setShowSendModal(false)}
                 className="btn btnPrimary"
               >
-                Done
+                {t('qa.modal.btn_done')}
               </button>
             </div>
           </div>

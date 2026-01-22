@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 
 export interface ProgressRingProps {
   progress: number; // 0-100
@@ -21,6 +22,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
   showPercentage = true,
   color = '#12b5b0'
 }) => {
+  const { t } = useLanguageStore();
   const { size: diameter, stroke } = SIZE_MAP[size];
   const radius = (diameter - stroke) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -102,7 +104,7 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
                   marginTop: '2px'
                 }}
               >
-                complete
+                {t('progress.complete')}
               </div>
             )}
           </div>
