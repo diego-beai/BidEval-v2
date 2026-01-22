@@ -235,9 +235,10 @@ export const useQAStore = create<QAState>((set, get) => ({
           table: 'qa_audit',
           projectId: projectId
         });
-        
-        // If it's a 404 error or table not found, show clearer message
-        if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
+
+        // PGRST116 means "no rows found" for .single() queries - not an error for our use case
+        // Only show table config error if table truly doesn't exist (42P01) or permission denied
+        if (error.code === '42P01' || error.message.includes('relation') && error.message.includes('does not exist')) {
           console.warn('⚠️ The qa_audit table does not exist in Supabase. Check the database structure.');
           set({
             questions: [],
@@ -246,32 +247,45 @@ export const useQAStore = create<QAState>((set, get) => ({
           });
           return;
         }
-        
+
+        // For other errors, throw to be handled by catch block
         throw error;
       }
 
+      // No error - set questions (empty array is valid for projects with no Q&A data)
       set({
         questions: (data || []).map((item: any) => mapQAAuditToQAQuestion(item)),
         isLoading: false,
         error: null
       });
+
+      console.log('📋 Q&A loaded successfully:', {
+        projectId,
+        questionCount: data?.length || 0
+      });
     } catch (error) {
       console.error('Error loading Q&A questions:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
+      const errorMessage = error instanceof Error
+        ? error.message
         : 'Unknown error loading questions';
-      
-      // If it's a 404 error, the table may not exist or have no permissions
-      if (error instanceof Error && (error.message.includes('404') || error.message.includes('does not exist'))) {
-        console.warn('⚠️ qa_audit table not found or no permissions. Verify it exists in Supabase and you have the correct permissions.');
+
+      // Check if it's truly a table-not-found error (PostgreSQL error code 42P01)
+      const isTableNotFound = error instanceof Error && (
+        errorMessage.includes('42P01') ||
+        (errorMessage.includes('relation') && errorMessage.includes('does not exist'))
+      );
+
+      if (isTableNotFound) {
+        console.warn('⚠️ qa_audit table not found. Verify it exists in Supabase.');
         set({
-          error: 'The Q&A table is not available. Contact the administrator.',
+          error: 'The Q&A table is not configured. Contact the administrator.',
           isLoading: false,
           questions: []
         });
         return;
       }
-      
+
+      // For generic errors, show the message but don't treat empty data as an error
       set({
         error: errorMessage,
         isLoading: false,
