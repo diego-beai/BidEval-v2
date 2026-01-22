@@ -322,6 +322,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           question: question.question || question.pregunta_texto,
           status: question.status || question.estado || 'Draft',
           importance: question.importance || question.importancia || 'Medium',
+          requirement_id: question.requirement_id || null, // Link to source requirement
           created_at: new Date().toISOString()
         }])
         .select()

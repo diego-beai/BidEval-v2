@@ -422,6 +422,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             question: qData.question,
             status: 'Draft',
             importance,
+            requirement_id: qData.requirement_id || qData.requirementId || null, // Capture requirement_id from n8n
             // Alias for frontend compatibility
             project_id: projectId,
             proveedor: selectedProvider,
