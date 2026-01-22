@@ -1114,10 +1114,26 @@ const translations: any = {
     }
 };
 
-// Simplified store without persistence for immediate fix
+// Get initial language from localStorage or default to 'en'
+const getInitialLanguage = (): Language => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('bideval-language');
+        if (saved === 'es' || saved === 'en') {
+            return saved;
+        }
+    }
+    return 'en';
+};
+
 export const useLanguageStore = create<LanguageState>((set, get) => ({
-    language: 'en',
-    setLanguage: (lang) => set({ language: lang }),
+    language: getInitialLanguage(),
+    setLanguage: (lang) => {
+        // Save to localStorage when user changes language
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('bideval-language', lang);
+        }
+        set({ language: lang });
+    },
     t: (key) => {
         const lang = get().language;
         // @ts-ignore
