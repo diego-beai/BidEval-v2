@@ -10,10 +10,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3168,
-        112
+        -3136,
+        80
       ],
-      "id": "395614e3-8fd7-4a89-84f4-08d0d46d8d86",
+      "id": "2e8198fa-bb18-40b2-b589-54b7fb907e67",
       "name": "Webhook Inbound",
       "webhookId": "0496e481-bb76-42f1-b3d5-734935b4b631"
     },
@@ -40,10 +40,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2944,
-        112
+        -2912,
+        80
       ],
-      "id": "dcabb7ea-e273-42c9-adb7-dc6c414508a0",
+      "id": "8b3b8f15-474f-4507-a00f-af37dafc7266",
       "name": "Set Input Params"
     },
     {
@@ -60,11 +60,6 @@
               "keyValue": "={{ $json.provider }}"
             },
             {
-              "keyName": "evaluation_value",
-              "condition": "neq",
-              "keyValue": "INCLUIDO"
-            },
-            {
               "keyName": "project_id",
               "condition": "eq",
               "keyValue": "={{ $json.project_id }}"
@@ -75,17 +70,30 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2736,
-        112
+        -2704,
+        80
       ],
-      "id": "a59ab3d5-d412-47d8-abe7-098b1425e80b",
-      "name": "Fetch Missing Items",
+      "id": "c75924e0-ff9b-47f4-a6e7-d48de02efa02",
+      "name": "Fetch All Provider Responses",
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Filter Deficiencies Only\n// Solo incluye items que realmente son deficiencias\n// =============================================\n\nconst items = $input.all();\n\n// Valores que indican deficiencias (necesitan Q&A)\nconst DEFICIENCY_VALUES = [\n  'PARTIALLY INCLUDED',\n  'NOT INCLUDED WITH ALTERNATIVE',\n  'NOT INCLUDED',\n  'NO INFORMATION'\n];\n\n// Valores que NO son deficiencias (no necesitan Q&A)\nconst OK_VALUES = [\n  'INCLUDED',\n  'INCLUDED WITH CAVEATS'\n];\n\nconst filteredItems = items.filter(item => {\n  const evalValue = (item.json.evaluation_value || '').toUpperCase().trim();\n  \n  // Si es un valor OK, excluir\n  if (OK_VALUES.some(v => evalValue === v.toUpperCase())) {\n    return false;\n  }\n  \n  // Caso 1: Es uno de los valores de deficiencia conocidos\n  if (DEFICIENCY_VALUES.some(v => evalValue.includes(v.toUpperCase()))) {\n    return true;\n  }\n  \n  // Caso 2: Empieza con \"NO VALUE FOUND\" (evaluación económica sin valor)\n  if (evalValue.startsWith('NO VALUE FOUND')) {\n    return true;\n  }\n  \n  // Caso 3: Score bajo (menor a 5) como indicador de deficiencia\n  const score = item.json.score || 0;\n  if (score < 5) {\n    return true;\n  }\n  \n  // Por defecto, excluir (valores económicos con precios, etc.)\n  return false;\n});\n\nconsole.log(`📋 Filtrado de deficiencias:`);\nconsole.log(`   ├─ Total recibidos: ${items.length}`);\nconsole.log(`   └─ Deficiencias encontradas: ${filteredItems.length}`);\n\n// Log de valores excluidos para debug\nconst excluded = items.length - filteredItems.length;\nif (excluded > 0) {\n  console.log(`   ├─ Excluidos (valores OK o económicos): ${excluded}`);\n}\n\nreturn filteredItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2504,
+        80
+      ],
+      "id": "filter-deficiencies-node",
+      "name": "Filter Deficiencies Only"
     },
     {
       "parameters": {
@@ -105,10 +113,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2496,
-        112
+        -2304,
+        80
       ],
-      "id": "6176425a-d843-4a51-abb4-8f869c2d5702",
+      "id": "c0a9c906-2e55-4108-ac24-1c5a9a8c7f42",
       "name": "Fetch Requirement Specs",
       "credentials": {
         "supabaseApi": {
@@ -126,10 +134,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -2304,
-        112
+        -2104,
+        80
       ],
-      "id": "27a2c959-7f4f-47d7-872d-2824408d4f43",
+      "id": "2320ff2e-62c5-4eb3-86f5-1e57cbc4bf5c",
       "name": "Consolidate Deficiencies"
     },
     {
@@ -142,10 +150,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2112,
-        112
+        -1912,
+        80
       ],
-      "id": "d08c82eb-0350-4f9b-959a-365d1877b6bd",
+      "id": "f0fbafa9-6168-4ae6-af79-0b641e9c3f2d",
       "name": "QA Generation Chain"
     },
     {
@@ -156,10 +164,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1888,
-        320
+        -1688,
+        288
       ],
-      "id": "ff34666f-7fa0-4451-b893-be3a89024f73",
+      "id": "d2a100c7-5253-4e91-a85f-5eafaf9fe16a",
       "name": "JSON Output Parser"
     },
     {
@@ -171,10 +179,10 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3.1,
       "position": [
-        -1792,
-        112
+        -1592,
+        80
       ],
-      "id": "c59b8bf1-424f-424e-bafb-0b93c5251b4f",
+      "id": "e1569d96-f5f6-4327-8f7e-2c3e19145ccc",
       "name": "Split Questions List"
     },
     {
@@ -205,6 +213,10 @@
             {
               "fieldId": "requirement_id",
               "fieldValue": "={{ $json['output.questions'].requirement_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "Pending"
             }
           ]
         }
@@ -212,10 +224,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1632,
-        112
+        -1432,
+        80
       ],
-      "id": "f591a5c9-810a-4149-8e10-4fa1e559d51b",
+      "id": "cf3c90a4-1dcf-4ade-98fd-3d80013f5509",
       "name": "Supabase Insert",
       "credentials": {
         "supabaseApi": {
@@ -232,26 +244,26 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1424,
-        112
+        -1224,
+        80
       ],
-      "id": "ccf04ca7-025a-4f0e-a2c7-54980fadd406",
+      "id": "c2b18e2d-f872-4bb1-bc20-b8a9a3d4446b",
       "name": "Respond to Webhook1"
     },
     {
       "parameters": {
-        "content": "## Q&A Generator\n\n**Updated**: Now includes requirement_id with each question for linking back to requirements.\n\n**Flow**:\n1. Receive project_id and provider\n2. Fetch deficiencies (provider_responses where evaluation != INCLUIDO)\n3. Fetch requirement details for each\n4. Generate questions with LLM (including requirement_id)\n5. Save to qa_audit with requirement_id",
+        "content": "## Q&A Generator\n\n**Updated**: Now filters only real deficiencies before generating questions.\n\n**Deficiencies filtered**:\n- PARTIALLY INCLUDED\n- NOT INCLUDED WITH ALTERNATIVE\n- NOT INCLUDED\n- NO INFORMATION\n- NO VALUE FOUND - *\n- Any item with score < 5\n\n**Excluded** (not deficiencies):\n- INCLUDED\n- INCLUDED WITH CAVEATS\n- Economic values (prices, hours, etc.)\n\n**Flow**:\n1. Receive project_id and provider\n2. Fetch ALL provider_responses\n3. Filter only deficiencies (Code node)\n4. Fetch requirement details for each\n5. Generate questions with LLM\n6. Save to qa_audit",
         "height": 656,
-        "width": 2048,
+        "width": 2200,
         "color": 7
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3264,
-        -112
+        -3232,
+        -144
       ],
-      "id": "6c103723-2715-4e28-b624-e1827bef3670",
+      "id": "7c6ee1ef-ff5b-45ea-83f6-ed616b15f957",
       "name": "Sticky Note1"
     },
     {
@@ -266,10 +278,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -2208,
-        368
+        -2008,
+        336
       ],
-      "id": "caf86e88-7428-4ae1-8dad-bcb93a8a49d3",
+      "id": "955f765c-52e2-4157-a4fe-38ebf08c16f7",
       "name": "Ollama Model2",
       "credentials": {
         "ollamaApi": {
@@ -288,10 +300,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2080,
-        464
+        -1832,
+        384
       ],
-      "id": "7fd32472-7ed3-4377-ab23-f36f5c8600ba",
+      "id": "778c394b-3e01-4cf7-9ccb-ca1805527849",
       "name": "Mistral Cloud Chat Model",
       "credentials": {
         "mistralCloudApi": {
@@ -317,14 +329,25 @@
       "main": [
         [
           {
-            "node": "Fetch Missing Items",
+            "node": "Fetch All Provider Responses",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Fetch Missing Items": {
+    "Fetch All Provider Responses": {
+      "main": [
+        [
+          {
+            "node": "Filter Deficiencies Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Deficiencies Only": {
       "main": [
         [
           {
@@ -399,11 +422,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "Ollama Model2": {
-      "ai_languageModel": [
-        []
       ]
     },
     "Mistral Cloud Chat Model": {
