@@ -177,6 +177,42 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   // Notifications state
   const [showNotifications, setShowNotifications] = useState(false);
 
+  // Refs for dropdown positioning
+  const providerSelectorBtnRef = React.useRef<HTMLButtonElement>(null);
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+
+  // Calculate popup position when opening
+  const handleOpenProviderSelector = () => {
+    const providers = getProvidersWithApprovedQuestions();
+    if (providers.length === 1 && !sendToProvider) {
+      setSendToProvider(providers[0]);
+    }
+
+    if (providerSelectorBtnRef.current) {
+      const rect = providerSelectorBtnRef.current.getBoundingClientRect();
+      const popupWidth = 280;
+      const popupHeight = 300; // Approximate max height
+
+      // Calculate position - prefer below, but flip to above if not enough space
+      let top = rect.bottom + 8;
+      let left = rect.right - popupWidth;
+
+      // Check if popup would go below viewport
+      if (top + popupHeight > window.innerHeight - 20) {
+        top = rect.top - popupHeight - 8;
+      }
+
+      // Ensure popup stays within viewport horizontally
+      if (left < 20) {
+        left = 20;
+      }
+
+      setPopupPosition({ top, left });
+    }
+
+    setShowProviderSelector(!showProviderSelector);
+  };
+
   // Toggle requirement expansion and load details if needed
   const handleToggleRequirement = async (questionId: string, requirementId: string | null | undefined) => {
     const isExpanded = expandedRequirements[questionId];
@@ -870,14 +906,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
             {getProvidersWithApprovedQuestions().length > 0 && (
               <div className="send-to-supplier-wrapper">
                 <button
-                  onClick={() => {
-                    const providers = getProvidersWithApprovedQuestions();
-                    // Auto-select first provider if only one available
-                    if (providers.length === 1 && !sendToProvider) {
-                      setSendToProvider(providers[0]);
-                    }
-                    setShowProviderSelector(!showProviderSelector);
-                  }}
+                  ref={providerSelectorBtnRef}
+                  onClick={handleOpenProviderSelector}
                   disabled={isSending}
                   className="module-btn-primary"
                   title="Send approved questions to supplier"
@@ -899,7 +929,11 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                 {showProviderSelector && (
                   <>
                     <div className="dropdown-overlay" onClick={() => setShowProviderSelector(false)} />
-                    <div className="provider-selector-popup" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="provider-selector-popup"
+                      onClick={(e) => e.stopPropagation()}
+                      style={popupPosition ? { top: popupPosition.top, left: popupPosition.left } : undefined}
+                    >
                       <div className="provider-selector-header">
                         <h4>Select Provider</h4>
                         <button

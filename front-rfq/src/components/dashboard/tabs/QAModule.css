@@ -86,16 +86,17 @@
 
 /* Provider Selector Popup */
 .provider-selector-popup {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
   width: 280px;
+  max-height: calc(100vh - 100px);
   background: var(--bg-surface, #1a1a1a);
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   z-index: 1001;
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
   animation: fadeInScale 0.15s ease-out;
 }
 
@@ -145,8 +146,10 @@
 
 .provider-selector-list {
   padding: 8px;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .provider-option {
