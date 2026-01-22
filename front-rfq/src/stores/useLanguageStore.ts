@@ -74,7 +74,7 @@ const translations: any = {
         'home.activity.response_received': 'respuesta(s) recibida(s)',
 
         // Dashboard cards
-        'home.card.total_processed': 'Total Procesadas',
+        'home.card.total_processed': 'Propuestas Procesadas',
         'home.card.rfqs_processed': 'RFQs Procesadas',
         'home.card.ai_accuracy': 'Precisión IA',
         'home.card.automation': 'Automatización',
@@ -625,7 +625,7 @@ const translations: any = {
         'home.activity.response_received': 'response(s) received',
 
         // Dashboard cards
-        'home.card.total_processed': 'Total Processed',
+        'home.card.total_processed': 'Proposals Processed',
         'home.card.rfqs_processed': 'RFQs Processed',
         'home.card.ai_accuracy': 'AI Accuracy',
         'home.card.automation': 'Automation',
