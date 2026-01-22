@@ -13,6 +13,13 @@ Frontend web para el procesamiento automático de RFQs (Request for Quotations) 
 - **Visualización de Resultados**: Tabla dinámica con evaluaciones por proveedor
 - **Exportación**: Descarga de resultados en formato CSV
 - **Diseño Profesional**: Interfaz oscura moderna con gradientes y animaciones
+- **Sistema Q&A con Hilos de Conversación**:
+  - Generación automática de preguntas técnicas por disciplina
+  - Envío de cuestionarios a proveedores via portal web
+  - Soporte para preguntas de seguimiento (follow-ups)
+  - Visualización de historial de conversación en el dashboard
+  - Los proveedores pueden ver el contexto previo en preguntas de seguimiento
+  - Badges visuales para distinguir preguntas originales vs seguimientos
 
 ## 🛠️ Stack Tecnológico
 
