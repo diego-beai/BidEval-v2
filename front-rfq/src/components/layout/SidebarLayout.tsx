@@ -25,7 +25,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const markAsViewed = useSessionViewStore(state => state.markAsViewed);
     const { resetTour, startTour, hasCompletedTour } = useOnboardingStore();
     const { isProcessing, processingFileCount, processingStartTime } = useRfqStore();
-    const { notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead, loadNotifications } = useQAStore();
+    const { notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead, deleteNotification, clearAllNotifications, loadNotifications } = useQAStore();
     const [elapsedTime, setElapsedTime] = useState(0);
 
     // Fetch notifications on mount
@@ -398,25 +398,46 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                         <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                                             {t('notifications.title') || 'Notifications'}
                                         </span>
-                                        {unreadNotificationCount > 0 && (
-                                            <button
-                                                onClick={() => markAllNotificationsRead()}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: 'var(--color-cyan)',
-                                                    fontSize: '0.8rem',
-                                                    cursor: 'pointer',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '6px',
-                                                    transition: 'background 0.2s'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(18, 181, 176, 0.1)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-                                            >
-                                                {t('notifications.markAllRead') || 'Mark all as read'}
-                                            </button>
-                                        )}
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            {unreadNotificationCount > 0 && (
+                                                <button
+                                                    onClick={() => markAllNotificationsRead()}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: 'var(--color-cyan)',
+                                                        fontSize: '0.8rem',
+                                                        cursor: 'pointer',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '6px',
+                                                        transition: 'background 0.2s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(18, 181, 176, 0.1)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                                >
+                                                    {t('notifications.markAllRead') || 'Mark all as read'}
+                                                </button>
+                                            )}
+                                            {notifications.length > 0 && (
+                                                <button
+                                                    onClick={() => clearAllNotifications()}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#ef4444',
+                                                        fontSize: '0.8rem',
+                                                        cursor: 'pointer',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '6px',
+                                                        transition: 'background 0.2s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                                                >
+                                                    {t('notifications.clearAll') || 'Clear all'}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Notification List */}
@@ -528,17 +549,53 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                                             </div>
                                                         </div>
 
-                                                        {/* Unread indicator */}
-                                                        {!notification.is_read && (
-                                                            <div style={{
-                                                                width: '8px',
-                                                                height: '8px',
-                                                                borderRadius: '50%',
-                                                                background: 'var(--color-cyan)',
-                                                                flexShrink: 0,
-                                                                marginTop: '6px'
-                                                            }}></div>
-                                                        )}
+                                                        {/* Unread indicator and delete button */}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                                            {!notification.is_read && (
+                                                                <div style={{
+                                                                    width: '8px',
+                                                                    height: '8px',
+                                                                    borderRadius: '50%',
+                                                                    background: 'var(--color-cyan)',
+                                                                    marginTop: '2px'
+                                                                }}></div>
+                                                            )}
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    deleteNotification(notification.id);
+                                                                }}
+                                                                title={t('notifications.delete') || 'Delete'}
+                                                                style={{
+                                                                    background: 'transparent',
+                                                                    border: 'none',
+                                                                    color: 'var(--text-tertiary)',
+                                                                    cursor: 'pointer',
+                                                                    padding: '4px',
+                                                                    borderRadius: '4px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    transition: 'all 0.2s',
+                                                                    opacity: 0.6
+                                                                }}
+                                                                onMouseEnter={(e) => {
+                                                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                                                    e.currentTarget.style.color = '#ef4444';
+                                                                    e.currentTarget.style.opacity = '1';
+                                                                }}
+                                                                onMouseLeave={(e) => {
+                                                                    e.currentTarget.style.background = 'transparent';
+                                                                    e.currentTarget.style.color = 'var(--text-tertiary)';
+                                                                    e.currentTarget.style.opacity = '0.6';
+                                                                }}
+                                                            >
+                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))

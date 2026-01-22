@@ -306,6 +306,8 @@ const translations: any = {
         // Notifications
         'notifications.title': 'Notificaciones',
         'notifications.markAllRead': 'Marcar todo como leído',
+        'notifications.clearAll': 'Borrar todo',
+        'notifications.delete': 'Eliminar',
         'notifications.empty': 'No hay notificaciones',
         'notifications.supplierResponded': 'El proveedor ha respondido',
         'notifications.evaluationUpdated': 'Evaluación actualizada',
@@ -414,6 +416,11 @@ const translations: any = {
         'importance.high': 'Alta',
         'importance.medium': 'Media',
         'importance.low': 'Baja',
+
+        // Priority (for Q&A badges)
+        'priority.high': 'Alta',
+        'priority.medium': 'Media',
+        'priority.low': 'Baja',
 
         // Common
         'common.questions': 'preguntas',
@@ -850,6 +857,8 @@ const translations: any = {
         // Notifications
         'notifications.title': 'Notifications',
         'notifications.markAllRead': 'Mark all as read',
+        'notifications.clearAll': 'Clear all',
+        'notifications.delete': 'Delete',
         'notifications.empty': 'No notifications',
         'notifications.supplierResponded': 'Supplier has responded',
         'notifications.evaluationUpdated': 'Evaluation updated',
@@ -958,6 +967,11 @@ const translations: any = {
         'importance.high': 'High',
         'importance.medium': 'Medium',
         'importance.low': 'Low',
+
+        // Priority (for Q&A badges)
+        'priority.high': 'High',
+        'priority.medium': 'Medium',
+        'priority.low': 'Low',
 
         // Common
         'common.questions': 'questions',

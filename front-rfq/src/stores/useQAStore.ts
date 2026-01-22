@@ -81,6 +81,8 @@ interface QAState {
   loadNotifications: (projectId?: string) => Promise<void>;
   markNotificationRead: (notificationId: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  deleteNotification: (notificationId: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   subscribeToNotifications: (projectId?: string) => void;
   unsubscribeFromNotifications: () => void;
 
@@ -766,6 +768,63 @@ export const useQAStore = create<QAState>((set, get) => ({
       }));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+    }
+  },
+
+  // Delete a single notification
+  deleteNotification: async (notificationId: string) => {
+    try {
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase!
+          .from('qa_notifications')
+          .delete()
+          .eq('id', notificationId);
+
+        if (error) {
+          console.error('Error deleting notification:', error);
+          return;
+        }
+      }
+
+      set(state => {
+        const notification = state.notifications.find(n => n.id === notificationId);
+        const wasUnread = notification && !notification.is_read;
+        return {
+          notifications: state.notifications.filter(n => n.id !== notificationId),
+          unreadNotificationCount: wasUnread
+            ? Math.max(0, state.unreadNotificationCount - 1)
+            : state.unreadNotificationCount
+        };
+      });
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  },
+
+  // Clear all notifications
+  clearAllNotifications: async () => {
+    try {
+      const activeProjectId = useProjectStore.getState().activeProjectId;
+      if (!activeProjectId) return;
+
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase!
+          .from('qa_notifications')
+          .delete()
+          .eq('project_id', activeProjectId);
+
+        if (error) {
+          console.error('Error clearing all notifications:', error);
+          return;
+        }
+      }
+
+      set({
+        notifications: [],
+        unreadNotificationCount: 0
+      });
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
     }
   },
 

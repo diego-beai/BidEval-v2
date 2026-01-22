@@ -716,20 +716,20 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
   // Priority/Importance translation mapping (handles various cases)
   const getPriorityLabel = (priority: string): string => {
-    const normalized = priority?.toLowerCase() || '';
+    if (!priority) return '';
+
+    // Remove "PRIORITY." prefix if present (case-insensitive)
+    let cleaned = priority.replace(/^priority\./i, '').toLowerCase();
+
     const priorityMap: Record<string, string> = {
       'high': t('priority.high'),
       'medium': t('priority.medium'),
       'low': t('priority.low'),
       'alta': t('priority.high'),
       'media': t('priority.medium'),
-      'baja': t('priority.low'),
-      // Handle PRIORITY.X format from database
-      'priority.high': t('priority.high'),
-      'priority.medium': t('priority.medium'),
-      'priority.low': t('priority.low')
+      'baja': t('priority.low')
     };
-    return priorityMap[normalized] || priority;
+    return priorityMap[cleaned] || priority;
   };
 
   return (
