@@ -5,12 +5,13 @@ import {
     PieChart, Pie
 } from 'recharts';
 import { useScoringStore } from '../../../stores/useScoringStore';
+import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
-// Function to get translated criteria labels
-const getCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
+// Function to get translated criteria labels (fallback when no dynamic config)
+const getDefaultCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
     // TECHNICAL COMPLETENESS (30%)
     scope_facilities: t('criteria.scope_facilities'),
     scope_work: t('criteria.scope_work'),
@@ -31,20 +32,57 @@ const getCriteriaLabels = (t: (key: string) => string): Record<string, string> =
 
 export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
+    const { categories: dynamicCategories, hasConfiguration, loadConfiguration } = useScoringConfigStore();
     const { t } = useLanguageStore();
     const { activeProjectId } = useProjectStore();
 
-    // Get translated criteria labels
-    const CRITERIA_LABELS = useMemo(() => getCriteriaLabels(t), [t]);
+    // Get criteria labels (from dynamic config or fallback to translations)
+    const CRITERIA_LABELS = useMemo(() => {
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            const labels: Record<string, string> = {};
+            categories.forEach(cat => {
+                if (!cat) return;
+                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                catCriteria.forEach(crit => {
+                    if (crit && crit.name) {
+                        const critName = typeof crit.name === 'string' ? crit.name : String(crit.name);
+                        const displayName = typeof crit.display_name === 'string' ? crit.display_name : String(crit.display_name || crit.name);
+                        labels[critName] = displayName;
+                    }
+                });
+            });
+            return labels;
+        }
+        return getDefaultCriteriaLabels(t);
+    }, [hasConfiguration, dynamicCategories, t]);
 
-    // Load scoring data on mount and when project changes
+    // Load scoring data and config on mount and when project changes
     useEffect(() => {
         console.log('[ExecutiveView] Active project changed:', activeProjectId);
         refreshScoring();
-    }, [refreshScoring, activeProjectId]);
+        if (activeProjectId) {
+            loadConfiguration(activeProjectId);
+        }
+    }, [refreshScoring, loadConfiguration, activeProjectId]);
 
-    // Calculate dynamic category weights from customWeights (RFQ-aligned structure)
+    // Calculate category weights from dynamic config or customWeights
     const categoryWeights = useMemo(() => {
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            // Use dynamic category weights
+            const weights: Record<string, number> = {};
+            categories.forEach(cat => {
+                if (!cat || !cat.name) return;
+                // Map to expected keys for pie chart
+                const catName = typeof cat.name === 'string' ? cat.name : String(cat.name);
+                const key = catName.toUpperCase();
+                weights[key] = Number(cat.weight) || 0;
+            });
+            return weights;
+        }
+
+        // Fallback to legacy calculation from customWeights
         const technical = (customWeights.scope_facilities || 0) +
                          (customWeights.scope_work || 0) +
                          (customWeights.deliverables_quality || 0);
@@ -67,7 +105,82 @@ export const ExecutiveView: React.FC = () => {
             EXECUTION: execution,
             'HSE_COMPLIANCE': hseCompliance
         };
-    }, [customWeights]);
+    }, [hasConfiguration, dynamicCategories, customWeights]);
+
+    // Prepare radar chart data - MUST be before any conditional returns to respect hooks rules
+    // Uses scoringResults directly instead of providers to handle null case
+    const radarData = useMemo(() => {
+        const providersList = scoringResults?.ranking || [];
+        if (providersList.length === 0) return [];
+
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            return categories.filter(cat => cat && cat.name).map(cat => {
+                // Ensure display_name is a string
+                const displayName = typeof cat.display_name === 'string' ? cat.display_name : String(cat.display_name || cat.name || '');
+                const catName = typeof cat.name === 'string' ? cat.name : String(cat.name || '');
+                // Map category name to scores property
+                return {
+                    subject: displayName || catName,
+                    ...Object.fromEntries(providersList.map(p => {
+                        const providerName = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+                        // Try to get score from the category name mapping
+                        let score = 0;
+                        if (p.scores) {
+                            if (catName === 'technical') score = p.scores.technical ?? 0;
+                            else if (catName === 'economic') score = p.scores.economic ?? 0;
+                            else if (catName === 'execution') score = p.scores.execution ?? 0;
+                            else if (catName === 'hse_compliance') score = p.scores.hse_compliance ?? 0;
+                            else score = (p.scores as any)[catName] ?? 0;
+                        }
+                        return [providerName, Number(score) || 0];
+                    }))
+                };
+            });
+        }
+
+        // Fallback to default categories
+        return [
+            {
+                subject: t('category.technical'),
+                ...Object.fromEntries(providersList.map(p => {
+                    const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+                    return [name, p.scores?.technical ?? 0];
+                }))
+            },
+            {
+                subject: t('category.economic'),
+                ...Object.fromEntries(providersList.map(p => {
+                    const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+                    return [name, p.scores?.economic ?? 0];
+                }))
+            },
+            {
+                subject: t('category.execution'),
+                ...Object.fromEntries(providersList.map(p => {
+                    const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+                    return [name, p.scores?.execution ?? 0];
+                }))
+            },
+            {
+                subject: t('category.hse_compliance'),
+                ...Object.fromEntries(providersList.map(p => {
+                    const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+                    return [name, p.scores?.hse_compliance ?? 0];
+                }))
+            }
+        ];
+    }, [hasConfiguration, dynamicCategories, scoringResults, t]);
+
+    // Prepare bar chart data - MUST be before any conditional returns
+    const barChartData = useMemo(() => {
+        const providersList = scoringResults?.ranking || [];
+        return providersList.map(p => {
+            const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+            const score = typeof p.overall_score === 'number' ? p.overall_score : Number(p.overall_score) || 0;
+            return { name, score, id: name };
+        }).sort((a, b) => b.score - a.score);
+    }, [scoringResults]);
 
     if (isCalculating) {
         return (
@@ -158,11 +271,18 @@ export const ExecutiveView: React.FC = () => {
 
     // Identify strengths and weaknesses based on individual criterion scores (12 criteria)
     const individualScores = winner.individual_scores ? Object.entries(winner.individual_scores)
-        .map(([criterionId, score]) => ({
-            id: criterionId,
-            label: CRITERIA_LABELS[criterionId] || criterionId,
-            score: score as number
-        }))
+        .map(([criterionId, score]) => {
+            // Ensure label is always a string primitive
+            const rawLabel = CRITERIA_LABELS[criterionId] || criterionId;
+            const label = typeof rawLabel === 'string' ? rawLabel : String(rawLabel || criterionId);
+            // Ensure score is always a number
+            const numScore = typeof score === 'number' ? score : Number(score) || 0;
+            return {
+                id: String(criterionId),
+                label,
+                score: numScore
+            };
+        })
         .filter(c => c.score > 0) // Only include criteria with actual scores
         : [];
 
@@ -171,40 +291,13 @@ export const ExecutiveView: React.FC = () => {
         .filter(c => c.score >= 8)
         .sort((a, b) => b.score - a.score)
         .slice(0, 4) // Limit to top 4 strengths
-        .map(c => c.label);
+        .map(c => String(c.label)); // Ensure string
 
     // Weaknesses: the 3 lowest scoring criteria (regardless of threshold)
     const weaknesses = [...individualScores]
         .sort((a, b) => a.score - b.score)
         .slice(0, 3) // Take the 3 lowest scores
-        .map(c => c.label);
-
-    // Prepare radar chart data
-    const radarData = [
-        {
-            subject: t('category.technical'),
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.technical ?? 0]))
-        },
-        {
-            subject: t('category.economic'),
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.economic ?? 0]))
-        },
-        {
-            subject: t('category.execution'),
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.execution ?? 0]))
-        },
-        {
-            subject: t('category.hse_compliance'),
-            ...Object.fromEntries(providers.map(p => [p.provider_name, p.scores?.hse_compliance ?? 0]))
-        }
-    ];
-
-    // Prepare bar chart data (overall scores) - sorted by score descending
-    const barChartData = providers.map(p => ({
-        name: p.provider_name,
-        score: p.overall_score,
-        id: p.provider_name
-    })).sort((a, b) => b.score - a.score);
+        .map(c => String(c.label)); // Ensure string
 
     // Helper for colors - handles various provider name formats
     const getColor = (id: string, index: number) => {
@@ -810,30 +903,58 @@ export const ExecutiveView: React.FC = () => {
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <defs>
-                                <linearGradient id="tech-gradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.9} />
-                                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.7} />
-                                </linearGradient>
-                                <linearGradient id="econ-gradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="var(--color-success)" stopOpacity={0.9} />
-                                    <stop offset="100%" stopColor="var(--color-success)" stopOpacity={0.7} />
-                                </linearGradient>
-                                <linearGradient id="exec-gradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="var(--color-warning)" stopOpacity={0.9} />
-                                    <stop offset="100%" stopColor="var(--color-warning)" stopOpacity={0.7} />
-                                </linearGradient>
-                                <linearGradient id="hse-gradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="var(--color-cyan)" stopOpacity={0.9} />
-                                    <stop offset="100%" stopColor="var(--color-cyan)" stopOpacity={0.7} />
-                                </linearGradient>
+                                {/* Dynamic gradients for each category */}
+                                {hasConfiguration && dynamicCategories.length > 0 ? (
+                                    dynamicCategories.filter(cat => cat && cat.name).map((cat) => {
+                                        const catName = typeof cat.name === 'string' ? cat.name : String(cat.name || '');
+                                        const catColor = typeof cat.color === 'string' ? cat.color : '#12b5b0';
+                                        return (
+                                            <linearGradient key={`gradient-${catName}`} id={`gradient-${catName}`} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor={catColor} stopOpacity={0.9} />
+                                                <stop offset="100%" stopColor={catColor} stopOpacity={0.7} />
+                                            </linearGradient>
+                                        );
+                                    })
+                                ) : (
+                                    <>
+                                        <linearGradient id="tech-gradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.9} />
+                                            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.7} />
+                                        </linearGradient>
+                                        <linearGradient id="econ-gradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--color-success)" stopOpacity={0.9} />
+                                            <stop offset="100%" stopColor="var(--color-success)" stopOpacity={0.7} />
+                                        </linearGradient>
+                                        <linearGradient id="exec-gradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--color-warning)" stopOpacity={0.9} />
+                                            <stop offset="100%" stopColor="var(--color-warning)" stopOpacity={0.7} />
+                                        </linearGradient>
+                                        <linearGradient id="hse-gradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--color-cyan)" stopOpacity={0.9} />
+                                            <stop offset="100%" stopColor="var(--color-cyan)" stopOpacity={0.7} />
+                                        </linearGradient>
+                                    </>
+                                )}
                             </defs>
                             <Pie
-                                data={[
-                                    { name: t('category.technical'), value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
-                                    { name: t('category.economic'), value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
-                                    { name: t('category.execution'), value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
-                                ]}
+                                data={hasConfiguration && dynamicCategories.length > 0
+                                    ? dynamicCategories.filter(cat => cat && cat.name).map(cat => {
+                                        const displayName = typeof cat.display_name === 'string' ? cat.display_name : String(cat.display_name || cat.name || '');
+                                        const catName = typeof cat.name === 'string' ? cat.name : String(cat.name || '');
+                                        const weight = typeof cat.weight === 'number' ? cat.weight : Number(cat.weight) || 0;
+                                        return {
+                                            name: displayName,
+                                            value: weight,
+                                            color: `url(#gradient-${catName})`
+                                        };
+                                      })
+                                    : [
+                                        { name: t('category.technical'), value: categoryWeights.TECHNICAL || 30, color: 'url(#tech-gradient)' },
+                                        { name: t('category.economic'), value: categoryWeights.ECONOMIC || 35, color: 'url(#econ-gradient)' },
+                                        { name: t('category.execution'), value: categoryWeights.EXECUTION || 20, color: 'url(#exec-gradient)' },
+                                        { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'] || 15, color: 'url(#hse-gradient)' }
+                                      ]
+                                }
                                 cx="50%"
                                 cy="50%"
                                 labelLine={{
@@ -846,13 +967,25 @@ export const ExecutiveView: React.FC = () => {
                                 animationBegin={300}
                                 animationDuration={800}
                             >
-                                {[
-                                    { name: t('category.technical'), value: categoryWeights.TECHNICAL, color: 'url(#tech-gradient)' },
-                                    { name: t('category.economic'), value: categoryWeights.ECONOMIC, color: 'url(#econ-gradient)' },
-                                    { name: t('category.execution'), value: categoryWeights.EXECUTION, color: 'url(#exec-gradient)' },
-                                    { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'], color: 'url(#hse-gradient)' }
-                                ].map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} stroke="var(--bg-surface)" strokeWidth={3} />
+                                {(hasConfiguration && dynamicCategories.length > 0
+                                    ? dynamicCategories.filter(cat => cat && cat.name).map(cat => {
+                                        const displayName = typeof cat.display_name === 'string' ? cat.display_name : String(cat.display_name || cat.name || '');
+                                        const catName = typeof cat.name === 'string' ? cat.name : String(cat.name || '');
+                                        const weight = typeof cat.weight === 'number' ? cat.weight : Number(cat.weight) || 0;
+                                        return {
+                                            name: displayName,
+                                            value: weight,
+                                            color: `url(#gradient-${catName})`
+                                        };
+                                      })
+                                    : [
+                                        { name: t('category.technical'), value: categoryWeights.TECHNICAL || 30, color: 'url(#tech-gradient)' },
+                                        { name: t('category.economic'), value: categoryWeights.ECONOMIC || 35, color: 'url(#econ-gradient)' },
+                                        { name: t('category.execution'), value: categoryWeights.EXECUTION || 20, color: 'url(#exec-gradient)' },
+                                        { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'] || 15, color: 'url(#hse-gradient)' }
+                                      ]
+                                ).map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={String(entry.color)} stroke="var(--bg-surface)" strokeWidth={3} />
                                 ))}
                             </Pie>
                             <Tooltip

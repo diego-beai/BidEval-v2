@@ -469,6 +469,11 @@ const translations: any = {
         'scoring.overall': 'PUNTUACIÓN TOTAL',
         'scoring.average': 'Promedio',
         'scoring.default': 'por defecto',
+        'scoring.configure': 'Configurar',
+        'scoring.setup.title': 'Configurar Criterios de Scoring',
+        'scoring.setup.subtitle': 'Este proyecto no tiene criterios de scoring configurados. Configura tus criterios de evaluación para empezar a puntuar proveedores.',
+        'scoring.setup.use_default': 'Usar Plantilla por Defecto',
+        'scoring.setup.configure_manually': 'Configurar Manualmente',
 
         // Charts
         'chart.compliant': 'Cumple',
@@ -588,7 +593,48 @@ const translations: any = {
         'project.enter_name_placeholder': 'Ingresa el nombre del proyecto...',
         'project.create': 'Crear',
         'project.cancel': 'Cancelar',
-        'project.new': 'Nuevo Proyecto'
+        'project.new': 'Nuevo Proyecto',
+
+        // Scoring Setup Wizard
+        'wizard.title': 'Configuración de Scoring',
+        'wizard.step1.title': 'Elige una Plantilla',
+        'wizard.step1.subtitle': 'Empieza con nuestra plantilla recomendada o crea tu propia configuración personalizada.',
+        'wizard.step1.default_title': 'Plantilla por Defecto',
+        'wizard.step1.default_desc': 'Pre-configurada con 4 categorías y 11 criterios para evaluación de propuestas de ingeniería: Técnico (30%), Económico (35%), Ejecución (20%), HSE y Cumplimiento (15%).',
+        'wizard.step1.scratch_title': 'Empezar desde Cero',
+        'wizard.step1.scratch_desc': 'Crea una configuración de scoring completamente personalizada. Añade tus propias categorías y criterios con pesos personalizados adaptados a tus necesidades de evaluación.',
+        'wizard.step2.title': 'Configurar Categorías',
+        'wizard.step2.subtitle': 'Define las categorías principales de scoring. El peso total debe ser 100%.',
+        'wizard.step2.distribute': 'Distribuir Equitativamente',
+        'wizard.step2.add_category': 'Añadir Categoría',
+        'wizard.step2.no_categories': 'Aún no hay categorías. Haz clic en "Añadir Categoría" para empezar.',
+        'wizard.step3.title': 'Configurar Criterios',
+        'wizard.step3.subtitle': 'Define criterios dentro de cada categoría. Los pesos dentro de una categoría deben sumar 100%.',
+        'wizard.step3.add_criterion': 'Añadir Criterio',
+        'wizard.step3.no_criteria': 'Aún no hay criterios. Añade al menos un criterio a esta categoría.',
+        'wizard.step4.title': 'Revisar Configuración',
+        'wizard.step4.subtitle': 'Revisa tu configuración de scoring antes de guardar.',
+        'wizard.step4.valid': 'La configuración es válida',
+        'wizard.step4.fix_errors': 'Por favor corrige los siguientes errores:',
+        'wizard.step4.criteria_weight_error': 'Los pesos de criterios suman {weight}% (debe ser 100%)',
+        'wizard.placeholder.category_name': 'Nombre de Categoría',
+        'wizard.placeholder.category_name_es': 'Nombre (ES)',
+        'wizard.placeholder.criterion_name': 'Nombre del Criterio',
+        'wizard.placeholder.criterion_name_es': 'Nombre (ES)',
+        'wizard.btn.back': 'Atrás',
+        'wizard.btn.cancel': 'Cancelar',
+        'wizard.btn.continue': 'Continuar',
+        'wizard.btn.save': 'Guardar Configuración',
+        'wizard.btn.saving': 'Guardando...',
+        'wizard.weight_label': 'peso',
+
+        // Inline Criteria Editor
+        'editor.title': 'Editar Pesos de Scoring',
+        'editor.total_category_weight': 'Peso Total de Categorías',
+        'editor.criteria_weights': 'Pesos de criterios',
+        'editor.btn.cancel': 'Cancelar',
+        'editor.btn.save': 'Guardar',
+        'editor.btn.saving': 'Guardando...'
     },
     en: {
         // ... existing translations
@@ -1049,6 +1095,11 @@ const translations: any = {
         'scoring.overall': 'OVERALL SCORE',
         'scoring.average': 'Average',
         'scoring.default': 'default',
+        'scoring.configure': 'Configure',
+        'scoring.setup.title': 'Configure Scoring Criteria',
+        'scoring.setup.subtitle': 'This project doesn\'t have scoring criteria configured yet. Set up your evaluation criteria to start scoring providers.',
+        'scoring.setup.use_default': 'Use Default Template',
+        'scoring.setup.configure_manually': 'Configure Manually',
 
         // Charts
         'chart.compliant': 'Compliant',
@@ -1168,7 +1219,48 @@ const translations: any = {
         'project.enter_name_placeholder': 'Enter project name...',
         'project.create': 'Create',
         'project.cancel': 'Cancel',
-        'project.new': 'New Project'
+        'project.new': 'New Project',
+
+        // Scoring Setup Wizard
+        'wizard.title': 'Scoring Configuration',
+        'wizard.step1.title': 'Choose a Template',
+        'wizard.step1.subtitle': 'Start with our recommended template or create your own custom configuration.',
+        'wizard.step1.default_title': 'Default Template',
+        'wizard.step1.default_desc': 'Pre-configured with 4 categories and 11 criteria for engineering proposal evaluation: Technical (30%), Economic (35%), Execution (20%), HSE & Compliance (15%).',
+        'wizard.step1.scratch_title': 'Start from Scratch',
+        'wizard.step1.scratch_desc': 'Create a completely custom scoring configuration. Add your own categories and criteria with custom weights tailored to your specific evaluation needs.',
+        'wizard.step2.title': 'Configure Categories',
+        'wizard.step2.subtitle': 'Define the main scoring categories. Total weight must equal 100%.',
+        'wizard.step2.distribute': 'Distribute Evenly',
+        'wizard.step2.add_category': 'Add Category',
+        'wizard.step2.no_categories': 'No categories yet. Click "Add Category" to get started.',
+        'wizard.step3.title': 'Configure Criteria',
+        'wizard.step3.subtitle': 'Define criteria within each category. Weights within a category must sum to 100%.',
+        'wizard.step3.add_criterion': 'Add Criterion',
+        'wizard.step3.no_criteria': 'No criteria yet. Add at least one criterion to this category.',
+        'wizard.step4.title': 'Review Configuration',
+        'wizard.step4.subtitle': 'Review your scoring configuration before saving.',
+        'wizard.step4.valid': 'Configuration is valid',
+        'wizard.step4.fix_errors': 'Please fix the following errors:',
+        'wizard.step4.criteria_weight_error': 'Criteria weights sum to {weight}% (should be 100%)',
+        'wizard.placeholder.category_name': 'Category Name',
+        'wizard.placeholder.category_name_es': 'Name (ES)',
+        'wizard.placeholder.criterion_name': 'Criterion Name',
+        'wizard.placeholder.criterion_name_es': 'Name (ES)',
+        'wizard.btn.back': 'Back',
+        'wizard.btn.cancel': 'Cancel',
+        'wizard.btn.continue': 'Continue',
+        'wizard.btn.save': 'Save Configuration',
+        'wizard.btn.saving': 'Saving...',
+        'wizard.weight_label': 'weight',
+
+        // Inline Criteria Editor
+        'editor.title': 'Edit Scoring Weights',
+        'editor.total_category_weight': 'Total Category Weight',
+        'editor.criteria_weights': 'Criteria weights',
+        'editor.btn.cancel': 'Cancel',
+        'editor.btn.save': 'Save',
+        'editor.btn.saving': 'Saving...'
     }
 };
 

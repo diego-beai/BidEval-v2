@@ -1,40 +1,48 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStore';
+import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { ScoringSetupWizard, InlineCriteriaEditor } from '../scoring';
 import type { ScoringWeights } from '../../../types/database.types';
+// ScoringCategory type used implicitly through the store
 
-// Define the scoring criteria with their weights (ids only - names/descriptions come from translations)
+// Default scoring criteria IDs (fallback when no dynamic configuration)
 // Based on RFQ requirements for engineering proposals evaluation
-const SCORING_CRITERIA_IDS = [
+const DEFAULT_SCORING_CRITERIA_IDS = [
     // TECHNICAL COMPLETENESS (30%)
-    { id: 'scope_facilities', category: 'TECHNICAL', weight: 10 },
-    { id: 'scope_work', category: 'TECHNICAL', weight: 10 },
-    { id: 'deliverables_quality', category: 'TECHNICAL', weight: 10 },
+    { id: 'scope_facilities', category: 'technical', weight: 10 },
+    { id: 'scope_work', category: 'technical', weight: 10 },
+    { id: 'deliverables_quality', category: 'technical', weight: 10 },
     // ECONOMIC COMPETITIVENESS (35%)
-    { id: 'total_price', category: 'ECONOMIC', weight: 15 },
-    { id: 'price_breakdown', category: 'ECONOMIC', weight: 8 },
-    { id: 'optionals_included', category: 'ECONOMIC', weight: 7 },
-    { id: 'capex_opex_methodology', category: 'ECONOMIC', weight: 5 },
+    { id: 'total_price', category: 'economic', weight: 15 },
+    { id: 'price_breakdown', category: 'economic', weight: 8 },
+    { id: 'optionals_included', category: 'economic', weight: 7 },
+    { id: 'capex_opex_methodology', category: 'economic', weight: 5 },
     // EXECUTION CAPABILITY (20%)
-    { id: 'schedule', category: 'EXECUTION', weight: 8 },
-    { id: 'resources_allocation', category: 'EXECUTION', weight: 6 },
-    { id: 'exceptions', category: 'EXECUTION', weight: 6 },
+    { id: 'schedule', category: 'execution', weight: 8 },
+    { id: 'resources_allocation', category: 'execution', weight: 6 },
+    { id: 'exceptions', category: 'execution', weight: 6 },
     // HSE & COMPLIANCE (15%)
-    { id: 'safety_studies', category: 'HSE_COMPLIANCE', weight: 8 },
-    { id: 'regulatory_compliance', category: 'HSE_COMPLIANCE', weight: 7 },
+    { id: 'safety_studies', category: 'hse_compliance', weight: 8 },
+    { id: 'regulatory_compliance', category: 'hse_compliance', weight: 7 },
 ];
 
-// Function to get translated criteria
-const getScoringCriteria = (t: (key: string) => string) => SCORING_CRITERIA_IDS.map(c => ({
+// Function to get translated criteria (for fallback mode)
+const getScoringCriteria = (t: (key: string) => string) => DEFAULT_SCORING_CRITERIA_IDS.map(c => ({
     ...c,
     name: t(`criteria.${c.id}`),
     description: t(`criteria.${c.id}.desc`)
 }));
 
-// Function to get translated category name
+// Function to get translated category name (for fallback mode)
 const getCategoryName = (category: string, t: (key: string) => string): string => {
     const categoryMap: Record<string, string> = {
+        'technical': t('scoring.category.technical'),
+        'economic': t('scoring.category.economic'),
+        'execution': t('scoring.category.execution'),
+        'hse_compliance': t('scoring.category.hse_compliance'),
+        // Legacy uppercase support
         'TECHNICAL': t('scoring.category.technical'),
         'ECONOMIC': t('scoring.category.economic'),
         'EXECUTION': t('scoring.category.execution'),
@@ -43,7 +51,13 @@ const getCategoryName = (category: string, t: (key: string) => string): string =
     return categoryMap[category] || category;
 };
 
-const CATEGORY_INFO = {
+// Default category info (fallback when no dynamic configuration)
+const DEFAULT_CATEGORY_INFO: Record<string, { weight: number; color: string }> = {
+    'technical': { weight: 30, color: '#12b5b0' },
+    'economic': { weight: 35, color: '#f59e0b' },
+    'execution': { weight: 20, color: '#3b82f6' },
+    'hse_compliance': { weight: 15, color: '#8b5cf6' },
+    // Legacy uppercase support
     'TECHNICAL': { weight: 30, color: '#12b5b0' },
     'ECONOMIC': { weight: 35, color: '#f59e0b' },
     'EXECUTION': { weight: 20, color: '#3b82f6' },
@@ -66,12 +80,86 @@ export const ScoringMatrix: React.FC = () => {
         reset: resetScoringStore
     } = useScoringStore();
 
+    // Scoring configuration store (dynamic criteria)
+    const {
+        categories: dynamicCategories,
+        hasConfiguration,
+        loadConfiguration,
+        initializeDefaultConfig,
+        isLoading: isConfigLoading,
+        setShowWizard,
+        showWizard,
+    } = useScoringConfigStore();
+
     // Get active project
     const { activeProjectId } = useProjectStore();
     const { t } = useLanguageStore();
 
-    // Get translated scoring criteria
-    const SCORING_CRITERIA = useMemo(() => getScoringCriteria(t), [t]);
+    // UI State
+    const [showConfigEditor, setShowConfigEditor] = useState(false);
+
+    // Load scoring configuration when project changes
+    useEffect(() => {
+        if (activeProjectId) {
+            loadConfiguration(activeProjectId);
+        }
+    }, [activeProjectId, loadConfiguration]);
+
+    // Build category info from dynamic configuration or fallback to defaults
+    const CATEGORY_INFO = useMemo(() => {
+        // Ensure dynamicCategories is an array
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            return categories.reduce((acc, cat) => {
+                if (cat && cat.name) {
+                    const catName = typeof cat.name === 'string' ? cat.name : String(cat.name);
+                    const catColor = typeof cat.color === 'string' ? cat.color : '#12b5b0';
+                    acc[catName] = { weight: Number(cat.weight) || 0, color: catColor };
+                }
+                return acc;
+            }, {} as Record<string, { weight: number; color: string }>);
+        }
+        return DEFAULT_CATEGORY_INFO;
+    }, [hasConfiguration, dynamicCategories]);
+
+    // Build scoring criteria from dynamic configuration or fallback to defaults
+    const SCORING_CRITERIA = useMemo(() => {
+        // Ensure dynamicCategories is an array
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            const criteria: Array<{
+                id: string;
+                category: string;
+                weight: number;
+                name: string;
+                description: string;
+            }> = [];
+
+            categories.forEach((cat) => {
+                if (!cat || !cat.name) return;
+                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                catCriteria.forEach((crit) => {
+                    if (!crit || !crit.name) return;
+                    // Calculate actual weight contribution (criterion weight * category weight / 100)
+                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
+                    // Ensure all values are primitives (not objects)
+                    const critName = typeof crit.name === 'string' ? crit.name : String(crit.name || '');
+                    const critDisplayName = typeof crit.display_name === 'string' ? crit.display_name : String(crit.display_name || '');
+                    const critDesc = typeof crit.description === 'string' ? crit.description : '';
+                    criteria.push({
+                        id: critName,
+                        category: String(cat.name || ''),
+                        weight: parseFloat(actualWeight.toFixed(2)),
+                        name: critDisplayName || critName,
+                        description: critDesc,
+                    });
+                });
+            });
+
+            return criteria;
+        }
+        return getScoringCriteria(t);
+    }, [hasConfiguration, dynamicCategories, t]);
 
     // Track if user has made changes from the saved/default state
     const [isEditingWeights, setIsEditingWeights] = useState(false);
@@ -113,15 +201,32 @@ export const ScoringMatrix: React.FC = () => {
     // Check if weights are valid (sum to 100)
     const weightsValid = totalWeight === 100;
 
-    // Calculate category weights based on custom weights
+    // Calculate category weights based on custom weights or dynamic configuration
     const customCategoryWeights = useMemo(() => {
+        // Ensure dynamicCategories is an array
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            // Use dynamic category weights
+            return categories.reduce((acc, cat) => {
+                if (cat && cat.name) {
+                    acc[cat.name] = cat.weight || 0;
+                }
+                return acc;
+            }, {} as Record<string, number>);
+        }
+        // Fallback to legacy calculation
         return {
+            'technical': (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0),
+            'economic': (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0),
+            'execution': (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0),
+            'hse_compliance': (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0),
+            // Legacy uppercase support
             'TECHNICAL': (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0),
             'ECONOMIC': (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0),
             'EXECUTION': (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0),
             'HSE_COMPLIANCE': (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0),
         };
-    }, [customWeights]);
+    }, [hasConfiguration, dynamicCategories, customWeights]);
 
     // Track which input is being edited (to allow empty string during typing)
     const [editingInput, setEditingInput] = useState<string | null>(null);
@@ -280,8 +385,34 @@ export const ScoringMatrix: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Configure Criteria Button - Always show when there's scoring data */}
+                    {providers && providers.length > 0 && (
+                        <button
+                            onClick={() => hasConfiguration ? setShowConfigEditor(true) : setShowWizard(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-secondary)',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            {t('scoring.configure') || 'Configure'}
+                        </button>
+                    )}
                     {/* Weight validation indicator */}
-                    {(isEditingWeights || hasCustomWeights) && (
+                    {(isEditingWeights || hasCustomWeights) && !hasConfiguration && (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -440,8 +571,79 @@ export const ScoringMatrix: React.FC = () => {
                 </div>
             )}
 
-            {/* Empty State */}
-            {!isCalculating && (!providers || providers.length === 0) && (
+            {/* Setup Prompt - Only show when no configuration AND no scoring results */}
+            {!isConfigLoading && !hasConfiguration && activeProjectId && (!providers || providers.length === 0) && (
+                <div style={{
+                    textAlign: 'center',
+                    padding: '40px 20px',
+                    color: 'var(--text-secondary)',
+                    background: 'var(--bg-surface-alt)',
+                    borderRadius: '12px',
+                    marginBottom: '20px',
+                    border: '2px dashed var(--border-color)',
+                }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="1.5" style={{ marginBottom: '16px', opacity: 0.7 }}>
+                        <path d="M12 5v14M5 12h14"></path>
+                        <circle cx="12" cy="12" r="10" strokeDasharray="4 2"></circle>
+                    </svg>
+                    <h4 style={{ margin: '0 0 8px 0', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {t('scoring.setup.title')}
+                    </h4>
+                    <p style={{ margin: '0 0 20px 0', fontSize: '0.875rem' }}>
+                        {t('scoring.setup.subtitle')}
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                        <button
+                            onClick={() => activeProjectId && initializeDefaultConfig(activeProjectId)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 20px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px var(--color-primary)30',
+                            }}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            {t('scoring.setup.use_default')}
+                        </button>
+                        <button
+                            onClick={() => setShowWizard(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 20px',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border-color)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-secondary)',
+                                fontWeight: 600,
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            {t('scoring.setup.configure_manually')}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Empty State - No scoring data */}
+            {!isCalculating && (!providers || providers.length === 0) && hasConfiguration && (
                 <div style={{
                     textAlign: 'center',
                     padding: '60px 20px',
@@ -757,6 +959,19 @@ export const ScoringMatrix: React.FC = () => {
                     -moz-appearance: textfield;
                 }
             `}</style>
+
+            {/* Scoring Setup Wizard */}
+            {showWizard && (
+                <ScoringSetupWizard onClose={() => setShowWizard(false)} />
+            )}
+
+            {/* Inline Criteria Editor */}
+            {showConfigEditor && (
+                <InlineCriteriaEditor
+                    isOpen={showConfigEditor}
+                    onClose={() => setShowConfigEditor(false)}
+                />
+            )}
         </div>
     );
 };
