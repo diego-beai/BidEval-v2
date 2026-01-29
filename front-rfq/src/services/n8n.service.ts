@@ -279,9 +279,14 @@ export interface RfqIngestaResponse {
  *
  * @param file - Archivo PDF de la RFQ base
  * @param projectId - ID del proyecto al que pertenece este documento
+ * @param projectName - Nombre display del proyecto (opcional, se obtiene del store)
  * @returns Información sobre la RFQ procesada
  */
-export async function uploadRfqBase(file: File, projectId?: string): Promise<RfqIngestaResponse> {
+export async function uploadRfqBase(
+  file: File,
+  projectId?: string,
+  projectName?: string
+): Promise<RfqIngestaResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
 
@@ -296,11 +301,15 @@ export async function uploadRfqBase(file: File, projectId?: string): Promise<Rfq
       file_url: "",
       file_binary: fileBase64,
       // Project ID for multi-project support
-      project_id: projectId || null
+      project_id: projectId || null,
+      // Project name for display purposes (fixes issue where file_title was used as project name)
+      project_name: projectName || fileTitle.replace(/\.pdf$/i, '')
     };
 
     console.log('📤 Sending base RFQ to n8n:', {
       fileName: fileTitle,
+      projectId: projectId || 'null',
+      projectName: projectName || 'using filename as fallback',
       fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
       endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
       timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s (up to 30 min for AI processing)`
@@ -333,17 +342,19 @@ export async function uploadRfqBase(file: File, projectId?: string): Promise<Rfq
 
     // Si la respuesta HTTP fue exitosa (200-299), procesar los datos
     if (response.ok) {
-      // Normalizar la respuesta para que siempre tenga la estructura esperada
+      // Normalizar la respuesta - ser muy permisivo con el formato
+      // porque n8n puede devolver diferentes estructuras
       const normalizedData: RfqIngestaResponse = {
-        success: data.success !== false, // If not present or true, consider successful
-        message: data.message || 'RFQ processed successfully',
-        file_id: data.file_id || fileId, // Usar el fileId generado si no viene en la respuesta
-        tipos_procesados: data.tipos_procesados || []
+        success: true, // Si response.ok, asumimos éxito
+        message: data.message || data.msg || 'RFQ procesada correctamente',
+        file_id: data.file_id || data.fileId || data.id || fileId,
+        tipos_procesados: data.tipos_procesados || data.types || data.tipos || []
       };
 
       console.log('✅ Base RFQ processed successfully:', {
         fileId: normalizedData.file_id,
-        tiposProcesados: normalizedData.tipos_procesados
+        tiposProcesados: normalizedData.tipos_procesados,
+        message: normalizedData.message
       });
 
       return normalizedData;
@@ -351,23 +362,47 @@ export async function uploadRfqBase(file: File, projectId?: string): Promise<Rfq
 
     // If HTTP response was not successful, throw error
     throw new ApiError(
-      data.message || `Server error (${response.status}): ${response.statusText}`
+      data.message || data.error || `Server error (${response.status}): ${response.statusText}`
     );
 
   } catch (error) {
+    // Log detallado del error
     console.error('❌ Error al procesar RFQ base:', {
       error,
       errorType: error instanceof Error ? error.constructor.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
-      fileName: fileTitle
+      errorStack: error instanceof Error ? error.stack : undefined,
+      fileName: fileTitle,
+      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
+      projectId: projectId
     });
+
+    // Mostrar alerta para debug
+    console.warn('🔍 DEBUG - Error details:', JSON.stringify({
+      hasMessage: error instanceof Error && !!error.message,
+      isApiError: error instanceof ApiError,
+      errorString: String(error),
+      errorKeys: error && typeof error === 'object' ? Object.keys(error) : []
+    }, null, 2));
 
     if (error instanceof ApiError) {
       throw error;
     }
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Unknown error while processing base RFQ'
-    );
+
+    // Mejorar el mensaje de error con más detalles
+    let errorMessage = 'Unknown error while processing base RFQ.';
+
+    if (error instanceof Error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string' && error.trim()) {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      // Intentar extraer cualquier propiedad útil
+      const err = error as any;
+      errorMessage = err.message || err.error || err.statusText || JSON.stringify(error);
+    }
+
+    throw new ApiError(errorMessage);
   }
 }
 

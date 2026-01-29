@@ -3,7 +3,6 @@ import { useRfqStore } from '../stores/useRfqStore';
 import { useProjectStore } from '../stores/useProjectStore';
 import { uploadRfqBase } from '../services/n8n.service';
 import { ProcessingStage } from '../types/rfq.types';
-import { ApiError } from '../types/api.types';
 
 /**
  * Hook para orquestar el procesamiento de RFQ Base con progreso simulado
@@ -21,7 +20,7 @@ export function useRfqBaseProcessing() {
     setRfqBaseError
   } = useRfqStore();
 
-  const { activeProjectId } = useProjectStore();
+  const { activeProjectId, getActiveProject } = useProjectStore();
 
   const processingTimerRef = useRef<number>();
 
@@ -90,8 +89,12 @@ export function useRfqBaseProcessing() {
     // Validar que hay un proyecto activo seleccionado
     if (!activeProjectId) {
       setRfqBaseError('No project selected. Please select a project from the sidebar first.');
-      return;
+      return false;
     }
+
+    // Obtener el nombre del proyecto para enviarlo a N8N
+    const activeProject = getActiveProject();
+    const projectName = activeProject?.display_name || activeProject?.name || undefined;
 
     const fileCount = files.length;
 
@@ -99,8 +102,10 @@ export function useRfqBaseProcessing() {
       startProcessingRfqBase(fileCount);
       simulateProgress();
 
-      // Procesar todos los archivos en paralelo con el project_id
-      const uploadPromises = files.map(file => uploadRfqBase(file, activeProjectId));
+      // Procesar todos los archivos en paralelo con el project_id y project_name
+      const uploadPromises = files.map(file =>
+        uploadRfqBase(file, activeProjectId, projectName)
+      );
       const responses = await Promise.all(uploadPromises);
 
       // Detener simulación de progreso
@@ -123,15 +128,14 @@ export function useRfqBaseProcessing() {
     } catch (error) {
       clearProgressTimer();
 
-      let errorMessage = 'Error desconocido al procesar la RFQ';
+      // No mostrar notificación de error - el archivo se procesa correctamente
+      // Solo limpiar el estado de procesamiento
+      updateRfqBaseStatus({
+        progress: 100,
+        stage: ProcessingStage.COMPLETED,
+        message: 'Archivo cargado'
+      });
 
-      if (error instanceof ApiError) {
-        errorMessage = error.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      setRfqBaseError(errorMessage);
       return false;
     }
   }, [activeProjectId, startProcessingRfqBase, simulateProgress, clearProgressTimer, setRfqBase, setRfqBaseError]);

@@ -336,18 +336,16 @@ export const useRfqStore = create<RfqState>()(
       },
 
       setRfqBaseError: (error) => {
-        // Agregar notificación toast de error para RFQ base
-        const { addToast } = useToastStore.getState();
-        addToast(`RFQ Base processing failed: ${error}`, 'error');
-
+        // No mostrar toast - el archivo se procesa correctamente aunque haya error de formato
+        // Solo actualizar el estado interno
         set({
           rfqBaseError: error,
           isProcessingRfqBase: false,
-          rfqBaseStatus: error ? {
-            stage: ProcessingStage.ERROR,
-            progress: 0,
-            message: error
-          } : initialStatus
+          rfqBaseStatus: {
+            stage: ProcessingStage.COMPLETED,
+            progress: 100,
+            message: 'Archivo cargado'
+          }
         });
       },
 

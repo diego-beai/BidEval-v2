@@ -8,18 +8,9 @@ set -e
 
 echo "Starting BidEval Frontend..."
 
-# Replace environment variables in nginx config
-if [ -n "$VITE_N8N_WEBHOOK_URL" ]; then
-    echo "Configuring N8N webhook proxy: $VITE_N8N_WEBHOOK_URL"
-    # Export N8N_WEBHOOK_URL for envsubst (nginx.conf uses this variable name)
-    export N8N_WEBHOOK_URL="$VITE_N8N_WEBHOOK_URL"
-    envsubst '${N8N_WEBHOOK_URL}' < /etc/nginx/nginx.conf > /etc/nginx/nginx.conf.tmp
-    mv /etc/nginx/nginx.conf.tmp /etc/nginx/nginx.conf
-else
-    echo "Warning: N8N_WEBHOOK_URL not set, removing proxy configuration"
-    # Remove proxy block if no N8N URL provided
-    sed -i '/location \/webhook\//,/}/d' /etc/nginx/nginx.conf
-fi
+# Nginx proxy configuration is now hardcoded in nginx.conf
+# No need to modify it at runtime
+echo "Using hardcoded nginx proxy configuration"
 
 # Inject runtime environment variables into the built JS files
 # This allows changing env vars without rebuilding the image

@@ -77,6 +77,18 @@ export default defineConfig({
         secure: false,
         rewrite: () => '',
       },
+      '/api/n8n/qa-process-email-response': {
+        target: 'https://n8n.beaienergy.com/webhook/qa-process-email-response',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
+      '/api/n8n/scoring': {
+        target: 'https://n8n.beaienergy.com/webhook/scoring-evaluation',
+        changeOrigin: true,
+        secure: false,
+        rewrite: () => '',
+      },
     }
   },
   build: {

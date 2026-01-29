@@ -818,7 +818,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "ofertas-proveedores",
+        "path": "ofertas",
         "responseMode": "responseNode",
         "options": {}
       },

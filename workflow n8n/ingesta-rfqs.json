@@ -10,26 +10,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1120,
-        -320
+        -1104,
+        -304
       ],
-      "id": "7a384c1d-908c-4089-8d37-7ab3a13593b5",
+      "id": "fd799bf2-f618-46f3-bd2c-fe3d4610e07e",
       "name": "Sticky Note"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "86850b01-70b4-4c99-a63a-6ccad35c0be2",
+        "path": "ingesta-rfq",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1008,
-        -112
+        -992,
+        -96
       ],
-      "id": "7c1551e2-e159-4827-bb00-c44fc15baa5e",
+      "id": "1e20f158-188b-4ed1-9e6f-0661da9bc2fc",
       "name": "Webhook RFQ",
       "webhookId": "86850b01-70b4-4c99-a63a-6ccad35c0be2"
     },
@@ -40,21 +40,21 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        112,
-        -112
+        128,
+        -96
       ],
-      "id": "3e0d24b1-1b1a-4a8b-b77e-c2734554147d",
+      "id": "e46eacc0-2412-44a8-87ac-5bb431929654",
       "name": "Preparar Texto1"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### DOCUMENTO RFQ\n\nNombre del Archivo: {{ $json.file_title }}\n\n### CONTENIDO (FRAGMENTO):\n{{ $json.pages ? $json.pages.slice(0, 1).map(p => p.text).join('\\n\\n') : ($json.text ? $json.text.substring(0, 2000) : 'SIN TEXTO') }}",
+        "text": "=### DOCUMENTO RFQ\n\nNombre del Archivo: {{ $json.file_title }}\nNombre Proyect: {{ $('Webhook RFQ').item.json.body.project_name }}\n### CONTENIDO (FRAGMENTO):\n{{ $json.pages ? $json.pages.slice(0, 1).map(p => p.text).join('\\n\\n') : ($json.text ? $json.text.substring(0, 2000) : 'SIN TEXTO') }}",
         "hasOutputParser": true,
         "messages": {
           "messageValues": [
             {
-              "message": "=## TAREA: CLASIFICAR TIPOS DE EVALUACIÓN EN DOCUMENTO RFQ Y NOMBRE DEL PROYECTO\n\nEres un auditor experto en documentación de ingeniería EPC del sector energético.\nAnaliza el documento RFQ y determina qué tipos de evaluación contiene y el nombre del proyecto.\n\n### IMPORTANTE\n\nUn documento puede contener 1, 2, 3 o 4 tipos de evaluación.\n**No asumas que están todos.**\nDetecta **SOLO** los que realmente están presentes.\n\n### REGLA DE TÍTULO (CRÍTICA)\n**Si el nombre del archivo o el título del documento es \"RFQ\" o \"Request for quotation\", clasifica automáticamente como \"Technical Evaluation\" Y \"Economical Evaluation\"**, ya que por definición una licitación completa implica evaluar ambos alcances.\n\n### TIPOS POSIBLES\n\n1. **Technical Evaluation**\n\n   **Evidencia requerida:**\n   - Secciones de **Scope of Work**, **Scope of Facilities**, **Technical Requirements**\n   - Requisitos técnicos generales (metodología, normativas, estándares)\n   - Descripción de alcance por fases (PRE-FEED, FEED, EPC, Conceptual, Basic Engineering, Detailed Engineering)\n   - Especificaciones de ingeniería, criterios de diseño\n\n2. **Economical Evaluation**\n\n   **Evidencia requerida:**\n   - Tablas de **precios** o **tarifas**\n   - **Hours per discipline**, **EUR/hora**, **USD/hour**, tarifas horarias\n   - Formato de **cotización económica**, **pricing schedule**\n   - **Desglose de costos por fase** o por disciplina\n   - Secciones **Commercial**, **Pricing**, **Budget**, **Cost Breakdown**\n\n3. **Pre-FEED Deliverables** (o equivalentes: Conceptual Design Deliverables, Feasibility Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase preliminar/conceptual\n   - Organizada por **disciplinas** (Process, Mechanical, Electrical, Civil, I&C, etc.)\n   - Documentos conceptuales: **Basis of Design**, **PFDs**, **P&IDs preliminares**, **Block diagrams**\n   - Estudios: **HAZID**, **Risk Analysis**, **Site Assessment**\n   - **CAPEX Class 3–5 (AACEI)**, estimaciones preliminares (+/- 30%)\n\n4. **FEED Deliverables** (o equivalentes: Basic Engineering Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase FEED/Basic Engineering\n   - Documentos más detallados que en Pre-FEED\n   - **Especificaciones de compra**, **datasheets**, **equipment lists**\n   - **MTO** (Material Take-Off), **cable schedules**, **instrument lists**\n   - **CAPEX Class 2–3 (AACEI)**, estimaciones más precisas (+/- 15%)\n   - **HAZOP**, **SIL studies**, **3D Model review**\n\n### NOMENCLATURA ALTERNATIVA\n\nEl documento puede usar nombres diferentes para las mismas fases. Aquí tienes equivalencias:\n\n| Nombre en RFQ | Clasificar como |\n|---------------|-----------------|\n| Pre-FEED, Conceptual Design, Feasibility Study, Phase 1 | Pre-FEED Deliverables |\n| FEED, Basic Engineering, Basic Design, Phase 2 | FEED Deliverables |\n| Technical Proposal, Technical Offer, Scope of Work | Technical Evaluation |\n| Commercial Proposal, Pricing, Cost Estimate, Quotation | Economical Evaluation |\n\n### CÓMO DIFERENCIAR\n\n| Si ves... | Es probablemente... |\n| --- | --- |\n| **Scope of Work** general, **metodología**, requisitos técnicos | **Technical Evaluation** |\n| Tablas de precios, horas, **EUR/h**, tarifas | **Economical Evaluation** |\n| Lista de docs por disciplina + fase preliminar/conceptual | **Pre-FEED Deliverables** |\n| Lista de docs por disciplina + fase FEED/Basic Engineering | **FEED Deliverables** |\n\n### TAREA OBLIGATORIA: IDENTIFICAR NOMBRE DEL PROYECTO\n\nEsta tarea es **obligatoria** y **NO** puede omitirse.\n**Deberás devolver SIEMPRE** un valor para `nombre_proyecto`.\n\n### ORDEN DE PRIORIDAD (estricto)\n\n1. **Nombre explícito del proyecto**\n   - Busca en la **portada** o el **título principal**.\n   - Encabezados repetidos que contengan el nombre del proyecto.\n   - Frases como **Project**, **Project Name**, **Project Title**, **RFQ for...**\n\n2. **Nombre implícito pero oficial**\n   Si no encuentras un título literal, genera el nombre combinando los siguientes elementos:\n   - Tipo de instalación energética (**Hydrogen Plant**, **PV Plant**, **Solar Plant**, **Wind Farm**, **Battery Storage**, **Power Plant**, **Electrolyzer**, **Substation**, etc.)\n   - Ubicación (ciudad, región o país)\n   - Cliente o **site** si está claramente indicado\n   - Capacidad si se menciona (ej: 100 MW, 50 MWp, 20 MW electrolyzer)\n   - Ejemplo: **100 MW Solar PV Plant – Andalucía, Spain**\n\n3. **Fallback obligatorio**\n   Si el documento no declara claramente un nombre:\n   - **NO dejes el campo vacío**.\n   - **NO uses valores genéricos**.\n   - Genera un nombre técnico-descriptivo utilizando:\n     - **Formato obligatorio**: `<Tipo de Proyecto Energético> – <Ubicación o Cliente> (RFQ)`\n   - Ejemplo: **Green Hydrogen Production Facility – Northern Spain (RFQ)**\n\n### REGLAS DURAS\n\n- **No usar**: Unknown, N/A, Not specified\n- **No inventar nombres comerciales**\n- El nombre debe ser válido para un entorno EPC / PMO del sector energético\n- Prioriza claridad, trazabilidad y profesionalidad\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n**ATENCIÓN: REGLAS DE ESTRUCTURA**\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`. El nivel raíz debe tener directamente las claves `tipos_detectados` y `nombre_proyecto`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n\n**FORMATO DE SALIDA CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Pre-FEED Deliverables\"],\n  \"nombre_proyecto\": \"Hydrogen Production Plant – La Zaida, Spain\",\n  \"razonamiento\": \"El documento incluye un Scope of Work técnico y una lista de documentos para la fase Pre-FEED...\"\n}"
+              "message": "=## TAREA: CLASIFICAR TIPOS DE EVALUACIÓN EN DOCUMENTO RFQ Y NOMBRE DEL PROYECTO\n\nEres un auditor experto en documentación de ingeniería EPC del sector energético.\nAnaliza el documento RFQ y determina qué tipos de evaluación contiene y el nombre del proyecto.\n\n### IMPORTANTE\n\nUn documento puede contener 1, 2, 3 o 4 tipos de evaluación.\n**No asumas que están todos.**\nDetecta **SOLO** los que realmente están presentes.\n\n### REGLA DE TÍTULO (CRÍTICA)\n**Si el nombre del archivo o el título del documento es \"RFQ\" o \"Request for quotation\", clasifica automáticamente como \"Technical Evaluation\" Y \"Economical Evaluation\"**, ya que por definición una licitación completa implica evaluar ambos alcances.\n\n### TIPOS POSIBLES\n\n1. **Technical Evaluation**\n\n   **Evidencia requerida:**\n   - Secciones de **Scope of Work**, **Scope of Facilities**, **Technical Requirements**\n   - Requisitos técnicos generales (metodología, normativas, estándares)\n   - Descripción de alcance por fases (PRE-FEED, FEED, EPC, Conceptual, Basic Engineering, Detailed Engineering)\n   - Especificaciones de ingeniería, criterios de diseño\n\n2. **Economical Evaluation**\n\n   **Evidencia requerida:**\n   - Tablas de **precios** o **tarifas**\n   - **Hours per discipline**, **EUR/hora**, **USD/hour**, tarifas horarias\n   - Formato de **cotización económica**, **pricing schedule**\n   - **Desglose de costos por fase** o por disciplina\n   - Secciones **Commercial**, **Pricing**, **Budget**, **Cost Breakdown**\n\n3. **Pre-FEED Deliverables** (o equivalentes: Conceptual Design Deliverables, Feasibility Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase preliminar/conceptual\n   - Organizada por **disciplinas** (Process, Mechanical, Electrical, Civil, I&C, etc.)\n   - Documentos conceptuales: **Basis of Design**, **PFDs**, **P&IDs preliminares**, **Block diagrams**\n   - Estudios: **HAZID**, **Risk Analysis**, **Site Assessment**\n   - **CAPEX Class 3–5 (AACEI)**, estimaciones preliminares (+/- 30%)\n\n4. **FEED Deliverables** (o equivalentes: Basic Engineering Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase FEED/Basic Engineering\n   - Documentos más detallados que en Pre-FEED\n   - **Especificaciones de compra**, **datasheets**, **equipment lists**\n   - **MTO** (Material Take-Off), **cable schedules**, **instrument lists**\n   - **CAPEX Class 2–3 (AACEI)**, estimaciones más precisas (+/- 15%)\n   - **HAZOP**, **SIL studies**, **3D Model review**\n\n### NOMENCLATURA ALTERNATIVA\n\nEl documento puede usar nombres diferentes para las mismas fases. Aquí tienes equivalencias:\n\n| Nombre en RFQ | Clasificar como |\n|---------------|-----------------|\n| Pre-FEED, Conceptual Design, Feasibility Study, Phase 1 | Pre-FEED Deliverables |\n| FEED, Basic Engineering, Basic Design, Phase 2 | FEED Deliverables |\n| Technical Proposal, Technical Offer, Scope of Work | Technical Evaluation |\n| Commercial Proposal, Pricing, Cost Estimate, Quotation | Economical Evaluation |\n\n### CÓMO DIFERENCIAR\n\n| Si ves... | Es probablemente... |\n| --- | --- |\n| **Scope of Work** general, **metodología**, requisitos técnicos | **Technical Evaluation** |\n| Tablas de precios, horas, **EUR/h**, tarifas | **Economical Evaluation** |\n| Lista de docs por disciplina + fase preliminar/conceptual | **Pre-FEED Deliverables** |\n| Lista de docs por disciplina + fase FEED/Basic Engineering | **FEED Deliverables** |\n\n### TAREA OBLIGATORIA: IDENTIFICAR NOMBRE DEL PROYECTO\n\nEsta tarea es **obligatoria** y **NO** puede omitirse.\n**Deberás devolver SIEMPRE** un valor para `nombre_proyecto`.\n\n### ORDEN DE PRIORIDAD (estricto)\n\n1. **Nombre explícito del proyecto**\n   - Busca en la **portada** o el **título principal**.\n   - Encabezados repetidos que contengan el nombre del proyecto.\n   - Frases como **Project**, **Project Name**, **Project Title**, **RFQ for...**\n\n2. **Nombre implícito pero oficial**\n   Si no encuentras un título literal, genera el nombre combinando los siguientes elementos:\n   - Tipo de instalación energética (**Hydrogen Plant**, **PV Plant**, **Solar Plant**, **Wind Farm**, **Battery Storage**, **Power Plant**, **Electrolyzer**, **Substation**, etc.)\n   - Ubicación (ciudad, región o país)\n   - Cliente o **site** si está claramente indicado\n   - Capacidad si se menciona (ej: 100 MW, 50 MWp, 20 MW electrolyzer)\n   - Ejemplo: **100 MW Solar PV Plant – Andalucía, Spain**\n\n3. **Fallback obligatorio**\n   Si el documento no declara claramente un nombre:\n   - **NO dejes el campo vacío**.\n   - **NO uses valores genéricos**.\n   - Genera un nombre técnico-descriptivo utilizando:\n     - **Formato obligatorio**: `<Tipo de Proyecto Energético> – <Ubicación o Cliente> (RFQ)`\n   - Ejemplo: **Green Hydrogen Production Facility – Northern Spain (RFQ)**\n\n### REGLAS DURAS\n\n- **No usar**: Unknown, N/A, Not specified\n- **No inventar nombres comerciales**\n- El nombre debe ser válido para un entorno EPC / PMO del sector energético\n- Prioriza claridad, trazabilidad y profesionalidad\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n**ATENCIÓN: REGLAS DE ESTRUCTURA**\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`. El nivel raíz debe tener directamente las claves `tipos_detectados` y `nombre_proyecto`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n\n**FORMATO DE SALIDA CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Pre-FEED Deliverables\"],\n  \"razonamiento\": \"El documento incluye un Scope of Work técnico y una lista de documentos para la fase Pre-FEED...\"\n}"
             }
           ]
         },
@@ -63,10 +63,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -192,
-        128
+        -176,
+        144
       ],
-      "id": "d3d1a6f3-1f68-43ca-9e1c-20845d319f85",
+      "id": "7559e381-bb36-451b-84ed-d0909e155d33",
       "name": "Clasificador de Tipos1"
     },
     {
@@ -79,10 +79,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -240,
-        352
+        -224,
+        368
       ],
-      "id": "7b8b9575-b56b-4730-b699-b993011e9a78",
+      "id": "e55601a3-2366-45cc-86c0-e0a44e145f66",
       "name": "Ollama Clasificador1",
       "credentials": {
         "ollamaApi": {
@@ -94,28 +94,28 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"]\n      }\n    },\n    \"nombre_proyecto\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre del proyecto extraído del documento RFQ\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"tipos_detectados\", \"nombre_proyecto\"]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"]\n      }\n    },\n\"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"tipos_detectados\", \"nombre_proyecto\"]\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        0,
-        352
+        16,
+        368
       ],
-      "id": "c512bd8f-2cd6-4cbf-9ac8-bfcd160bd5c0",
+      "id": "9b342015-9d6f-4609-8673-43aa66a6aad0",
       "name": "Output Parser1"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO)\n// =============================================\n\nconst inputItem = $input.first();\nconst inputData = inputItem.json;\n\n// 1. Recuperar metadatos de nodos anteriores (Prioridad)\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    // Intentamos recuperar del nodo de preparación de texto\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. Procesar la entrada del Output Parser (IA)\nlet output = {\n    tipos_detectados: [],\n    nombre_proyecto: \"\"\n};\n\n// LÓGICA DE DETECCIÓN:\n// A veces el Parser devuelve un objeto directo, a veces una cadena JSON.\nif (inputData && Array.isArray(inputData.tipos_detectados)) {\n    // CASO A: Ya es un objeto válido (el Output Parser funcionó bien)\n    output = inputData;\n} else {\n    // CASO B: Es un string o un objeto malformado, intentamos parsear manualmente\n    let rawText = \"\";\n    \n    if (typeof inputData === 'string') rawText = inputData;\n    else if (inputData.output) rawText = typeof inputData.output === 'string' ? inputData.output : JSON.stringify(inputData.output);\n    else if (inputData.text) rawText = inputData.text;\n    else rawText = JSON.stringify(inputData);\n\n    try {\n        // Limpiar bloques de código Markdown ```json ... ```\n        const clean = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();\n        \n        // Intentar encontrar el JSON entre llaves { }\n        const start = clean.indexOf('{');\n        const end = clean.lastIndexOf('}');\n        \n        if (start !== -1 && end !== -1) {\n            output = JSON.parse(clean.substring(start, end + 1));\n        } else {\n            // Intento final parseo directo\n            output = JSON.parse(clean);\n        }\n    } catch (e) {\n        console.log(\"⚠️ Error parseando JSON de la IA. Usando Fallback.\");\n        // No sobreescribimos output con datos falsos, mantenemos estructura vacía\n        output.tipos_detectados = [];\n    }\n}\n\n// 3. Normalización de Datos (Reglas de Negocio)\n\n// Nombre del Proyecto: Prioridad IA > Prioridad Metadata > Fallback Genérico\nlet finalProjectName = output.nombre_proyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\" || finalProjectName.includes(\"La Zaida\")) {\n    // Fallback inteligente basado en el nombre del archivo\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\n// Lista de Tipos\nlet tipos = output.tipos_detectados || [];\nif (!Array.isArray(tipos)) tipos = [];\n\n// REGLA CRÍTICA DE RFQ:\n// Si la lista está vacía O si el título dice RFQ, aseguramos los básicos.\nconst titleLower = (fileTitle || \"\").toLowerCase();\nconst isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n\nif (tipos.length === 0) {\n    if (isRFQ) {\n        tipos.push(\"Technical Evaluation\", \"Economical Evaluation\");\n        console.log(\"ℹ️ Inferencia: Archivo RFQ detectado, añadiendo tipos Technical y Economical.\");\n    } else {\n        // Si no es RFQ explícito y no detectó nada, por defecto Technical\n        tipos.push(\"Technical Evaluation\");\n    }\n} else if (isRFQ) {\n    // Si detectó cosas pero es un RFQ, nos aseguramos que no falten los principales\n    if (!tipos.includes(\"Technical Evaluation\")) tipos.push(\"Technical Evaluation\");\n    if (!tipos.includes(\"Economical Evaluation\")) tipos.push(\"Economical Evaluation\");\n}\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\n// 4. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText, // Pasamos el texto completo para el siguiente paso\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
+        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO)\n// =============================================\n\n// 1. Recuperar metadatos de nodos anteriores\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. Obtener los tipos DIRECTAMENTE del Clasificador (no del input actual)\nlet tipos = [];\nlet nombreProyecto = \"\";\n\ntry {\n    const clasificadorData = $('Clasificador de Tipos1').first().json;\n    \n    // El clasificador puede devolver el output de diferentes formas\n    let output = clasificadorData.output || clasificadorData;\n    \n    // Intentar parsear si es string\n    if (typeof output === 'string') {\n        try {\n            const clean = output.replace(/```json/gi, '').replace(/```/g, '').trim();\n            const start = clean.indexOf('{');\n            const end = clean.lastIndexOf('}');\n            if (start !== -1 && end !== -1) {\n                output = JSON.parse(clean.substring(start, end + 1));\n            } else {\n                output = JSON.parse(clean);\n            }\n        } catch(e) {\n            console.log(\"⚠️ Error parseando output del clasificador\");\n        }\n    }\n    \n    // Extraer tipos y nombre del proyecto\n    tipos = output.tipos_detectados || [];\n    nombreProyecto = output.nombre_proyecto || \"\";\n    \n    console.log(`✅ Tipos detectados por IA: ${JSON.stringify(tipos)}`);\n} catch(e) {\n    console.log(\"⚠️ Error recuperando datos del Clasificador de Tipos1\");\n}\n\n// 3. Validación y fallback SOLO si NO hay tipos\nif (!Array.isArray(tipos)) tipos = [];\n\nif (tipos.length === 0) {\n    // Fallback: si el clasificador falló completamente\n    const titleLower = (fileTitle || \"\").toLowerCase();\n    const isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n    \n    if (isRFQ) {\n        tipos = [\"Technical Evaluation\", \"Economical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando tipos por defecto para RFQ\");\n    } else {\n        tipos = [\"Technical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando Technical Evaluation por defecto\");\n    }\n}\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\n// 4. Nombre del Proyecto\nlet finalProjectName = nombreProyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\" || finalProjectName.includes(\"La Zaida\")) {\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\nconsole.log(`📋 Expandiendo ${tipos.length} tipos: ${tipos.join(', ')}`);\n\n// 5. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText,\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        768,
-        128
+        784,
+        144
       ],
-      "id": "c7f63496-80de-4f64-bba0-ee43d0b052d4",
+      "id": "05163ff9-5522-480b-a533-1432b027ce68",
       "name": "Expandir por Tipo1"
     },
     {
@@ -125,10 +125,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        976,
-        128
+        992,
+        144
       ],
-      "id": "bdfe5147-e388-4a56-a999-3405bcc1864d",
+      "id": "1c614f6f-c31b-4454-87bb-aaaa3eab21c3",
       "name": "Loop por Tipo1"
     },
     {
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2544,
-        64
+        2560,
+        80
       ],
-      "id": "84485ae1-0e6a-4893-8aee-e288644c5648",
+      "id": "239578f0-3a2a-4be8-9411-02fb2d039373",
       "name": "Parsear Items1"
     },
     {
@@ -151,10 +151,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3072,
-        256
+        3088,
+        272
       ],
-      "id": "5b8c977c-06fa-4ff9-9930-d08505469619",
+      "id": "09942533-1b31-43eb-b653-76c02a638d8f",
       "name": "Agregar Resultados1"
     },
     {
@@ -164,10 +164,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2272,
-        -256
+        2288,
+        -240
       ],
-      "id": "ad21d736-1fb8-424a-a5f7-72ea2f70c286",
+      "id": "70a10156-b662-4528-8e1c-2439378c41fc",
       "name": "Resumen Final1"
     },
     {
@@ -179,10 +179,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2560,
-        -256
+        2576,
+        -240
       ],
-      "id": "1b27a96c-963a-403f-9631-4b93ea83e96f",
+      "id": "367348f7-7583-4c13-9db8-c16ab5cd6898",
       "name": "Respond Success1"
     },
     {
@@ -192,10 +192,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -336,
-        -112
+        -320,
+        -96
       ],
-      "id": "e4686dc8-1aac-4d38-914e-c59a14c8bbef",
+      "id": "08b965b9-7bb6-47d6-b37b-d5cf0eb4b99c",
       "name": "Base64 a Binary3"
     },
     {
@@ -206,10 +206,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -112,
-        -112
+        -96,
+        -96
       ],
-      "id": "559e3bd1-e628-4854-adf8-dfb008e1bf3e",
+      "id": "3eeb97ef-c3da-43d3-bc0d-fec5ee015fe9",
       "name": "Extract from File3"
     },
     {
@@ -219,10 +219,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -784,
-        -112
+        -768,
+        -96
       ],
-      "id": "30c67e81-a606-44cc-b7ec-d4ab5a2a42fe",
+      "id": "247e7f0d-83c8-4c0a-b1ab-23ebb11bcfea",
       "name": "Generate IDs1"
     },
     {
@@ -280,10 +280,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1872,
-        256
+        1888,
+        272
       ],
-      "id": "b311eae5-70d6-4328-a7d8-fe58c0670657",
+      "id": "0027e70f-d5e7-4a92-b5ba-bd94ab6d1094",
       "name": "Switch1"
     },
     {
@@ -298,10 +298,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2128,
-        704
+        2144,
+        720
       ],
-      "id": "fefefe22-b6ba-4ead-897b-5eab82fc588e",
+      "id": "364078e4-795c-4421-8490-327445204c7e",
       "name": "Ollama Extractor2",
       "credentials": {
         "ollamaApi": {
@@ -326,10 +326,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2192,
-        480
+        2208,
+        496
       ],
-      "id": "78613c74-2e07-40d9-9f6a-6dc45954f190",
+      "id": "73180c46-8f86-4398-9296-3f1bd8e3356f",
       "name": "LLM Extractor - Deliverables"
     },
     {
@@ -339,10 +339,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2544,
-        480
+        2560,
+        496
       ],
-      "id": "b9ab5f56-2fa2-4523-8a46-ebab6cdaff3c",
+      "id": "4d086a76-7263-48c7-8769-8a51deb28666",
       "name": "Parsear deliverables"
     },
     {
@@ -357,10 +357,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2128,
-        256
+        2144,
+        272
       ],
-      "id": "4be4c35a-6ebb-4247-8d87-2cbc0a41f8a4",
+      "id": "4cefb136-ad7b-4bfd-821c-02a3460a213e",
       "name": "Ollama Extractor1",
       "credentials": {
         "ollamaApi": {
@@ -377,10 +377,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2432,
-        688
+        2448,
+        704
       ],
-      "id": "499c2880-efc9-4f30-8adc-405f516a4202",
+      "id": "3fd27669-16f0-4c67-a08a-25991b3db94b",
       "name": "Structured Output Parser1"
     },
     {
@@ -391,10 +391,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2368,
-        256
+        2384,
+        272
       ],
-      "id": "845135aa-9e4a-488f-ace5-c0c29b2658eb",
+      "id": "bf1fbfb4-0c93-482a-aee5-936f4447a6ee",
       "name": "Structured Output Parser2"
     },
     {
@@ -404,10 +404,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1264,
-        240
+        1280,
+        256
       ],
-      "id": "e76b8502-9776-4c19-9a0e-6c25d52f4fb1",
+      "id": "0e566018-2fe0-4f48-a281-421c3af4c3eb",
       "name": "Dividir en Trozos1"
     },
     {
@@ -419,10 +419,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1616,
-        240
+        1632,
+        256
       ],
-      "id": "c848ffdd-6ea1-47fa-b683-4beb8d982184",
+      "id": "ff1dbc0b-fa5f-4431-80cc-2ed422fee6cf",
       "name": "Loop por Trozo1"
     },
     {
@@ -432,10 +432,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
-        240
+        1456,
+        256
       ],
-      "id": "cf8c2eb5-f03c-4a16-b69d-7b5b05dbc745",
+      "id": "24dee0e5-951c-4182-8bee-494011553f9f",
       "name": "Reset Items1"
     },
     {
@@ -445,10 +445,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        336,
-        352
+        352,
+        368
       ],
-      "id": "ee32b194-ccab-4b7e-b295-cee4d2803352",
+      "id": "9e63cb1f-6386-4e96-9368-2d0b1964080e",
       "name": "Embeddings Ollama1",
       "credentials": {
         "ollamaApi": {
@@ -470,13 +470,13 @@
           "queryName": "match_rfq"
         }
       },
-      "id": "9ad5c38b-6f29-46c8-8626-972605c7a129",
+      "id": "2b7261b1-89d3-4f54-a52f-a6d21bc4075d",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        416,
-        128
+        432,
+        144
       ],
       "credentials": {
         "supabaseApi": {
@@ -494,10 +494,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        592,
-        560
+        608,
+        576
       ],
-      "id": "10771f91-5c5e-4a82-bc1f-8888b035bd54",
+      "id": "f0ff3957-c0b1-48df-b751-6d1be8c9147d",
       "name": "Recursive Character Text Splitter1"
     },
     {
@@ -527,13 +527,13 @@
           }
         }
       },
-      "id": "b8237a31-c504-4d5d-a76d-258f8e723160",
+      "id": "2a5def6d-d0f9-47e8-9c9f-879e1cd886a6",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        512,
-        352
+        528,
+        368
       ]
     },
     {
@@ -543,7 +543,7 @@
           "fieldValues": [
             {
               "fieldId": "project_name",
-              "fieldValue": "={{ $json.project_name }}"
+              "fieldValue": "={{ $('Webhook RFQ').first().json.body.project_name }}"
             },
             {
               "fieldId": "project_id",
@@ -567,10 +567,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        2864,
-        256
+        2880,
+        272
       ],
-      "id": "689cc27f-a40f-4d9c-96c1-7006a2749568",
+      "id": "141c004e-a0d8-4a83-9b58-9b1ee9ca8f06",
       "name": "Create a row",
       "credentials": {
         "supabaseApi": {
@@ -586,13 +586,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "26380756-5ebc-4c51-829d-4c8d3542035c",
+      "id": "61ab864b-c90a-490a-981f-7e2424667f95",
       "name": "Delete Old Doc Rows1",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -560,
-        -112
+        -544,
+        -96
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -621,8 +621,7 @@
           "value": {
             "id": "={{ $('Generate IDs1').first().json.rfq_document_id }}",
             "title": "={{ $('Generate IDs1').first().json.file_title }}",
-            "project_name": "={{ $json.output.nombre_proyecto }}",
-            "project_id": "={{ $('Generate IDs1').first().json.project_id }}",
+            "project_name": "={{ $('Webhook RFQ').item.json.body.project_name }}",
             "document_type": "=RFQ",
             "evaluation_types": "={{ $json.output.tipos_detectados }}",
             "provider": "IGNIS"
@@ -708,10 +707,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        192,
-        128
+        208,
+        144
       ],
-      "id": "3c70778b-0316-4396-862d-fe1e03fefc1e",
+      "id": "241c1538-006a-43bd-8a9e-d912201209b6",
       "name": "Insert Document Metadata2",
       "executeOnce": true,
       "credentials": {
@@ -737,11 +736,70 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2176,
-        64
+        2192,
+        80
       ],
-      "id": "993bb757-9529-4c1e-9327-05074737d792",
+      "id": "ff5a2167-8df6-417e-8acd-1702309dcf11",
       "name": "LLM Extractor Tech-Econ"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2256,
+        256
+      ],
+      "id": "a68e819e-b97f-4d44-b426-3e59baf2aa59",
+      "name": "Mistral Cloud Chat Model7",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2272,
+        704
+      ],
+      "id": "49b9eaa4-d664-4ba7-b901-65cd86555cbe",
+      "name": "Mistral Cloud Chat Model8",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        496
+      ],
+      "id": "1442254f-cd8d-446a-92ff-545c92a85574",
+      "name": "Mistral Cloud Chat Model9",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
     }
   ],
   "connections": {
@@ -780,13 +838,7 @@
     },
     "Ollama Clasificador1": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Clasificador de Tipos1",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Output Parser1": {
@@ -915,13 +967,7 @@
     },
     "Ollama Extractor2": {
       "ai_languageModel": [
-        [
-          {
-            "node": "LLM Extractor - Deliverables",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "LLM Extractor - Deliverables": {
@@ -948,13 +994,7 @@
     },
     "Ollama Extractor1": {
       "ai_languageModel": [
-        [
-          {
-            "node": "LLM Extractor Tech-Econ",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Dividir en Trozos1": {
@@ -1084,11 +1124,43 @@
           }
         ]
       ]
+    },
+    "Mistral Cloud Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM Extractor Tech-Econ",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM Extractor - Deliverables",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model9": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Clasificador de Tipos1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "pinData": {},
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
   }
 }
