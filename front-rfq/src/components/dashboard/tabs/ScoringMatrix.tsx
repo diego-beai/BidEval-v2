@@ -42,11 +42,6 @@ const getCategoryName = (category: string, t: (key: string) => string): string =
         'economic': t('scoring.category.economic'),
         'execution': t('scoring.category.execution'),
         'hse_compliance': t('scoring.category.hse_compliance'),
-        // Legacy uppercase support
-        'TECHNICAL': t('scoring.category.technical'),
-        'ECONOMIC': t('scoring.category.economic'),
-        'EXECUTION': t('scoring.category.execution'),
-        'HSE_COMPLIANCE': t('scoring.category.hse_compliance')
     };
     return categoryMap[category] || category;
 };
@@ -57,11 +52,6 @@ const DEFAULT_CATEGORY_INFO: Record<string, { weight: number; color: string }> =
     'economic': { weight: 35, color: '#f59e0b' },
     'execution': { weight: 20, color: '#3b82f6' },
     'hse_compliance': { weight: 15, color: '#8b5cf6' },
-    // Legacy uppercase support
-    'TECHNICAL': { weight: 30, color: '#12b5b0' },
-    'ECONOMIC': { weight: 35, color: '#f59e0b' },
-    'EXECUTION': { weight: 20, color: '#3b82f6' },
-    'HSE_COMPLIANCE': { weight: 15, color: '#8b5cf6' },
 };
 
 export const ScoringMatrix: React.FC = () => {
@@ -110,7 +100,7 @@ export const ScoringMatrix: React.FC = () => {
         // Ensure dynamicCategories is an array
         const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
         if (hasConfiguration && categories.length > 0) {
-            return categories.reduce((acc, cat) => {
+            const result = categories.reduce((acc, cat) => {
                 if (cat && cat.name) {
                     const catName = typeof cat.name === 'string' ? cat.name : String(cat.name);
                     const catColor = typeof cat.color === 'string' ? cat.color : '#12b5b0';
@@ -118,7 +108,10 @@ export const ScoringMatrix: React.FC = () => {
                 }
                 return acc;
             }, {} as Record<string, { weight: number; color: string }>);
+            console.log('[ScoringMatrix] CATEGORY_INFO from DB:', Object.keys(result));
+            return result;
         }
+        console.log('[ScoringMatrix] CATEGORY_INFO using defaults:', Object.keys(DEFAULT_CATEGORY_INFO));
         return DEFAULT_CATEGORY_INFO;
     }, [hasConfiguration, dynamicCategories]);
 
@@ -220,11 +213,6 @@ export const ScoringMatrix: React.FC = () => {
             'economic': (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0),
             'execution': (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0),
             'hse_compliance': (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0),
-            // Legacy uppercase support
-            'TECHNICAL': (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0),
-            'ECONOMIC': (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0),
-            'EXECUTION': (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0),
-            'HSE_COMPLIANCE': (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0),
         };
     }, [hasConfiguration, dynamicCategories, customWeights]);
 
@@ -296,25 +284,25 @@ export const ScoringMatrix: React.FC = () => {
                 (individualScores.scope_facilities * (customWeights.scope_facilities || 0)) +
                 (individualScores.scope_work * (customWeights.scope_work || 0)) +
                 (individualScores.deliverables_quality * (customWeights.deliverables_quality || 0))
-            ) / (customCategoryWeights['TECHNICAL'] || 1);
+            ) / (customCategoryWeights['technical'] || 1);
 
             const newEconomic = (
                 (individualScores.total_price * (customWeights.total_price || 0)) +
                 (individualScores.price_breakdown * (customWeights.price_breakdown || 0)) +
                 (individualScores.optionals_included * (customWeights.optionals_included || 0)) +
                 (individualScores.capex_opex_methodology * (customWeights.capex_opex_methodology || 0))
-            ) / (customCategoryWeights['ECONOMIC'] || 1);
+            ) / (customCategoryWeights['economic'] || 1);
 
             const newExecution = (
                 (individualScores.schedule * (customWeights.schedule || 0)) +
                 (individualScores.resources_allocation * (customWeights.resources_allocation || 0)) +
                 (individualScores.exceptions * (customWeights.exceptions || 0))
-            ) / (customCategoryWeights['EXECUTION'] || 1);
+            ) / (customCategoryWeights['execution'] || 1);
 
             const newHseCompliance = (
                 (individualScores.safety_studies * (customWeights.safety_studies || 0)) +
                 (individualScores.regulatory_compliance * (customWeights.regulatory_compliance || 0))
-            ) / (customCategoryWeights['HSE_COMPLIANCE'] || 1);
+            ) / (customCategoryWeights['hse_compliance'] || 1);
 
             return {
                 ...provider,
@@ -385,8 +373,8 @@ export const ScoringMatrix: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {/* Configure Criteria Button - Always show when there's scoring data */}
-                    {providers && providers.length > 0 && (
+                    {/* Configure Criteria Button - Show when there's scoring data OR configuration */}
+                    {(hasConfiguration || (providers && providers.length > 0)) && (
                         <button
                             onClick={() => hasConfiguration ? setShowConfigEditor(true) : setShowWizard(true)}
                             style={{
@@ -659,8 +647,8 @@ export const ScoringMatrix: React.FC = () => {
                 </div>
             )}
 
-            {/* Scoring Table */}
-            {!isCalculating && providers && providers.length > 0 && (
+            {/* Scoring Table - Show when there's configuration, even without scoring data */}
+            {!isCalculating && hasConfiguration && (
                 <div className="scoring-grid-container" style={{ overflowX: 'auto' }}>
                     <table className="scoring-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
                         <thead>
@@ -690,7 +678,7 @@ export const ScoringMatrix: React.FC = () => {
                                 }}>
                                     {t('scoring.weight')}
                                 </th>
-                                {providers.map((p, idx) => (
+                                {providers && providers.map((p, idx) => (
                                     <th key={p.provider_name} style={{
                                         padding: '16px',
                                         textAlign: 'center',
@@ -717,7 +705,7 @@ export const ScoringMatrix: React.FC = () => {
                                     <React.Fragment key={category}>
                                         {/* Category Header */}
                                         <tr style={{ background: `${info.color}10` }}>
-                                            <td colSpan={2 + providers.length} style={{
+                                            <td colSpan={2 + (providers?.length || 0)} style={{
                                                 padding: '12px 16px',
                                                 fontWeight: 700,
                                                 fontSize: '0.875rem',
@@ -840,7 +828,7 @@ export const ScoringMatrix: React.FC = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                {providers.map(p => {
+                                                {providers && providers.map(p => {
                                                     const score = getCriterionScore(p, criterion.id);
                                                     return (
                                                         <td key={p.provider_name} style={{
@@ -872,10 +860,10 @@ export const ScoringMatrix: React.FC = () => {
                                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>
                                                 <span style={{ fontWeight: 700, color: info.color }}>{categoryWeight}%</span>
                                             </td>
-                                            {providers.map(p => {
-                                                const categoryScore = category === 'TECHNICAL' ? p.scores?.technical :
-                                                    category === 'ECONOMIC' ? p.scores?.economic :
-                                                    category === 'EXECUTION' ? p.scores?.execution :
+                                            {providers && providers.map(p => {
+                                                const categoryScore = category === 'technical' ? p.scores?.technical :
+                                                    category === 'economic' ? p.scores?.economic :
+                                                    category === 'execution' ? p.scores?.execution :
                                                     p.scores?.hse_compliance || 0;
                                                 return (
                                                     <td key={p.provider_name} style={{
@@ -907,7 +895,7 @@ export const ScoringMatrix: React.FC = () => {
                                 }}>
                                     {t('scoring.overall')}:
                                 </td>
-                                {providers.map((p, idx) => (
+                                {providers && providers.map((p, idx) => (
                                     <td key={p.provider_name} style={{
                                         textAlign: 'center',
                                         padding: '20px 16px',

@@ -451,7 +451,7 @@ const translations: any = {
 
         // Scoring Matrix
         'scoring.title': 'Matriz de Puntuación de Proveedores',
-        'scoring.subtitle': 'Puntuaciones evaluadas por IA en 12 criterios',
+        'scoring.subtitle': 'Criterios de puntuación personalizados',
         'scoring.no_data': 'No hay datos de scoring disponibles',
         'scoring.no_data_hint': 'Haz clic en "Recalcular Scoring IA" para evaluar proveedores basándose en sus respuestas RFQ.',
         'scoring.loading': 'Calculando puntuaciones...',
@@ -1087,7 +1087,7 @@ const translations: any = {
 
         // Scoring Matrix
         'scoring.title': 'Provider Scoring Matrix',
-        'scoring.subtitle': 'AI-evaluated scores across 12 criteria',
+        'scoring.subtitle': 'Personalized scoring criteria',
         'scoring.no_data': 'No Scoring Data Available',
         'scoring.no_data_hint': 'Click "Recalculate AI Scoring" to evaluate providers based on their RFQ responses.',
         'scoring.loading': 'Calculating scores...',
