@@ -6,7 +6,7 @@ type Language = 'es' | 'en';
 interface LanguageState {
     language: Language;
     setLanguage: (lang: Language) => void;
-    t: (key: string) => string;
+    t: (key: string, params?: Record<string, string | undefined>) => string;
 }
 
 // @ts-ignore
@@ -586,6 +586,10 @@ const translations: any = {
         'project.already_exists': 'Ya existe un proyecto con este nombre',
         'project.created_success': 'Proyecto creado exitosamente',
         'project.error_creating': 'Error al crear el proyecto',
+        'project.updated_success': 'Proyecto actualizado exitosamente',
+        'project.error_updating': 'Error al actualizar el proyecto',
+        'project.deleted_success': 'Proyecto eliminado exitosamente',
+        'project.error_deleting': 'Error al eliminar el proyecto',
         'project.loading': 'Cargando...',
         'project.select': 'Seleccionar Proyecto',
         'project.docs': 'docs',
@@ -593,7 +597,13 @@ const translations: any = {
         'project.enter_name_placeholder': 'Ingresa el nombre del proyecto...',
         'project.create': 'Crear',
         'project.cancel': 'Cancelar',
+        'project.save': 'Guardar',
+        'project.edit': 'Editar',
+        'project.delete': 'Eliminar',
         'project.new': 'Nuevo Proyecto',
+        'project.confirm_delete': 'Confirmar Eliminación',
+        'project.confirm_delete_message': '¿Estás seguro de que deseas eliminar el proyecto "{name}"?',
+        'project.delete_warning': 'El proyecto no se eliminará de la base de datos, solo se ocultará y dejará de aparecer en los selectores.',
 
         // Scoring Setup Wizard
         'wizard.title': 'Configuración de Scoring',
@@ -1212,6 +1222,10 @@ const translations: any = {
         'project.already_exists': 'A project with this name already exists',
         'project.created_success': 'Project created successfully',
         'project.error_creating': 'Error creating project',
+        'project.updated_success': 'Project updated successfully',
+        'project.error_updating': 'Error updating project',
+        'project.deleted_success': 'Project deleted successfully',
+        'project.error_deleting': 'Error deleting project',
         'project.loading': 'Loading...',
         'project.select': 'Select Project',
         'project.docs': 'docs',
@@ -1219,7 +1233,13 @@ const translations: any = {
         'project.enter_name_placeholder': 'Enter project name...',
         'project.create': 'Create',
         'project.cancel': 'Cancel',
+        'project.save': 'Save',
+        'project.edit': 'Edit',
+        'project.delete': 'Delete',
         'project.new': 'New Project',
+        'project.confirm_delete': 'Confirm Deletion',
+        'project.confirm_delete_message': 'Are you sure you want to delete the project "{name}"?',
+        'project.delete_warning': 'The project won\'t be deleted from the database, it will just be hidden and will no longer appear in selectors.',
 
         // Scoring Setup Wizard
         'wizard.title': 'Scoring Configuration',
@@ -1284,17 +1304,26 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
         }
         set({ language: lang });
     },
-    t: (key) => {
+    t: (key, params?) => {
         const lang = get().language;
         // @ts-ignore
-        const text = translations[lang][key];
+        let text = translations[lang][key];
 
         // Fallback to English if translation missing in Spanish
         if (!text && lang !== 'en') {
             // @ts-ignore
-            return translations['en'][key] || key;
+            text = translations['en'][key] || key;
         }
 
-        return text || key;
+        text = text || key;
+
+        // Interpolate {placeholder} params
+        if (params) {
+            for (const [k, v] of Object.entries(params)) {
+                text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v ?? '');
+            }
+        }
+
+        return text;
     }
 }));

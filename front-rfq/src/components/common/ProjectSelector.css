@@ -372,6 +372,272 @@
   }
 }
 
+/* Project Actions (Edit & Delete Buttons) */
+.project-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.project-item:hover .project-actions {
+  opacity: 1;
+}
+
+.project-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.project-action-btn:hover {
+  background: var(--bg-hover, #f0f1f3);
+}
+
+.project-action-btn.edit {
+  color: var(--color-primary, #12b5b0);
+}
+
+.project-action-btn.edit:hover {
+  border-color: var(--color-primary, #12b5b0);
+  background: rgba(18, 181, 176, 0.1);
+}
+
+.project-action-btn.delete {
+  color: #ef4444;
+}
+
+.project-action-btn.delete:hover {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Edit Project Form */
+.project-item-wrapper {
+  position: relative;
+}
+
+.project-item-wrapper.editing {
+  background: var(--bg-surface-alt, #f8f9fa);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.edit-project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.edit-project-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 6px;
+  color: var(--text-primary, #1a1a2e);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.edit-project-input:focus {
+  border-color: var(--color-primary, #12b5b0);
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.15);
+}
+
+.edit-project-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-project-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.edit-project-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-project-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.edit-project-btn.confirm {
+  background: var(--color-primary, #12b5b0);
+  color: white;
+}
+
+.edit-project-btn.confirm:hover:not(:disabled) {
+  background: #0fa09b;
+}
+
+.edit-project-btn.cancel {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.edit-project-btn.cancel:hover:not(:disabled) {
+  background: var(--bg-hover, #f0f1f3);
+  color: var(--text-primary, #1a1a2e);
+}
+
+/* Delete Confirmation Modal */
+.project-delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.project-delete-modal {
+  background: var(--bg-surface, #ffffff);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: calc(100% - 32px);
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.project-delete-modal .modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.project-delete-modal .modal-header svg {
+  flex-shrink: 0;
+  color: #ef4444;
+}
+
+.project-delete-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.project-delete-modal .modal-message {
+  margin: 0 0 12px 0;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #1a1a2e);
+  line-height: 1.5;
+}
+
+.project-delete-modal .modal-warning {
+  margin: 0 0 20px 0;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 3px solid #ef4444;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+}
+
+.project-delete-modal .modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.project-delete-modal .modal-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.project-delete-modal .modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.project-delete-modal .modal-btn.cancel {
+  background: var(--bg-surface-alt, #f8f9fa);
+  color: var(--text-primary, #1a1a2e);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.project-delete-modal .modal-btn.cancel:hover:not(:disabled) {
+  background: var(--bg-hover, #f0f1f3);
+}
+
+.project-delete-modal .modal-btn.confirm {
+  background: #ef4444;
+  color: white;
+}
+
+.project-delete-modal .modal-btn.confirm:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.project-delete-modal .modal-btn .loading-indicator {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .project-selector-btn {
@@ -386,5 +652,13 @@
   .project-dropdown {
     min-width: 260px;
     max-width: calc(100vw - 32px);
+  }
+
+  .project-actions {
+    opacity: 1;
+  }
+
+  .project-delete-modal {
+    padding: 20px;
   }
 }

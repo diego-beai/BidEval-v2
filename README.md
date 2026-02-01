@@ -30,6 +30,9 @@ Sistema integral para el procesamiento automatizado de RFQs (Request for Quotati
 ### Frontend Dashboard
 - **Drag & Drop Upload**: Carga de PDFs con procesamiento paralelo (hasta 7 archivos)
 - **Multi-Proyecto**: Gestión de múltiples proyectos de evaluación
+  - ✏️ Editar nombre de proyectos inline
+  - 🗑️ Eliminar proyectos (soft delete - no se borran de BBDD)
+  - 🔄 Cambio de proyecto en tiempo real
 - **Tabla de Evaluación**: Comparativa de proveedores por requisito
 - **Sistema de Scoring**: Ranking ponderado de proveedores
 - **Q&A Audit**: Generación automática de preguntas técnicas
@@ -312,11 +315,28 @@ npm run dev
 
 ### Configuración de Base de Datos
 
-Ejecutar el script `bbdd.sql` en tu instancia Supabase para crear:
-- Tablas principales
-- Vistas de ranking
-- Funciones helper
-- Índices optimizados
+**1. Ejecutar el script principal:**
+```bash
+# Ejecutar en Supabase SQL Editor
+psql -f bbdd.sql
+```
+
+**2. Ejecutar el script de gestión de proyectos:**
+```bash
+# Ejecutar en Supabase SQL Editor
+psql -f database_project_management.sql
+```
+
+Esto creará:
+- ✅ Tablas principales con campo `is_active` para soft delete
+- ✅ Vistas optimizadas de proyectos con estadísticas
+- ✅ Funciones RPC para gestión de proyectos:
+  - `update_project_name(project_id, new_display_name)` - Editar nombre de proyecto
+  - `soft_delete_project(project_id)` - Desactivar proyecto (soft delete)
+  - `reactivate_project(project_id)` - Reactivar proyecto eliminado
+  - `get_or_create_project(display_name, description)` - Crear o obtener proyecto
+- ✅ Políticas RLS (Row Level Security) configuradas
+- ✅ Índices optimizados para búsquedas rápidas
 
 ---
 
@@ -330,6 +350,42 @@ VITE_SUPABASE_ANON_KEY=tu_clave_anonima
 # N8N Webhooks
 VITE_N8N_WEBHOOK_URL=https://n8n.tudominio.com/webhook/tabla
 ```
+
+---
+
+## Gestión de Proyectos
+
+### Crear Nuevo Proyecto
+1. Click en el selector de proyectos (esquina superior)
+2. Click en "Nuevo Proyecto"
+3. Ingresa el nombre del proyecto (mínimo 3 caracteres)
+4. Presiona Enter o click en ✓
+
+### Editar Nombre de Proyecto
+1. Abre el selector de proyectos
+2. Haz hover sobre el proyecto que deseas editar
+3. Click en el ícono de lápiz (✏️)
+4. Edita el nombre inline
+5. Presiona Enter o click en ✓ para guardar
+6. Presiona Escape o click en ✗ para cancelar
+
+### Eliminar Proyecto (Soft Delete)
+1. Abre el selector de proyectos
+2. Haz hover sobre el proyecto que deseas eliminar
+3. Click en el ícono de papelera (🗑️)
+4. Confirma la eliminación en el modal
+
+**Importante:** Los proyectos eliminados:
+- ✅ No se borran de la base de datos
+- ✅ Se marcan como `is_active = FALSE`
+- ✅ Desaparecen automáticamente de todos los selectores
+- ✅ Mantienen todos sus datos relacionados (documentos, requisitos, Q&A)
+- ✅ Pueden reactivarse desde la base de datos con `SELECT reactivate_project('project_id')`
+
+### Cambiar Proyecto Activo
+- Click en el selector de proyectos
+- Selecciona el proyecto deseado
+- Todo el dashboard se actualiza automáticamente con los datos del nuevo proyecto
 
 ---
 
