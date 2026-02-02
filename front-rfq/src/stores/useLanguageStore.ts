@@ -92,6 +92,7 @@ const translations: any = {
         'home.scoring.subtitle': 'Puntuaciones ponderadas del workflow',
         'home.scoring.top_performer': 'Mejor Rendimiento',
         'home.scoring.avg_score': 'Puntuación Promedio',
+        'home.scoring.top_score': 'Nota Top Performer',
         'home.scoring.compliance_rate': 'Tasa de Cumplimiento',
         'home.scoring.providers_evaluated': 'Proveedores Evaluados',
         'home.scoring.no_data': 'Sin datos de scoring. Ejecuta el Scoring IA para generar resultados.',
@@ -541,6 +542,7 @@ const translations: any = {
 
         // Data Table
         'table.title': 'Requisitos y Evaluaciones de Proveedores',
+        'table.select_all': 'Seleccionar todos',
         'table.filters': 'Filtros',
         'table.csv': 'CSV',
         'table.excel': 'Excel',
@@ -647,7 +649,7 @@ const translations: any = {
         'editor.btn.saving': 'Guardando...',
 
         // Scoring Delete Config
-        'scoring.delete_config': 'Eliminar Configuración',
+        'scoring.delete_config': 'Eliminar Criterios',
         'scoring.delete_config_confirm': '¿Estás seguro de eliminar la configuración de scoring actual?',
         'scoring.delete_config_warning': 'Se borrarán todas las categorías, criterios y pesos. Podrás crear una nueva configuración después.',
         'scoring.delete_config_btn': 'Eliminar',
@@ -755,6 +757,7 @@ const translations: any = {
         'home.scoring.subtitle': 'Weighted scores from workflow',
         'home.scoring.top_performer': 'Top Performer',
         'home.scoring.avg_score': 'Average Score',
+        'home.scoring.top_score': 'Top Performer Score',
         'home.scoring.compliance_rate': 'Compliance Rate',
         'home.scoring.providers_evaluated': 'Providers Evaluated',
         'home.scoring.no_data': 'No scoring data available. Run AI Scoring to generate results.',
@@ -1204,6 +1207,7 @@ const translations: any = {
 
         // Data Table
         'table.title': 'Requirements & Provider Evaluations',
+        'table.select_all': 'Select all',
         'table.filters': 'Filters',
         'table.csv': 'CSV',
         'table.excel': 'Excel',
@@ -1310,7 +1314,7 @@ const translations: any = {
         'editor.btn.saving': 'Saving...',
 
         // Scoring Delete Config
-        'scoring.delete_config': 'Delete Configuration',
+        'scoring.delete_config': 'Delete Criteria',
         'scoring.delete_config_confirm': 'Are you sure you want to delete the current scoring configuration?',
         'scoring.delete_config_warning': 'All categories, criteria, and weights will be removed. You can create a new configuration afterwards.',
         'scoring.delete_config_btn': 'Delete',

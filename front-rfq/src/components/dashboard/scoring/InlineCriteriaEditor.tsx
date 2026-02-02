@@ -28,6 +28,9 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
 
   // Local state for weight editing
   const [localCategories, setLocalCategories] = useState<ScoringCategory[]>([]);
+  // Track which input is being edited (to allow free text entry without leading zeros)
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
 
   // Initialize local state when opening
   useEffect(() => {
@@ -47,12 +50,15 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
     });
   }, []);
 
-  // Update criterion weight
-  const handleCriterionWeightChange = useCallback((categoryIndex: number, criterionIndex: number, weight: number) => {
+  // Update criterion weight (receives actual total weight, converts to category-relative)
+  const handleCriterionWeightChange = useCallback((categoryIndex: number, criterionIndex: number, actualWeight: number) => {
     setLocalCategories((prev) => {
       const updated = [...prev];
+      const catWeight = updated[categoryIndex].weight || 1;
+      // Convert actual weight back to category-relative weight
+      const relativeWeight = catWeight > 0 ? (actualWeight * 100) / catWeight : 0;
       const criteria = [...(updated[categoryIndex].criteria || [])];
-      criteria[criterionIndex] = { ...criteria[criterionIndex], weight };
+      criteria[criterionIndex] = { ...criteria[criterionIndex], weight: parseFloat(relativeWeight.toFixed(2)) };
       updated[categoryIndex] = { ...updated[categoryIndex], criteria };
       return updated;
     });
@@ -117,7 +123,7 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
         background: 'var(--bg-surface)',
         borderRadius: '16px',
         width: '100%',
-        maxWidth: '600px',
+        maxWidth: '650px',
         maxHeight: 'calc(100vh - 80px)',
         display: 'flex',
         flexDirection: 'column',
@@ -132,7 +138,7 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
           borderBottom: '1px solid var(--border-color)',
           flexShrink: 0,
         }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             {t('editor.title')}
           </h3>
           <button
@@ -168,7 +174,7 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
             background: categoryWeightValid ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
             border: `1px solid ${categoryWeightValid ? 'rgb(16, 185, 129)' : 'rgb(239, 68, 68)'}`,
           }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
               {t('editor.total_category_weight')}
             </span>
             <span style={{
@@ -183,11 +189,13 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {cats.map((category, catIndex) => {
               const catCriteria = Array.isArray(category?.criteria) ? category.criteria : [];
-              const criteriaWeight = catCriteria.reduce((sum, c) => sum + (c?.weight || 0), 0);
+              const catWeight = category?.weight || 0;
+              // Calculate actual total weights for display
+              const criteriaActualWeight = catCriteria.reduce((sum, c) => sum + ((c?.weight || 0) * catWeight / 100), 0);
               // Ensure all values are strings
               const catDisplayName = typeof category.display_name === 'string' ? category.display_name : String(category.display_name || '');
               const catColor = typeof category.color === 'string' ? category.color : '#12b5b0';
-              const criteriaWeightValid = Math.abs(criteriaWeight - 100) < 0.01;
+              const criteriaWeightValid = Math.abs(criteriaActualWeight - catWeight) < 0.1;
 
               return (
                 <div
@@ -207,25 +215,33 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
                     background: `${catColor}10`,
                     borderLeft: `3px solid ${catColor}`,
                   }}>
-                    <span style={{ fontWeight: 700, color: catColor, fontSize: '0.9rem' }}>
+                    <span style={{ fontWeight: 700, color: catColor, fontSize: '1.05rem' }}>
                       {catDisplayName}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <input
-                        type="number"
-                        value={category.weight}
-                        onChange={(e) => handleCategoryWeightChange(catIndex, parseFloat(e.target.value) || 0)}
-                        min={0}
-                        max={100}
+                        type="text"
+                        inputMode="numeric"
+                        value={editingField === `cat-${catIndex}` ? editingValue : category.weight}
+                        onFocus={() => {
+                          setEditingField(`cat-${catIndex}`);
+                          setEditingValue(category.weight.toString());
+                        }}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, '');
+                          setEditingValue(raw);
+                          handleCategoryWeightChange(catIndex, parseFloat(raw) || 0);
+                        }}
+                        onBlur={() => setEditingField(null)}
                         style={{
-                          width: '50px',
-                          padding: '6px 8px',
+                          width: '55px',
+                          padding: '8px 10px',
                           borderRadius: '6px',
                           border: '1px solid var(--border-color)',
                           background: `${catColor}20`,
                           color: 'var(--text-primary)',
                           fontWeight: 700,
-                          fontSize: '0.85rem',
+                          fontSize: '1rem',
                           textAlign: 'center',
                         }}
                       />
@@ -240,11 +256,11 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       marginBottom: '8px',
-                      fontSize: '0.7rem',
+                      fontSize: '0.85rem',
                       color: criteriaWeightValid ? 'var(--text-tertiary)' : 'rgb(239, 68, 68)',
                     }}>
                       <span>{t('editor.criteria_weights')}</span>
-                      <span style={{ fontWeight: 600 }}>{criteriaWeight.toFixed(1)}% / 100%</span>
+                      <span style={{ fontWeight: 600 }}>{criteriaActualWeight.toFixed(1)}% / {catWeight}%</span>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -264,29 +280,37 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
                               background: 'var(--bg-surface-alt)',
                             }}
                           >
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                            <span style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                               {critDisplayName}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <input
-                                type="number"
-                                value={criterion.weight}
-                                onChange={(e) => handleCriterionWeightChange(catIndex, critIndex, parseFloat(e.target.value) || 0)}
-                                min={0}
-                                max={100}
+                                type="text"
+                                inputMode="numeric"
+                                value={editingField === `crit-${catIndex}-${critIndex}` ? editingValue : parseFloat(((criterion.weight * catWeight / 100) || 0).toFixed(2))}
+                                onFocus={() => {
+                                  setEditingField(`crit-${catIndex}-${critIndex}`);
+                                  setEditingValue(parseFloat(((criterion.weight * catWeight / 100) || 0).toFixed(2)).toString());
+                                }}
+                                onChange={(e) => {
+                                  const raw = e.target.value.replace(/[^0-9.]/g, '');
+                                  setEditingValue(raw);
+                                  handleCriterionWeightChange(catIndex, critIndex, parseFloat(raw) || 0);
+                                }}
+                                onBlur={() => setEditingField(null)}
                                 style={{
-                                  width: '45px',
-                                  padding: '4px 6px',
-                                  borderRadius: '4px',
+                                  width: '60px',
+                                  padding: '6px 8px',
+                                  borderRadius: '6px',
                                   border: '1px solid var(--border-color)',
                                   background: 'var(--bg-surface)',
                                   color: 'var(--text-primary)',
                                   fontWeight: 600,
-                                  fontSize: '0.8rem',
+                                  fontSize: '0.95rem',
                                   textAlign: 'center',
                                 }}
                               />
-                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>%</span>
+                              <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>%</span>
                             </div>
                           </div>
                         );
@@ -308,18 +332,19 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
           padding: '14px 20px',
           borderTop: '1px solid var(--border-color)',
           background: 'var(--bg-surface-alt)',
+          borderRadius: '0 0 16px 16px',
           flexShrink: 0,
         }}>
           <button
             onClick={onClose}
             style={{
-              padding: '8px 16px',
+              padding: '10px 20px',
               borderRadius: '8px',
               border: '1px solid var(--border-color)',
               background: 'var(--bg-surface)',
               color: 'var(--text-secondary)',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.95rem',
               cursor: 'pointer',
             }}
           >
@@ -332,13 +357,13 @@ export const InlineCriteriaEditor: React.FC<InlineCriteriaEditorProps> = ({ isOp
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '8px 16px',
+              padding: '10px 20px',
               borderRadius: '8px',
               border: 'none',
               background: categoryWeightValid && !isLoading ? 'rgb(16, 185, 129)' : 'var(--bg-surface-alt)',
               color: categoryWeightValid && !isLoading ? 'white' : 'var(--text-tertiary)',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.95rem',
               cursor: categoryWeightValid && !isLoading ? 'pointer' : 'not-allowed',
             }}
           >

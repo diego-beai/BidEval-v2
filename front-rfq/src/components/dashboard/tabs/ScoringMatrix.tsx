@@ -6,6 +6,8 @@ import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { ScoringSetupWizard, InlineCriteriaEditor } from '../scoring';
 
+const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
+
 // Default scoring criteria IDs (fallback when no dynamic configuration)
 // Based on RFQ requirements for engineering proposals evaluation
 const DEFAULT_SCORING_CRITERIA_IDS = [
@@ -61,7 +63,6 @@ export const ScoringMatrix: React.FC = () => {
         calculateScoring,
         refreshScoring,
         customWeights,
-        setCustomWeights,
         resetWeights: storeResetWeights,
         saveScoresWithWeights,
         loadSavedWeights,
@@ -203,10 +204,12 @@ export const ScoringMatrix: React.FC = () => {
         });
     }, [customWeights, SCORING_CRITERIA]);
 
-    // Calculate total weight
+    // Calculate total weight (only from active criteria, not stale keys)
     const totalWeight = useMemo(() => {
-        return Object.values(customWeights).reduce((sum, w) => sum + w, 0);
-    }, [customWeights]);
+        return SCORING_CRITERIA.reduce((sum, criterion) => {
+            return sum + (customWeights[criterion.id] ?? criterion.weight ?? 0);
+        }, 0);
+    }, [customWeights, SCORING_CRITERIA]);
 
     // Check if weights are valid (sum to 100)
     const weightsValid = totalWeight === 100;
@@ -233,34 +236,6 @@ export const ScoringMatrix: React.FC = () => {
         };
     }, [hasConfiguration, dynamicCategories, customWeights]);
 
-    // Track which input is being edited (to allow empty string during typing)
-    const [editingInput, setEditingInput] = useState<string | null>(null);
-    const [editingValue, setEditingValue] = useState<string>('');
-
-    // Handle weight change during typing
-    const handleWeightChange = useCallback((criterionId: string, value: string) => {
-        // Allow empty string or valid numbers only
-        if (value === '' || /^\d+$/.test(value)) {
-            setEditingInput(criterionId);
-            setEditingValue(value);
-
-            // Update the actual weight (use 0 for empty, parse for numbers)
-            const numValue = value === '' ? 0 : parseInt(value, 10);
-            const clampedValue = Math.max(0, Math.min(100, numValue));
-            setCustomWeights({
-                ...customWeights,
-                [criterionId]: clampedValue
-            });
-            if (!isEditingWeights) setIsEditingWeights(true);
-        }
-    }, [isEditingWeights, customWeights, setCustomWeights]);
-
-    // Handle blur - reset editing state and ensure valid value
-    const handleWeightBlur = useCallback(() => {
-        setEditingInput(null);
-        setEditingValue('');
-    }, []);
-
     // Reset to default weights
     const resetWeights = useCallback(() => {
         storeResetWeights();
@@ -272,17 +247,6 @@ export const ScoringMatrix: React.FC = () => {
         await saveScoresWithWeights();
         setIsEditingWeights(false);
     }, [saveScoresWithWeights]);
-
-    // Increment/decrement weight by 1
-    const adjustWeight = useCallback((criterionId: string, delta: number) => {
-        const currentValue = customWeights[criterionId] || 0;
-        const newValue = Math.max(0, Math.min(100, currentValue + delta));
-        setCustomWeights({
-            ...customWeights,
-            [criterionId]: newValue
-        });
-        if (!isEditingWeights) setIsEditingWeights(true);
-    }, [customWeights, setCustomWeights, isEditingWeights]);
 
     // Recalculate scores with custom weights (fully dynamic)
     const recalculatedProviders = useMemo(() => {
@@ -435,7 +399,7 @@ export const ScoringMatrix: React.FC = () => {
                         </button>
                     )}
                     {/* Weight validation indicator */}
-                    {(isEditingWeights || hasCustomWeights) && !hasConfiguration && (
+                    {(isEditingWeights || hasCustomWeights) && (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -714,7 +678,7 @@ export const ScoringMatrix: React.FC = () => {
                                     {t('scoring.weight')}
                                 </th>
                                 {providers && providers.map((p, idx) => (
-                                    <th key={p.provider_name} style={{
+                                    <th key={displayProviderName(p.provider_name)} style={{
                                         padding: '16px',
                                         textAlign: 'center',
                                         fontWeight: 700,
@@ -724,7 +688,7 @@ export const ScoringMatrix: React.FC = () => {
                                         letterSpacing: '0.5px',
                                         borderTopRightRadius: idx === providers.length - 1 ? '10px' : 0,
                                     }}>
-                                        {p.provider_name}
+                                        {displayProviderName(p.provider_name)}
                                     </th>
                                 ))}
                             </tr>
@@ -775,98 +739,22 @@ export const ScoringMatrix: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td style={{ textAlign: 'center', padding: '14px 16px', borderBottom: '1px solid var(--border-color)' }}>
-                                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                                            <input
-                                                                type="text"
-                                                                inputMode="numeric"
-                                                                pattern="[0-9]*"
-                                                                value={editingInput === criterion.id ? editingValue : (customWeights[criterion.id] || 0).toString()}
-                                                                onChange={(e) => handleWeightChange(criterion.id, e.target.value)}
-                                                                onFocus={() => {
-                                                                    setEditingInput(criterion.id);
-                                                                    setEditingValue((customWeights[criterion.id] || 0).toString());
-                                                                }}
-                                                                onBlur={() => handleWeightBlur()}
-                                                                style={{
-                                                                    width: '52px',
-                                                                    padding: '6px 8px',
-                                                                    paddingRight: '20px',
-                                                                    background: (customWeights[criterion.id] || 0) !== criterion.weight ? `${info.color}30` : `${info.color}20`,
-                                                                    color: info.color,
-                                                                    borderRadius: '8px',
-                                                                    fontWeight: 700,
-                                                                    fontSize: '0.85rem',
-                                                                    border: (customWeights[criterion.id] || 0) !== criterion.weight ? `2px solid ${info.color}` : '2px solid transparent',
-                                                                    textAlign: 'center',
-                                                                    outline: 'none',
-                                                                    transition: 'all 0.2s'
-                                                                }}
-                                                            />
-                                                            <span style={{
-                                                                position: 'absolute',
-                                                                right: '8px',
-                                                                color: info.color,
-                                                                fontWeight: 700,
-                                                                fontSize: '0.85rem',
-                                                                pointerEvents: 'none'
-                                                            }}>%</span>
-                                                        </div>
-                                                        {/* Up/Down arrows */}
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                            <button
-                                                                onClick={() => adjustWeight(criterion.id, 1)}
-                                                                style={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    width: '18px',
-                                                                    height: '14px',
-                                                                    border: 'none',
-                                                                    borderRadius: '4px',
-                                                                    background: 'var(--bg-surface-alt)',
-                                                                    color: info.color,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.15s',
-                                                                    padding: 0
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = `${info.color}30`}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-surface-alt)'}
-                                                            >
-                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                                                                    <path d="M18 15l-6-6-6 6"/>
-                                                                </svg>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => adjustWeight(criterion.id, -1)}
-                                                                style={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    width: '18px',
-                                                                    height: '14px',
-                                                                    border: 'none',
-                                                                    borderRadius: '4px',
-                                                                    background: 'var(--bg-surface-alt)',
-                                                                    color: info.color,
-                                                                    cursor: 'pointer',
-                                                                    transition: 'all 0.15s',
-                                                                    padding: 0
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.background = `${info.color}30`}
-                                                                onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-surface-alt)'}
-                                                            >
-                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                                                                    <path d="M6 9l6 6 6-6"/>
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '6px 12px',
+                                                        background: `${info.color}20`,
+                                                        color: info.color,
+                                                        borderRadius: '8px',
+                                                        fontWeight: 700,
+                                                        fontSize: '0.85rem',
+                                                    }}>
+                                                        {criterion.weight} %
+                                                    </span>
                                                 </td>
                                                 {providers && providers.map(p => {
                                                     const score = getCriterionScore(p, criterion.id);
                                                     return (
-                                                        <td key={p.provider_name} style={{
+                                                        <td key={displayProviderName(p.provider_name)} style={{
                                                             textAlign: 'center',
                                                             padding: '14px 16px',
                                                             borderBottom: '1px solid var(--border-color)'
@@ -878,7 +766,7 @@ export const ScoringMatrix: React.FC = () => {
                                                                 fontWeight: 600,
                                                                 fontSize: '0.9rem',
                                                                 color: getScoreColor(score),
-                                                                background: score >= 8 ? 'var(--color-primary)10' : 'var(--bg-surface-alt)'
+                                                                background: 'transparent'
                                                             }}>
                                                                 {score.toFixed(1)}
                                                             </span>
@@ -898,7 +786,7 @@ export const ScoringMatrix: React.FC = () => {
                                             {providers && providers.map(p => {
                                                 const categoryScore = p.scores?.[category] || 0;
                                                 return (
-                                                    <td key={p.provider_name} style={{
+                                                    <td key={displayProviderName(p.provider_name)} style={{
                                                         textAlign: 'center',
                                                         padding: '12px 16px',
                                                         fontWeight: 700,
@@ -928,7 +816,7 @@ export const ScoringMatrix: React.FC = () => {
                                     {t('scoring.overall')}:
                                 </td>
                                 {providers && providers.map((p, idx) => (
-                                    <td key={p.provider_name} style={{
+                                    <td key={displayProviderName(p.provider_name)} style={{
                                         textAlign: 'center',
                                         padding: '20px 16px',
                                         borderBottomRightRadius: idx === providers.length - 1 ? '10px' : 0
