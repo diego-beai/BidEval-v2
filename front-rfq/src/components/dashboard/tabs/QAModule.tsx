@@ -7,6 +7,8 @@ import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { generateTechnicalAudit, sendQAToSupplier, SendToSupplierResponse } from '../../../services/n8n.service';
 import { supabase } from '../../../lib/supabase';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
+
+const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
 import { mapQAAuditToQAQuestion } from '../../../types/qa.types';
 import './QAModule.css';
 
@@ -1357,7 +1359,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                           </span>
                         )}
                         <span className={`question-provider ${getProviderClass(question.proveedor || question.provider_name)}`}>
-                          {question.proveedor || question.provider_name}
+                          {displayProviderName(question.proveedor || question.provider_name)}
                         </span>
                         {/* Thread View Button - for questions that are follow-ups */}
                         {question.parent_question_id && (

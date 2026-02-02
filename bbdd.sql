@@ -59,7 +59,6 @@ CREATE TABLE IF NOT EXISTS public.provider_responses (
     requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE CASCADE,
     provider_name TEXT NOT NULL,
     evaluation_value TEXT,
-    score INTEGER, -- Added score column for quantitative evaluation
     comment TEXT,
     file_id TEXT REFERENCES public.document_metadata(id) ON DELETE CASCADE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -469,26 +468,9 @@ SELECT
 FROM public.ranking_proveedores rp
 ORDER BY rp.overall_score DESC;
 
--- ============================================
--- VISTA LEGACY: ranking_proveedores_simple (para compatibilidad)
--- ============================================
-CREATE OR REPLACE VIEW public.ranking_proveedores_simple AS
-SELECT
-  m.project_id,
-  r.provider_name,
-  count(r.id) as total_items_evaluados,
-  sum(r.score) as puntos_totales,
-  round(
-    sum(r.score)::numeric / (NULLIF(count(r.id), 0) * 10)::numeric * 100::numeric,
-    2
-  ) as compliance_percentage
-FROM
-  rfq_items_master m
-  JOIN provider_responses r ON m.id = r.requirement_id
-GROUP BY
-  m.project_id,
-  r.provider_name
-ORDER BY compliance_percentage DESC;
+-- NOTA: Vista ranking_proveedores_simple eliminada.
+-- El compliance se calcula ahora en el workflow de scoring (scoring.json)
+-- y se almacena directamente en ranking_proveedores.compliance_percentage.
 
 -- ============================================
 -- SISTEMA DE SCORING DINÁMICO CON CRITERIOS PERSONALIZADOS

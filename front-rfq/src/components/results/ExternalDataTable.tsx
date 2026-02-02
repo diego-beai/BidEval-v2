@@ -83,6 +83,7 @@ export const ExternalDataTable: React.FC = () => {
         });
     };
 
+
     const loadData = async () => {
         try {
             // Usar llamada directa a Supabase para obtener datos pivoteados
@@ -238,9 +239,10 @@ export const ExternalDataTable: React.FC = () => {
 
     const activeFilterCount = (tableFilters.evaluation_type.length + tableFilters.phase.length + tableFilters.provider.length + (tableFilters.project_name ? 1 : 0));
 
-    const FilterDropdown = ({ label, options, selected, onToggle, id, displayMap }: any) => {
+    const FilterDropdown = ({ label, options, selected, onToggle, onToggleAll, id, displayMap }: any) => {
         const isOpen = activeDropdown === id;
         const selectedCount = selected.length;
+        const allSelected = selectedCount === options.length;
 
         return (
             <div style={{ position: 'relative', flex: '1 1 180px' }}>
@@ -284,6 +286,30 @@ export const ExternalDataTable: React.FC = () => {
                         padding: '8px 0',
                         opacity: 1
                     }}>
+                        {onToggleAll && (
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '8px 16px',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                borderBottom: '1px solid var(--border-color)',
+                                marginBottom: '4px',
+                                transition: 'background-color 0.2s'
+                            }} className="dropdown-item-hover">
+                                <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => onToggleAll(options)}
+                                    style={{ accentColor: 'var(--color-cyan)' }}
+                                />
+                                <span style={{ color: allSelected ? 'var(--color-cyan)' : 'var(--text-primary)' }}>
+                                    {t('table.select_all')}
+                                </span>
+                            </label>
+                        )}
                         {options.map((opt: string) => (
                             <label key={opt} style={{
                                 display: 'flex',
@@ -437,6 +463,7 @@ export const ExternalDataTable: React.FC = () => {
                         options={filterOptions.evaluations}
                         selected={tableFilters.evaluation_type}
                         onToggle={(v: string) => toggleFilter('evaluation_type', v)}
+                        onToggleAll={(opts: string[]) => setTableFilters((prev: any) => ({ ...prev, evaluation_type: prev.evaluation_type.length === opts.length ? [] : [...opts] }))}
                     />
 
                     {/* RFQ Requirement Searchable Autocomplete */}
@@ -523,6 +550,7 @@ export const ExternalDataTable: React.FC = () => {
                         options={filterOptions.providers}
                         selected={tableFilters.provider}
                         onToggle={(v: string) => toggleFilter('provider', v)}
+                        onToggleAll={(opts: string[]) => setTableFilters((prev: any) => ({ ...prev, provider: prev.provider.length === opts.length ? [] : [...opts] }))}
                         displayMap={(v: string) => v.replace(/_/g, ' ')}
                     />
 

@@ -25,9 +25,9 @@
       "typeVersion": 1,
       "position": [
         -128,
-        -1808
+        -1824
       ],
-      "id": "143470e8-5d82-4f38-af2e-8d0dc68f8a48",
+      "id": "95ed7fab-3ca6-4f81-a755-2e69af136659",
       "name": "Get many rows1",
       "credentials": {
         "supabaseApi": {
@@ -44,9 +44,9 @@
       "typeVersion": 1,
       "position": [
         2912,
-        -704
+        -720
       ],
-      "id": "69cf4c8a-eae2-4578-b377-a729c63a5039",
+      "id": "bbf94996-1ed3-4443-8e39-5b6380de9ca1",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -73,9 +73,9 @@
       "typeVersion": 1.8,
       "position": [
         2416,
-        -1168
+        -1184
       ],
-      "id": "66fe79eb-8857-451b-b875-5e81a9815f9d",
+      "id": "186706c5-35cd-431d-ba36-43f234a6d445",
       "name": "Validador de Ofertas"
     },
     {
@@ -91,9 +91,9 @@
       "typeVersion": 1,
       "position": [
         2368,
-        -976
+        -992
       ],
-      "id": "eb08eb5f-09ad-46ee-b565-f49a6ceafcca",
+      "id": "0c4ae6d1-6055-4601-af76-2f31237d8761",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -111,9 +111,9 @@
       "typeVersion": 1.3,
       "position": [
         2608,
-        -976
+        -992
       ],
-      "id": "2ce3d06d-4879-483f-97c4-d9ccd3ed41b9",
+      "id": "3c6a8720-087a-4029-8abc-01a1a5aa7187",
       "name": "Structured Output Parser4"
     },
     {
@@ -134,9 +134,9 @@
       "typeVersion": 1.8,
       "position": [
         2416,
-        -736
+        -752
       ],
-      "id": "e1cf988b-fb87-4107-b4ba-c1031b414555",
+      "id": "40d6ddc2-155a-45b0-8fab-530c2858af8b",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor"
     },
     {
@@ -188,9 +188,9 @@
       "typeVersion": 2.3,
       "position": [
         2144,
-        -976
+        -992
       ],
-      "id": "9d1e1d88-8dc5-4398-9b34-96f9e982a4de",
+      "id": "33c42199-e1b8-4068-8b21-0b4b39008a79",
       "name": "If"
     },
     {
@@ -206,9 +206,9 @@
       "typeVersion": 1,
       "position": [
         2128,
-        -1536
+        -1552
       ],
-      "id": "20ae60ae-49ac-47de-8a92-820116f10455",
+      "id": "1908d4e1-45b9-4b0e-ae26-f6da485ac474",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -230,9 +230,9 @@
       "typeVersion": 1,
       "position": [
         2368,
-        -528
+        -544
       ],
-      "id": "a53ee540-5a78-488d-b5c9-d8700b0f6838",
+      "id": "ee6afbc6-9cc8-44d5-9a90-bd620b0898bb",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -252,9 +252,9 @@
       "typeVersion": 1,
       "position": [
         -1104,
-        -2128
+        -2144
       ],
-      "id": "5a1f5e66-a7b6-4d43-8d88-2fec03a62f79",
+      "id": "ed2df21b-014b-44e4-93d5-200746e8cbf4",
       "name": "Sticky Note5"
     },
     {
@@ -268,32 +268,32 @@
       "typeVersion": 3,
       "position": [
         704,
-        -1744
+        -1760
       ],
-      "id": "01603f44-2a71-4f92-b685-5195df21525d",
+      "id": "5c8d7181-40f6-4ebd-b114-a41345239474",
       "name": "Loop Over Phases"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
+        "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const requirementId = outputItem?.id || null;\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple}`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
       },
-      "id": "6622d0f8-6830-4717-abae-a344dde3c03c",
+      "id": "9e6335ff-0548-4693-9b20-7172e4c4a4aa",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         2656,
-        -1760
+        -1776
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Total requirements in this batch: {{ $json.total_requisitos }}\n- Batch: {{ $json.batch_index }} of {{ $json.total_batches }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### FULL PROPOSAL TEXT\n\n{{ $('Loop Over Items1').first().json.texto_oferta_completo }}\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR TECHNICAL EVALUATIONS - Use these labels in 'cumple':\n- INCLUDED (10 pts)\n- INCLUDED WITH CAVEATS (8 pts)\n- PARTIALLY INCLUDED (6 pts)\n- NOT INCLUDED WITH ALTERNATIVE (3 pts)\n- NOT INCLUDED (0 pts)\n- NO INFORMATION (0 pts)\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\nScoring for Economic:\n- Value explicitly quoted: 10 pts\n- Hourly/daily rate given: 7 pts\n- Estimated/approximate value: 5 pts\n- Mentioned but no price: 3 pts\n- Not found: 0 pts\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\",\n    \"score\": [0-10]\n  }\n]\n\nJSON only, no explanations.",
+        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Total requirements in this batch: {{ $json.total_requisitos }}\n- Batch: {{ $json.batch_index }} of {{ $json.total_batches }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### FULL PROPOSAL TEXT\n\n{{ $('Loop Over Items1').first().json.texto_oferta_completo }}\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\"\n  }\n]\n\nJSON only, no explanations.",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are an expert auditor for EPC proposals.\n\nRULES:\n- For TECHNICAL: Use labels (INCLUDED, PARTIALLY INCLUDED, etc.)\n- For ECONOMICAL: Extract ACTUAL VALUES with currency/units (e.g., '312.640,62 € - PRE-FEED TOTAL'). If no value found: 'NO VALUE FOUND - [reason]'\n- Be conservative: when in doubt, score 0\n- ALL responses in ENGLISH\n- JSON only"
+              "message": "=You are an expert auditor for EPC proposals.\n\nRULES:\n- For TECHNICAL: Use labels (INCLUDED, PARTIALLY INCLUDED, etc.)\n- For ECONOMICAL: Extract ACTUAL VALUES with currency/units (e.g., '312.640,62 € - PRE-FEED TOTAL'). If no value found: 'NO VALUE FOUND - [reason]'\n- Be conservative\n- ALL responses in ENGLISH\n- JSON only"
             }
           ]
         },
@@ -303,9 +303,9 @@
       "typeVersion": 1.7,
       "position": [
         2208,
-        -1888
+        -1904
       ],
-      "id": "ddfb00c6-a590-49e4-af7e-b6cba5d3fb04",
+      "id": "848a6a14-2603-4392-9725-8ee4957b8b16",
       "name": "LLM Chain"
     },
     {
@@ -415,9 +415,9 @@
       "typeVersion": 2.5,
       "position": [
         -96,
-        -976
+        -992
       ],
-      "id": "8ec5d82a-9eb0-49e3-9a9d-923b9a5bc4a9",
+      "id": "89c6fdba-febd-4b60-8065-e2b3391f7459",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -434,13 +434,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "3468406c-1149-4256-b0f9-33e047f55354",
+      "id": "abf3458e-9ac2-44d1-9c35-bc00f93ee87e",
       "name": "Delete Old Doc Rows",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
         -304,
-        -976
+        -992
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -512,13 +512,13 @@
         },
         "options": {}
       },
-      "id": "f95df030-9859-4a41-9d19-87124c1200bb",
+      "id": "b9234b0b-cebe-4488-9af7-453a0511e160",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
         -496,
-        -976
+        -992
       ]
     },
     {
@@ -556,13 +556,13 @@
           }
         }
       },
-      "id": "4c36ef82-d0c9-442f-b90f-3b908329ba80",
+      "id": "a4c6f57e-65ad-4882-b511-b7a9bf8288be",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
         3120,
-        -672
+        -688
       ]
     },
     {
@@ -575,9 +575,9 @@
       "typeVersion": 1,
       "position": [
         3024,
-        -496
+        -512
       ],
-      "id": "5b6d02c7-d6fc-4caa-bbed-e80cecf7f6b8",
+      "id": "130140eb-6387-4f88-88fb-17c157390c3f",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -593,13 +593,13 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "d0e20863-a491-4104-9347-2f2eb6b9996b",
+      "id": "f821ec71-ba7a-4c98-ac39-3c7525220226",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
         2992,
-        -992
+        -1008
       ],
       "credentials": {
         "supabaseApi": {
@@ -616,9 +616,9 @@
       "typeVersion": 2,
       "position": [
         576,
-        -976
+        -992
       ],
-      "id": "d25ca851-8a20-4217-bcc1-b0f967ee9d75",
+      "id": "147ac14f-3ab3-4e5d-b517-c5860aa2848e",
       "name": "Validar Contenido PDF"
     },
     {
@@ -630,9 +630,9 @@
       "typeVersion": 1.1,
       "position": [
         304,
-        -976
+        -992
       ],
-      "id": "13271fd6-e2bd-4553-b5b0-e75743935411",
+      "id": "bd285c86-032c-4012-851d-d647bb9c2fab",
       "name": "Extract from File"
     },
     {
@@ -664,9 +664,9 @@
       "typeVersion": 2.3,
       "position": [
         864,
-        -976
+        -992
       ],
-      "id": "f5375959-8762-4411-b534-3553b5084674",
+      "id": "55dbf11b-df8c-42ce-bc11-c8001a4a7f6f",
       "name": "¿Necesita OCR?"
     },
     {
@@ -677,22 +677,22 @@
       "typeVersion": 2,
       "position": [
         1504,
-        -1088
+        -1104
       ],
-      "id": "f4a9783a-6911-414d-a621-220c76cc741d",
+      "id": "e60bf4b9-2109-4f20-8c52-ed2b6fa3b3cd",
       "name": "Aggregate OCR Pages"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "b2ee2443-d5bc-4428-aec2-585ed2896f66",
+      "id": "ace6952c-a72e-4519-9746-4b124865c707",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1952,
-        -976
+        -992
       ]
     },
     {
@@ -703,9 +703,9 @@
       "typeVersion": 2,
       "position": [
         2816,
-        -992
+        -1008
       ],
-      "id": "2a99d9e6-9c8f-4adb-b207-52b928d427b5",
+      "id": "a44c14ec-76a6-4a9b-a489-e17b9fe0342b",
       "name": "Format for Vectorstore"
     },
     {
@@ -716,9 +716,9 @@
       "typeVersion": 2,
       "position": [
         -848,
-        -1680
+        -1696
       ],
-      "id": "bfd70129-a98d-47e2-90ba-793f213e5277",
+      "id": "33e98491-c594-4760-9a00-fdb1a880e9d5",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
@@ -729,9 +729,9 @@
       "typeVersion": 3,
       "position": [
         -544,
-        -1760
+        -1776
       ],
-      "id": "14827ded-d072-41e1-999a-03d2c9d50d10",
+      "id": "66b9d0ad-2d8e-4512-9c27-1e2212ad3548",
       "name": "Loop Over Items1"
     },
     {
@@ -753,13 +753,13 @@
           "timeout": 300000
         }
       },
-      "id": "c61a460e-a441-44a0-9a64-133679d83688",
+      "id": "353f470c-d79e-4dc5-8e61-64eb130e11c8",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
         1296,
-        -1184
+        -1200
       ],
       "retryOnFail": true
     },
@@ -772,9 +772,9 @@
       "typeVersion": 1.3,
       "position": [
         2608,
-        -528
+        -544
       ],
-      "id": "6a5284bb-8805-4142-9b31-f32a4ffb3373",
+      "id": "3d90cc40-4522-41c4-b602-ad5e329b76a7",
       "name": "Structured Output Parser"
     },
     {
@@ -783,9 +783,9 @@
       "typeVersion": 3.2,
       "position": [
         1760,
-        -976
+        -992
       ],
-      "id": "61488c9b-c0d6-40f2-afe8-6676253961d0",
+      "id": "4fb387ad-b5b9-4248-80d3-4e3cc2ec3635",
       "name": "Merge1"
     },
     {
@@ -796,9 +796,9 @@
       "typeVersion": 2,
       "position": [
         464,
-        -1808
+        -1824
       ],
-      "id": "343a1116-28bc-4c04-8a05-bc197a7d8a55",
+      "id": "c73d9070-c046-4e9c-b5a5-654423cf2f7d",
       "name": "Reset Items"
     },
     {
@@ -810,9 +810,9 @@
       "typeVersion": 1.5,
       "position": [
         -96,
-        -2032
+        -2048
       ],
-      "id": "fb94b867-19c1-40f3-8ded-4c62c2730672",
+      "id": "482a569d-689d-47b8-8157-7e881cad5667",
       "name": "Respond to Webhook"
     },
     {
@@ -826,9 +826,9 @@
       "typeVersion": 2.1,
       "position": [
         -928,
-        -976
+        -992
       ],
-      "id": "8f5c0cc4-648d-43a0-b4b8-ce46157ef9c8",
+      "id": "771446ab-42a9-4eb8-8f03-7bffdad3cc5a",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -840,9 +840,9 @@
       "typeVersion": 2,
       "position": [
         80,
-        -976
+        -992
       ],
-      "id": "fc8f82c4-b714-4e2d-84c2-d9049b2d37dd",
+      "id": "1e484cbf-24c0-480e-ba59-b1bcb9025e4e",
       "name": "Base64 a Binary"
     },
     {
@@ -853,9 +853,9 @@
       "typeVersion": 2,
       "position": [
         1088,
-        -1088
+        -1104
       ],
-      "id": "46b90454-f69b-4c8b-92de-a7150b9d90a9",
+      "id": "9c0e07d3-5a74-4ffe-9f27-af48b26e2e58",
       "name": "Base64 a Binary1"
     },
     {
@@ -866,9 +866,9 @@
       "typeVersion": 2,
       "position": [
         -688,
-        -976
+        -992
       ],
-      "id": "670effc0-15de-44a1-9de2-6692312d95e0",
+      "id": "7402c46b-e248-46a1-9a3d-b71152eb2c0a",
       "name": "Code in JavaScript1"
     },
     {
@@ -893,7 +893,6 @@
             "comment": "={{ $json.comment }}",
             "requirement_id": "={{ $json.requirement_id }}",
             "file_id": "={{ $('Set File ID').first().json.file_id }}",
-            "score": "={{ $json.score }}",
             "project_id": "={{ $('Set File ID').first().json.project_id }}",
             "updated_at": "={{ $now }}"
           },
@@ -969,15 +968,6 @@
               "canBeUsedToMatch": false
             },
             {
-              "id": "score",
-              "displayName": "score",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "number",
-              "canBeUsedToMatch": false
-            },
-            {
               "id": "project_id",
               "displayName": "project_id",
               "required": false,
@@ -996,9 +986,9 @@
       "typeVersion": 2.6,
       "position": [
         3168,
-        -1536
+        -1552
       ],
-      "id": "d17ef36b-451e-442c-8bd2-51f64adaac40",
+      "id": "0613e1d7-a50d-45ff-8a98-c503b732e90d",
       "name": "Insert or update rows in a table",
       "credentials": {
         "postgres": {
@@ -1015,9 +1005,9 @@
       "typeVersion": 2,
       "position": [
         1216,
-        -1888
+        -1904
       ],
-      "id": "bbff3aea-66b8-49dc-804a-6cc5e7aaf8cc",
+      "id": "7616591e-0818-4954-9118-494dab411879",
       "name": "Preparar Todo para LLM1"
     },
     {
@@ -1029,9 +1019,9 @@
       "typeVersion": 1,
       "position": [
         2144,
-        -1680
+        -1696
       ],
-      "id": "2f4a13ca-767c-4434-96cf-fdc2623ad40f",
+      "id": "978a6aeb-b71b-4030-8319-554dae456542",
       "name": "Mistral Cloud Chat Model3",
       "credentials": {
         "mistralCloudApi": {
@@ -1049,9 +1039,9 @@
       "typeVersion": 1,
       "position": [
         2400,
-        -864
+        -880
       ],
-      "id": "129d723e-a4da-41bb-9fe3-42c72f3b3e01",
+      "id": "82f215ff-a598-4d46-b783-44c88d170bbd",
       "name": "Mistral Cloud Chat Model5",
       "credentials": {
         "mistralCloudApi": {
@@ -1069,9 +1059,9 @@
       "typeVersion": 1,
       "position": [
         2480,
-        -528
+        -544
       ],
-      "id": "89302552-f656-4b0d-9cdc-379bd296216b",
+      "id": "2628fec1-ad61-4b45-93c5-aef7c41ee660",
       "name": "Mistral Cloud Chat Model6",
       "credentials": {
         "mistralCloudApi": {
@@ -1115,11 +1105,6 @@
         ]
       ]
     },
-    "Ollama Chat Model1": {
-      "ai_languageModel": [
-        []
-      ]
-    },
     "Structured Output Parser4": {
       "ai_outputParser": [
         [
@@ -1158,16 +1143,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "Ollama Model1": {
-      "ai_languageModel": [
-        []
-      ]
-    },
-    "Ollama Model": {
-      "ai_languageModel": [
-        []
       ]
     },
     "Loop Over Phases": {
@@ -1524,6 +1499,7 @@
   },
   "pinData": {},
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
   }
 }

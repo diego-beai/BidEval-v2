@@ -56,7 +56,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "SELECT pr.id, pr.requirement_id, pr.provider_name, pr.evaluation_value, pr.comment, pr.score, pr.file_id, pr.updated_at,\n       rim.project_name, rim.evaluation_type, rim.phase, rim.requirement_text,\n       dm.title as file_title, dm.document_type\nFROM provider_responses pr\nJOIN rfq_items_master rim ON pr.requirement_id = rim.id\nJOIN document_metadata dm ON pr.file_id = dm.id\nWHERE dm.document_type = 'PROPOSAL'\nORDER BY pr.updated_at DESC",
+          "query": "SELECT pr.id, pr.requirement_id, pr.provider_name, pr.evaluation_value, pr.comment, pr.file_id, pr.updated_at,\n       rim.project_name, rim.evaluation_type, rim.phase, rim.requirement_text,\n       dm.title as file_title, dm.document_type\nFROM provider_responses pr\nJOIN rfq_items_master rim ON pr.requirement_id = rim.id\nJOIN document_metadata dm ON pr.file_id = dm.id\nWHERE dm.document_type = 'PROPOSAL'\nORDER BY pr.updated_at DESC",
           "options": {}
         },
         "type": "n8n-nodes-base.supabase",

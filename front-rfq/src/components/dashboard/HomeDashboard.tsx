@@ -375,7 +375,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
                 activities.push({
                     title: `${t('home.activity.proposal_evaluated')} - ${item.provider_name}`,
-                    desc: `${item.requirement_text || item.evaluation_type || 'Requirement'}: ${item.evaluation_value} (${item.score}/10)`,
+                    desc: `${item.requirement_text || item.evaluation_type || 'Requirement'}: ${item.evaluation_value}`,
                     time: timeAgo,
                     type: 'success',
                     timestamp: date.getTime()
@@ -667,24 +667,19 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     }, [tableData, proposalEvaluations]);
 
     const dashboardMetrics = {
-        totalPropuestas: calculatedMetrics.totalItems,
-        activeRfqs: calculatedMetrics.totalEvaluations, // Ahora muestra el total de evaluaciones procesadas
-        completedToday: calculatedMetrics.updatedToday,
-        avgProcessingTime: '2.4h',
+        totalProcessed: totalProposals,
+        activeRfqs: calculatedMetrics.totalEvaluations,
         providers: Object.keys(providerEvaluations).filter(p =>
             Object.values(providerEvaluations[p] || {}).some(count => count > 0)
-        ),
-        recentActivity: {
-            lastUpload: '2 hours ago',
-            pendingReviews: 3,
-            activeDecisions: 2
-        },
-        systemHealth: {
-            accuracyRate: 98.5,
-            automationLevel: 94,
-            totalProcessed: totalProposals // Usar el conteo real de propuestas desde Supabase
-        }
+        )
     };
+
+    // Calculate average score from scoring results
+    const avgScore = useMemo(() => {
+        if (!scoringResults?.ranking || scoringResults.ranking.length === 0) return 0;
+        const sum = scoringResults.ranking.reduce((acc, r) => acc + (r.overall_score || 0), 0);
+        return sum / scoringResults.ranking.length;
+    }, [scoringResults]);
 
 
     return (
@@ -799,7 +794,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 <div className="stats-grid">
                 <DashboardCard
                     title={t('home.card.total_processed')}
-                    value={dashboardMetrics.systemHealth.totalProcessed.toString()}
+                    value={dashboardMetrics.totalProcessed.toString()}
                     trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% ${t('home.card.this_week')} (${proposalsThisWeek} ${t('home.card.proposals')})`}
                     isPositiveTrend={proposalsGrowthPercentage >= 0}
                     icon={
@@ -824,26 +819,27 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     color="#f59e0b"
                 />
                 <DashboardCard
-                    title={t('home.card.ai_accuracy')}
-                    value={`${dashboardMetrics.systemHealth.accuracyRate}%`}
-                    trend={t('home.card.excellent_performance')}
+                    title={t('home.card.providers')}
+                    value={providersCount.toString()}
+                    trend={`${dashboardMetrics.providers.length} ${t('home.card.with_scores')}`}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                            <path d="M2 17l10 5 10-5"></path>
-                            <path d="M2 12l10 5 10-5"></path>
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                     }
                     color="var(--color-cyan)"
                 />
                 <DashboardCard
-                    title={t('home.card.automation')}
-                    value={`${dashboardMetrics.systemHealth.automationLevel}%`}
-                    trend={t('home.card.very_high')}
+                    title={t('home.card.avg_score')}
+                    value={avgScore > 0 ? `${avgScore.toFixed(1)}/10` : 'N/A'}
+                    trend={avgScore >= 7 ? t('home.card.good_average') : avgScore > 0 ? t('home.card.needs_improvement') : t('home.card.no_scoring_yet')}
+                    isPositiveTrend={avgScore >= 7}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                            <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"></path>
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                         </svg>
                     }
                     color="#10b981"
@@ -879,10 +875,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.avg_score')}
+                            {t('home.scoring.top_score')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
-                            {scoringResults.statistics.average_score.toFixed(1)}/10
+                            {topPerformer?.overall_score?.toFixed(1) || 'N/A'}/10
                         </div>
                     </div>
                     <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
@@ -908,43 +904,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 );
             })()}
 
-            {/* Quick Stats Row */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '20px',
-                padding: '8px',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-sm)',
-                marginBottom: '8px'
-            }}>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        {t('home.card.avg_time')}
-                    </div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                        {dashboardMetrics.avgProcessingTime}
-                    </div>
-                </div>
-                <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        {t('home.card.completed_today')}
-                    </div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-cyan)' }}>
-                        {dashboardMetrics.completedToday}
-                    </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                        {t('home.card.active_providers')}
-                    </div>
-                    <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
-                        {providersCount}
-                    </div>
-                </div>
-            </div>
 
 
             {/* Content Grid */}

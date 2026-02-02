@@ -10,6 +10,8 @@ import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { PROVIDER_COLORS } from '../../../config/constants';
 
+const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
+
 // Function to get translated criteria labels (fallback when no dynamic config)
 const getDefaultCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
     // TECHNICAL COMPLETENESS (30%)
@@ -412,7 +414,7 @@ export const ExecutiveView: React.FC = () => {
                                         fontWeight: 700,
                                         textShadow: '0 2px 8px rgba(0,0,0,0.2)'
                                     }}>
-                                        {winner.provider_name}
+                                        {displayProviderName(winner.provider_name)}
                                     </h2>
                                     <div style={{
                                         marginTop: '12px',
@@ -429,42 +431,6 @@ export const ExecutiveView: React.FC = () => {
                                 </div>
                             </div>
 
-                            <button
-                                style={{
-                                    background: 'white',
-                                    color: 'var(--color-primary)',
-                                    border: 'none',
-                                    padding: '16px 32px',
-                                    borderRadius: '12px',
-                                    fontSize: '1rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
-                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px'
-                                }}
-                                onClick={() => {
-                                    if (window.confirm(`${t('executive.award')} ${winner.provider_name}?`)) {
-                                        alert(`${t('executive.contract_awarded')} ${winner.provider_name}! \n${t('executive.total_score')}: ${winner.overall_score.toFixed(2)}`);
-                                    }
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.05)';
-                                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.3)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.2)';
-                                }}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <path d="M9 11l3 3L22 4"></path>
-                                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
-                                </svg>
-                                {t('executive.award')}
-                            </button>
                         </div>
 
                         {/* Winner Analysis Grid */}
@@ -489,7 +455,7 @@ export const ExecutiveView: React.FC = () => {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.5px'
                                 }}>
-                                    {t('executive.lead_margin')} {runnerUp?.provider_name || 'N/A'}
+                                    {t('executive.lead_margin')} {runnerUp ? displayProviderName(runnerUp.provider_name) : 'N/A'}
                                 </div>
                                 <div style={{
                                     fontSize: '1.5rem',
@@ -630,7 +596,7 @@ export const ExecutiveView: React.FC = () => {
                                             }}>
                                                 #{i + 1}
                                             </span>
-                                            <span style={{ flex: 1 }}>{p.provider_name}</span>
+                                            <span style={{ flex: 1 }}>{displayProviderName(p.provider_name)}</span>
                                             <span style={{
                                                 background: 'rgba(255, 255, 255, 0.25)',
                                                 padding: '2px 8px',
@@ -753,7 +719,7 @@ export const ExecutiveView: React.FC = () => {
                             {providers.map((p, i) => (
                                 <Radar
                                     key={p.provider_name}
-                                    name={p.provider_name}
+                                    name={displayProviderName(p.provider_name)}
                                     dataKey={p.provider_name}
                                     stroke={getColor(p.provider_name, i)}
                                     fill={`url(#gradient-${p.provider_name})`}
