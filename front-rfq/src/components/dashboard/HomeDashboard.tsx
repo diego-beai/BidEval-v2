@@ -946,15 +946,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         flex: 1,
                         display: 'flex',
                         alignItems: 'flex-end',
-                        justifyContent: 'center',
+                        justifyContent: 'space-evenly',
                         height: '240px',
                         paddingBottom: '16px',
                         borderBottom: '2px solid var(--border-color)',
-                        gap: '50px'
+                        gap: `${Math.max(12, Math.min(50, 200 / (scoringResults?.ranking?.length || 1)))}px`,
+                        padding: '0 16px 16px 16px'
                     }}>
                         {/* Use scoringResults from useScoringStore for accurate data - sorted by score */}
                         {scoringResults?.ranking && scoringResults.ranking.length > 0 ? (
-                            [...scoringResults.ranking].sort((a, b) => b.overall_score - a.overall_score).map((provider) => {
+                            [...scoringResults.ranking].sort((a, b) => {
+                                const sumA = (a.scores?.technical || 0) + (a.scores?.economic || 0) + (a.scores?.execution || 0) + (a.scores?.hse_compliance || 0);
+                                const sumB = (b.scores?.technical || 0) + (b.scores?.economic || 0) + (b.scores?.execution || 0) + (b.scores?.hse_compliance || 0);
+                                return sumB - sumA;
+                            }).map((provider) => {
                                 const scores = provider.scores || {};
                                 const hasData = (scores.technical || 0) + (scores.economic || 0) + (scores.execution || 0) + (scores.hse_compliance || 0) > 0;
                                 if (!hasData) return null;
@@ -1316,8 +1321,9 @@ const StackedBar = ({ provider, evaluations }: {
                 justifyContent: 'flex-end',
                 cursor: 'pointer',
                 transition: 'all 0.3s',
-                width: '48px',
-                flexShrink: 0
+                flex: '1 1 0',
+                minWidth: '28px',
+                maxWidth: '56px'
             }}
         >
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
