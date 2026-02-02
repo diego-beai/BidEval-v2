@@ -835,8 +835,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 <DashboardCard
                     title={t('home.card.avg_score')}
                     value={avgScore > 0 ? `${avgScore.toFixed(1)}/10` : 'N/A'}
-                    trend={avgScore >= 7 ? t('home.card.good_average') : avgScore > 0 ? t('home.card.needs_improvement') : t('home.card.no_scoring_yet')}
-                    isPositiveTrend={avgScore >= 7}
+                    trend={avgScore === 0 ? t('home.card.no_scoring_yet') : avgScore < 6 ? t('home.card.below_threshold') : t('home.card.score_summary')}
+                    isPositiveTrend={avgScore >= 6}
                     icon={
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
