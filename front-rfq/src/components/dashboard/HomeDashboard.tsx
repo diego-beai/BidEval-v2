@@ -3,6 +3,7 @@ import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useScoringStore } from '../../stores/useScoringStore';
+import { useScoringConfigStore } from '../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useQAStore } from '../../stores/useQAStore';
 import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
@@ -58,6 +59,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     // Scoring data from workflow results
     const { scoringResults, refreshScoring } = useScoringStore();
 
+    // Scoring configuration (dynamic criteria per project)
+    const { categories: scoringCategories, criteria: scoringCriteria, loadConfiguration: loadScoringConfig } = useScoringConfigStore();
+
     // Q&A notifications for activity feed
     const { notifications, loadNotifications, questions } = useQAStore();
 
@@ -86,7 +90,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         fetchProviderRanking();
         refreshScoring();
         loadNotifications();
-    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications]);
+        if (activeProjectId) loadScoringConfig(activeProjectId);
+    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications, loadScoringConfig]);
 
     // Cleanup realtime updates on unmount
     React.useEffect(() => {
@@ -894,10 +899,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     </div>
                     <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.providers_evaluated')}
+                            {t('home.scoring.criteria_applied')}
                         </div>
                         <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
-                            {scoringResults.statistics.total_providers}
+                            {scoringCriteria.length > 0 ? scoringCriteria.length : scoringCategories.length > 0 ? scoringCategories.length : 'N/A'}
                         </div>
                     </div>
                 </div>
