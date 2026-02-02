@@ -2,109 +2,6 @@
   "nodes": [
     {
       "parameters": {
-        "model": "mistral-large-latest",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-      "typeVersion": 1,
-      "position": [
-        2128,
-        -1680
-      ],
-      "id": "6ea1c479-6a29-4298-b285-c67973736f5c",
-      "name": "Mistral Cloud Chat Model3",
-      "credentials": {
-        "mistralCloudApi": {
-          "id": "tDjuOnF6lpADMmd5",
-          "name": "Mistral Cloud account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// =============================================\n// NODO: Preparar Contexto RAG (CORREGIDO v3)\n// Output: context_rag para el LLM\n// =============================================\n\nconst items = $input.all();\n\n// Obtener datos del grupo desde el nodo anterior\nlet grupoData;\ntry {\n    grupoData = $('Preparar Grupo Phase').first().json;\n} catch(e) {\n    console.error('❌ Error obteniendo datos del grupo:', e.message);\n    grupoData = {};\n}\n\n// Construir contexto desde los chunks RAG\nlet contextRag = \"\";\nlet chunksUsados = 0;\n\nitems.forEach((item, idx) => {\n    const chunk = item.json;\n    \n    // Extraer datos según estructura de Supabase\n    let text = \"\";\n    let score = 0;\n    let lineas = {};\n    \n    if (chunk.document && chunk.document.pageContent) {\n        text = chunk.document.pageContent;\n        score = chunk.score || 0;\n        lineas = chunk.document.metadata?.loc?.lines || {};\n    } else if (chunk.pageContent) {\n        text = chunk.pageContent;\n        score = chunk.score || 0;\n        lineas = chunk.metadata?.loc?.lines || {};\n    }\n    \n    if (text && text.trim().length > 50) {\n        chunksUsados++;\n        const scorePercent = (score * 100).toFixed(2);\n        \n        contextRag += `\\n=== FRAGMENTO ${chunksUsados} (Relevancia: ${scorePercent}%, Líneas: ${lineas.from || '?'}-${lineas.to || '?'}) ===\\n`;\n        contextRag += text.trim();\n        contextRag += `\\n`;\n    }\n});\n\n// Fallback si no hay chunks\nif (chunksUsados === 0) {\n    contextRag = \"NO SE ENCONTRÓ INFORMACIÓN RELEVANTE EN LA OFERTA PARA ESTOS REQUISITOS.\";\n}\n\nconsole.log('🔍 RAG Preparado:');\nconsole.log('   ├─ Chunks recibidos: ' + items.length);\nconsole.log('   ├─ Chunks usados: ' + chunksUsados);\nconsole.log('   ├─ Tamaño context_rag: ' + contextRag.length + ' chars');\nconsole.log('   └─ Phase: ' + (grupoData.phase || 'N/A'));\n\nreturn [{\n    json: {\n        phase: grupoData.phase || \"Sin Phase\",\n        evaluation_type: grupoData.evaluation_type || \"Technical Evaluation\",\n        requisitos: grupoData.requisitos || [],\n        total_requisitos: grupoData.total_requisitos || 0,\n        context_rag: contextRag,\n        rag_chunks_recibidos: items.length,\n        rag_chunks_usados: chunksUsados,\n        texto_length: contextRag.length\n    }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1872,
-        -1888
-      ],
-      "id": "a602ddee-ea5c-4a77-955b-be169d81e2ad",
-      "name": "Preparar Contexto RAG"
-    },
-    {
-      "parameters": {
-        "model": "qwen3-embedding:8b"
-      },
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-      "typeVersion": 1,
-      "position": [
-        1616,
-        -1680
-      ],
-      "id": "c3b693a5-bfbe-4fe0-a59f-8a8574615de7",
-      "name": "Embeddings Ollama RAG",
-      "credentials": {
-        "ollamaApi": {
-          "id": "oS2Qqti9oVfsm8XZ",
-          "name": "Ollama account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "load",
-        "tableName": {
-          "__rl": true,
-          "value": "proposals",
-          "mode": "list",
-          "cachedResultName": "proposals"
-        },
-        "prompt": "={{ $json.requisitos.map(r => r.requirement_text).join(' | ') }}",
-        "topK": 20,
-        "options": {
-          "queryName": "match_proposals",
-          "metadata": {
-            "metadataValues": [
-              {
-                "name": "file_id",
-                "value": "={{ $('Set File ID').first().json.file_id }}"
-              }
-            ]
-          }
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-      "typeVersion": 1.3,
-      "position": [
-        1552,
-        -1888
-      ],
-      "id": "bac1d1c2-4d0e-4c86-abc5-73c803b02039",
-      "name": "RAG Query Vectorstore",
-      "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// =============================================\n// NODO: Preparar Grupo de Requisitos por Phase\n// Recibe datos ya agrupados del nodo 'Agrupar por Phase'\n// =============================================\n\n// 1. Obtener el grupo actual (ya viene agrupado por phase)\nconst grupoActual = $input.first().json;\n\nconst phase = grupoActual.phase || \"Sin Phase\";\nconst requisitosDelGrupo = grupoActual.requisitos || [];\nconst textoOfertaCompleto = grupoActual.texto_oferta_completo || \"\";\nconst esOfertaLarga = grupoActual.es_oferta_larga || false;\nconst evaluationType = grupoActual.evaluation_type || \"Technical Evaluation\";\n\nconsole.log(`📋 Procesando grupo: ${evaluationType} - ${phase}`);\nconsole.log(`   ├─ Requisitos en este grupo: ${requisitosDelGrupo.length}`);\nconsole.log(`   ├─ Tamaño texto oferta: ${textoOfertaCompleto.length} chars`);\nconsole.log(`   └─ Modo: ${esOfertaLarga ? 'RAG' : 'DIRECTO'}`);\n\n// 2. Preparar contexto según tamaño de oferta\nlet contextoParaLLM = \"\";\n\nif (esOfertaLarga) {\n    // MODO RAG: Usaremos el vectorstore (se configura después)\n    // Por ahora pasamos una muestra y marcamos para RAG\n    contextoParaLLM = textoOfertaCompleto.substring(0, 8000);\n    console.log(`🔍 Modo RAG: Contexto limitado a 8000 chars (se complementará con retrieval)`);\n} else {\n    // MODO DIRECTO: Pasamos todo el texto\n    contextoParaLLM = textoOfertaCompleto;\n    console.log(`📄 Modo DIRECTO: Pasando texto completo`);\n}\n\n// 3. Formatear requisitos para el LLM\nconst requisitosFormateados = requisitosDelGrupo.map(req => ({\n    id: req.id || \"\",\n    requirement_text: req.requirement_text || req.text || \"NO ESPECIFICADO\",\n    phase: req.phase || phase,\n    evaluation_type: req.evaluation_type || evaluationType\n}));\n\n// 4. Retornar datos preparados para el LLM\nreturn [{\n    json: {\n        // Datos del grupo\n        phase: phase,\n        evaluation_type: evaluationType,\n        \n        // Requisitos del grupo\n        requisitos: requisitosFormateados,\n        total_requisitos: requisitosFormateados.length,\n        \n        // Contexto de la oferta\n        context: contextoParaLLM,\n        texto_length: contextoParaLLM.length,\n        \n        // Flags para el flujo\n        es_oferta_larga: esOfertaLarga,\n        usar_rag: esOfertaLarga\n    }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1136,
-        -1728
-      ],
-      "id": "e70b411d-418b-40d9-b34b-42882687eeed",
-      "name": "Preparar Grupo Phase"
-    },
-    {
-      "parameters": {
         "operation": "getAll",
         "tableId": "rfq_items_master",
         "returnAll": true,
@@ -127,10 +24,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -144,
+        -128,
         -1808
       ],
-      "id": "1eec9fd0-359a-49f4-9ed7-6802f931255b",
+      "id": "143470e8-5d82-4f38-af2e-8d0dc68f8a48",
       "name": "Get many rows1",
       "credentials": {
         "supabaseApi": {
@@ -146,10 +43,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        2896,
-        -720
+        2912,
+        -704
       ],
-      "id": "b2f4e27c-d358-43cf-a987-e856838cf668",
+      "id": "69cf4c8a-eae2-4578-b377-a729c63a5039",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -175,10 +72,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2400,
+        2416,
         -1168
       ],
-      "id": "a6794c29-4e95-431b-a767-2a7ed845687b",
+      "id": "66fe79eb-8857-451b-b875-5e81a9815f9d",
       "name": "Validador de Ofertas"
     },
     {
@@ -193,10 +90,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        2352,
+        2368,
         -976
       ],
-      "id": "c57eee05-d225-4a57-8c98-f6fc4c2c1c81",
+      "id": "eb08eb5f-09ad-46ee-b565-f49a6ceafcca",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -213,10 +110,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2592,
+        2608,
         -976
       ],
-      "id": "96ff0d72-fa78-4d35-9be0-a52443445400",
+      "id": "2ce3d06d-4879-483f-97c4-d9ccd3ed41b9",
       "name": "Structured Output Parser4"
     },
     {
@@ -236,10 +133,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2400,
-        -752
+        2416,
+        -736
       ],
-      "id": "c531cdd8-810a-4ed5-99a1-c7e97da37abf",
+      "id": "e1cf988b-fb87-4107-b4ba-c1031b414555",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor"
     },
     {
@@ -290,10 +187,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2128,
+        2144,
         -976
       ],
-      "id": "6f304851-8913-4298-b4cf-f14aeaa4de49",
+      "id": "9d1e1d88-8dc5-4398-9b34-96f9e982a4de",
       "name": "If"
     },
     {
@@ -308,10 +205,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2112,
+        2128,
         -1536
       ],
-      "id": "36f5a2ef-dc24-4c10-85a1-e3f96067d93c",
+      "id": "20ae60ae-49ac-47de-8a92-820116f10455",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -332,10 +229,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2352,
-        -544
+        2368,
+        -528
       ],
-      "id": "c15ff94c-5753-4ed0-b162-9d578f8d8de6",
+      "id": "a53ee540-5a78-488d-b5c9-d8700b0f6838",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -354,14 +251,15 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1120,
+        -1104,
         -2128
       ],
-      "id": "1aa6ae64-70c1-4d34-962c-059ecb43a276",
+      "id": "5a1f5e66-a7b6-4d43-8d88-2fec03a62f79",
       "name": "Sticky Note5"
     },
     {
       "parameters": {
+        "batchSize": 50,
         "options": {
           "reset": "={{ $json.reiniciar_bucle ? true : false }}"
         }
@@ -369,29 +267,29 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        688,
+        704,
         -1744
       ],
-      "id": "72cc336c-9181-461f-a8e3-d0cbddbf8597",
+      "id": "01603f44-2a71-4f92-b685-5195df21525d",
       "name": "Loop Over Phases"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
       },
-      "id": "6e4b3fbe-e525-4633-9896-41d6e81a67af",
+      "id": "6622d0f8-6830-4717-abae-a344dde3c03c",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2640,
+        2656,
         -1760
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Phase: {{ $json.phase }}\n- Total requirements in this group: {{ $json.total_requisitos }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### PROPOSAL CONTEXT\n{{ $json.context_rag }}\n\n\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR TECHNICAL EVALUATIONS - Use these labels in 'cumple':\n- INCLUDED (10 pts)\n- INCLUDED WITH CAVEATS (8 pts)\n- PARTIALLY INCLUDED (6 pts)\n- NOT INCLUDED WITH ALTERNATIVE (3 pts)\n- NOT INCLUDED (0 pts)\n- NO INFORMATION (0 pts)\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\nScoring for Economic:\n- Value explicitly quoted: 10 pts\n- Hourly/daily rate given: 7 pts\n- Estimated/approximate value: 5 pts\n- Mentioned but no price: 3 pts\n- Not found: 0 pts\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\",\n    \"score\": [0-10]\n  }\n]\n\nJSON only, no explanations.",
+        "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Total requirements in this batch: {{ $json.total_requisitos }}\n- Batch: {{ $json.batch_index }} of {{ $json.total_batches }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow is a list of RFQ requirements in JSON format. Each element includes the 'id' field and the requirement text.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### FULL PROPOSAL TEXT\n\n{{ $('Loop Over Items1').first().json.texto_oferta_completo }}\n---\n### TASK\nAnalyze the proposal and evaluate EACH requirement.\n\n### FOR TECHNICAL EVALUATIONS - Use these labels in 'cumple':\n- INCLUDED (10 pts)\n- INCLUDED WITH CAVEATS (8 pts)\n- PARTIALLY INCLUDED (6 pts)\n- NOT INCLUDED WITH ALTERNATIVE (3 pts)\n- NOT INCLUDED (0 pts)\n- NO INFORMATION (0 pts)\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 €/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 € - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 € - Geotechnical survey - Confirmed\"\n  - \"732.588,83 € - FEED TOTAL BASE QUOTATION\"\n  - \"97.935 € - EPC TENDER QUOTATION\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n  Examples:\n  - \"NO VALUE FOUND - 3D model not included in proposal\"\n  - \"NO VALUE FOUND - Methodology not specified\"\n  - \"NO VALUE FOUND - OPEX not quoted\"\n  - \"NO VALUE FOUND - No price for this optional\"\n\nScoring for Economic:\n- Value explicitly quoted: 10 pts\n- Hourly/daily rate given: 7 pts\n- Estimated/approximate value: 5 pts\n- Mentioned but no price: 3 pts\n- Not found: 0 pts\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: label | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Quote from document or 'No mention found']\",\n    \"score\": [0-10]\n  }\n]\n\nJSON only, no explanations.",
         "messages": {
           "messageValues": [
             {
@@ -404,10 +302,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2192,
+        2208,
         -1888
       ],
-      "id": "b4b3c59c-aaa0-402d-b0c0-2391b123471b",
+      "id": "ddfb00c6-a590-49e4-af7e-b6cba5d3fb04",
       "name": "LLM Chain"
     },
     {
@@ -516,10 +414,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -112,
+        -96,
         -976
       ],
-      "id": "42f36cf5-1d09-4d2e-aeba-4a5e23815235",
+      "id": "8ec5d82a-9eb0-49e3-9a9d-923b9a5bc4a9",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -536,12 +434,12 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "5f76ceac-9895-4cb4-b5d7-23b366442059",
+      "id": "3468406c-1149-4256-b0f9-33e047f55354",
       "name": "Delete Old Doc Rows",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -320,
+        -304,
         -976
       ],
       "alwaysOutputData": true,
@@ -614,12 +512,12 @@
         },
         "options": {}
       },
-      "id": "ae7b4aa0-bc3d-459a-8c05-21606802f94b",
+      "id": "f95df030-9859-4a41-9d19-87124c1200bb",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -512,
+        -496,
         -976
       ]
     },
@@ -658,13 +556,13 @@
           }
         }
       },
-      "id": "95ca0e6e-b5f9-42f6-865b-18312c4964d2",
+      "id": "4c36ef82-d0c9-442f-b90f-3b908329ba80",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        3104,
-        -688
+        3120,
+        -672
       ]
     },
     {
@@ -676,10 +574,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        3008,
-        -512
+        3024,
+        -496
       ],
-      "id": "8111efbe-c3e8-434a-a2dd-50c83f4c7da1",
+      "id": "5b6d02c7-d6fc-4caa-bbed-e80cecf7f6b8",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -695,12 +593,12 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "fa93a061-70de-4319-837f-9a7369b905cf",
+      "id": "d0e20863-a491-4104-9347-2f2eb6b9996b",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        2976,
+        2992,
         -992
       ],
       "credentials": {
@@ -717,10 +615,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        560,
+        576,
         -976
       ],
-      "id": "a974b042-f7a4-4691-be56-c38c88516dad",
+      "id": "d25ca851-8a20-4217-bcc1-b0f967ee9d75",
       "name": "Validar Contenido PDF"
     },
     {
@@ -731,10 +629,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        288,
+        304,
         -976
       ],
-      "id": "bc14c979-d1b6-4c2d-8362-2b87a2201f2f",
+      "id": "13271fd6-e2bd-4553-b5b0-e75743935411",
       "name": "Extract from File"
     },
     {
@@ -765,10 +663,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        848,
+        864,
         -976
       ],
-      "id": "eff39f47-3a67-4734-b5b5-789296dbe7d4",
+      "id": "f5375959-8762-4411-b534-3553b5084674",
       "name": "¿Necesita OCR?"
     },
     {
@@ -778,22 +676,22 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1488,
+        1504,
         -1088
       ],
-      "id": "ff038025-96a0-4a7f-a6f6-a70062acb37a",
+      "id": "f4a9783a-6911-414d-a621-220c76cc741d",
       "name": "Aggregate OCR Pages"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "2a66bc21-18b5-46b8-9e9c-60348300c5d1",
+      "id": "b2ee2443-d5bc-4428-aec2-585ed2896f66",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1936,
+        1952,
         -976
       ]
     },
@@ -804,10 +702,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2800,
+        2816,
         -992
       ],
-      "id": "de6847dc-49f7-4ca7-bdff-690616cb27e4",
+      "id": "2a99d9e6-9c8f-4adb-b207-52b928d427b5",
       "name": "Format for Vectorstore"
     },
     {
@@ -817,10 +715,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -864,
+        -848,
         -1680
       ],
-      "id": "fcc40dd5-2805-49ca-b671-4e0a8d4fbc48",
+      "id": "bfd70129-a98d-47e2-90ba-793f213e5277",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
@@ -830,10 +728,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -560,
+        -544,
         -1760
       ],
-      "id": "ba874145-c742-4f9c-aa91-36b3f83b479c",
+      "id": "14827ded-d072-41e1-999a-03d2c9d50d10",
       "name": "Loop Over Items1"
     },
     {
@@ -855,12 +753,12 @@
           "timeout": 300000
         }
       },
-      "id": "322ed000-32b6-44de-a725-139e88449735",
+      "id": "c61a460e-a441-44a0-9a64-133679d83688",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1280,
+        1296,
         -1184
       ],
       "retryOnFail": true
@@ -873,10 +771,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2592,
-        -544
+        2608,
+        -528
       ],
-      "id": "cd180638-b8c4-4325-9b67-7a46ca833ca6",
+      "id": "6a5284bb-8805-4142-9b31-f32a4ffb3373",
       "name": "Structured Output Parser"
     },
     {
@@ -884,10 +782,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1744,
+        1760,
         -976
       ],
-      "id": "d12bbd44-5b72-493a-ae5d-5e4da7c41c0b",
+      "id": "61488c9b-c0d6-40f2-afe8-6676253961d0",
       "name": "Merge1"
     },
     {
@@ -897,24 +795,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        448,
+        464,
         -1808
       ],
-      "id": "e855befc-f5c2-42ed-be5e-6dcb0f73f960",
+      "id": "343a1116-28bc-4c04-8a05-bc197a7d8a55",
       "name": "Reset Items"
-    },
-    {
-      "parameters": {
-        "jsCode": "// =============================================\n// NODO: Agrupar Requisitos por Phase (CON BATCHING)\n// =============================================\n\nconst items = $input.all();\nconst BATCH_SIZE = 5; // OPTIMIZADO: Batches más pequeños = respuestas más rápidas y precisas\n\n// Agrupar requisitos por phase\nconst grupos = {};\nitems.forEach(item => {\n    const phase = item.json.phase || \"Sin Phase\";\n    if (!grupos[phase]) {\n        grupos[phase] = [];\n    }\n    grupos[phase].push(item.json);\n});\n\n// Obtener texto de oferta\nlet textoOfertaCompleto = \"\";\ntry {\n    const loopData = $('Loop Over Items1').first().json;\n    textoOfertaCompleto = loopData.texto_oferta_completo || \"\";\n} catch(e) {\n    console.warn('⚠️ No se pudo obtener texto de oferta:', e.message);\n}\n\n// Crear batches por cada phase\nconst batches = [];\n\nObject.entries(grupos).forEach(([phase, requisitos]) => {\n    const evaluationType = requisitos[0]?.evaluation_type || \"Technical Evaluation\";\n    \n    // Dividir en batches de BATCH_SIZE\n    for (let i = 0; i < requisitos.length; i += BATCH_SIZE) {\n        const batch = requisitos.slice(i, i + BATCH_SIZE);\n        batches.push({\n            json: {\n                phase: phase,\n                requisitos: batch,\n                total_requisitos: batch.length,\n                batch_index: Math.floor(i / BATCH_SIZE) + 1,\n                total_batches: Math.ceil(requisitos.length / BATCH_SIZE),\n                texto_oferta_completo: textoOfertaCompleto,\n                es_oferta_larga: true,\n                evaluation_type: evaluationType\n            }\n        });\n    }\n});\n\nconsole.log(`📊 Generados ${batches.length} batches de máximo ${BATCH_SIZE} requisitos`);\n\nreturn batches;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        128,
-        -1808
-      ],
-      "id": "194e136e-fd91-4bfe-86b6-30fb6206c57f",
-      "name": "Agrupar por Phase"
     },
     {
       "parameters": {
@@ -924,10 +809,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -112,
+        -96,
         -2032
       ],
-      "id": "6540d379-0a5d-44e0-a15e-a3189490b8d7",
+      "id": "fb94b867-19c1-40f3-8ded-4c62c2730672",
       "name": "Respond to Webhook"
     },
     {
@@ -940,10 +825,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -944,
+        -928,
         -976
       ],
-      "id": "d84cc51f-8bf7-4af8-ac76-d580cd99d3b8",
+      "id": "8f5c0cc4-648d-43a0-b4b8-ce46157ef9c8",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -954,10 +839,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        64,
+        80,
         -976
       ],
-      "id": "9cd17cd2-c5b4-482c-9fc6-33dba7189675",
+      "id": "fc8f82c4-b714-4e2d-84c2-d9049b2d37dd",
       "name": "Base64 a Binary"
     },
     {
@@ -967,10 +852,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1072,
+        1088,
         -1088
       ],
-      "id": "459fc886-2d98-4004-89c9-13639b118aa2",
+      "id": "46b90454-f69b-4c8b-92de-a7150b9d90a9",
       "name": "Base64 a Binary1"
     },
     {
@@ -980,10 +865,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -704,
+        -688,
         -976
       ],
-      "id": "1f9ae358-da68-49ea-b3c9-ef583bd91b75",
+      "id": "670effc0-15de-44a1-9de2-6692312d95e0",
       "name": "Code in JavaScript1"
     },
     {
@@ -1072,7 +957,7 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": false
+              "canBeUsedToMatch": true
             },
             {
               "id": "updated_at",
@@ -1110,10 +995,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        3152,
+        3168,
         -1536
       ],
-      "id": "5b00924a-ff0b-429f-b871-4226b787148d",
+      "id": "d17ef36b-451e-442c-8bd2-51f64adaac40",
       "name": "Insert or update rows in a table",
       "credentials": {
         "postgres": {
@@ -1123,85 +1008,97 @@
       }
     },
     {
-      "parameters": {},
-      "type": "@n8n/n8n-nodes-langchain.embeddingsCohere",
+      "parameters": {
+        "jsCode": "// =============================================\n// NODO: Preparar Todo para LLM (SIN RAG, SIN FASES)\n// Pasa TODOS los requisitos directamente al LLM\n// =============================================\n\nconst items = $input.all();\n\nconsole.log('📥 Requisitos recibidos:', items.length);\n\n// Obtener texto completo de la oferta desde Loop Over Items1\nlet textoOfertaCompleto = \"\";\nlet evaluationType = \"Technical Evaluation\";\n\ntry {\n    const loopData = $('Loop Over Items1').first().json;\n    textoOfertaCompleto = loopData.texto_oferta_completo || \"\";\n    evaluationType = loopData.tipo_evaluacion_actual || \"Technical Evaluation\";\n    console.log('✅ Datos obtenidos de Loop Over Items1');\n    console.log('   ├─ Tipo evaluación:', evaluationType);\n    console.log('   └─ Texto oferta:', textoOfertaCompleto.length, 'chars');\n} catch(e) {\n    console.warn('⚠️ No se pudo obtener texto de oferta de Loop Over Items1:', e.message);\n    // Fallback: intentar obtener de otro lugar\n    try {\n        const expandirData = $('Expandir por Tipo de Evaluación').first().json;\n        textoOfertaCompleto = expandirData.texto_oferta_completo || \"\";\n        evaluationType = expandirData.tipo_evaluacion_actual || \"Technical Evaluation\";\n        console.log('✅ Fallback: Datos obtenidos de Expandir por Tipo de Evaluación');\n    } catch(e2) {\n        console.error('❌ No se pudo obtener texto de ningún nodo');\n    }\n}\n\n// Formatear TODOS los requisitos (sin batching)\nconst todosLosRequisitos = items.map(item => ({\n    id: item.json.id || \"\",\n    requirement_text: item.json.requirement_text || item.json.text || \"NO ESPECIFICADO\",\n    evaluation_type: item.json.evaluation_type || evaluationType\n}));\n\nconsole.log('📋 Preparación directa (sin RAG ni fases):');\nconsole.log('   ├─ Total requisitos:', todosLosRequisitos.length);\nconsole.log('   ├─ Tipo evaluación:', evaluationType);\nconsole.log('   └─ Tamaño texto oferta:', textoOfertaCompleto.length, 'chars');\n\n// Retornar UN SOLO item con TODOS los requisitos\nreturn [{\n    json: {\n        evaluation_type: evaluationType,\n        requisitos: todosLosRequisitos,\n        total_requisitos: todosLosRequisitos.length,\n        batch_index: 1,\n        total_batches: 1,\n        context: textoOfertaCompleto,\n        texto_length: textoOfertaCompleto.length\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        -1888
+      ],
+      "id": "bbff3aea-66b8-49dc-804a-6cc5e7aaf8cc",
+      "name": "Preparar Todo para LLM1"
+    },
+    {
+      "parameters": {
+        "model": "mistral-large-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        3024,
-        -784
+        2144,
+        -1680
       ],
-      "id": "9fcf1cc2-3355-4a70-9b0b-cb2789777d14",
-      "name": "Embeddings Cohere",
+      "id": "2f4a13ca-767c-4434-96cf-fdc2623ad40f",
+      "name": "Mistral Cloud Chat Model3",
       "credentials": {
-        "cohereApi": {
-          "id": "KGv4zlUJIjLdxpnr",
-          "name": "CohereApi account"
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "ministral-14b-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        -864
+      ],
+      "id": "129d723e-a4da-41bb-9fe3-42c72f3b3e01",
+      "name": "Mistral Cloud Chat Model5",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "ministral-14b-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        -528
+      ],
+      "id": "89302552-f656-4b0d-9cdc-379bd296216b",
+      "name": "Mistral Cloud Chat Model6",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "tDjuOnF6lpADMmd5",
+          "name": "Mistral Cloud account"
         }
       }
     }
   ],
   "connections": {
-    "Mistral Cloud Chat Model3": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "LLM Chain",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Preparar Contexto RAG": {
-      "main": [
-        [
-          {
-            "node": "LLM Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Embeddings Ollama RAG": {
-      "ai_embedding": [
-        [
-          {
-            "node": "RAG Query Vectorstore",
-            "type": "ai_embedding",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "RAG Query Vectorstore": {
-      "main": [
-        [
-          {
-            "node": "Preparar Contexto RAG",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Preparar Grupo Phase": {
-      "main": [
-        [
-          {
-            "node": "RAG Query Vectorstore",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Get many rows1": {
       "main": [
         [
           {
-            "node": "Agrupar por Phase",
+            "node": "Reset Items",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert into Supabase Vectorstore",
+            "type": "ai_embedding",
             "index": 0
           }
         ]
@@ -1220,13 +1117,7 @@
     },
     "Ollama Chat Model1": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Validador de Ofertas",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Structured Output Parser4": {
@@ -1269,15 +1160,14 @@
         ]
       ]
     },
+    "Ollama Model1": {
+      "ai_languageModel": [
+        []
+      ]
+    },
     "Ollama Model": {
       "ai_languageModel": [
-        [
-          {
-            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Loop Over Phases": {
@@ -1291,7 +1181,7 @@
         ],
         [
           {
-            "node": "Preparar Grupo Phase",
+            "node": "Preparar Todo para LLM1",
             "type": "main",
             "index": 0
           }
@@ -1532,17 +1422,6 @@
         ]
       ]
     },
-    "Agrupar por Phase": {
-      "main": [
-        [
-          {
-            "node": "Reset Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Webhook": {
       "main": [
         [
@@ -1598,12 +1477,45 @@
         ]
       ]
     },
-    "Embeddings Cohere": {
-      "ai_embedding": [
+    "Preparar Todo para LLM1": {
+      "main": [
         [
           {
-            "node": "Insert into Supabase Vectorstore",
-            "type": "ai_embedding",
+            "node": "LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Validador de Ofertas",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -1612,7 +1524,6 @@
   },
   "pinData": {},
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
   }
 }
