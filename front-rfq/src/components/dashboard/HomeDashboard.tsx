@@ -6,26 +6,14 @@ import { useScoringStore } from '../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useQAStore } from '../../stores/useQAStore';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderDisplayName } from '../../types/provider.types';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { supabase } from '../../lib/supabase';
 import './Dashboard.css';
 
 interface HomeDashboardProps {
     onNavigate: (view: string) => void;
 }
-
-// Map database provider names to Provider enum
-const PROVIDER_NAME_MAP: Record<string, Provider> = {
-    'TECNICASREUNIDAS': Provider.TR,
-    'TR': Provider.TR,
-    'Técnicas Reunidas': Provider.TR,
-    'IDOM': Provider.IDOM,
-    'SACYR': Provider.SACYR,
-    'EA': Provider.EA,
-    'SENER': Provider.SENER,
-    'TRESCA': Provider.TRESCA,
-    'WORLEY': Provider.WORLEY
-};
 
 const normalizeProviderName = (name: string) => {
     return name
@@ -35,10 +23,6 @@ const normalizeProviderName = (name: string) => {
         .replace(/\p{Diacritic}/gu, '')
         .replace(/\s+/g, '');
 };
-
-const NORMALIZED_PROVIDER_NAME_MAP: Record<string, Provider> = Object.fromEntries(
-    Object.entries(PROVIDER_NAME_MAP).map(([key, value]) => [normalizeProviderName(key), value])
-);
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
     const { t } = useLanguageStore();
@@ -64,6 +48,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
     // Q&A notifications for activity feed
     const { notifications, loadNotifications, questions } = useQAStore();
+
+    // Dynamic providers
+    const { projectProviders } = useProviderStore();
 
     // Load data on mount
     useEffect(() => {
@@ -125,17 +112,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         const providerTypes: Record<string, Set<string>> = {};
 
+        const matchProvider = (rawName: string): string | null => {
+            const norm = normalizeProviderName(rawName);
+            for (const p of projectProviders) {
+                const pNorm = normalizeProviderName(p);
+                if (pNorm === norm) return p;
+                // Handle TR/TECNICASREUNIDAS alias
+                if ((pNorm === 'TR' && norm === 'TECNICASREUNIDAS') || (pNorm === 'TECNICASREUNIDAS' && norm === 'TR')) return p;
+            }
+            return null;
+        };
+
         const registerProviderType = (providerRaw: any, evalTypeRaw: any) => {
             if (!providerRaw || !evalTypeRaw) return;
-            const provider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(providerRaw))];
+            const provider = matchProvider(String(providerRaw));
             if (!provider) return;
             const evalType = normalizeEvaluationType(String(evalTypeRaw));
             if (!providerTypes[provider]) providerTypes[provider] = new Set<string>();
             providerTypes[provider].add(evalType);
         };
 
-        // Initialize all providers with the 4 scoring categories
-        Object.values(Provider).forEach(provider => {
+        // Initialize all dynamic providers with the 4 scoring categories
+        projectProviders.forEach(provider => {
             evaluations[provider] = {
                 'Technical': 0,      // 40%
                 'Economic': 0,       // 30%
@@ -192,7 +190,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 if (!providerName) return;
 
                 console.log('[HomeDashboard] Processing provider:', providerName);
-                const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(providerName))];
+                const normalizedProvider = matchProvider(String(providerName));
                 console.log('[HomeDashboard] Normalized provider:', normalizedProvider);
                 if (!normalizedProvider) {
                     console.warn('[HomeDashboard] Provider not found in map:', providerName);
@@ -271,7 +269,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     const itemProvider = item.Provider || item.provider;
                     if (!itemProvider) return;
 
-                    const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(itemProvider))];
+                    const normalizedProvider = matchProvider(String(itemProvider));
                     if (!normalizedProvider) return;
 
                     const evalType = item.evaluation_type || item.evaluation;
@@ -298,7 +296,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     const itemProvider = item.provider_name;
                     if (!itemProvider) return;
 
-                    const normalizedProvider = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(String(itemProvider))];
+                    const normalizedProvider = matchProvider(String(itemProvider));
                     if (!normalizedProvider) return;
 
                     const evalType = item.evaluation_type;
@@ -321,7 +319,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         }
 
         return evaluations;
-    }, [tableData, proposalEvaluations, providerRanking]);
+    }, [tableData, proposalEvaluations, providerRanking, projectProviders]);
 
     // Generate recent activity from both tableData and proposalEvaluations
     const recentActivity = useMemo(() => {
@@ -544,8 +542,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         console.log('Final evaluation types found:', Array.from(types));
                         console.log('Total evaluation types count:', totalEvaluationTypesCount);
 
-                        // Set rfqCount to total evaluation types across all RFQ documents
-                        setRfqCount(totalEvaluationTypesCount);
+                        // Set rfqCount to the number of unique RFQ documents
+                        setRfqCount(rfqDocuments.length);
                         setEvaluationTypes(types);
                     } else {
                         console.log('RFQ query error or no data:', rfqError);
@@ -685,6 +683,35 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         const sum = scoringResults.ranking.reduce((acc, r) => acc + (r.overall_score || 0), 0);
         return sum / scoringResults.ranking.length;
     }, [scoringResults]);
+
+    // Dynamic category weights from scoring config (fallback to defaults)
+    const categoryWeights = useMemo(() => {
+        const defaults = [
+            { key: 'technical', label: t('home.scoring.technical'), weight: 30, color: '#12b5b0' },
+            { key: 'economic', label: t('home.scoring.economic'), weight: 35, color: '#f59e0b' },
+            { key: 'execution', label: t('home.scoring.execution'), weight: 20, color: '#3b82f6' },
+            { key: 'hse', label: t('home.scoring.hse'), weight: 15, color: '#8b5cf6' }
+        ];
+        if (!scoringCategories || scoringCategories.length === 0) return defaults;
+
+        const scoreKeyMap: Record<string, string> = {
+            'technical': 'technical',
+            'economic': 'economic',
+            'execution': 'execution',
+            'hse': 'hse',
+            'hse_esg': 'hse',
+            'hse_compliance': 'hse'
+        };
+
+        return scoringCategories
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((cat, i) => ({
+                key: scoreKeyMap[cat.name] || cat.name,
+                label: cat.display_name,
+                weight: cat.weight,
+                color: cat.color || defaults[i]?.color || '#64748b'
+            }));
+    }, [scoringCategories, t]);
 
 
     return (
@@ -969,18 +996,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                 const hasData = (scores.technical || 0) + (scores.economic || 0) + (scores.execution || 0) + (scores.hse_compliance || 0) > 0;
                                 if (!hasData) return null;
 
-                                const evaluations = [
-                                    { type: 'Technical (30%)', score: scores.technical || 0, color: '#12b5b0' },
-                                    { type: 'Economic (35%)', score: scores.economic || 0, color: '#f59e0b' },
-                                    { type: 'Execution (20%)', score: scores.execution || 0, color: '#3b82f6' },
-                                    { type: 'HSE (15%)', score: scores.hse_compliance || 0, color: '#8b5cf6' }
-                                ];
+                                const scoreMap: Record<string, number> = {
+                                    technical: scores.technical || 0,
+                                    economic: scores.economic || 0,
+                                    execution: scores.execution || 0,
+                                    hse: scores.hse_compliance || 0
+                                };
+                                const evaluations = categoryWeights.map(cw => ({
+                                    type: `${cw.label} (${cw.weight}%)`,
+                                    score: scoreMap[cw.key] || 0,
+                                    color: cw.color
+                                }));
 
                                 // Get display name from provider name
-                                const normalizedName = NORMALIZED_PROVIDER_NAME_MAP[normalizeProviderName(provider.provider_name)];
-                                const displayName = normalizedName
-                                    ? (PROVIDER_DISPLAY_NAMES[normalizedName] || provider.provider_name)
-                                    : provider.provider_name;
+                                const displayName = getProviderDisplayName(provider.provider_name);
 
                                 return (
                                     <StackedBar
@@ -1013,10 +1042,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         gap: '16px',
                         justifyContent: 'center'
                     }}>
-                        <LegendItem color="#12b5b0" label={`${t('home.scoring.technical')} (30%)`} />
-                        <LegendItem color="#f59e0b" label={`${t('home.scoring.economic')} (35%)`} />
-                        <LegendItem color="#3b82f6" label={`${t('home.scoring.execution')} (20%)`} />
-                        <LegendItem color="#8b5cf6" label={`${t('home.scoring.hse')} (15%)`} />
+                        {categoryWeights.map(cw => (
+                            <LegendItem key={cw.key} color={cw.color} label={`${cw.label} (${cw.weight}%)`} />
+                        ))}
                     </div>
                 </div>
 

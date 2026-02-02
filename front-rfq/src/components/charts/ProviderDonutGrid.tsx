@@ -1,16 +1,16 @@
 import React from 'react';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderDisplayName } from '../../types/provider.types';
 import { DonutChart, DonutChartData } from './DonutChart';
 
 export interface ProviderDonutData {
-  provider: Provider;
+  provider: string;
   evaluations: string[];
   selected?: boolean;
 }
 
 export interface ProviderDonutGridProps {
   providers: ProviderDonutData[];
-  onProviderClick: (provider: Provider) => void;
+  onProviderClick: (provider: string) => void;
 }
 
 // Colores de evaluación consistentes
@@ -118,7 +118,7 @@ export const ProviderDonutGrid: React.FC<ProviderDonutGridProps> = ({
                 transition: 'color 0.2s ease'
               }}
             >
-              {PROVIDER_DISPLAY_NAMES[providerData.provider]}
+              {getProviderDisplayName(providerData.provider)}
             </div>
           </div>
         );

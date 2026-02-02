@@ -3,12 +3,13 @@ import { useQAStore } from '../../../stores/useQAStore';
 import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
+import { useProviderStore } from '../../../stores/useProviderStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { getProviderColor, getProviderDisplayName } from '../../../types/provider.types';
 import { generateTechnicalAudit, sendQAToSupplier, SendToSupplierResponse } from '../../../services/n8n.service';
 import { supabase } from '../../../lib/supabase';
 import type { QAQuestion, Disciplina, EstadoPregunta, Importancia } from '../../../types/qa.types';
 
-const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
 import { mapQAAuditToQAQuestion } from '../../../types/qa.types';
 import './QAModule.css';
 
@@ -221,8 +222,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     }));
   };
 
-  // Available providers (sync with existing dashboard)
-  const availableProviders = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY'];
+  // Dynamic providers from store
+  const { projectProviders } = useProviderStore();
 
   // Sync with active project from global store
   useEffect(() => {
@@ -808,20 +809,10 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     }
   };
 
-  const getProviderClass = (provider?: string | null) => {
-    if (!provider) return '';
-    const normalized = provider.toUpperCase().trim();
-    switch (normalized) {
-      case 'TR':
-      case 'TECNICASREUNIDAS': return 'provider-tr';
-      case 'IDOM': return 'provider-idom';
-      case 'SACYR': return 'provider-sacyr';
-      case 'EA': return 'provider-ea';
-      case 'SENER': return 'provider-sener';
-      case 'TRESCA': return 'provider-tresca';
-      case 'WORLEY': return 'provider-worley';
-      default: return '';
-    }
+  const getProviderStyle = (provider?: string | null) => {
+    if (!provider) return {};
+    const color = getProviderColor(provider, projectProviders);
+    return { backgroundColor: `${color}20`, color: color, borderColor: `${color}40` };
   };
 
   const groupedQuestions = getGroupedByDisciplina();
@@ -956,8 +947,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                 className="qa-select"
               >
                 <option value="">{t('qa.generator.select_provider')}</option>
-                {availableProviders.map(p => (
-                  <option key={p} value={p}>{p}</option>
+                {projectProviders.map(p => (
+                  <option key={p} value={p}>{getProviderDisplayName(p)}</option>
                 ))}
               </select>
             </div>
@@ -1214,8 +1205,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                         className="filter-select"
                       >
                         <option value="">{t('qa.filters.all_providers')}</option>
-                        {availableProviders.map(p => (
-                          <option key={p} value={p}>{p}</option>
+                        {projectProviders.map(p => (
+                          <option key={p} value={p}>{getProviderDisplayName(p)}</option>
                         ))}
                       </select>
                     </div>
@@ -1358,8 +1349,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                             {getPriorityLabel(question.importancia || question.importance || '')}
                           </span>
                         )}
-                        <span className={`question-provider ${getProviderClass(question.proveedor || question.provider_name)}`}>
-                          {displayProviderName(question.proveedor || question.provider_name)}
+                        <span className="question-provider" style={getProviderStyle(question.proveedor || question.provider_name)}>
+                          {getProviderDisplayName(question.proveedor || question.provider_name)}
                         </span>
                         {/* Thread View Button - for questions that are follow-ups */}
                         {question.parent_question_id && (

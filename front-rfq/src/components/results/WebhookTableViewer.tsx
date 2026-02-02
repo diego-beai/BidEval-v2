@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderDisplayName } from '../../types/provider.types';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { RfqResult, RfqItem } from '../../types/rfq.types';
 import { API_CONFIG } from '../../config/constants';
 import { fetchWithTimeout } from '../../services/api.service';
@@ -10,36 +11,34 @@ interface Filters {
   searchText: string;
   selectedEvaluations: string[];
   selectedFases: string[];
-  selectedProviders: Provider[];
+  selectedProviders: string[];
   rfqRequisitoSearch: string;
 }
 
 /**
  * Transforma los resultados de n8n a RfqResult[]
- * (Misma lógica que en useRfqStore)
+ * Dynamically detects provider columns from item keys
  */
 function transformResults(items: RfqItem[]): RfqResult[] {
-  const providerMapping: Record<string, Provider> = {
-    'TECNICASREUNIDAS': Provider.TR,
-    'IDOM': Provider.IDOM,
-    'SACYR': Provider.SACYR,
-    'EA': Provider.EA,
-    'SENER': Provider.SENER,
-    'TRESCA': Provider.TRESCA,
-    'WORLEY': Provider.WORLEY
-  };
+  // Known non-provider columns
+  const KNOWN_COLUMNS = new Set([
+    'id', 'rfq_project_id', 'project_name', 'evaluation', 'fase',
+    'requisito_rfq', 'createdAt', 'updatedAt', 'created_at', 'updated_at',
+    'evaluation_type', 'phase', 'requirement_text', 'Provider', 'provider'
+  ]);
 
   return items.map((item) => {
-    const evaluations: Partial<Record<Provider, any>> = {};
+    const evaluations: Record<string, any> = {};
 
-    Object.entries(providerMapping).forEach(([dbName, enumValue]) => {
-      const evaluation = item[dbName as keyof RfqItem];
-
-      if (evaluation && typeof evaluation === 'string') {
-        evaluations[enumValue] = {
-          provider: enumValue,
-          evaluation,
-          hasValue: evaluation !== 'NO COTIZADO' && evaluation !== 'SIN INFORMACIÓN'
+    // Detect provider columns dynamically
+    Object.keys(item).forEach(key => {
+      if (KNOWN_COLUMNS.has(key)) return;
+      const value = item[key];
+      if (value && typeof value === 'string') {
+        evaluations[key] = {
+          provider: key,
+          evaluation: value,
+          hasValue: value !== 'NO COTIZADO' && value !== 'SIN INFORMACIÓN' && value !== 'NOT QUOTED' && value !== 'NO INFORMATION'
         };
       }
     });
@@ -60,6 +59,7 @@ function transformResults(items: RfqItem[]): RfqResult[] {
 }
 
 export function WebhookTableViewer() {
+  const { projectProviders } = useProviderStore();
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<RfqResult[] | null>(null);
@@ -147,7 +147,7 @@ export function WebhookTableViewer() {
   }, [results]);
 
   // Lista de todos los proveedores disponibles
-  const allProviders = useMemo(() => Object.values(Provider), []);
+  const allProviders = projectProviders;
 
   // Proveedores a mostrar (filtrados o todos)
   const providersToShow = useMemo(() => {
@@ -255,7 +255,7 @@ export function WebhookTableViewer() {
   };
 
   // Toggle selección de proveedor
-  const toggleProvider = (provider: Provider) => {
+  const toggleProvider = (provider: string) => {
     setFilters(prev => {
       const isSelected = prev.selectedProviders.includes(provider);
       const newSelected = isSelected
@@ -305,7 +305,7 @@ export function WebhookTableViewer() {
       'Evaluación',
       'Fase',
       'Requisito RFQ',
-      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
+      ...providersToShow.map(provider => getProviderDisplayName(provider))
     ];
 
     const rows = dataToExport.map(result => {
@@ -347,7 +347,7 @@ export function WebhookTableViewer() {
       'Evaluación',
       'Fase',
       'Requisito RFQ',
-      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
+      ...providersToShow.map(provider => getProviderDisplayName(provider))
     ];
 
     const rows = dataToExport.map(result => {
@@ -603,7 +603,7 @@ export function WebhookTableViewer() {
                               checked={filters.selectedProviders.includes(provider)}
                               onChange={() => toggleProvider(provider)}
                             />
-                            <span>{PROVIDER_DISPLAY_NAMES[provider]}</span>
+                            <span>{getProviderDisplayName(provider)}</span>
                           </label>
                         ))}
                       </div>
@@ -744,7 +744,7 @@ export function WebhookTableViewer() {
                   <th className="col-rfq-requisito">Requisito RFQ</th>
                   {providersToShow.map(provider => (
                     <th key={provider} className="col-provider">
-                      {PROVIDER_DISPLAY_NAMES[provider]}
+                      {getProviderDisplayName(provider)}
                     </th>
                   ))}
                 </tr>

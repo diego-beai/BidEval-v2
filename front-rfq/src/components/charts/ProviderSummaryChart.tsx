@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { DonutChart, DonutChartData } from './DonutChart';
 import { useRfqStore } from '../../stores/useRfqStore';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderColor, getProviderDisplayName } from '../../types/provider.types';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 
 interface ProviderSummaryChartProps {
@@ -10,6 +11,7 @@ interface ProviderSummaryChartProps {
 
 export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ className }) => {
   const { providerRanking, fetchProviderRanking, isProcessing, error } = useRfqStore();
+  const { projectProviders } = useProviderStore();
   const [chartData, setChartData] = useState<DonutChartData[]>([]);
   const { t } = useLanguageStore();
 
@@ -30,47 +32,26 @@ export const ProviderSummaryChart: React.FC<ProviderSummaryChartProps> = ({ clas
         return acc;
       }, {});
 
-      const colors = [
-        'rgba(18, 181, 176, 0.8)',  // TR - cyan
-        'rgba(65, 209, 122, 0.8)',  // IDOM - green
-        'rgba(167, 139, 250, 0.8)', // SACYR - purple
-        'rgba(251, 146, 60, 0.8)',  // EA - orange
-        'rgba(236, 72, 153, 0.8)',  // SENER - pink
-        'rgba(34, 211, 238, 0.8)',  // TRESCA - cyan light
-        'rgba(251, 191, 36, 0.8)',  // WORLEY - yellow
-      ];
-
-      const data: DonutChartData[] = Object.entries(providerCounts).map(([label, value], index) => ({
-        label: PROVIDER_DISPLAY_NAMES[label as Provider] || label,
+      const data: DonutChartData[] = Object.entries(providerCounts).map(([label, value]) => ({
+        label: getProviderDisplayName(label),
         value,
-        color: colors[index % colors.length],
+        color: getProviderColor(label, projectProviders),
         isEmpty: value === 0
       }));
 
       setChartData(data);
     } else {
-      // Datos vacíos o de ejemplo con todos los proveedores
-      const allProviders = Object.values(Provider);
-      const colors = [
-        'rgba(18, 181, 176, 0.8)',  // TR - cyan
-        'rgba(65, 209, 122, 0.8)',  // IDOM - green
-        'rgba(167, 139, 250, 0.8)', // SACYR - purple
-        'rgba(251, 146, 60, 0.8)',  // EA - orange
-        'rgba(236, 72, 153, 0.8)',  // SENER - pink
-        'rgba(34, 211, 238, 0.8)',  // TRESCA - cyan light
-        'rgba(251, 191, 36, 0.8)',  // WORLEY - yellow
-      ];
-
-      const data: DonutChartData[] = allProviders.map((provider, index) => ({
-        label: PROVIDER_DISPLAY_NAMES[provider],
+      // Datos vacíos con dynamic providers
+      const data: DonutChartData[] = projectProviders.map((provider) => ({
+        label: getProviderDisplayName(provider),
         value: 0,
-        color: colors[index % colors.length],
+        color: getProviderColor(provider, projectProviders),
         isEmpty: true
       }));
 
       setChartData(data);
     }
-  }, [providerRanking]);
+  }, [providerRanking, projectProviders]);
 
   if (isProcessing) {
     return (

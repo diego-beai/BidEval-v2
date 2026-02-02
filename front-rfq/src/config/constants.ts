@@ -1,4 +1,8 @@
 import { Provider } from '../types/provider.types';
+import { getProviderColor, getProviderDisplayName, getProviderFullDisplayName } from '../types/provider.types';
+
+// Re-export dynamic provider helpers for backward compatibility
+export { getProviderColor, getProviderDisplayName, getProviderFullDisplayName };
 
 /**
  * Configuración de API y endpoints

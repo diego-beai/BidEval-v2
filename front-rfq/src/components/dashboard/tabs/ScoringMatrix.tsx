@@ -195,15 +195,6 @@ export const ScoringMatrix: React.FC = () => {
         }
     }, [activeProjectId, refreshScoring, resetScoringStore]);
 
-    // Check if weights differ from defaults
-    const hasCustomWeights = useMemo(() => {
-        // Compare against current SCORING_CRITERIA weights
-        return SCORING_CRITERIA.some(criterion => {
-            const currentWeight = customWeights[criterion.id] ?? 0;
-            return currentWeight !== criterion.weight;
-        });
-    }, [customWeights, SCORING_CRITERIA]);
-
     // Calculate total weight (only from active criteria, not stale keys)
     const totalWeight = useMemo(() => {
         return SCORING_CRITERIA.reduce((sum, criterion) => {
@@ -399,7 +390,7 @@ export const ScoringMatrix: React.FC = () => {
                         </button>
                     )}
                     {/* Weight validation indicator */}
-                    {(isEditingWeights || hasCustomWeights) && (
+                    {isEditingWeights && (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -428,7 +419,7 @@ export const ScoringMatrix: React.FC = () => {
                         </div>
                     )}
                     {/* Reset weights button */}
-                    {(isEditingWeights || hasCustomWeights) && (
+                    {isEditingWeights && (
                         <button
                             onClick={resetWeights}
                             style={{
@@ -454,7 +445,7 @@ export const ScoringMatrix: React.FC = () => {
                         </button>
                     )}
                     {/* Save weights button */}
-                    {(isEditingWeights || hasCustomWeights) && weightsValid && (
+                    {isEditingWeights && weightsValid && (
                         <button
                             onClick={handleSave}
                             disabled={isSavingWeights}

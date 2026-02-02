@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderDisplayName } from '../../types/provider.types';
+import { useProviderStore } from '../../stores/useProviderStore';
 import * as XLSX from 'xlsx';
 import './ResultsTable.css';
 
@@ -8,11 +9,12 @@ interface Filters {
   searchText: string;
   selectedEvaluations: string[];
   selectedFases: string[];
-  selectedProviders: Provider[];
+  selectedProviders: string[];
 }
 
 export function ResultsTable() {
   const { results, selectedFiles } = useRfqStore();
+  const { projectProviders } = useProviderStore();
 
   // Estado de filtros
   const [filters, setFilters] = useState<Filters>({
@@ -52,7 +54,7 @@ export function ResultsTable() {
   }, [results]);
 
   // Lista de todos los proveedores disponibles
-  const allProviders = useMemo(() => Object.values(Provider), []);
+  const allProviders = projectProviders;
 
   // Proveedores a mostrar (filtrados o todos)
   const providersToShow = useMemo(() => {
@@ -132,7 +134,7 @@ export function ResultsTable() {
   };
 
   // Toggle selección de proveedor
-  const toggleProvider = (provider: Provider) => {
+  const toggleProvider = (provider: string) => {
     setFilters(prev => {
       const isSelected = prev.selectedProviders.includes(provider);
       const newSelected = isSelected
@@ -194,7 +196,7 @@ export function ResultsTable() {
       'Evaluación',
       'Fase',
       'Requisito RFQ',
-      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
+      ...providersToShow.map(provider => getProviderDisplayName(provider))
     ];
 
     // Crear filas con las columnas requeridas más datos de proveedores
@@ -241,7 +243,7 @@ export function ResultsTable() {
       'Evaluación',
       'Fase',
       'Requisito RFQ',
-      ...providersToShow.map(provider => PROVIDER_DISPLAY_NAMES[provider])
+      ...providersToShow.map(provider => getProviderDisplayName(provider))
     ];
 
     // Crear filas con las columnas requeridas más datos de proveedores
@@ -508,7 +510,7 @@ export function ResultsTable() {
                           checked={filters.selectedProviders.includes(provider)}
                           onChange={() => toggleProvider(provider)}
                         />
-                        <span>{PROVIDER_DISPLAY_NAMES[provider]}</span>
+                        <span>{getProviderDisplayName(provider)}</span>
                       </label>
                     ))}
                   </div>
@@ -539,7 +541,7 @@ export function ResultsTable() {
               <th className="col-rfq-requisito">Requisito RFQ</th>
               {providersToShow.map(provider => (
                 <th key={provider} className="col-provider">
-                  {PROVIDER_DISPLAY_NAMES[provider]}
+                  {getProviderDisplayName(provider)}
                 </th>
               ))}
             </tr>

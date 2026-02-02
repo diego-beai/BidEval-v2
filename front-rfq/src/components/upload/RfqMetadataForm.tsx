@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { useState, useEffect, useRef } from 'react';
+import { getProviderDisplayName } from '../../types/provider.types';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useProviderStore } from '../../stores/useProviderStore';
 import './RfqMetadataForm.css';
 
 export interface RfqMetadata {
   proyecto: string;
-  proveedor: Provider | '';
+  proveedor: string;
   tipoEvaluacion: string[];
 }
 
@@ -15,7 +16,7 @@ interface RfqMetadataFormProps {
   disabled?: boolean;
 }
 
-// Tipos de evaluación disponibles
+// Tipos de evaluacion disponibles
 const EVALUATION_TYPES = [
   'Technical Evaluation',
   'Economical Evaluation',
@@ -29,15 +30,21 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
   const [showEvaluationDropdown, setShowEvaluationDropdown] = useState(false);
+  const [providerSearch, setProviderSearch] = useState('');
+  const providerInputRef = useRef<HTMLInputElement>(null);
 
   const { activeProjectId } = useProjectStore();
-  const providers = Object.values(Provider);
+  const { projectProviders, addLocalProvider } = useProviderStore();
   const activeProject = getActiveProject();
+
+  // Filter providers by search text
+  const filteredProviders = projectProviders.filter(p =>
+    p.toUpperCase().includes(providerSearch.toUpperCase().trim())
+  );
 
   // Sync with active project from global store when it changes
   useEffect(() => {
     if (activeProject?.display_name) {
-      // Always update to match the global active project
       if (metadata.proyecto !== activeProject.display_name) {
         console.log('[RfqMetadataForm] Syncing with active project:', activeProject.display_name);
         onChange({ ...metadata, proyecto: activeProject.display_name });
@@ -45,14 +52,31 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
     }
   }, [activeProjectId, activeProject?.display_name]);
 
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showProviderDropdown && providerInputRef.current) {
+      providerInputRef.current.focus();
+    }
+  }, [showProviderDropdown]);
+
   const handleProjectSelect = (project: { id: string; display_name: string }) => {
     onChange({ ...metadata, proyecto: project.display_name });
     setShowProjectDropdown(false);
   };
 
-  const handleProviderSelect = (provider: Provider) => {
+  const handleProviderSelect = (provider: string) => {
     onChange({ ...metadata, proveedor: provider });
     setShowProviderDropdown(false);
+    setProviderSearch('');
+  };
+
+  const handleProviderKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && providerSearch.trim()) {
+      e.preventDefault();
+      const normalized = providerSearch.trim().toUpperCase();
+      addLocalProvider(normalized);
+      handleProviderSelect(normalized);
+    }
   };
 
   const handleEvaluationToggle = (evaluation: string) => {
@@ -133,7 +157,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
           </div>
         </div>
 
-        {/* Campo Proveedor */}
+        {/* Campo Proveedor - combobox with search + new entry */}
         <div className="metadata-field">
           <label className="metadata-label">
             Provider <span className="required">*</span>
@@ -142,12 +166,17 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
             <button
               type="button"
               className={`metadata-dropdown-btn ${!metadata.proveedor ? 'placeholder' : ''}`}
-              onClick={() => !disabled && setShowProviderDropdown(!showProviderDropdown)}
+              onClick={() => {
+                if (!disabled) {
+                  setShowProviderDropdown(!showProviderDropdown);
+                  setProviderSearch('');
+                }
+              }}
               disabled={disabled}
             >
               {metadata.proveedor
-                ? PROVIDER_DISPLAY_NAMES[metadata.proveedor]
-                : 'Select provider...'}
+                ? getProviderDisplayName(metadata.proveedor)
+                : 'Select or type provider...'}
               <span className="dropdown-arrow">{showProviderDropdown ? '▲' : '▼'}</span>
             </button>
 
@@ -155,29 +184,69 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
               <>
                 <div
                   className="dropdown-overlay"
-                  onClick={() => setShowProviderDropdown(false)}
+                  onClick={() => { setShowProviderDropdown(false); setProviderSearch(''); }}
                 />
                 <div className="metadata-dropdown-menu">
-                  {providers.map(provider => (
+                  {/* Search / new provider input */}
+                  <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)' }}>
+                    <input
+                      ref={providerInputRef}
+                      type="text"
+                      placeholder="Search or type new name..."
+                      value={providerSearch}
+                      onChange={(e) => setProviderSearch(e.target.value)}
+                      onKeyDown={handleProviderKeyDown}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        background: 'var(--bg-surface)',
+                        color: 'var(--text-primary)',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+                  {filteredProviders.map(provider => (
                     <button
                       key={provider}
                       type="button"
                       className={`dropdown-item ${metadata.proveedor === provider ? 'selected' : ''}`}
                       onClick={() => handleProviderSelect(provider)}
                     >
-                      {PROVIDER_DISPLAY_NAMES[provider]}
+                      {getProviderDisplayName(provider)}
                       {metadata.proveedor === provider && (
                         <span className="check-icon">✓</span>
                       )}
                     </button>
                   ))}
+                  {providerSearch.trim() && !filteredProviders.some(p => p === providerSearch.trim().toUpperCase()) && (
+                    <button
+                      type="button"
+                      className="dropdown-item"
+                      style={{ color: 'var(--accent)', fontWeight: 600 }}
+                      onClick={() => {
+                        const normalized = providerSearch.trim().toUpperCase();
+                        addLocalProvider(normalized);
+                        handleProviderSelect(normalized);
+                      }}
+                    >
+                      + Add "{providerSearch.trim().toUpperCase()}"
+                    </button>
+                  )}
+                  {filteredProviders.length === 0 && !providerSearch.trim() && (
+                    <div className="dropdown-item disabled" style={{ color: 'var(--text-tertiary)', cursor: 'default' }}>
+                      No providers yet. Type a name above.
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </div>
         </div>
 
-        {/* Campo Tipo de Evaluación */}
+        {/* Campo Tipo de Evaluacion */}
         <div className="metadata-field">
           <label className="metadata-label">
             Evaluation Types <span className="required">*</span>

@@ -8,9 +8,8 @@ import { useScoringStore } from '../../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
-import { PROVIDER_COLORS } from '../../../config/constants';
-
-const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
+import { getProviderColor, getProviderDisplayName as displayProviderName } from '../../../types/provider.types';
+import { useProviderStore } from '../../../stores/useProviderStore';
 
 // Function to get translated criteria labels (fallback when no dynamic config)
 const getDefaultCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
@@ -37,6 +36,7 @@ export const ExecutiveView: React.FC = () => {
     const { categories: dynamicCategories, hasConfiguration, loadConfiguration } = useScoringConfigStore();
     const { t } = useLanguageStore();
     const { activeProjectId } = useProjectStore();
+    const { projectProviders } = useProviderStore();
 
     // Get criteria labels (from dynamic config or fallback to translations)
     const CRITERIA_LABELS = useMemo(() => {
@@ -301,31 +301,9 @@ export const ExecutiveView: React.FC = () => {
         .slice(0, 3) // Take the 3 lowest scores
         .map(c => String(c.label)); // Ensure string
 
-    // Helper for colors - handles various provider name formats
-    const getColor = (id: string, index: number) => {
-        // Normalize provider name for matching (uppercase, no spaces)
-        const normalized = id.toUpperCase().replace(/\s+/g, '');
-
-        const colorMap: Record<string, string> = {
-            // Primary names (as stored in DB)
-            'TECNICASREUNIDAS': '#12b5b0',
-            'IDOM': '#f59e0b',
-            'SACYR': '#a78bfa',
-            'EA': '#fb923c',
-            'SENER': '#ec4899',
-            'TRESCA': '#22d3ee',
-            'WORLEY': '#fbbf24',
-            // Aliases
-            'TR': '#12b5b0',
-            'TÉCNICASREUNIDAS': '#12b5b0',
-            'EMPRESARIOSAGRUPADOS': '#fb923c'
-        };
-
-        const defined = colorMap[normalized] || colorMap[id] || PROVIDER_COLORS[id as keyof typeof PROVIDER_COLORS];
-        if (defined) return defined;
-
-        const fallbacks = ['#12b5b0', '#f59e0b', '#a78bfa', '#fb923c', '#ec4899', '#22d3ee', '#fbbf24'];
-        return fallbacks[index % fallbacks.length];
+    // Helper for colors - uses dynamic provider color system
+    const getColor = (id: string, _index: number) => {
+        return getProviderColor(id, projectProviders);
     };
 
     return (

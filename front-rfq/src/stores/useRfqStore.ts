@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { ProcessingStatus, ProcessingStage, RfqResult, RfqItem, FileWithMetadata, FileUploadMetadata, isFileMetadataComplete } from '../types/rfq.types';
-import { Provider } from '../types/provider.types';
 import { RfqMetadata } from '../components/upload/RfqMetadataForm';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
 import { useSessionViewStore } from './useSessionViewStore';
 import { useProjectStore } from './useProjectStore';
+import { useProviderStore } from './useProviderStore';
 
 /**
  * Información de la RFQ base del cliente
@@ -118,32 +118,32 @@ const initialStatus: ProcessingStatus = {
 };
 
 /**
+ * Known non-provider columns in RfqItem
+ */
+const KNOWN_COLUMNS = new Set([
+  'id', 'rfq_project_id', 'project_name', 'evaluation', 'fase',
+  'requisito_rfq', 'createdAt', 'updatedAt', 'created_at', 'updated_at',
+  'evaluation_type', 'phase', 'requirement_text', 'Provider', 'provider',
+  'project_id'
+]);
+
+/**
  * Transforma los resultados de n8n a RfqResult[]
+ * Dynamically detects provider columns from item keys
  */
 function transformResults(items: RfqItem[]): RfqResult[] {
-  // Mapeo de nombres de proveedores en la DB a enum Provider
-  const providerMapping: Record<string, Provider> = {
-    'TECNICASREUNIDAS': Provider.TR,
-    'IDOM': Provider.IDOM,
-    'SACYR': Provider.SACYR,
-    'EA': Provider.EA,
-    'SENER': Provider.SENER,
-    'TRESCA': Provider.TRESCA,
-    'WORLEY': Provider.WORLEY
-  };
-
   return items.map((item) => {
-    const evaluations: Partial<Record<Provider, any>> = {};
+    const evaluations: Record<string, any> = {};
 
-    // Extraer evaluaciones de cada proveedor usando el mapeo
-    Object.entries(providerMapping).forEach(([dbName, enumValue]) => {
-      const evaluation = item[dbName as keyof RfqItem];
-
-      if (evaluation && typeof evaluation === 'string') {
-        evaluations[enumValue] = {
-          provider: enumValue,
-          evaluation,
-          hasValue: evaluation !== 'NOT QUOTED' && evaluation !== 'NO INFORMATION'
+    // Detect provider columns dynamically
+    Object.keys(item).forEach(key => {
+      if (KNOWN_COLUMNS.has(key)) return;
+      const value = item[key];
+      if (value && typeof value === 'string') {
+        evaluations[key] = {
+          provider: key,
+          evaluation: value,
+          hasValue: value !== 'NOT QUOTED' && value !== 'NO INFORMATION' && value !== 'NO COTIZADO' && value !== 'SIN INFORMACIÓN'
         };
       }
     });
@@ -402,6 +402,7 @@ export const useRfqStore = create<RfqState>()(
           isProcessing: false,
           processingFileCount: 0,
           processingStartTime: null,
+          selectedFiles: [],
           status: {
             stage: ProcessingStage.COMPLETED,
             progress: 100,
@@ -414,6 +415,12 @@ export const useRfqStore = create<RfqState>()(
 
         // Automatically refresh proposal evaluations to update progress charts
         get().refreshProposalEvaluations();
+
+        // Refresh providers list so new providers appear in dropdowns
+        const activeProjectId = useProjectStore.getState().activeProjectId;
+        if (activeProjectId) {
+          useProviderStore.getState().fetchProjectProviders(activeProjectId);
+        }
       },
 
       setError: (error) => {
@@ -648,8 +655,7 @@ export const useRfqStore = create<RfqState>()(
           return;
         }
 
-        // Lista de posibles columnas de proveedores en rfq_items_master
-        const PROVIDER_COLUMNS = ['TR', 'IDOM', 'SACYR', 'EA', 'SENER', 'TRESCA', 'WORLEY', 'TECNICASREUNIDAS'];
+        // Detect provider columns dynamically (reuse KNOWN_COLUMNS set)
 
         try {
           // Obtener datos de rfq_items_master filtrado por proyecto
@@ -666,20 +672,23 @@ export const useRfqStore = create<RfqState>()(
           // Crear mapa de requisitos con datos base y columnas de proveedores directas
           const requirementsMap = new Map();
 
+          const pivotKnownCols = new Set([
+            'id', 'project_name', 'project_id', 'evaluation_type', 'phase',
+            'requirement_text', 'created_at', 'updated_at', 'rfq_project_id',
+            'evaluation', 'fase', 'requisito_rfq', 'Provider', 'provider'
+          ]);
+
           (rfqItemsData || []).forEach((item: any) => {
             const reqId = item.id;
             const evaluations: Record<string, string> = {};
 
-            // Extraer columnas de proveedores directamente de rfq_items_master
+            // Detect provider columns dynamically (any non-known column with string value)
             Object.keys(item).forEach(key => {
-              const upperKey = key.toUpperCase();
-              if (PROVIDER_COLUMNS.includes(upperKey) || PROVIDER_COLUMNS.includes(key)) {
-                const value = item[key];
-                if (value && typeof value === 'string' && value.trim() !== '' && value !== 'NOT QUOTED' && value !== 'NO INFORMATION') {
-                  // Normalizar el nombre del proveedor
-                  const normalizedKey = upperKey === 'TECNICASREUNIDAS' ? 'TR' : upperKey;
-                  evaluations[normalizedKey] = value;
-                }
+              if (pivotKnownCols.has(key)) return;
+              const value = item[key];
+              if (value && typeof value === 'string' && value.trim() !== '' && value !== 'NOT QUOTED' && value !== 'NO INFORMATION' && value !== 'NO COTIZADO' && value !== 'SIN INFORMACIÓN') {
+                const upperKey = key.toUpperCase();
+                evaluations[upperKey] = value;
               }
             });
 

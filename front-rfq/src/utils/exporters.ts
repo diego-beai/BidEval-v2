@@ -1,18 +1,14 @@
 import { RfqResult } from '../types/rfq.types';
-import { Provider } from '../types/provider.types';
-import { PROVIDER_DISPLAY_NAMES } from '../config/constants';
+import { getProviderDisplayName } from '../types/provider.types';
 import * as XLSX from 'xlsx';
 
 /**
  * Exporta los resultados a formato CSV
  */
-export function exportToCSV(results: RfqResult[], fileName?: string): void {
+export function exportToCSV(results: RfqResult[], providers: string[], fileName?: string): void {
   if (!results || results.length === 0) {
     return;
   }
-
-  // Obtener todos los proveedores presentes en los resultados
-  const providers = Object.values(Provider);
 
   // Crear encabezados
   const headers = [
@@ -20,7 +16,7 @@ export function exportToCSV(results: RfqResult[], fileName?: string): void {
     'Proyecto',
     'Evaluation',
     'Fase',
-    ...providers.map(p => PROVIDER_DISPLAY_NAMES[p] || p),
+    ...providers.map(p => getProviderDisplayName(p)),
     'Created At',
     'Updated At'
   ];
@@ -69,13 +65,10 @@ export function exportToCSV(results: RfqResult[], fileName?: string): void {
 /**
  * Exporta los resultados a formato Excel (.xlsx)
  */
-export function exportToExcel(results: RfqResult[], fileName?: string): void {
+export function exportToExcel(results: RfqResult[], providers: string[], fileName?: string): void {
   if (!results || results.length === 0) {
     return;
   }
-
-  // Obtener todos los proveedores presentes en los resultados
-  const providers = Object.values(Provider);
 
   // Crear datos para Excel
   const data = results.map(result => {
@@ -89,7 +82,7 @@ export function exportToExcel(results: RfqResult[], fileName?: string): void {
     // Agregar evaluación de cada proveedor
     providers.forEach(provider => {
       const evaluation = result.evaluations[provider];
-      const displayName = PROVIDER_DISPLAY_NAMES[provider] || provider;
+      const displayName = getProviderDisplayName(provider);
       row[displayName] = evaluation?.evaluation || 'N/A';
     });
 

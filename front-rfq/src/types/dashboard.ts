@@ -1,5 +1,3 @@
-import { Provider } from './provider.types';
-
 export type ComplianceStatus = 'Full' | 'Partial' | 'Not Found' | 'Ambiguous';
 
 export interface DashboardRequirement {
@@ -21,8 +19,8 @@ export interface ProviderResponse {
 
 export interface DashboardProvider {
     id: string;
-    name: string; // Can be mapped to Provider enum display name
-    providerKey: Provider; // The enum key
+    name: string;
+    providerKey: string;
     responses: ProviderResponse[];
 }
 

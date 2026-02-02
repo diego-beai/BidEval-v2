@@ -13,12 +13,13 @@ import { MailDashboard } from './components/mail/MailDashboard';
 import { useLanguageStore } from './stores/useLanguageStore';
 import { ProgressRing } from './components/charts/ProgressRing';
 import { ProviderProgressGrid, ProviderEvaluationData } from './components/charts/ProviderProgressGrid';
-import { Provider } from './types/provider.types';
 import { ProcessingStage } from './types/rfq.types';
 import { QAModule } from './components/dashboard/tabs/QAModule';
 import { useDashboardStore } from './stores/useDashboardStore';
 import { ToastContainer } from './components/common/ToastContainer';
 import { useProjectStore } from './stores/useProjectStore';
+import { useProviderStore } from './stores/useProviderStore';
+import { getProviderDisplayName } from './types/provider.types';
 
 
 type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
@@ -51,12 +52,20 @@ export default function App() {
   }, [activeView]);
 
   const { loadDashboardData } = useDashboardStore();
-  const { loadProjects, getActiveProject } = useProjectStore();
+  const { loadProjects, getActiveProject, activeProjectId } = useProjectStore();
+  const { fetchProjectProviders, projectProviders } = useProviderStore();
 
   // Load projects on app mount
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+
+  // Fetch dynamic providers when active project changes
+  useEffect(() => {
+    if (activeProjectId) {
+      fetchProjectProviders(activeProjectId);
+    }
+  }, [activeProjectId, fetchProjectProviders]);
 
   useEffect(() => {
     if (activeView === 'qa' || activeView === 'decision') {
@@ -89,7 +98,7 @@ export default function App() {
 
     const uniqueEvaluations = new Set<string>();
     results.forEach(result => {
-      const providerEval = result.evaluations[selectedProvider as Provider];
+      const providerEval = result.evaluations[selectedProvider];
       if (providerEval && providerEval.hasValue) {
         uniqueEvaluations.add(result.evaluation);
       }
@@ -189,9 +198,11 @@ export default function App() {
                 {/* File Upload Zone - modal opens automatically when files are selected */}
                 <FileUploadZone compact={true} autoOpenModal={true} />
 
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
-                  {t('app.upload.supported_providers')}
-                </p>
+                {projectProviders.length > 0 && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
+                    {t('app.upload.providers_label')}: {projectProviders.map(p => getProviderDisplayName(p)).join(', ')}
+                  </p>
+                )}
 
                 {/* Error Display */}
                 {error && !isProcessing && (
@@ -442,7 +453,7 @@ export default function App() {
               </div>
 
               <ProviderProgressGrid
-                selectedProvider={selectedProvider as Provider | ''}
+                selectedProvider={selectedProvider}
                 onProviderClick={(provider) => {
                   // When clicking on provider grid, select that provider
                   setClickedProvider(provider);

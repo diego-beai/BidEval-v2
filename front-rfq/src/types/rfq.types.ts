@@ -1,5 +1,3 @@
-import { Provider } from './provider.types';
-
 /**
  * Estado del procesamiento de Propuesta
  */
@@ -26,7 +24,7 @@ export interface ProcessingStatus {
 
 /**
  * Ítem individual de Propuesta desde n8n DataTable
- * Nueva estructura: id, rfq_project_id, project_name, evaluation, fase, requisito_rfq, IDOM, SACYR, EA, SENER, TRESCA, WORLEY, TECNICASREUNIDAS
+ * Provider columns are dynamic — accessed via [key: string]
  */
 export interface RfqItem {
   id: number;
@@ -34,16 +32,7 @@ export interface RfqItem {
   project_name?: string;
   evaluation: string;
   fase: string;
-  requisito_rfq?: string; // Requisitos extraídos de la RFQ base
-  // Columnas dinámicas por proveedor
-  IDOM?: string;
-  TECNICASREUNIDAS?: string;
-  SACYR?: string;
-  EA?: string;
-  SENER?: string;
-  TRESCA?: string;
-  WORLEY?: string;
-  // Timestamps
+  requisito_rfq?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -53,9 +42,9 @@ export interface RfqItem {
  * Resultado de evaluación para un proveedor específico
  */
 export interface ProviderEvaluation {
-  provider: Provider;
+  provider: string;
   evaluation: string;
-  hasValue: boolean; // true si tiene información relevante
+  hasValue: boolean;
 }
 
 /**
@@ -66,8 +55,8 @@ export interface RfqResult {
   projectName: string;
   fase: string;
   evaluation: string;
-  rfq_requisito?: string; // Requisitos extraídos de la RFQ base
-  evaluations: Partial<Record<Provider, ProviderEvaluation>>;
+  rfq_requisito?: string;
+  evaluations: Record<string, ProviderEvaluation>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -79,7 +68,7 @@ export interface FileMetadata {
   fileName: string;
   fileSize: number;
   uploadedAt: string;
-  provider?: Provider;
+  provider?: string;
   evaluationType?: string[];
 }
 
@@ -88,7 +77,7 @@ export interface FileMetadata {
  */
 export interface FileUploadMetadata {
   proyecto: string;
-  proveedor: Provider | '';
+  proveedor: string;
   tipoEvaluacion: string[];
 }
 

@@ -1,13 +1,14 @@
 import React, { useMemo, useEffect } from 'react';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderColor, getProviderDisplayName } from '../../types/provider.types';
 import { ProgressRing } from './ProgressRing';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 
 export interface ProviderProgressGridProps {
-  selectedProvider?: Provider | '';
-  onProviderClick: (provider: Provider) => void;
+  selectedProvider?: string;
+  onProviderClick: (provider: string) => void;
   onProviderDataChange?: (data: ProviderEvaluationData | null) => void;
 }
 
@@ -17,29 +18,9 @@ export interface ProviderEvaluationData {
   evaluations: Record<string, boolean>;
 }
 
-// Colores modernos por proveedor
-const PROVIDER_COLORS: Record<Provider, string> = {
-  [Provider.TR]: '#12b5b0',
-  [Provider.IDOM]: '#6366f1',
-  [Provider.SACYR]: '#8b5cf6',
-  [Provider.EA]: '#ec4899',
-  [Provider.SENER]: '#f59e0b',
-  [Provider.TRESCA]: '#10b981',
-  [Provider.WORLEY]: '#3b82f6'
-};
-
-// Map database provider names to Provider enum
-const PROVIDER_NAME_MAP: Record<string, Provider> = {
-  'TECNICASREUNIDAS': Provider.TR,
-  'TR': Provider.TR,
-  'Técnicas Reunidas': Provider.TR,
-  'IDOM': Provider.IDOM,
-  'SACYR': Provider.SACYR,
-  'EA': Provider.EA,
-  'SENER': Provider.SENER,
-  'TRESCA': Provider.TRESCA,
-  'WORLEY': Provider.WORLEY
-};
+// Normalize provider name for matching
+const normalizeProvider = (name: string) =>
+  name.trim().toUpperCase().replace(/\s+/g, '');
 
 export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
   selectedProvider,
@@ -48,11 +29,11 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
 }) => {
   const { results, tableData, proposalEvaluations, fetchAllTableData, fetchProposalEvaluations } = useRfqStore();
   const { activeProjectId } = useProjectStore();
+  const { projectProviders } = useProviderStore();
   const { t } = useLanguageStore();
 
   // Reload data when project changes
   useEffect(() => {
-    console.log('[ProviderProgressGrid] Active project changed:', activeProjectId);
     if (activeProjectId) {
       fetchAllTableData();
       fetchProposalEvaluations();
@@ -69,42 +50,30 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
     }
   }, [fetchAllTableData, fetchProposalEvaluations, tableData, proposalEvaluations, activeProjectId]);
 
-  // Calcular el progreso de cada proveedor basado en tableData (RFQ) y proposalEvaluations (propuestas)
+  // Calculate progress for each dynamic provider
   const providerProgress = useMemo(() => {
-    const progress: Record<Provider, { count: number; progress: number; evaluations: Record<string, boolean> }> = {} as any;
+    const progress: Record<string, { count: number; progress: number; evaluations: Record<string, boolean> }> = {};
 
-    // Initialize all providers with 0
-    Object.values(Provider).forEach(provider => {
-      progress[provider] = {
-        count: 0,
-        progress: 0,
-        evaluations: {
-          'Technical Evaluation': false,
-          'Economical Evaluation': false,
-          'Pre-FEED Deliverables': false,
-          'FEED Deliverables': false
-        }
-      };
-    });
-
-    // Count evaluation types from both tableData (RFQ) and proposalEvaluations (Proposals)
-    Object.values(Provider).forEach(provider => {
-      const evaluationTypes = new Set<string>();
-      const evaluations = {
+    projectProviders.forEach(provider => {
+      const normalized = normalizeProvider(provider);
+      const evaluations: Record<string, boolean> = {
         'Technical Evaluation': false,
         'Economical Evaluation': false,
         'Pre-FEED Deliverables': false,
         'FEED Deliverables': false
       };
 
+      const evaluationTypes = new Set<string>();
+
       // Count from RFQ data (tableData)
       if (tableData && tableData.length > 0) {
         tableData.forEach((item: any) => {
           const itemProvider = item.Provider || item.provider;
           if (!itemProvider) return;
-
-          const normalizedProvider = PROVIDER_NAME_MAP[itemProvider];
-          if (!normalizedProvider || normalizedProvider !== provider) return;
+          const itemNorm = normalizeProvider(String(itemProvider));
+          if (!(itemNorm === normalized ||
+                (itemNorm === 'TECNICASREUNIDAS' && normalized === 'TR') ||
+                (itemNorm === 'TR' && normalized === 'TECNICASREUNIDAS'))) return;
 
           const evalType = item.evaluation_type || item.evaluation;
           if (evalType) {
@@ -117,14 +86,16 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
         });
       }
 
-      // Count from Proposal evaluations (proposalEvaluations)
+      // Count from Proposal evaluations
       if (proposalEvaluations && proposalEvaluations.length > 0) {
         proposalEvaluations.forEach((item: any) => {
           const itemProvider = item.provider_name;
           if (!itemProvider) return;
-
-          const normalizedProvider = PROVIDER_NAME_MAP[itemProvider];
-          if (!normalizedProvider || normalizedProvider !== provider) return;
+          const itemNorm = normalizeProvider(String(itemProvider));
+          const provNorm = normalized;
+          if (!(itemNorm === provNorm ||
+                (itemNorm === 'TECNICASREUNIDAS' && provNorm === 'TR') ||
+                (itemNorm === 'TR' && provNorm === 'TECNICASREUNIDAS'))) return;
 
           const evalType = item.evaluation_type;
           if (evalType) {
@@ -137,10 +108,11 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
         });
       }
 
-      // Fallback: if no database data but we have processed results, use them
+      // Fallback: use processed results
       if (evaluationTypes.size === 0 && results && results.length > 0) {
         results.forEach(result => {
-          const providerEval = result.evaluations[provider];
+          // Check evaluations by provider key
+          const providerEval = result.evaluations[provider] || result.evaluations[normalized];
           if (providerEval && providerEval.hasValue) {
             const normalizedEvalType = result.evaluation;
             evaluationTypes.add(normalizedEvalType);
@@ -152,28 +124,38 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
       }
 
       const count = evaluationTypes.size;
-      // Progreso: 0-4 evaluaciones = 0-100%
-      const progressValue = (count / 4) * 100;
-
       progress[provider] = {
         count,
-        progress: Math.min(progressValue, 100),
+        progress: Math.min((count / 4) * 100, 100),
         evaluations
       };
     });
 
     return progress;
-  }, [results, tableData, proposalEvaluations]);
+  }, [results, tableData, proposalEvaluations, projectProviders]);
 
-  // Notify parent component when selected provider data changes
+  // Notify parent when selected provider data changes
   React.useEffect(() => {
     if (onProviderDataChange && selectedProvider) {
-      const data = providerProgress[selectedProvider];
+      const data = providerProgress[selectedProvider] || providerProgress[normalizeProvider(selectedProvider)];
       onProviderDataChange(data || null);
     } else if (onProviderDataChange) {
       onProviderDataChange(null);
     }
   }, [providerProgress, selectedProvider, onProviderDataChange]);
+
+  if (projectProviders.length === 0) {
+    return (
+      <div style={{
+        textAlign: 'center',
+        padding: '32px',
+        color: 'var(--text-tertiary)',
+        fontSize: '0.9rem'
+      }}>
+        {t('proposal.no_providers')}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -184,9 +166,13 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
         width: '100%'
       }}
     >
-      {Object.values(Provider).map((provider) => {
-        const { count, progress } = providerProgress[provider];
-        const isSelected = selectedProvider === provider;
+      {projectProviders.filter((provider) => {
+        const d = providerProgress[provider];
+        return d && d.count > 0;
+      }).map((provider) => {
+        const data = providerProgress[provider] || { count: 0, progress: 0 };
+        const isSelected = selectedProvider === provider || normalizeProvider(selectedProvider || '') === normalizeProvider(provider);
+        const color = getProviderColor(provider, projectProviders);
 
         return (
           <div
@@ -199,7 +185,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
               gap: '12px',
               padding: '20px 16px',
               background: isSelected ? 'var(--bg-surface-alt)' : 'var(--bg-surface)',
-              border: isSelected ? `2px solid ${PROVIDER_COLORS[provider]}` : '1px solid var(--border-color)',
+              border: isSelected ? `2px solid ${color}` : '1px solid var(--border-color)',
               borderRadius: 'var(--radius-lg)',
               cursor: 'pointer',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -210,7 +196,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
               if (!isSelected) {
                 e.currentTarget.style.transform = 'translateY(-4px)';
                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.12)';
-                e.currentTarget.style.borderColor = PROVIDER_COLORS[provider];
+                e.currentTarget.style.borderColor = color;
               }
             }}
             onMouseLeave={(e) => {
@@ -221,7 +207,6 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
               }
             }}
           >
-            {/* Selected indicator */}
             {isSelected && (
               <div
                 style={{
@@ -230,16 +215,16 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                   left: 0,
                   right: 0,
                   height: '3px',
-                  background: `linear-gradient(90deg, ${PROVIDER_COLORS[provider]}, ${PROVIDER_COLORS[provider]}80)`,
+                  background: `linear-gradient(90deg, ${color}, ${color}80)`,
                   animation: 'shimmer 2s infinite'
                 }}
               />
             )}
 
             <ProgressRing
-              progress={progress}
+              progress={data.progress}
               size="medium"
-              color={PROVIDER_COLORS[provider]}
+              color={color}
               showPercentage={true}
             />
 
@@ -248,12 +233,12 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                 style={{
                   fontSize: '0.8rem',
                   fontWeight: 700,
-                  color: isSelected ? PROVIDER_COLORS[provider] : 'var(--text-primary)',
+                  color: isSelected ? color : 'var(--text-primary)',
                   marginBottom: '4px',
                   transition: 'color 0.2s ease'
                 }}
               >
-                {PROVIDER_DISPLAY_NAMES[provider]}
+                {getProviderDisplayName(provider)}
               </div>
               <div
                 style={{
@@ -261,7 +246,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                {count}/4 {t('chart.types')}
+                {data.count}/4 {t('chart.types')}
               </div>
             </div>
           </div>
@@ -270,12 +255,8 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
 
       <style>{`
         @keyframes shimmer {
-          0% {
-            background-position: -100% 0;
-          }
-          100% {
-            background-position: 200% 0;
-          }
+          0% { background-position: -100% 0; }
+          100% { background-position: 200% 0; }
         }
       `}</style>
     </div>

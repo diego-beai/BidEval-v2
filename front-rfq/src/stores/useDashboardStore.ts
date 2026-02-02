@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { DashboardData, DashboardProvider, DashboardRequirement } from '../types/dashboard';
-import { Provider } from '../types/provider.types';
 import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useProjectStore } from './useProjectStore';
@@ -59,7 +58,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p1',
             name: 'TR',
-            providerKey: Provider.TR,
+            providerKey: 'TR',
             responses: [
                 { req_id: 'r1', match_text: '52 kWh/kg H2 including auxiliaries', status: 'Partial', auto_score: 7, question_status: 'resolved' },
                 { req_id: 'r2', match_text: '60,000 hrs guaranteed, 1.5% annual degradation', status: 'Partial', auto_score: 7, question_status: 'resolved' },
@@ -78,7 +77,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p2',
             name: 'IDOM',
-            providerKey: Provider.IDOM,
+            providerKey: 'IDOM',
             responses: [
                 { req_id: 'r1', match_text: '48 kWh/kg H2 with advanced optimization', status: 'Full', auto_score: 9, question_status: 'resolved' },
                 { req_id: 'r2', match_text: '80,000 hrs guaranteed, 1.0% annual degradation', status: 'Full', auto_score: 9, question_status: 'resolved' },
@@ -97,7 +96,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p3',
             name: 'SACYR',
-            providerKey: Provider.SACYR,
+            providerKey: 'SACYR',
             responses: [
                 { req_id: 'r1', match_text: '58 kWh/kg H2 estimated', status: 'Partial', auto_score: 5, generated_question: 'Can you guarantee this value?', question_status: 'pending' },
                 { req_id: 'r2', match_text: '50,000 hrs estimated, 2% degradation', status: 'Partial', auto_score: 5, generated_question: 'Is there warranty for these figures?', question_status: 'pending' },
@@ -116,7 +115,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p4',
             name: 'EA',
-            providerKey: Provider.EA,
+            providerKey: 'EA',
             responses: [
                 { req_id: 'r1', match_text: '46 kWh/kg H2 best in class', status: 'Full', auto_score: 10, question_status: 'resolved' },
                 { req_id: 'r2', match_text: '90,000 hrs guaranteed, 0.8% annual degradation', status: 'Full', auto_score: 10, question_status: 'resolved' },
@@ -135,7 +134,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p5',
             name: 'SENER',
-            providerKey: Provider.SENER,
+            providerKey: 'SENER',
             responses: [
                 { req_id: 'r1', match_text: '50 kWh/kg H2 proven efficiency', status: 'Full', auto_score: 8, question_status: 'resolved' },
                 { req_id: 'r2', match_text: '70,000 hrs guaranteed, 1.2% degradation', status: 'Full', auto_score: 8, question_status: 'resolved' },
@@ -154,7 +153,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p6',
             name: 'TRESCA',
-            providerKey: Provider.TRESCA,
+            providerKey: 'TRESCA',
             responses: [
                 { req_id: 'r1', match_text: '62 kWh/kg H2 per simulations', status: 'Partial', auto_score: 4, generated_question: 'Data validated in actual plant?', question_status: 'pending' },
                 { req_id: 'r2', match_text: '45,000 hrs estimated, 2.5% degradation', status: 'Partial', auto_score: 4, generated_question: 'Is there warranty?', question_status: 'pending' },
@@ -173,7 +172,7 @@ const generateMockData = (): DashboardData => {
         {
             id: 'p7',
             name: 'WORLEY',
-            providerKey: Provider.WORLEY,
+            providerKey: 'WORLEY',
             responses: [
                 { req_id: 'r1', match_text: '47 kWh/kg H2 advanced technology', status: 'Full', auto_score: 10, question_status: 'resolved' },
                 { req_id: 'r2', match_text: '85,000 hrs guaranteed, 0.9% annual degradation', status: 'Full', auto_score: 10, question_status: 'resolved' },

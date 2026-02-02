@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Provider, PROVIDER_DISPLAY_NAMES } from '../../types/provider.types';
+import { getProviderDisplayName } from '../../types/provider.types';
 import { FileWithMetadata, isFileMetadataComplete } from '../../types/rfq.types';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { formatFileSize } from '../../utils/formatters';
 import './MultiFileMetadataModal.css';
 
@@ -45,7 +46,8 @@ export function MultiFileMetadataModal({
 }: MultiFileMetadataModalProps) {
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
   const { projects } = useProjectStore();
-  const providers = Object.values(Provider);
+  const { projectProviders, addLocalProvider } = useProviderStore();
+  const [providerSearch, setProviderSearch] = useState('');
 
   // Hidden file input ref for adding more files
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -130,9 +132,10 @@ export function MultiFileMetadataModal({
     closeDropdown();
   };
 
-  const handleProviderSelect = (fileIndex: number, provider: Provider) => {
+  const handleProviderSelect = (fileIndex: number, provider: string) => {
     onUpdateMetadata(fileIndex, { proveedor: provider });
     closeDropdown();
+    setProviderSearch('');
   };
 
   const handleEvaluationToggle = (fileIndex: number, evaluation: string) => {
@@ -209,6 +212,9 @@ export function MultiFileMetadataModal({
         </div>
       );
     } else if (type === 'provider') {
+      const filtered = projectProviders.filter(p =>
+        p.toUpperCase().includes(providerSearch.toUpperCase().trim())
+      );
       content = (
         <div
           ref={dropdownMenuRef}
@@ -220,19 +226,66 @@ export function MultiFileMetadataModal({
             width: dropdownPosition.width,
             zIndex: 10000
           }}>
-          {providers.map(provider => (
+          {/* Search / new provider input */}
+          <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)' }}>
+            <input
+              type="text"
+              placeholder="Search or type new..."
+              value={providerSearch}
+              onChange={(e) => setProviderSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && providerSearch.trim()) {
+                  e.preventDefault();
+                  const normalized = providerSearch.trim().toUpperCase();
+                  addLocalProvider(normalized);
+                  handleProviderSelect(fileIndex, normalized);
+                }
+              }}
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '7px 10px',
+                border: '1px solid var(--border-color)',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                background: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                outline: 'none'
+              }}
+            />
+          </div>
+          {filtered.map(provider => (
             <button
               key={provider}
               type="button"
               className={`mfm-dropdown-item ${metadata.proveedor === provider ? 'mfm-dropdown-item--selected' : ''}`}
               onClick={() => handleProviderSelect(fileIndex, provider)}
             >
-              {PROVIDER_DISPLAY_NAMES[provider]}
+              {getProviderDisplayName(provider)}
               {metadata.proveedor === provider && (
                 <span className="mfm-check">✓</span>
               )}
             </button>
           ))}
+          {providerSearch.trim() && !filtered.some(p => p === providerSearch.trim().toUpperCase()) && (
+            <button
+              type="button"
+              className="mfm-dropdown-item"
+              style={{ color: 'var(--accent)', fontWeight: 600 }}
+              onClick={() => {
+                const normalized = providerSearch.trim().toUpperCase();
+                addLocalProvider(normalized);
+                handleProviderSelect(fileIndex, normalized);
+              }}
+            >
+              + Add "{providerSearch.trim().toUpperCase()}"
+            </button>
+          )}
+          {filtered.length === 0 && !providerSearch.trim() && (
+            <div className="mfm-dropdown-item mfm-dropdown-item--disabled">
+              No providers yet. Type a name above.
+            </div>
+          )}
         </div>
       );
     } else if (type === 'evaluation') {
@@ -430,7 +483,7 @@ export function MultiFileMetadataModal({
                             disabled={disabled}
                           >
                             {metadata.proveedor
-                              ? PROVIDER_DISPLAY_NAMES[metadata.proveedor]
+                              ? getProviderDisplayName(metadata.proveedor)
                               : 'Select provider...'}
                             <span className="mfm-arrow">
                               {activeDropdown?.fileIndex === index && activeDropdown?.type === 'provider' ? '▲' : '▼'}

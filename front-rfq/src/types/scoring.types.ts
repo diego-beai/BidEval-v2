@@ -432,12 +432,16 @@ export function validateScoringConfiguration(categories: CategoryDraft[]): Scori
         category_id: category.id,
       });
     } else {
-      // Check criteria weights sum to 100 within category
+      // Check criteria weights sum correctly within category
+      // Supports both conventions: absolute (sum = category weight) or relative (sum = 100%)
       const totalCriteriaWeight = calculateTotalCriteriaWeight(category.criteria);
-      if (Math.abs(totalCriteriaWeight - 100) > 0.01) {
+      const expectedAbsolute = category.weight || 0;
+      const sumsToAbsolute = Math.abs(totalCriteriaWeight - expectedAbsolute) <= 0.1;
+      const sumsToRelative = Math.abs(totalCriteriaWeight - 100) <= 0.1;
+      if (!sumsToAbsolute && !sumsToRelative) {
         errors.push({
           type: 'weight',
-          message: `Criteria weights in "${category.display_name}" must sum to 100% (currently ${totalCriteriaWeight.toFixed(2)}%)`,
+          message: `Criteria weights in "${category.display_name}" must sum to ${expectedAbsolute}% (currently ${totalCriteriaWeight.toFixed(1)}%)`,
           category_id: category.id,
         });
       }

@@ -4,7 +4,9 @@ import remarkGfm from 'remark-gfm';
 import { useMailStore } from '../../stores/useMailStore';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useProviderStore } from '../../stores/useProviderStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
+import { getProviderDisplayName } from '../../types/provider.types';
 import { API_CONFIG } from '../../config/constants';
 import './MailDashboard.css';
 
@@ -65,6 +67,9 @@ export const MailDashboard = () => {
 
     // Get projects from global store
     const { projects, getActiveProject } = useProjectStore();
+
+    // Dynamic providers from store
+    const { projectProviders } = useProviderStore();
     const activeProject = getActiveProject();
 
     // Local UI State
@@ -119,8 +124,8 @@ export const MailDashboard = () => {
         });
     }, [qaQuestions]); // Only depend on qaQuestions to avoid infinite loops
 
-    // Mock Data
-    const providers = ['Técnicas Reunidas', 'IDOM', 'SACYR', 'WORLEY', 'SENER', 'TRESCA', 'EA'];
+    // Providers from store (display names)
+    const providers = projectProviders;
 
     // Helper function to generate email from provider name
     const getProviderEmail = (provider: string): string => {
@@ -133,44 +138,22 @@ export const MailDashboard = () => {
         return `contact@${normalized}.com`;
     };
 
-    const contextIssues: Record<string, Issue[]> = {
-        'Técnicas Reunidas': [
-            { id: 'tr_1', label: 'Missing detailed breakdown in Economic Proposal', type: 'critical', section: 'Economic' },
-            { id: 'tr_2', label: 'Clarification on electrolyzer efficiency guarantee', type: 'warning', section: 'Technical' }
-        ],
-        'IDOM': [
-            { id: 'id_1', label: 'Confirm valid period of the offer', type: 'info', section: 'General' }
-        ],
-        'SACYR': [
-            { id: 'sa_1', label: 'Missing ISO 9001 certification document', type: 'warning', section: 'Compliance' },
-            { id: 'sa_2', label: 'Scope of work deviation in Civil Works', type: 'critical', section: 'Technical' }
-        ],
-        'Worley': [],
-        'WORLEY': [],
-        'SENER': [],
-        'TRESCA': [],
-        'EA': []
-    };
+    const contextIssues: Record<string, Issue[]> = {};
 
     const currentIssues = selectedProvider ? (contextIssues[selectedProvider] || []) : [];
 
     // Filter Q&A items for the selected provider
-    const providerKeyMap: Record<string, string> = {
-        'Técnicas Reunidas': 'TR',
-        'TR': 'TR',
-        'IDOM': 'IDOM',
-        'SACYR': 'SACYR',
-        'WORLEY': 'WORLEY',
-        'Worley': 'WORLEY',
-        'SENER': 'SENER',
-        'TRESCA': 'TRESCA',
-        'EA': 'EA'
-    };
+    const normalizeProvider = (name: string) => name.trim().toUpperCase().replace(/\s+/g, '');
 
     const filteredQAItems = useMemo(() => {
         if (!selectedProvider) return [];
-        const providerKey = providerKeyMap[selectedProvider] || selectedProvider.toUpperCase().replace(/\s+/g, '');
-        return pendingQAItems.filter(item => item.provider_name === providerKey);
+        const providerKey = normalizeProvider(selectedProvider);
+        return pendingQAItems.filter(item => {
+            const itemKey = normalizeProvider(item.provider_name || '');
+            return itemKey === providerKey ||
+                (itemKey === 'TECNICASREUNIDAS' && providerKey === 'TR') ||
+                (itemKey === 'TR' && providerKey === 'TECNICASREUNIDAS');
+        });
     }, [selectedProvider, pendingQAItems]);
 
     const selectedQAItemsForProvider = useMemo(() => {
@@ -179,18 +162,6 @@ export const MailDashboard = () => {
 
     const handleGenerate = async () => {
         if (!selectedProvider) return;
-
-        const providerMap: Record<string, string> = {
-            'Técnicas Reunidas': 'TR',
-            'TR': 'TR',
-            'IDOM': 'IDOM',
-            'SACYR': 'SACYR',
-            'WORLEY': 'WORLEY',
-            'Worley': 'WORLEY',
-            'SENER': 'SENER',
-            'TRESCA': 'TRESCA',
-            'EA': 'EA'
-        };
 
         const issuesPayload = selectedIssues.map(id => {
             const issue = currentIssues.find(i => i.id === id);
@@ -201,7 +172,7 @@ export const MailDashboard = () => {
             project_id: activeProject?.id || '',
             project_name: selectedContext,
             provider_name: selectedProvider,
-            provider_key: providerMap[selectedProvider] || selectedProvider.toUpperCase().replace(/\s+/g, ''),
+            provider_key: normalizeProvider(selectedProvider),
             tone: tone,
             issues: issuesPayload,
             qa_items: selectedQAItemsForProvider
@@ -326,7 +297,7 @@ export const MailDashboard = () => {
                         >
                             <option value="">{t('mail.provider.select')}</option>
                             {providers.map(p => (
-                                <option key={p} value={p}>{p}</option>
+                                <option key={p} value={p}>{getProviderDisplayName(p)}</option>
                             ))}
                         </select>
                     </div>
