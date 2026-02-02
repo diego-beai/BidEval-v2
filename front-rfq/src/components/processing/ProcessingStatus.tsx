@@ -1,5 +1,6 @@
 import { memo, useState, useEffect } from 'react';
 import { useRfqStore } from '../../stores/useRfqStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import { ProcessingStage } from '../../types/rfq.types';
 
 interface ProcessingStatusProps {
@@ -9,6 +10,7 @@ interface ProcessingStatusProps {
 
 export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose }: ProcessingStatusProps) {
   const { status, isProcessing, results, rfqMetadata, processingStartTime, processingFileCount } = useRfqStore();
+  const { t } = useLanguageStore();
   const [elapsedTime, setElapsedTime] = useState(0);
 
   // Update elapsed time every second when processing
@@ -137,7 +139,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
             marginBottom: '8px',
             lineHeight: '1.4'
           }}>
-            {isProcessing ? 'Processing your proposals with AI...' : status.message}
+            {isProcessing ? t('processing.title') : status.message}
           </p>
           {isProcessing && (
             <p style={{
@@ -145,7 +147,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               color: 'var(--text-secondary)',
               margin: 0
             }}>
-              The n8n workflow is analyzing your documents. This will continue until completion.
+              {t('processing.subtitle')}
             </p>
           )}
 
@@ -159,7 +161,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               maxWidth: '400px'
             }}>
               <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-cyan)', marginBottom: '4px' }}>
-                Processing Summary
+                {t('processing.summary')}
               </div>
 
               {rfqMetadata.proveedor && (
@@ -188,7 +190,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                     </svg>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Provider</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('common.provider')}</div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rfqMetadata.proveedor}</div>
                   </div>
                 </div>
@@ -220,7 +222,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                     </svg>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Evaluation Type</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('processing.eval_type')}</div>
                     <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{rfqMetadata.tipoEvaluacion.join(', ')}</div>
                   </div>
                 </div>
@@ -250,8 +252,8 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                   </svg>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requirements</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{results.length} evaluated</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('processing.requirements')}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{t('processing.evaluated', { count: String(results.length) })}</div>
                 </div>
               </div>
             </div>
@@ -263,7 +265,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               onClick={onViewResults}
               style={{ marginTop: '16px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
             >
-              View Results
+              {t('processing.view_results')}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
@@ -307,7 +309,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               fontWeight: 600
             }}>
               <span style={{ color: 'var(--text-secondary)' }}>
-                Processing {processingFileCount} file{processingFileCount > 1 ? 's' : ''}
+                {t('processing.file_count', { count: String(processingFileCount) })}
               </span>
               <span style={{
                 color: 'var(--color-primary)',
@@ -351,7 +353,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                   color: '#fbbf24',
                   margin: '0 0 4px 0'
                 }}>
-                  Do not close this browser window
+                  {t('processing.warning_title')}
                 </p>
                 <p style={{
                   fontSize: '0.8rem',
@@ -359,9 +361,8 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                   margin: 0,
                   lineHeight: '1.4'
                 }}>
-                  AI document processing typically takes 5-15 minutes per file.
-                  Large or complex PDFs may take up to 30 minutes.
-                  {processingFileCount > 1 && ` Processing ${processingFileCount} files in parallel.`}
+                  {t('processing.warning_desc')}
+                  {processingFileCount > 1 && ` ${t('processing.parallel', { count: String(processingFileCount) })}`}
                 </p>
               </div>
             </div>
@@ -374,10 +375,10 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               gap: '8px'
             }}>
               {[
-                { label: 'Upload', time: '< 1 min' },
-                { label: 'OCR', time: '2-5 min' },
-                { label: 'Analysis', time: '5-15 min' },
-                { label: 'Evaluation', time: '5-10 min' }
+                { label: t('processing.phase.upload'), time: t('processing.phase.upload_time') },
+                { label: t('processing.phase.ocr'), time: t('processing.phase.ocr_time') },
+                { label: t('processing.phase.analysis'), time: t('processing.phase.analysis_time') },
+                { label: t('processing.phase.evaluation'), time: t('processing.phase.evaluation_time') }
               ].map((phase, idx) => {
                 const isActive = elapsedTime >= idx * 120; // Rough estimate
                 return (

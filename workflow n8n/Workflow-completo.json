@@ -1970,7 +1970,8 @@
           },
           "matchingColumns": [
             "requirement_id",
-            "provider_name"
+            "provider_name",
+            "file_id"
           ],
           "schema": [
             {

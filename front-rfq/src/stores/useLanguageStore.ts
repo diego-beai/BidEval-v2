@@ -644,7 +644,34 @@ const translations: any = {
         'editor.criteria_weights': 'Pesos de criterios',
         'editor.btn.cancel': 'Cancelar',
         'editor.btn.save': 'Guardar',
-        'editor.btn.saving': 'Guardando...'
+        'editor.btn.saving': 'Guardando...',
+
+        // Scoring Delete Config
+        'scoring.delete_config': 'Eliminar Configuración',
+        'scoring.delete_config_confirm': '¿Estás seguro de eliminar la configuración de scoring actual?',
+        'scoring.delete_config_warning': 'Se borrarán todas las categorías, criterios y pesos. Podrás crear una nueva configuración después.',
+        'scoring.delete_config_btn': 'Eliminar',
+
+        // ProcessingStatus
+        'processing.title': 'Procesando tus propuestas con IA...',
+        'processing.subtitle': 'El workflow de n8n está analizando tus documentos. Continuará hasta completarse.',
+        'processing.summary': 'Resumen del Procesamiento',
+        'processing.eval_type': 'Tipo de Evaluación',
+        'processing.requirements': 'Requisitos',
+        'processing.evaluated': '{count} evaluados',
+        'processing.view_results': 'Ver Resultados',
+        'processing.file_count': 'Procesando {count} archivo(s)',
+        'processing.warning_title': 'No cierres esta ventana del navegador',
+        'processing.warning_desc': 'El procesamiento con IA normalmente tarda 5-15 minutos por archivo. PDFs grandes o complejos pueden tardar hasta 30 minutos.',
+        'processing.parallel': 'Procesando {count} archivos en paralelo.',
+        'processing.phase.upload': 'Subida',
+        'processing.phase.upload_time': '< 1 min',
+        'processing.phase.ocr': 'OCR',
+        'processing.phase.ocr_time': '2-5 min',
+        'processing.phase.analysis': 'Análisis',
+        'processing.phase.analysis_time': '5-15 min',
+        'processing.phase.evaluation': 'Evaluación',
+        'processing.phase.evaluation_time': '5-10 min'
     },
     en: {
         // ... existing translations
@@ -1280,7 +1307,34 @@ const translations: any = {
         'editor.criteria_weights': 'Criteria weights',
         'editor.btn.cancel': 'Cancel',
         'editor.btn.save': 'Save',
-        'editor.btn.saving': 'Saving...'
+        'editor.btn.saving': 'Saving...',
+
+        // Scoring Delete Config
+        'scoring.delete_config': 'Delete Configuration',
+        'scoring.delete_config_confirm': 'Are you sure you want to delete the current scoring configuration?',
+        'scoring.delete_config_warning': 'All categories, criteria, and weights will be removed. You can create a new configuration afterwards.',
+        'scoring.delete_config_btn': 'Delete',
+
+        // ProcessingStatus
+        'processing.title': 'Processing your proposals with AI...',
+        'processing.subtitle': 'The n8n workflow is analyzing your documents. This will continue until completion.',
+        'processing.summary': 'Processing Summary',
+        'processing.eval_type': 'Evaluation Type',
+        'processing.requirements': 'Requirements',
+        'processing.evaluated': '{count} evaluated',
+        'processing.view_results': 'View Results',
+        'processing.file_count': 'Processing {count} file(s)',
+        'processing.warning_title': 'Do not close this browser window',
+        'processing.warning_desc': 'AI document processing typically takes 5-15 minutes per file. Large or complex PDFs may take up to 30 minutes.',
+        'processing.parallel': 'Processing {count} files in parallel.',
+        'processing.phase.upload': 'Upload',
+        'processing.phase.upload_time': '< 1 min',
+        'processing.phase.ocr': 'OCR',
+        'processing.phase.ocr_time': '2-5 min',
+        'processing.phase.analysis': 'Analysis',
+        'processing.phase.analysis_time': '5-15 min',
+        'processing.phase.evaluation': 'Evaluation',
+        'processing.phase.evaluation_time': '5-10 min'
     }
 };
 

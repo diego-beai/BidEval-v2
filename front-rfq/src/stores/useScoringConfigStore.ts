@@ -393,6 +393,7 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
           useToastStore.getState().addToast('Scoring configuration deleted', 'success');
 
           get().clearConfiguration();
+          set({ isLoading: false });
 
         } catch (err: any) {
           console.error('[ScoringConfig] Error deleting configuration:', err);

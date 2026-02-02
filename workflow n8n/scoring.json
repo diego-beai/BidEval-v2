@@ -2,26 +2,10 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "scoring-evaluation",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -6224,
-        -672
-      ],
-      "id": "80a48fb8-9ff2-4f04-8046-b866ccb7f5dc",
-      "name": "Webhook Scoring",
-      "webhookId": "scoring-eval-webhook-001"
-    },
-    {
-      "parameters": {
         "operation": "getAll",
         "tableId": "rfq_items_master",
         "returnAll": true,
+        "matchType": "allFilters",
         "filters": {
           "conditions": [
             {
@@ -35,10 +19,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5568,
-        -768
+        -5616,
+        -272
       ],
-      "id": "8afc345d-aa14-47f2-b6a7-3582bf7c0461",
+      "id": "621ec828-6657-4c29-9d88-06a217bcd448",
       "name": "Fetch Requirements",
       "credentials": {
         "supabaseApi": {
@@ -65,10 +49,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5568,
-        -544
+        -5616,
+        -48
       ],
-      "id": "ed0c50db-d0c8-4dce-ad3f-7c82e2fe49bd",
+      "id": "20c08f3e-40a2-49ea-bf84-3132f5e3c25d",
       "name": "Fetch Provider Responses",
       "credentials": {
         "supabaseApi": {
@@ -95,10 +79,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5568,
-        -320
+        -5616,
+        176
       ],
-      "id": "fetch-scoring-config-001",
+      "id": "ccd3f624-1fef-4b46-a0a2-496bb431577f",
       "name": "Fetch Scoring Configuration",
       "alwaysOutputData": true,
       "credentials": {
@@ -110,17 +94,15 @@
     },
     {
       "parameters": {
-        "mode": "append",
-        "numberInputs": 3,
-        "options": {}
+        "numberInputs": 3
       },
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -5344,
-        -672
+        -5392,
+        -176
       ],
-      "id": "2d315f51-9d8b-4969-b833-7e97b058d2f8",
+      "id": "ae9c54ae-6be1-410b-a6b1-2d06e7a0b23e",
       "name": "Merge Requirements & Responses"
     },
     {
@@ -130,10 +112,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5120,
-        -672
+        -5168,
+        -176
       ],
-      "id": "7dac02ec-b781-4246-ae88-30e1f446d614",
+      "id": "7a5ed7d9-4a4a-4180-adab-f67778f8d645",
       "name": "Prepare Scoring Data"
     },
     {
@@ -145,10 +127,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -4896,
-        -720
+        -4944,
+        -224
       ],
-      "id": "40bc72b8-62b5-417a-b7c1-5a416bf89106",
+      "id": "9d59de1a-0706-427d-a77e-033c1080c164",
       "name": "Loop Over Providers"
     },
     {
@@ -161,38 +143,52 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4624,
-        -704
+        -4672,
+        -208
       ],
-      "id": "8e3da58b-a279-4c03-ac07-e0e73345ff00",
+      "id": "a2c74701-b416-44de-b9b9-106ea6115afb",
       "name": "Scoring LLM Chain"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Calculate Weighted Scores (v5 - Dynamic Criteria Support)\n// Extract and structure scores for database storage\n// =============================================\n\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Get project_id and config\nlet projectId = null;\nlet configType = 'default';\ntry { \n    projectId = $('Set Input Params1').first().json.project_id;\n    configType = $('Loop Over Providers').item.json.config_type || 'default';\n} catch(e) {}\n\n// Extract category scores\nconst cs = llmOutput.category_scores || {};\nconst tech = (cs.TECHNICAL && cs.TECHNICAL.score) || cs.TECHNICAL || 0;\nconst econ = (cs.ECONOMIC && cs.ECONOMIC.score) || cs.ECONOMIC || 0;\nconst exec = (cs.EXECUTION && cs.EXECUTION.score) || cs.EXECUTION || 0;\nconst hse = (cs.HSE_COMPLIANCE && cs.HSE_COMPLIANCE.score) || cs.HSE_COMPLIANCE || 0;\n\n// Extract individual criterion scores\nconst is = llmOutput.individual_scores || {};\n\nreturn [{\n    json: {\n        ranking: {\n            provider_name: llmOutput.provider_name,\n            project_id: projectId,\n            // Category scores\n            technical_score: tech,\n            economic_score: econ,\n            execution_score: exec,\n            hse_compliance_score: hse,\n            // TECHNICAL COMPLETENESS individual scores (30%)\n            scope_facilities_score: is.scope_facilities || 0,\n            scope_work_score: is.scope_work || 0,\n            deliverables_quality_score: is.deliverables_quality || 0,\n            // ECONOMIC COMPETITIVENESS individual scores (35%)\n            total_price_score: is.total_price || 0,\n            price_breakdown_score: is.price_breakdown || 0,\n            optionals_included_score: is.optionals_included || 0,\n            capex_opex_methodology_score: is.capex_opex_methodology || 0,\n            // EXECUTION CAPABILITY individual scores (20%)\n            schedule_score: is.schedule || 0,\n            resources_allocation_score: is.resources_allocation || 0,\n            exceptions_score: is.exceptions || 0,\n            // HSE & COMPLIANCE individual scores (15%)\n            safety_studies_score: is.safety_studies || 0,\n            regulatory_compliance_score: is.regulatory_compliance || 0,\n            // Overall metrics\n            overall_score: llmOutput.overall_score || 0,\n            compliance_percentage: llmOutput.compliance_percentage || 0,\n            evaluation_count: 1,\n            last_updated: new Date().toISOString()\n        },\n        details: {\n            strengths: llmOutput.strengths || [],\n            weaknesses: llmOutput.weaknesses || [],\n            recommendations: llmOutput.recommendations || [],\n            summary: llmOutput.evaluation_summary || ''\n        },\n        category_scores: cs,\n        individual_scores: is,\n        config_type: configType\n    }\n}];"
+        "jsCode": "// Extract LLM output and structure for database (v6 - Dynamic Criteria)\nconst input = $input.first().json;\nconst llmOutput = input.output || input;\n\n// Extract category scores\nconst cs = llmOutput.category_scores || {};\nconst getScore = (cat) => {\n    if (!cs[cat]) return 0;\n    return (typeof cs[cat] === 'object' && cs[cat].score) ? cs[cat].score : (cs[cat] || 0);\n};\n\n// Extract individual scores (dynamic - works with any criteria)\nconst is = llmOutput.individual_scores || {};\nconst configType = input.config_type || llmOutput.config_type || 'default';\nconst scoringConfig = input.scoring_config || null;\n\n// Build category_scores as a clean object { category_name: score }\nconst categoryScoresClean = {};\nfor (const [catKey, catVal] of Object.entries(cs)) {\n    categoryScoresClean[catKey] = (typeof catVal === 'object' && catVal.score) ? catVal.score : (catVal || 0);\n}\n\n// Build ranking object - always include legacy fields for backward compat\n// plus the new JSONB fields for dynamic scoring\nconst ranking = {\n    provider_name: llmOutput.provider_name || 'UNKNOWN',\n    project_id: input.project_id || llmOutput.project_id || null,\n    // Legacy fixed fields (populated from dynamic data when possible)\n    technical_score: getScore('TECHNICAL') || getScore('technical') || 0,\n    economic_score: getScore('ECONOMIC') || getScore('economic') || 0,\n    execution_score: getScore('EXECUTION') || getScore('execution') || 0,\n    hse_compliance_score: getScore('HSE_COMPLIANCE') || getScore('hse_compliance') || 0,\n    scope_facilities_score: is.scope_facilities || 0,\n    scope_work_score: is.scope_work || 0,\n    deliverables_quality_score: is.deliverables_quality || 0,\n    total_price_score: is.total_price || 0,\n    price_breakdown_score: is.price_breakdown || 0,\n    optionals_included_score: is.optionals_included || 0,\n    capex_opex_methodology_score: is.capex_opex_methodology || 0,\n    schedule_score: is.schedule || 0,\n    resources_allocation_score: is.resources_allocation || 0,\n    exceptions_score: is.exceptions || 0,\n    safety_studies_score: is.safety_studies || 0,\n    regulatory_compliance_score: is.regulatory_compliance || 0,\n    // Dynamic JSONB fields\n    category_scores_json: categoryScoresClean,\n    individual_scores_json: is,\n    evaluation_details: {\n        strengths: llmOutput.strengths || [],\n        weaknesses: llmOutput.weaknesses || [],\n        recommendations: llmOutput.recommendations || [],\n        summary: llmOutput.evaluation_summary || ''\n    },\n    overall_score: llmOutput.overall_score || 0,\n    compliance_percentage: llmOutput.compliance_percentage || 0,\n    evaluation_count: 1,\n    last_updated: new Date().toISOString()\n};\n\nreturn [{\n    json: {\n        ranking,\n        details: ranking.evaluation_details,\n        category_scores: cs,\n        individual_scores: is,\n        config_type: configType,\n        scoring_config: scoringConfig\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4240,
-        -704
+        -4288,
+        -208
       ],
-      "id": "66c4607f-937d-47b6-9cfc-f91066a1d51f",
+      "id": "2a5e6142-8f21-4bf4-8d62-4c52fb969070",
       "name": "Calculate Weighted Scores"
     },
     {
       "parameters": {
         "operation": "getAll",
         "tableId": "ranking_proveedores",
-        "limit": 1
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "provider_name",
+              "condition": "eq",
+              "keyValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
+            },
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
+            }
+          ]
+        }
       },
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4000,
-        -704
+        -4048,
+        -208
       ],
-      "id": "17d55b31-65f0-4fab-90eb-c53128da355e",
+      "id": "0d36d819-a488-4892-8608-1da0a93ce459",
       "name": "Check Provider Exists",
       "alwaysOutputData": true,
       "credentials": {
@@ -214,37 +210,44 @@
           "conditions": [
             {
               "id": "provider-exists-condition",
-              "leftValue": "={{ $json.provider_name }}",
-              "rightValue": "={{ $('Loop Over Providers').item.json.provider_name }}",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
               "operator": {
-                "type": "string",
-                "operation": "equals"
+                "type": "number",
+                "operation": "gt"
               }
             }
           ],
-          "combinator": "or"
+          "combinator": "and"
         },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3760,
-        -704
+        -3808,
+        -208
       ],
-      "id": "4aa6d9cd-4e3a-4508-ba55-df9c637dcb3d",
-      "name": "Provider Exists?"
+      "id": "dd8b9804-7407-4d8a-843b-9ea252350062",
+      "name": "Provider Exists?",
+      "disabled": true
     },
     {
       "parameters": {
         "operation": "update",
         "tableId": "ranking_proveedores",
+        "matchType": "allFilters",
         "filters": {
           "conditions": [
             {
               "keyName": "provider_name",
               "condition": "eq",
-              "keyValue": "={{ $('Calculate Weighted Scores').item.json.ranking.provider_name }}"
+              "keyValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
+            },
+            {
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
             }
           ]
         },
@@ -252,87 +255,87 @@
           "fieldValues": [
             {
               "fieldId": "project_id",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.project_id || null }}"
+              "fieldValue": "={{ $('Set Input Params1').first().json.project_id }}"
             },
             {
               "fieldId": "technical_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.technical_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}"
             },
             {
               "fieldId": "economic_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.economic_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}"
             },
             {
               "fieldId": "execution_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.execution_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}"
             },
             {
               "fieldId": "hse_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_compliance_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}"
             },
             {
               "fieldId": "scope_facilities_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_facilities_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}"
             },
             {
               "fieldId": "scope_work_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_work_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}"
             },
             {
               "fieldId": "deliverables_quality_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.deliverables_quality_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}"
             },
             {
               "fieldId": "total_price_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.total_price_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}"
             },
             {
               "fieldId": "price_breakdown_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.price_breakdown_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}"
             },
             {
               "fieldId": "optionals_included_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.optionals_included_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}"
             },
             {
               "fieldId": "capex_opex_methodology_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_opex_methodology_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}"
             },
             {
               "fieldId": "schedule_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.schedule_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}"
             },
             {
               "fieldId": "resources_allocation_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.resources_allocation_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}"
             },
             {
               "fieldId": "exceptions_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.exceptions_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}"
             },
             {
               "fieldId": "safety_studies_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_studies_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}"
             },
             {
               "fieldId": "regulatory_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.regulatory_compliance_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}"
             },
             {
               "fieldId": "overall_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.overall_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}"
             },
             {
               "fieldId": "compliance_percentage",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.compliance_percentage || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}"
             },
             {
               "fieldId": "evaluation_count",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.evaluation_count || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}"
             },
             {
               "fieldId": "last_updated",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.last_updated }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}"
             }
           ]
         }
@@ -340,17 +343,20 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3520,
-        -800
+        -3568,
+        -304
       ],
-      "id": "a9ab4e42-1d98-4597-ac38-03c8d7d0d66d",
+      "id": "a03f9c35-b055-43ae-b11a-846c1147a5ea",
       "name": "Update Ranking",
+      "alwaysOutputData": false,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "disabled": true,
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -359,91 +365,103 @@
           "fieldValues": [
             {
               "fieldId": "provider_name",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.provider_name }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
             },
             {
               "fieldId": "project_id",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.project_id || null }}"
+              "fieldValue": "={{ $('Set Input Params1').first().json.project_id }}"
             },
             {
               "fieldId": "technical_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.technical_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}"
             },
             {
               "fieldId": "economic_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.economic_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}"
             },
             {
               "fieldId": "execution_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.execution_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}"
             },
             {
               "fieldId": "hse_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.hse_compliance_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}"
             },
             {
               "fieldId": "scope_facilities_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_facilities_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}"
             },
             {
               "fieldId": "scope_work_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.scope_work_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}"
             },
             {
               "fieldId": "deliverables_quality_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.deliverables_quality_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}"
             },
             {
               "fieldId": "total_price_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.total_price_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}"
             },
             {
               "fieldId": "price_breakdown_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.price_breakdown_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}"
             },
             {
               "fieldId": "optionals_included_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.optionals_included_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}"
             },
             {
               "fieldId": "capex_opex_methodology_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.capex_opex_methodology_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}"
             },
             {
               "fieldId": "schedule_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.schedule_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}"
             },
             {
               "fieldId": "resources_allocation_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.resources_allocation_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}"
             },
             {
               "fieldId": "exceptions_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.exceptions_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}"
             },
             {
               "fieldId": "safety_studies_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.safety_studies_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}"
             },
             {
               "fieldId": "regulatory_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.regulatory_compliance_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}"
             },
             {
               "fieldId": "overall_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.overall_score || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}"
             },
             {
               "fieldId": "compliance_percentage",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.compliance_percentage || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}"
             },
             {
               "fieldId": "evaluation_count",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.evaluation_count || 0 }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}"
             },
             {
               "fieldId": "last_updated",
-              "fieldValue": "={{ $('Calculate Weighted Scores').item.json.ranking.last_updated }}"
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}"
+            },
+            {
+              "fieldId": "category_scores_json",
+              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.category_scores_json || {}) }}"
+            },
+            {
+              "fieldId": "individual_scores_json",
+              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.individual_scores_json || {}) }}"
+            },
+            {
+              "fieldId": "evaluation_details",
+              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.evaluation_details || {}) }}"
             }
           ]
         }
@@ -451,17 +469,19 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3520,
-        -592
+        -3568,
+        -96
       ],
-      "id": "2019fe61-51b0-4ab5-ae68-ba7c8df721f9",
+      "id": "a8d4e928-7367-4a4a-a7ac-36082d0228c5",
       "name": "Insert Ranking",
+      "alwaysOutputData": false,
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -472,23 +492,23 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -4624,
-        -880
+        -4672,
+        -384
       ],
-      "id": "80236db6-6edd-4ec2-8164-9f7c27777c36",
+      "id": "bc89c6d3-c1b8-4843-a3b3-9a14b717eb79",
       "name": "Aggregate All Rankings"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details (v5 - Dynamic Criteria)\n// Supports both default and dynamic criteria configurations\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {},\n        config_type: r.config_type || 'default'\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => ({\n    position: idx + 1,\n    provider_name: r.ranking.provider_name,\n    overall_score: r.ranking.overall_score,\n    compliance_percentage: r.ranking.compliance_percentage,\n    scores: {\n        technical: r.ranking.technical_score,\n        economic: r.ranking.economic_score,\n        execution: r.ranking.execution_score,\n        hse_compliance: r.ranking.hse_compliance_score\n    },\n    individual_scores: {\n        scope_facilities: r.ranking.scope_facilities_score || r.individual_scores?.scope_facilities || 0,\n        scope_work: r.ranking.scope_work_score || r.individual_scores?.scope_work || 0,\n        deliverables_quality: r.ranking.deliverables_quality_score || r.individual_scores?.deliverables_quality || 0,\n        total_price: r.ranking.total_price_score || r.individual_scores?.total_price || 0,\n        price_breakdown: r.ranking.price_breakdown_score || r.individual_scores?.price_breakdown || 0,\n        optionals_included: r.ranking.optionals_included_score || r.individual_scores?.optionals_included || 0,\n        capex_opex_methodology: r.ranking.capex_opex_methodology_score || r.individual_scores?.capex_opex_methodology || 0,\n        schedule: r.ranking.schedule_score || r.individual_scores?.schedule || 0,\n        resources_allocation: r.ranking.resources_allocation_score || r.individual_scores?.resources_allocation || 0,\n        exceptions: r.ranking.exceptions_score || r.individual_scores?.exceptions || 0,\n        safety_studies: r.ranking.safety_studies_score || r.individual_scores?.safety_studies || 0,\n        regulatory_compliance: r.ranking.regulatory_compliance_score || r.individual_scores?.regulatory_compliance || 0\n    },\n    evaluation: {\n        strengths: r.details.strengths || [],\n        weaknesses: r.details.weaknesses || [],\n        recommendations: r.details.recommendations || [],\n        summary: r.details.summary || ''\n    }\n}));\n\nconst configType = sortedRankings[0]?.config_type || 'default';\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    config_type: configType\n};\n\nconsole.log(`🏆 Final Ranking Generated (${configType} config):`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using ${configType} criteria configuration`\n    }\n};"
+        "jsCode": "// =============================================\n// NODE: Generate Final Ranking with Details (v6 - Fully Dynamic Criteria)\n// Passes individual_scores and category scores as dynamic objects\n// =============================================\n\nconst items = $input.all();\nlet allRankings = [];\n\nitems.forEach(item => {\n    if (item.json.all_rankings) {\n        allRankings = allRankings.concat(item.json.all_rankings);\n    } else if (item.json.ranking) {\n        allRankings.push(item.json);\n    }\n});\n\nconst sortedRankings = allRankings\n    .map(r => ({\n        ranking: r.ranking || r,\n        details: r.details || {},\n        category_scores: r.category_scores || {},\n        individual_scores: r.individual_scores || {},\n        config_type: r.config_type || 'default'\n    }))\n    .sort((a, b) => (b.ranking.overall_score || 0) - (a.ranking.overall_score || 0));\n\nconst finalRanking = sortedRankings.map((r, idx) => {\n    // Build dynamic category scores object\n    const categoryScores = r.ranking.category_scores_json || {};\n    // Also populate legacy fields for backward compatibility\n    const scores = {\n        technical: categoryScores.TECHNICAL || categoryScores.technical || r.ranking.technical_score || 0,\n        economic: categoryScores.ECONOMIC || categoryScores.economic || r.ranking.economic_score || 0,\n        execution: categoryScores.EXECUTION || categoryScores.execution || r.ranking.execution_score || 0,\n        hse_compliance: categoryScores.HSE_COMPLIANCE || categoryScores.hse_compliance || r.ranking.hse_compliance_score || 0\n    };\n    // Add any dynamic categories that aren't in the legacy set\n    for (const [catKey, catScore] of Object.entries(categoryScores)) {\n        const normalizedKey = catKey.toLowerCase();\n        if (!scores[normalizedKey]) {\n            scores[normalizedKey] = catScore;\n        }\n    }\n\n    // Build dynamic individual_scores from JSONB or fallback to legacy fields\n    const dynamicIndividual = r.ranking.individual_scores_json || r.individual_scores || {};\n    // Merge with legacy fixed fields as fallback\n    const individualScores = { ...dynamicIndividual };\n    const legacyFields = [\n        'scope_facilities', 'scope_work', 'deliverables_quality',\n        'total_price', 'price_breakdown', 'optionals_included', 'capex_opex_methodology',\n        'schedule', 'resources_allocation', 'exceptions',\n        'safety_studies', 'regulatory_compliance'\n    ];\n    legacyFields.forEach(f => {\n        if (!(f in individualScores) || !individualScores[f]) {\n            individualScores[f] = r.ranking[f + '_score'] || r.individual_scores?.[f] || 0;\n        }\n    });\n\n    return {\n        position: idx + 1,\n        provider_name: r.ranking.provider_name,\n        overall_score: r.ranking.overall_score,\n        compliance_percentage: r.ranking.compliance_percentage,\n        scores,\n        individual_scores: individualScores,\n        evaluation: {\n            strengths: r.details.strengths || [],\n            weaknesses: r.details.weaknesses || [],\n            recommendations: r.details.recommendations || [],\n            summary: r.details.summary || ''\n        }\n    };\n});\n\nconst configType = sortedRankings[0]?.config_type || 'default';\n\nconst stats = {\n    total_providers: finalRanking.length,\n    average_score: finalRanking.reduce((sum, r) => sum + (r.overall_score || 0), 0) / (finalRanking.length || 1),\n    top_performer: finalRanking[0]?.provider_name || 'N/A',\n    score_range: {\n        min: Math.min(...finalRanking.map(r => r.overall_score || 0)),\n        max: Math.max(...finalRanking.map(r => r.overall_score || 0))\n    },\n    evaluation_date: new Date().toISOString(),\n    config_type: configType\n};\n\nconsole.log(`Final Ranking Generated (${configType} config):`);\nfinalRanking.forEach(r => {\n    console.log(`   ${r.position}. ${r.provider_name}: ${r.overall_score} (${r.compliance_percentage}%)`);\n});\n\nreturn {\n    json: {\n        success: true,\n        ranking: finalRanking,\n        statistics: stats,\n        message: `Scoring completed for ${finalRanking.length} providers using ${configType} criteria configuration`\n    }\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4336,
-        -880
+        -4384,
+        -384
       ],
-      "id": "9911d780-d334-4252-b664-5d1f630357a3",
+      "id": "09266fa9-5c8e-4d81-a69b-56313fcca1c7",
       "name": "Generate Final Ranking"
     },
     {
@@ -509,10 +529,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4112,
-        -880
+        -4160,
+        -384
       ],
-      "id": "52ae6dae-9765-4600-b147-5d93205e9fa1",
+      "id": "13ed378a-3137-43b4-b0e2-80281f9f4271",
       "name": "Respond with Ranking"
     },
     {
@@ -524,10 +544,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -6576,
-        -1264
+        -6624,
+        -768
       ],
-      "id": "e6f8e8e4-c5f3-4a82-b504-65e2265279d2",
+      "id": "6c852dee-3622-4275-82ec-268280bcf40a",
       "name": "Workflow Info"
     },
     {
@@ -540,10 +560,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -4720,
-        -1120
+        -4768,
+        -624
       ],
-      "id": "30a37d95-a4d0-483e-9253-8b70d00dcee9",
+      "id": "a0684454-6ab7-4dc5-beef-f5ccf3cbf59d",
       "name": "LLM Scoring Info"
     },
     {
@@ -575,10 +595,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5792,
-        -672
+        -5840,
+        -176
       ],
-      "id": "ee4d76e5-9c5a-492f-b2ba-c6eea95b382d",
+      "id": "6ede61c9-baab-4e74-b4d9-7aeca34f5c39",
       "name": "Set Input Params1"
     },
     {
@@ -589,10 +609,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4480,
-        -480
+        -4528,
+        16
       ],
-      "id": "789ba059-97e7-4c18-8f00-2d18157d131e",
+      "id": "5c7ee8d3-362d-4c1c-a11d-826d340f1b79",
       "name": "JSON Output Parser1"
     },
     {
@@ -607,10 +627,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -4736,
-        -496
+        -4784,
+        0
       ],
-      "id": "7e150cde-5bb2-4fa0-a4c9-5a33e3178c7c",
+      "id": "be68a05b-901a-4708-8ea5-9d720c3ecbd0",
       "name": "Ollama Scoring Model",
       "credentials": {
         "ollamaApi": {
@@ -626,9 +646,9 @@
         "filters": {
           "conditions": [
             {
-              "keyName": "provider_name",
-              "condition": "neq",
-              "keyValue": "R"
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook Scoring').first().json.body.project_id }}"
             }
           ]
         }
@@ -636,10 +656,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6016,
-        -672
+        -6064,
+        -176
       ],
-      "id": "c8d0c805-27d9-4c28-9df5-f077ab16fdcc",
+      "id": "c583aa92-611b-42e6-a3bd-dc17152d339e",
       "name": "Delete a row",
       "alwaysOutputData": true,
       "credentials": {
@@ -656,10 +676,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -4640,
-        -400
+        -4688,
+        96
       ],
-      "id": "6b3904f3-189b-4d03-902a-6a2dc4536c75",
+      "id": "a7c94e44-1eea-4639-a981-00a45a64ff3c",
       "name": "OpenRouter Chat Model1",
       "credentials": {
         "openRouterApi": {
@@ -667,20 +687,26 @@
           "name": "OpenRouter account"
         }
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "scoring-evaluation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -6368,
+        -176
+      ],
+      "id": "4a27eda4-b204-4a1d-b0a1-df45d057c5df",
+      "name": "Webhook Scoring",
+      "webhookId": "scoring-eval-webhook-001"
     }
   ],
   "connections": {
-    "Webhook Scoring": {
-      "main": [
-        [
-          {
-            "node": "Delete a row",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Fetch Requirements": {
       "main": [
         [
@@ -780,7 +806,7 @@
       "main": [
         [
           {
-            "node": "Provider Exists?",
+            "node": "Insert Ranking",
             "type": "main",
             "index": 0
           }
@@ -881,11 +907,6 @@
         ]
       ]
     },
-    "Ollama Scoring Model": {
-      "ai_languageModel": [
-        []
-      ]
-    },
     "Delete a row": {
       "main": [
         [
@@ -907,9 +928,57 @@
           }
         ]
       ]
+    },
+    "Webhook Scoring": {
+      "main": [
+        [
+          {
+            "node": "Delete a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "pinData": {},
+  "pinData": {
+    "Webhook Scoring": [
+      {
+        "headers": {
+          "host": "n8n.beaienergy.com",
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+          "content-length": "95",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate, br, zstd",
+          "accept-language": "es-ES,es;q=0.9",
+          "content-type": "application/json",
+          "origin": "http://localhost:9102",
+          "referer": "http://localhost:9102/",
+          "sec-ch-ua": "\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"macOS\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "x-forwarded-for": "193.176.211.207",
+          "x-forwarded-host": "n8n.beaienergy.com",
+          "x-forwarded-port": "443",
+          "x-forwarded-proto": "https",
+          "x-forwarded-server": "0a67c8c4e180",
+          "x-real-ip": "193.176.211.207"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "project_id": "0558d9ef-5702-430d-8978-2a1f30339cd0",
+          "provider_name": "",
+          "recalculate_all": true
+        },
+        "webhookUrl": "https://n8n.beaienergy.com/webhook/scoring-evaluation",
+        "executionMode": "production"
+      }
+    ]
+  },
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"

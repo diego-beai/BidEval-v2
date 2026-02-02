@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS public.provider_responses (
     comment TEXT,
     file_id TEXT REFERENCES public.document_metadata(id) ON DELETE CASCADE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CONSTRAINT unique_requirement_provider UNIQUE(requirement_id, provider_name)
+    CONSTRAINT unique_requirement_provider_file UNIQUE(requirement_id, provider_name, file_id)
 );
 
 -- 5. AUDITORÍA TÉCNICA (Q&A)
@@ -143,26 +143,6 @@ CREATE INDEX IF NOT EXISTS idx_qa_audit_requirement_id ON public.qa_audit(requir
 -- 'NeedsMoreInfo' - Response reviewed but needs additional clarification
 -- 'Discarded' - Question discarded/cancelled
 
--- 6. TABLA QA_PENDIENTE (compatibilidad con el frontend)
--- Esta tabla mantiene la estructura esperada por el frontend
-CREATE TABLE IF NOT EXISTS public.QA_PENDIENTE (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    project_id TEXT NOT NULL, -- Mantenemos TEXT para compatibilidad, pero debería referenciar projects
-    proveedor TEXT NOT NULL,
-    disciplina TEXT CHECK (disciplina IN ('Eléctrica', 'Mecánica', 'Civil', 'Proceso', 'General')),
-    pregunta_texto TEXT NOT NULL,
-    estado TEXT CHECK (estado IN ('Borrador', 'Pendiente', 'Aprobada', 'Enviada', 'Respondida', 'Descartada')) DEFAULT 'Borrador',
-    importancia TEXT CHECK (importancia IN ('Alta', 'Media', 'Baja')),
-    respuesta_proveedor TEXT,
-    fecha_respuesta TIMESTAMP WITH TIME ZONE,
-    notas_internas TEXT
-);
-
--- Índices para QA_PENDIENTE
-CREATE INDEX IF NOT EXISTS idx_qa_pendiente_project_id ON public.QA_PENDIENTE(project_id);
-CREATE INDEX IF NOT EXISTS idx_qa_pendiente_proveedor ON public.QA_PENDIENTE(proveedor);
-CREATE INDEX IF NOT EXISTS idx_qa_pendiente_estado ON public.QA_PENDIENTE(estado);
 
 -- Función para actualizar updated_at en projects
 CREATE OR REPLACE FUNCTION update_projects_updated_at()
@@ -334,6 +314,11 @@ CREATE TABLE IF NOT EXISTS public.ranking_proveedores (
     overall_score DECIMAL(4,2) DEFAULT 0,               -- Weighted overall score (0-10)
     compliance_percentage DECIMAL(5,2) DEFAULT 0,       -- Percentage of requirements met
 
+    -- Dynamic scoring JSONB columns (for custom criteria configurations)
+    category_scores_json JSONB DEFAULT '{}',            -- Dynamic category scores
+    individual_scores_json JSONB DEFAULT '{}',          -- Dynamic individual criterion scores
+    evaluation_details JSONB DEFAULT '{}',              -- Strengths, weaknesses, summary
+
     -- Metadata
     evaluation_count INTEGER DEFAULT 0,
     last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -349,10 +334,21 @@ CREATE INDEX IF NOT EXISTS idx_ranking_project_id ON public.ranking_proveedores(
 CREATE INDEX IF NOT EXISTS idx_ranking_overall_score ON public.ranking_proveedores(overall_score DESC);
 
 -- Función para calcular overall_score basado en los nuevos pesos
+-- CONDITIONAL: Skip recalculation when dynamic scoring config is used
+-- (signaled by non-empty individual_scores_json)
 CREATE OR REPLACE FUNCTION calculate_weighted_overall_score()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Calculate category scores from individual criteria
+    -- If dynamic scoring data is present, do NOT recalculate
+    -- The workflow already computed correct scores using dynamic weights
+    IF NEW.individual_scores_json IS NOT NULL
+       AND NEW.individual_scores_json != '{}'::jsonb
+       AND jsonb_typeof(NEW.individual_scores_json) = 'object'
+       AND (SELECT count(*) FROM jsonb_object_keys(NEW.individual_scores_json)) > 0 THEN
+        RETURN NEW;
+    END IF;
+
+    -- Legacy calculation for default 12-criteria configuration
     -- TECHNICAL COMPLETENESS (30%)
     NEW.technical_score = (
         COALESCE(NEW.scope_facilities_score, 0) * 0.10 +
@@ -898,14 +894,58 @@ LEFT JOIN scoring_criteria scr ON scr.category_id = sc.id
 ORDER BY sc.project_id, sc.sort_order, scr.sort_order;
 
 -- ============================================
--- RLS POLICIES PARA LAS NUEVAS TABLAS
+-- RLS POLICIES PARA TODAS LAS TABLAS
 -- ============================================
 
--- Habilitar RLS
+-- Habilitar RLS en tablas que no lo tenían
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.document_metadata ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfq ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rfq_items_master ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.provider_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qa_audit ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ranking_proveedores ENABLE ROW LEVEL SECURITY;
+
+-- Habilitar RLS en tablas de scoring (ya existente)
 ALTER TABLE public.scoring_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scoring_criteria ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.provider_criterion_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.scoring_weight_configs ENABLE ROW LEVEL SECURITY;
+
+-- Políticas permisivas para tablas core (TODO: restringir cuando se implemente auth)
+DROP POLICY IF EXISTS "Allow all on projects" ON public.projects;
+CREATE POLICY "Allow all on projects" ON public.projects
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on document_metadata" ON public.document_metadata;
+CREATE POLICY "Allow all on document_metadata" ON public.document_metadata
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on rfq" ON public.rfq;
+CREATE POLICY "Allow all on rfq" ON public.rfq
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on proposals" ON public.proposals;
+CREATE POLICY "Allow all on proposals" ON public.proposals
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on rfq_items_master" ON public.rfq_items_master;
+CREATE POLICY "Allow all on rfq_items_master" ON public.rfq_items_master
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on provider_responses" ON public.provider_responses;
+CREATE POLICY "Allow all on provider_responses" ON public.provider_responses
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on qa_audit" ON public.qa_audit;
+CREATE POLICY "Allow all on qa_audit" ON public.qa_audit
+    FOR ALL USING (true) WITH CHECK (true);
+
+
+DROP POLICY IF EXISTS "Allow all on ranking_proveedores" ON public.ranking_proveedores;
+CREATE POLICY "Allow all on ranking_proveedores" ON public.ranking_proveedores
+    FOR ALL USING (true) WITH CHECK (true);
 
 -- Políticas para scoring_categories
 DROP POLICY IF EXISTS "Allow all operations on scoring_categories" ON public.scoring_categories;
@@ -926,3 +966,11 @@ CREATE POLICY "Allow all operations on provider_criterion_scores" ON public.prov
 DROP POLICY IF EXISTS "Allow all operations on scoring_weight_configs" ON public.scoring_weight_configs;
 CREATE POLICY "Allow all operations on scoring_weight_configs" ON public.scoring_weight_configs
     FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- MIGRATION: Add JSONB columns to ranking_proveedores (for existing databases)
+-- ============================================
+ALTER TABLE public.ranking_proveedores
+    ADD COLUMN IF NOT EXISTS category_scores_json JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS individual_scores_json JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS evaluation_details JSONB DEFAULT '{}';

@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useScoringStore, DEFAULT_WEIGHTS } from '../../../stores/useScoringStore';
+import ReactDOM from 'react-dom';
+import { useScoringStore } from '../../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { ScoringSetupWizard, InlineCriteriaEditor } from '../scoring';
-import type { ScoringWeights } from '../../../types/database.types';
-// ScoringCategory type used implicitly through the store
 
 // Default scoring criteria IDs (fallback when no dynamic configuration)
 // Based on RFQ requirements for engineering proposals evaluation
@@ -76,6 +75,7 @@ export const ScoringMatrix: React.FC = () => {
         hasConfiguration,
         loadConfiguration,
         initializeDefaultConfig,
+        deleteConfiguration,
         isLoading: isConfigLoading,
         setShowWizard,
         showWizard,
@@ -87,6 +87,21 @@ export const ScoringMatrix: React.FC = () => {
 
     // UI State
     const [showConfigEditor, setShowConfigEditor] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    // Handler to delete scoring configuration
+    const handleDeleteConfig = useCallback(async () => {
+        if (!activeProjectId) return;
+        try {
+            await deleteConfiguration(activeProjectId);
+            resetScoringStore();
+            await loadConfiguration(activeProjectId);
+        } catch (err) {
+            console.error('[ScoringMatrix] Error deleting config:', err);
+        } finally {
+            setShowDeleteConfirm(false);
+        }
+    }, [activeProjectId, deleteConfiguration, resetScoringStore, loadConfiguration]);
 
     // Load scoring configuration when project changes
     useEffect(() => {
@@ -181,10 +196,12 @@ export const ScoringMatrix: React.FC = () => {
 
     // Check if weights differ from defaults
     const hasCustomWeights = useMemo(() => {
-        return Object.keys(DEFAULT_WEIGHTS).some(
-            key => customWeights[key as keyof ScoringWeights] !== DEFAULT_WEIGHTS[key as keyof ScoringWeights]
-        );
-    }, [customWeights]);
+        // Compare against current SCORING_CRITERIA weights
+        return SCORING_CRITERIA.some(criterion => {
+            const currentWeight = customWeights[criterion.id] ?? 0;
+            return currentWeight !== criterion.weight;
+        });
+    }, [customWeights, SCORING_CRITERIA]);
 
     // Calculate total weight
     const totalWeight = useMemo(() => {
@@ -233,7 +250,7 @@ export const ScoringMatrix: React.FC = () => {
             setCustomWeights({
                 ...customWeights,
                 [criterionId]: clampedValue
-            } as ScoringWeights);
+            });
             if (!isEditingWeights) setIsEditingWeights(true);
         }
     }, [isEditingWeights, customWeights, setCustomWeights]);
@@ -258,65 +275,54 @@ export const ScoringMatrix: React.FC = () => {
 
     // Increment/decrement weight by 1
     const adjustWeight = useCallback((criterionId: string, delta: number) => {
-        const currentValue = customWeights[criterionId as keyof ScoringWeights] || 0;
+        const currentValue = customWeights[criterionId] || 0;
         const newValue = Math.max(0, Math.min(100, currentValue + delta));
         setCustomWeights({
             ...customWeights,
             [criterionId]: newValue
-        } as ScoringWeights);
+        });
         if (!isEditingWeights) setIsEditingWeights(true);
     }, [customWeights, setCustomWeights, isEditingWeights]);
 
-    // Recalculate scores with custom weights
+    // Recalculate scores with custom weights (fully dynamic)
     const recalculatedProviders = useMemo(() => {
         if (!scoringResults?.ranking) return [];
 
         return scoringResults.ranking.map(provider => {
-            // Calculate new overall score using custom weights
             const individualScores = provider.individual_scores;
-            const newOverall = Object.entries(customWeights).reduce((total, [key, weight]) => {
-                const score = individualScores[key as keyof typeof individualScores] || 0;
-                return total + (score * (weight || 0) / 100);
+
+            // Calculate new overall score using custom weights for criteria we know about
+            const newOverall = SCORING_CRITERIA.reduce((total, criterion) => {
+                const score = individualScores[criterion.id] || 0;
+                const weight = customWeights[criterion.id] ?? criterion.weight ?? 0;
+                return total + (score * weight / 100);
             }, 0);
 
-            // Calculate new category scores
-            const newTechnical = (
-                (individualScores.scope_facilities * (customWeights.scope_facilities || 0)) +
-                (individualScores.scope_work * (customWeights.scope_work || 0)) +
-                (individualScores.deliverables_quality * (customWeights.deliverables_quality || 0))
-            ) / (customCategoryWeights['technical'] || 1);
-
-            const newEconomic = (
-                (individualScores.total_price * (customWeights.total_price || 0)) +
-                (individualScores.price_breakdown * (customWeights.price_breakdown || 0)) +
-                (individualScores.optionals_included * (customWeights.optionals_included || 0)) +
-                (individualScores.capex_opex_methodology * (customWeights.capex_opex_methodology || 0))
-            ) / (customCategoryWeights['economic'] || 1);
-
-            const newExecution = (
-                (individualScores.schedule * (customWeights.schedule || 0)) +
-                (individualScores.resources_allocation * (customWeights.resources_allocation || 0)) +
-                (individualScores.exceptions * (customWeights.exceptions || 0))
-            ) / (customCategoryWeights['execution'] || 1);
-
-            const newHseCompliance = (
-                (individualScores.safety_studies * (customWeights.safety_studies || 0)) +
-                (individualScores.regulatory_compliance * (customWeights.regulatory_compliance || 0))
-            ) / (customCategoryWeights['hse_compliance'] || 1);
+            // Calculate new category scores dynamically
+            const newScores: Record<string, number> = {};
+            for (const [category] of Object.entries(CATEGORY_INFO)) {
+                const categoryCriteria = SCORING_CRITERIA.filter(c => c.category === category);
+                const catWeight = customCategoryWeights[category] || 0;
+                if (catWeight > 0 && categoryCriteria.length > 0) {
+                    const weightedSum = categoryCriteria.reduce((sum, crit) => {
+                        const score = individualScores[crit.id] || 0;
+                        const weight = customWeights[crit.id] ?? crit.weight ?? 0;
+                        return sum + (score * weight);
+                    }, 0);
+                    newScores[category] = weightedSum / catWeight;
+                } else {
+                    newScores[category] = 0;
+                }
+            }
 
             return {
                 ...provider,
                 overall_score: newOverall,
-                scores: {
-                    technical: newTechnical,
-                    economic: newEconomic,
-                    execution: newExecution,
-                    hse_compliance: newHseCompliance
-                }
+                scores: newScores,
             };
         }).sort((a, b) => a.provider_name.localeCompare(b.provider_name))
           .map((p, idx) => ({ ...p, position: idx + 1 }));
-    }, [scoringResults, customWeights, customCategoryWeights]);
+    }, [scoringResults, customWeights, customCategoryWeights, SCORING_CRITERIA, CATEGORY_INFO]);
 
     const getScoreColor = (score: number) => {
         if (score >= 8) return 'var(--color-primary)';
@@ -373,6 +379,35 @@ export const ScoringMatrix: React.FC = () => {
                     </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {/* Delete Configuration Button - Only when config exists */}
+                    {hasConfiguration && (
+                        <button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '10px 14px',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                color: 'rgb(239, 68, 68)',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            title={t('scoring.delete_config')}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                            {t('scoring.delete_config')}
+                        </button>
+                    )}
                     {/* Configure Criteria Button - Show when there's scoring data OR configuration */}
                     {(hasConfiguration || (providers && providers.length > 0)) && (
                         <button
@@ -746,23 +781,23 @@ export const ScoringMatrix: React.FC = () => {
                                                                 type="text"
                                                                 inputMode="numeric"
                                                                 pattern="[0-9]*"
-                                                                value={editingInput === criterion.id ? editingValue : (customWeights[criterion.id as keyof ScoringWeights] || 0).toString()}
+                                                                value={editingInput === criterion.id ? editingValue : (customWeights[criterion.id] || 0).toString()}
                                                                 onChange={(e) => handleWeightChange(criterion.id, e.target.value)}
                                                                 onFocus={() => {
                                                                     setEditingInput(criterion.id);
-                                                                    setEditingValue((customWeights[criterion.id as keyof ScoringWeights] || 0).toString());
+                                                                    setEditingValue((customWeights[criterion.id] || 0).toString());
                                                                 }}
                                                                 onBlur={() => handleWeightBlur()}
                                                                 style={{
                                                                     width: '52px',
                                                                     padding: '6px 8px',
                                                                     paddingRight: '20px',
-                                                                    background: (customWeights[criterion.id as keyof ScoringWeights] || 0) !== criterion.weight ? `${info.color}30` : `${info.color}20`,
+                                                                    background: (customWeights[criterion.id] || 0) !== criterion.weight ? `${info.color}30` : `${info.color}20`,
                                                                     color: info.color,
                                                                     borderRadius: '8px',
                                                                     fontWeight: 700,
                                                                     fontSize: '0.85rem',
-                                                                    border: (customWeights[criterion.id as keyof ScoringWeights] || 0) !== criterion.weight ? `2px solid ${info.color}` : '2px solid transparent',
+                                                                    border: (customWeights[criterion.id] || 0) !== criterion.weight ? `2px solid ${info.color}` : '2px solid transparent',
                                                                     textAlign: 'center',
                                                                     outline: 'none',
                                                                     transition: 'all 0.2s'
@@ -861,10 +896,7 @@ export const ScoringMatrix: React.FC = () => {
                                                 <span style={{ fontWeight: 700, color: info.color }}>{categoryWeight}%</span>
                                             </td>
                                             {providers && providers.map(p => {
-                                                const categoryScore = category === 'technical' ? p.scores?.technical :
-                                                    category === 'economic' ? p.scores?.economic :
-                                                    category === 'execution' ? p.scores?.execution :
-                                                    p.scores?.hse_compliance || 0;
+                                                const categoryScore = p.scores?.[category] || 0;
                                                 return (
                                                     <td key={p.provider_name} style={{
                                                         textAlign: 'center',
@@ -920,6 +952,99 @@ export const ScoringMatrix: React.FC = () => {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {/* Delete Configuration Confirmation Modal - rendered via portal */}
+            {showDeleteConfirm && ReactDOM.createPortal(
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 99999
+                }}
+                onClick={() => setShowDeleteConfirm(false)}
+                >
+                    <div style={{
+                        background: 'var(--bg-surface)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '28px',
+                        maxWidth: '420px',
+                        width: '90%',
+                        boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+                        border: '1px solid var(--border-color)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '10px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                            }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgb(239, 68, 68)" strokeWidth="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </div>
+                            <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {t('scoring.delete_config_confirm')}
+                            </h4>
+                        </div>
+                        <p style={{
+                            margin: '0 0 24px 0',
+                            fontSize: '0.875rem',
+                            color: 'var(--text-secondary)',
+                            lineHeight: '1.5'
+                        }}>
+                            {t('scoring.delete_config_warning')}
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                style={{
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    border: '1px solid var(--border-color)',
+                                    background: 'var(--bg-surface)',
+                                    color: 'var(--text-secondary)',
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {t('upload.btn.cancel')}
+                            </button>
+                            <button
+                                onClick={handleDeleteConfig}
+                                style={{
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: 'rgb(239, 68, 68)',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                                }}
+                            >
+                                {t('scoring.delete_config_btn')}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
             <style>{`

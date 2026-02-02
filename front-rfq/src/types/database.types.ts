@@ -12,35 +12,16 @@ export type Json =
 
 /**
  * Scoring weights structure for provider evaluation
- * Based on RFQ requirements for engineering proposals
+ * Dynamic: supports any number of criteria with arbitrary names.
+ * Each key is a criterion name, each value is its weight (0-100).
  *
- * Categories and weights:
- * - TECHNICAL COMPLETENESS: 30%
- * - ECONOMIC COMPETITIVENESS: 35%
- * - EXECUTION CAPABILITY: 20%
- * - HSE & COMPLIANCE: 15%
+ * Default categories and weights:
+ * - TECHNICAL COMPLETENESS: 30% (scope_facilities, scope_work, deliverables_quality)
+ * - ECONOMIC COMPETITIVENESS: 35% (total_price, price_breakdown, optionals_included, capex_opex_methodology)
+ * - EXECUTION CAPABILITY: 20% (schedule, resources_allocation, exceptions)
+ * - HSE & COMPLIANCE: 15% (safety_studies, regulatory_compliance)
  */
-export interface ScoringWeights {
-  // TECHNICAL COMPLETENESS (30% total)
-  scope_facilities: number      // 10% - Scope of facilities included
-  scope_work: number            // 10% - Scope of work covered
-  deliverables_quality: number  // 10% - Quality of deliverables (P&IDs, specs, 3D)
-
-  // ECONOMIC COMPETITIVENESS (35% total)
-  total_price: number           // 15% - Total price competitiveness
-  price_breakdown: number       // 8% - Transparent breakdown (hours/discipline, €/hour)
-  optionals_included: number    // 7% - Optionals included in base price
-  capex_opex_methodology: number // 5% - CAPEX/OPEX methodology (AACEI class)
-
-  // EXECUTION CAPABILITY (20% total)
-  schedule: number              // 8% - Realistic schedule
-  resources_allocation: number  // 6% - Resources per discipline (coherent hours)
-  exceptions: number            // 6% - Exceptions and deviations (fewer = better)
-
-  // HSE & COMPLIANCE (15% total)
-  safety_studies: number        // 8% - Safety studies (HAZID, HAZOP, QRA, ATEX)
-  regulatory_compliance: number // 7% - Regulatory compliance (codes, standards)
-}
+export type ScoringWeights = Record<string, number>
 
 /**
  * Estructura del mensaje JSON almacenado en n8n_chat_history
@@ -159,6 +140,10 @@ export interface Database {
           // Overall
           overall_score: number | null
           compliance_percentage: number | null
+          // Dynamic scoring JSONB fields
+          category_scores_json: Record<string, number> | null
+          individual_scores_json: Record<string, number> | null
+          evaluation_details: Record<string, unknown> | null
           evaluation_count: number
           last_updated: string
           created_at: string
@@ -185,6 +170,9 @@ export interface Database {
           regulatory_compliance_score?: number | null
           overall_score?: number | null
           compliance_percentage?: number | null
+          category_scores_json?: Record<string, number> | null
+          individual_scores_json?: Record<string, number> | null
+          evaluation_details?: Record<string, unknown> | null
           evaluation_count?: number
           last_updated?: string
           created_at?: string
@@ -211,6 +199,9 @@ export interface Database {
           regulatory_compliance_score?: number | null
           overall_score?: number | null
           compliance_percentage?: number | null
+          category_scores_json?: Record<string, number> | null
+          individual_scores_json?: Record<string, number> | null
+          evaluation_details?: Record<string, unknown> | null
           evaluation_count?: number
           last_updated?: string
           created_at?: string

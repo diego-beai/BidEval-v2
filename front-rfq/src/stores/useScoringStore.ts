@@ -6,69 +6,34 @@ import { useToastStore } from './useToastStore';
 import { useProjectStore } from './useProjectStore';
 import type { ScoringWeights } from '../types/database.types';
 
-// Default weights for scoring criteria
-// Based on RFQ requirements for engineering proposals evaluation
-// Categories:
-// - TECHNICAL COMPLETENESS: 30%
-// - ECONOMIC COMPETITIVENESS: 35%
-// - EXECUTION CAPABILITY: 20%
-// - HSE & COMPLIANCE: 15%
+// Default weights for scoring criteria (legacy 12-criteria configuration)
 export const DEFAULT_WEIGHTS: ScoringWeights = {
-    // TECHNICAL COMPLETENESS (30%)
-    scope_facilities: 10,       // Scope of facilities included (H2 plant, BOP, utilities)
-    scope_work: 10,             // Scope of work covered (PM, studies, deliverables)
-    deliverables_quality: 10,   // Quality of deliverables (P&IDs, specs, 3D model)
-
-    // ECONOMIC COMPETITIVENESS (35%)
-    total_price: 15,            // Total price (PRE-FEED + FEED + EPC compared)
-    price_breakdown: 8,         // Transparent breakdown (hours/discipline, €/hour)
-    optionals_included: 7,      // Optionals included in base price
-    capex_opex_methodology: 5,  // CAPEX/OPEX methodology (AACEI class)
-
-    // EXECUTION CAPABILITY (20%)
-    schedule: 8,                // Realistic schedule
-    resources_allocation: 6,    // Resources per discipline (coherent hours)
-    exceptions: 6,              // Exceptions and deviations (fewer = better)
-
-    // HSE & COMPLIANCE (15%)
-    safety_studies: 8,          // Safety studies (HAZID, HAZOP, QRA, ATEX)
-    regulatory_compliance: 7,   // Regulatory compliance (codes, standards)
+    scope_facilities: 10,
+    scope_work: 10,
+    deliverables_quality: 10,
+    total_price: 15,
+    price_breakdown: 8,
+    optionals_included: 7,
+    capex_opex_methodology: 5,
+    schedule: 8,
+    resources_allocation: 6,
+    exceptions: 6,
+    safety_studies: 8,
+    regulatory_compliance: 7,
 };
 
 /**
- * Tipos para el scoring
+ * Tipos para el scoring - fully dynamic
  */
 export interface ProviderScore {
     provider_name: string;
     position: number;
     overall_score: number;
     compliance_percentage: number;
-    // Aggregated category scores
-    scores: {
-        technical: number;      // Technical Completeness (30%)
-        economic: number;       // Economic Competitiveness (35%)
-        execution: number;      // Execution Capability (20%)
-        hse_compliance: number; // HSE & Compliance (15%)
-    };
-    // Individual criterion scores (11 criteria)
-    individual_scores: {
-        // TECHNICAL COMPLETENESS (30%)
-        scope_facilities: number;       // 10%
-        scope_work: number;             // 10%
-        deliverables_quality: number;   // 10%
-        // ECONOMIC COMPETITIVENESS (35%)
-        total_price: number;            // 15%
-        price_breakdown: number;        // 8%
-        optionals_included: number;     // 7%
-        capex_opex_methodology: number; // 5%
-        // EXECUTION CAPABILITY (20%)
-        schedule: number;               // 8%
-        resources_allocation: number;   // 6%
-        exceptions: number;             // 6%
-        // HSE & COMPLIANCE (15%)
-        safety_studies: number;         // 8%
-        regulatory_compliance: number;  // 7%
-    };
+    // Aggregated category scores (dynamic keys)
+    scores: Record<string, number>;
+    // Individual criterion scores (dynamic keys)
+    individual_scores: Record<string, number>;
     strengths?: string[];
     weaknesses?: string[];
 }
@@ -104,7 +69,7 @@ interface ScoringState {
     reset: () => void;
 
     // Weight actions
-    setCustomWeights: (weights: ScoringWeights) => void;
+    setCustomWeights: (weights: Record<string, number>) => void;
     resetWeights: () => void;
     saveWeights: () => Promise<void>;
     loadSavedWeights: () => Promise<void>;
@@ -249,43 +214,69 @@ export const useScoringStore = create<ScoringState>()(
                     }
 
                     // Helper to normalize scores to 0-10 scale
-                    // If score > 10, assume it's on 0-100 scale and divide by 10
                     const normalizeScore = (score: number | null | undefined): number => {
                         const s = score || 0;
                         return s > 10 ? s / 10 : s;
                     };
 
-                    // Transform data to expected format with all individual scores
-                    const ranking: ProviderScore[] = (data || []).map((row: any, index: number) => ({
-                        provider_name: row.provider_name,
-                        position: index + 1,
-                        overall_score: normalizeScore(row.overall_score),
-                        compliance_percentage: row.compliance_percentage || 0,
-                        scores: {
-                            technical: normalizeScore(row.technical_score),
-                            economic: normalizeScore(row.economic_score),
-                            execution: normalizeScore(row.execution_score),
-                            hse_compliance: normalizeScore(row.hse_compliance_score)
-                        },
-                        individual_scores: {
-                            // TECHNICAL COMPLETENESS (30%)
-                            scope_facilities: normalizeScore(row.scope_facilities_score),
-                            scope_work: normalizeScore(row.scope_work_score),
-                            deliverables_quality: normalizeScore(row.deliverables_quality_score),
-                            // ECONOMIC COMPETITIVENESS (35%)
-                            total_price: normalizeScore(row.total_price_score),
-                            price_breakdown: normalizeScore(row.price_breakdown_score),
-                            optionals_included: normalizeScore(row.optionals_included_score),
-                            capex_opex_methodology: normalizeScore(row.capex_opex_methodology_score),
-                            // EXECUTION CAPABILITY (20%)
-                            schedule: normalizeScore(row.schedule_score),
-                            resources_allocation: normalizeScore(row.resources_allocation_score),
-                            exceptions: normalizeScore(row.exceptions_score),
-                            // HSE & COMPLIANCE (15%)
-                            safety_studies: normalizeScore(row.safety_studies_score),
-                            regulatory_compliance: normalizeScore(row.regulatory_compliance_score)
+                    // Check if dynamic JSONB data is available
+                    const hasDynamicData = data.some((row: any) =>
+                        row.individual_scores_json &&
+                        typeof row.individual_scores_json === 'object' &&
+                        Object.keys(row.individual_scores_json).length > 0
+                    );
+
+                    // Transform data to expected format
+                    const ranking: ProviderScore[] = (data || []).map((row: any, index: number) => {
+                        // Build individual_scores: prefer JSONB dynamic data, fallback to legacy columns
+                        let individualScores: Record<string, number>;
+                        let categoryScores: Record<string, number>;
+
+                        if (hasDynamicData && row.individual_scores_json && Object.keys(row.individual_scores_json).length > 0) {
+                            // Dynamic mode: read from JSONB columns
+                            individualScores = {};
+                            for (const [key, val] of Object.entries(row.individual_scores_json)) {
+                                individualScores[key] = normalizeScore(val as number);
+                            }
+                            categoryScores = {};
+                            if (row.category_scores_json && typeof row.category_scores_json === 'object') {
+                                for (const [key, val] of Object.entries(row.category_scores_json)) {
+                                    categoryScores[key.toLowerCase()] = normalizeScore(val as number);
+                                }
+                            }
+                        } else {
+                            // Legacy mode: read from fixed columns
+                            individualScores = {
+                                scope_facilities: normalizeScore(row.scope_facilities_score),
+                                scope_work: normalizeScore(row.scope_work_score),
+                                deliverables_quality: normalizeScore(row.deliverables_quality_score),
+                                total_price: normalizeScore(row.total_price_score),
+                                price_breakdown: normalizeScore(row.price_breakdown_score),
+                                optionals_included: normalizeScore(row.optionals_included_score),
+                                capex_opex_methodology: normalizeScore(row.capex_opex_methodology_score),
+                                schedule: normalizeScore(row.schedule_score),
+                                resources_allocation: normalizeScore(row.resources_allocation_score),
+                                exceptions: normalizeScore(row.exceptions_score),
+                                safety_studies: normalizeScore(row.safety_studies_score),
+                                regulatory_compliance: normalizeScore(row.regulatory_compliance_score),
+                            };
+                            categoryScores = {
+                                technical: normalizeScore(row.technical_score),
+                                economic: normalizeScore(row.economic_score),
+                                execution: normalizeScore(row.execution_score),
+                                hse_compliance: normalizeScore(row.hse_compliance_score),
+                            };
                         }
-                    }));
+
+                        return {
+                            provider_name: row.provider_name,
+                            position: index + 1,
+                            overall_score: normalizeScore(row.overall_score),
+                            compliance_percentage: row.compliance_percentage || 0,
+                            scores: categoryScores,
+                            individual_scores: individualScores,
+                        };
+                    });
 
                     // Sort by overall_score descending to get proper ranking
                     const sortedRanking = [...ranking].sort((a, b) => b.overall_score - a.overall_score);
@@ -331,7 +322,7 @@ export const useScoringStore = create<ScoringState>()(
             }),
 
             // Weight actions
-            setCustomWeights: (weights: ScoringWeights) => {
+            setCustomWeights: (weights: Record<string, number>) => {
                 set({ customWeights: weights });
             },
 
@@ -415,14 +406,14 @@ export const useScoringStore = create<ScoringState>()(
                     }
 
                     if (data && data.weights) {
-                        // Merge saved weights with defaults to handle schema migrations
-                        // Only use saved values for keys that exist in DEFAULT_WEIGHTS
+                        // Merge saved weights with defaults
                         const mergedWeights: ScoringWeights = { ...DEFAULT_WEIGHTS };
                         const savedWeights = data.weights as Record<string, number>;
 
-                        for (const key of Object.keys(DEFAULT_WEIGHTS)) {
-                            if (key in savedWeights && typeof savedWeights[key] === 'number') {
-                                mergedWeights[key as keyof ScoringWeights] = savedWeights[key];
+                        // Accept all keys from saved weights (dynamic)
+                        for (const [key, val] of Object.entries(savedWeights)) {
+                            if (typeof val === 'number') {
+                                mergedWeights[key] = val;
                             }
                         }
 
@@ -465,74 +456,77 @@ export const useScoringStore = create<ScoringState>()(
                     // First save the weights config
                     await get().saveWeights();
 
-                    // Calculate new scores with custom weights
+                    // Dynamically import scoring config to get category→criteria mapping
+                    const { useScoringConfigStore } = await import('./useScoringConfigStore');
+                    const { categories: dynamicCategories, hasConfiguration } = useScoringConfigStore.getState();
+
+                    // Calculate new scores with custom weights (fully dynamic)
                     const updatedRankings = scoringResults.ranking.map(provider => {
                         const scores = provider.individual_scores;
 
                         // Calculate new overall score
                         const newOverall = Object.entries(customWeights).reduce((total, [key, weight]) => {
-                            const score = scores[key as keyof typeof scores] || 0;
+                            const score = scores[key] || 0;
                             return total + (score * weight / 100);
                         }, 0);
 
-                        // Calculate category weights from individual criteria
-                        const technicalWeight = customWeights.scope_facilities + customWeights.scope_work +
-                                               customWeights.deliverables_quality;
-                        const economicWeight = customWeights.total_price + customWeights.price_breakdown +
-                                               customWeights.optionals_included + customWeights.capex_opex_methodology;
-                        const executionWeight = customWeights.schedule + customWeights.resources_allocation +
-                                               customWeights.exceptions;
-                        const hseWeight = customWeights.safety_studies + customWeights.regulatory_compliance;
+                        // Calculate category scores dynamically
+                        const categoryScores: Record<string, number> = {};
+                        const safeCategories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
 
-                        // Calculate category scores (weighted average within category)
-                        const technicalScore = technicalWeight > 0 ? (
-                            (scores.scope_facilities * customWeights.scope_facilities) +
-                            (scores.scope_work * customWeights.scope_work) +
-                            (scores.deliverables_quality * customWeights.deliverables_quality)
-                        ) / technicalWeight : 0;
+                        if (hasConfiguration && safeCategories.length > 0) {
+                            // Dynamic: use categories from config store
+                            for (const cat of safeCategories) {
+                                if (!cat || !cat.name) continue;
+                                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                                const catWeight = catCriteria.reduce((sum: number, crit: any) => {
+                                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
+                                    return sum + actualWeight;
+                                }, 0);
+                                const weightedSum = catCriteria.reduce((sum: number, crit: any) => {
+                                    const critName = typeof crit.name === 'string' ? crit.name : String(crit.name || '');
+                                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
+                                    return sum + ((scores[critName] || 0) * actualWeight);
+                                }, 0);
+                                categoryScores[cat.name] = catWeight > 0 ? parseFloat((weightedSum / catWeight).toFixed(2)) : 0;
+                            }
+                        } else {
+                            // Legacy: hardcoded 4 categories
+                            const technicalWeight = (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0);
+                            const economicWeight = (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0);
+                            const executionWeight = (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0);
+                            const hseWeight = (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0);
 
-                        const economicScore = economicWeight > 0 ? (
-                            (scores.total_price * customWeights.total_price) +
-                            (scores.price_breakdown * customWeights.price_breakdown) +
-                            (scores.optionals_included * customWeights.optionals_included) +
-                            (scores.capex_opex_methodology * customWeights.capex_opex_methodology)
-                        ) / economicWeight : 0;
-
-                        const executionScore = executionWeight > 0 ? (
-                            (scores.schedule * customWeights.schedule) +
-                            (scores.resources_allocation * customWeights.resources_allocation) +
-                            (scores.exceptions * customWeights.exceptions)
-                        ) / executionWeight : 0;
-
-                        const hseScore = hseWeight > 0 ? (
-                            (scores.safety_studies * customWeights.safety_studies) +
-                            (scores.regulatory_compliance * customWeights.regulatory_compliance)
-                        ) / hseWeight : 0;
+                            categoryScores.technical = technicalWeight > 0 ? parseFloat(((((scores.scope_facilities || 0) * (customWeights.scope_facilities || 0)) + ((scores.scope_work || 0) * (customWeights.scope_work || 0)) + ((scores.deliverables_quality || 0) * (customWeights.deliverables_quality || 0))) / technicalWeight).toFixed(2)) : 0;
+                            categoryScores.economic = economicWeight > 0 ? parseFloat(((((scores.total_price || 0) * (customWeights.total_price || 0)) + ((scores.price_breakdown || 0) * (customWeights.price_breakdown || 0)) + ((scores.optionals_included || 0) * (customWeights.optionals_included || 0)) + ((scores.capex_opex_methodology || 0) * (customWeights.capex_opex_methodology || 0))) / economicWeight).toFixed(2)) : 0;
+                            categoryScores.execution = executionWeight > 0 ? parseFloat(((((scores.schedule || 0) * (customWeights.schedule || 0)) + ((scores.resources_allocation || 0) * (customWeights.resources_allocation || 0)) + ((scores.exceptions || 0) * (customWeights.exceptions || 0))) / executionWeight).toFixed(2)) : 0;
+                            categoryScores.hse_compliance = hseWeight > 0 ? parseFloat(((((scores.safety_studies || 0) * (customWeights.safety_studies || 0)) + ((scores.regulatory_compliance || 0) * (customWeights.regulatory_compliance || 0))) / hseWeight).toFixed(2)) : 0;
+                        }
 
                         return {
                             provider_name: provider.provider_name,
                             overall_score: parseFloat(newOverall.toFixed(2)),
-                            technical_score: parseFloat(technicalScore.toFixed(2)),
-                            economic_score: parseFloat(economicScore.toFixed(2)),
-                            execution_score: parseFloat(executionScore.toFixed(2)),
-                            hse_compliance_score: parseFloat(hseScore.toFixed(2))
+                            category_scores: categoryScores,
                         };
                     });
 
                     // Update each provider's scores in the database
-                    // Use type assertion since ranking_proveedores has more columns than in types
                     const client = supabase as any;
                     for (const ranking of updatedRankings) {
+                        const updateData: Record<string, unknown> = {
+                            overall_score: ranking.overall_score,
+                            category_scores_json: ranking.category_scores,
+                            last_updated: new Date().toISOString(),
+                        };
+                        // Also update legacy columns if they exist in the category scores
+                        if (ranking.category_scores.technical !== undefined) updateData.technical_score = ranking.category_scores.technical;
+                        if (ranking.category_scores.economic !== undefined) updateData.economic_score = ranking.category_scores.economic;
+                        if (ranking.category_scores.execution !== undefined) updateData.execution_score = ranking.category_scores.execution;
+                        if (ranking.category_scores.hse_compliance !== undefined) updateData.hse_compliance_score = ranking.category_scores.hse_compliance;
+
                         const { error } = await client
                             .from('ranking_proveedores')
-                            .update({
-                                overall_score: ranking.overall_score,
-                                technical_score: ranking.technical_score,
-                                economic_score: ranking.economic_score,
-                                execution_score: ranking.execution_score,
-                                hse_compliance_score: ranking.hse_compliance_score,
-                                last_updated: new Date().toISOString()
-                            })
+                            .update(updateData)
                             .eq('provider_name', ranking.provider_name)
                             .eq('project_id', activeProjectId);
 
@@ -567,13 +561,13 @@ export const useScoringStore = create<ScoringState>()(
                         const persisted = persistedState as Partial<ScoringState> | undefined;
                         if (!persisted) return currentState;
 
-                        // Merge customWeights with defaults - only use persisted values for valid keys
-                        let mergedWeights = { ...DEFAULT_WEIGHTS };
+                        // Merge customWeights with defaults - accept all dynamic keys
+                        let mergedWeights: ScoringWeights = { ...DEFAULT_WEIGHTS };
                         if (persisted.customWeights) {
-                            for (const key of Object.keys(DEFAULT_WEIGHTS)) {
-                                const persistedWeights = persisted.customWeights as unknown as Record<string, number>;
-                                if (key in persistedWeights && typeof persistedWeights[key] === 'number') {
-                                    mergedWeights[key as keyof ScoringWeights] = persistedWeights[key];
+                            const persistedWeights = persisted.customWeights as unknown as Record<string, number>;
+                            for (const [key, val] of Object.entries(persistedWeights)) {
+                                if (typeof val === 'number') {
+                                    mergedWeights[key] = val;
                                 }
                             }
                         }
