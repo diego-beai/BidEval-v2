@@ -11,9 +11,9 @@
       "typeVersion": 1,
       "position": [
         -3232,
-        -1968
+        -1984
       ],
-      "id": "d3b11696-3439-4ba1-abdf-29ba26747d7b",
+      "id": "13275f0b-7430-43ac-96c6-b04975afa06e",
       "name": "Sticky Note4"
     },
     {
@@ -24,9 +24,9 @@
       "typeVersion": 1.5,
       "position": [
         -1472,
-        -1776
+        -1792
       ],
-      "id": "7e5af5bb-615e-48a9-977a-cc6f410bda73",
+      "id": "bf4c6738-9fb5-4696-b6f1-d26d9084bcaa",
       "name": "Respond to Webhook5"
     },
     {
@@ -42,9 +42,9 @@
       "typeVersion": 1,
       "position": [
         -2944,
-        -1408
+        -1424
       ],
-      "id": "025aca47-aab5-4744-b018-ccf5799bcbb2",
+      "id": "abec4eb7-aa3f-4d68-8e7e-90ce512cfaf3",
       "name": "Ollama Chat Model3",
       "credentials": {
         "ollamaApi": {
@@ -64,9 +64,9 @@
       "typeVersion": 2.1,
       "position": [
         -3120,
-        -1776
+        -1792
       ],
-      "id": "09e1bf8b-7b7f-4e67-aab3-da9fd0e4ed3e",
+      "id": "13eb6580-9874-4cf0-942c-4a698d7b375d",
       "name": "Webhook1",
       "webhookId": "chat-rfq"
     },
@@ -75,13 +75,13 @@
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.body.sessionId }}"
       },
-      "id": "5d772cdf-e3b7-4f39-ac17-d3dff16de823",
+      "id": "f216749e-bf10-4508-a655-2bfb7069add7",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
         -2768,
-        -1552
+        -1568
       ],
       "notesInFlow": false,
       "credentials": {
@@ -99,9 +99,9 @@
       "typeVersion": 1,
       "position": [
         -2272,
-        -1344
+        -1360
       ],
-      "id": "bca76cbb-4690-4f22-bbab-bd385ab54eb3",
+      "id": "f9d5ead3-2f14-43ef-bd0d-8c6fcd56be90",
       "name": "Embeddings Ollama",
       "credentials": {
         "ollamaApi": {
@@ -115,16 +115,16 @@
         "promptType": "define",
         "text": "={{ $json.body.chatInput }}",
         "options": {
-          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH only. Never respond in Spanish or any other language.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
+          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH or SPANISH, it depends on the previous message from the user.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
         }
       },
-      "id": "5146128b-e708-4081-b0b6-5b8e4bc91918",
+      "id": "548da18a-33a5-4ffc-9661-dda596d74692",
       "name": "Chat AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
         -2240,
-        -1776
+        -1792
       ]
     },
     {
@@ -147,9 +147,9 @@
       "typeVersion": 1,
       "position": [
         -2640,
-        -1552
+        -1568
       ],
-      "id": "407371bd-42b8-4650-ae2f-4d72f24dfe98",
+      "id": "2d56985f-6cda-4d84-b1f3-2d3d20b25d68",
       "name": "Revisar-ofertas",
       "credentials": {
         "supabaseApi": {
@@ -178,9 +178,9 @@
       "typeVersion": 1,
       "position": [
         -2352,
-        -1552
+        -1568
       ],
-      "id": "3727aaa4-e91b-443d-8fb9-ac3cc3901f9a",
+      "id": "d2eb3466-e695-4d6d-892f-d567b7872ddf",
       "name": "Revisar RFQs",
       "credentials": {
         "supabaseApi": {
@@ -197,9 +197,9 @@
       "typeVersion": 1,
       "position": [
         -2560,
-        -1344
+        -1360
       ],
-      "id": "ea3c934e-29e9-4ea2-8dac-61b41eae7475",
+      "id": "78024ccc-f3e6-4daa-b140-a8c72f48aeae",
       "name": "Embeddings Ollama5",
       "credentials": {
         "ollamaApi": {
@@ -222,9 +222,9 @@
       "typeVersion": 2.5,
       "position": [
         -2064,
-        -1552
+        -1568
       ],
-      "id": "e7524fe8-2a17-4f89-a0e3-f7c7d07a55ba",
+      "id": "f5b563de-d730-4e1d-bde2-c3891a96f3a4",
       "name": "query_requirements",
       "credentials": {
         "postgres": {
@@ -247,9 +247,9 @@
       "typeVersion": 2.5,
       "position": [
         -1936,
-        -1552
+        -1568
       ],
-      "id": "aeee824a-6b38-4b5f-8370-3b90c05a3de5",
+      "id": "f636ffb1-23e8-4c23-aee4-e89f01bad19f",
       "name": "query_provider_responses",
       "credentials": {
         "postgres": {
@@ -272,9 +272,9 @@
       "typeVersion": 2.5,
       "position": [
         -1808,
-        -1552
+        -1568
       ],
-      "id": "c4d6be06-e8c1-4656-8fa4-cb02317801c8",
+      "id": "4f756cd9-930d-4b6d-b1c1-3b89b66c53b9",
       "name": "query_ranking",
       "credentials": {
         "postgres": {
@@ -297,9 +297,9 @@
       "typeVersion": 2.5,
       "position": [
         -1680,
-        -1552
+        -1568
       ],
-      "id": "c7488137-7007-4f04-b68d-a8df8a2c0cff",
+      "id": "8ff6e0f5-0ed5-4e56-88b7-89fe46032e73",
       "name": "query_qa_audit",
       "credentials": {
         "postgres": {
@@ -317,9 +317,9 @@
       "typeVersion": 1,
       "position": [
         -2144,
-        -1328
+        -1344
       ],
-      "id": "94422666-bc93-4d2b-843c-24920bd3330a",
+      "id": "3fde1b5b-93f6-4cbb-af6c-f4179ea1d5ef",
       "name": "Mistral Cloud Chat Model2",
       "credentials": {
         "mistralCloudApi": {
@@ -338,9 +338,9 @@
       "typeVersion": 1,
       "position": [
         -2048,
-        -1232
+        -1248
       ],
-      "id": "701a977a-0273-4bb6-a050-ec686a7e9ae7",
+      "id": "8073a783-ce4a-4f03-91bd-b15f1c2fc855",
       "name": "OpenRouter Chat Model",
       "credentials": {
         "openRouterApi": {
@@ -351,11 +351,6 @@
     }
   ],
   "connections": {
-    "Ollama Chat Model3": {
-      "ai_languageModel": [
-        []
-      ]
-    },
     "Webhook1": {
       "main": [
         [
@@ -486,11 +481,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "OpenRouter Chat Model": {
-      "ai_languageModel": [
-        []
       ]
     }
   },

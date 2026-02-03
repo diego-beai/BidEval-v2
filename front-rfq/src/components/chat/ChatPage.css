@@ -210,35 +210,32 @@
     font-family: inherit;
 }
 
-.chat-input-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 4px;
-}
-
-.action-buttons-left {
-    display: flex;
-    gap: 4px;
-}
-
-.action-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    padding: 8px;
-    border-radius: 8px;
+.chat-clear-btn {
+    background: rgba(18, 181, 176, 0.08);
+    border: 1px solid rgba(18, 181, 176, 0.25);
+    color: var(--color-cyan);
+    padding: 10px;
+    border-radius: 10px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
-.action-btn:hover {
-    background-color: var(--bg-hover);
+.chat-clear-btn:hover {
+    background: rgba(18, 181, 176, 0.15);
+    border-color: rgba(18, 181, 176, 0.5);
     color: var(--color-cyan);
 }
+
+.chat-input-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 4px;
+}
+
 
 .send-btn {
     background-color: var(--color-cyan);
