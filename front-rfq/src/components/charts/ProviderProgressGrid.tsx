@@ -40,15 +40,6 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
     }
   }, [activeProjectId, fetchAllTableData, fetchProposalEvaluations]);
 
-  // Load data on mount if empty
-  useEffect(() => {
-    if ((!tableData || tableData.length === 0) && activeProjectId) {
-      fetchAllTableData();
-    }
-    if ((!proposalEvaluations || proposalEvaluations.length === 0) && activeProjectId) {
-      fetchProposalEvaluations();
-    }
-  }, [fetchAllTableData, fetchProposalEvaluations, tableData, proposalEvaluations, activeProjectId]);
 
   // Calculate progress for each dynamic provider
   const providerProgress = useMemo(() => {
