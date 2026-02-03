@@ -425,10 +425,12 @@ export const useRfqStore = create<RfqState>()(
 
       setError: (error) => {
         get().stopSimulation();
-        
-        // Agregar notificación toast de error
-        const { addToast } = useToastStore.getState();
-        addToast(`Processing failed: ${error}`, 'error');
+
+        // Agregar notificación toast de error (solo si hay error real)
+        if (error) {
+          const { addToast } = useToastStore.getState();
+          addToast(`Processing failed: ${error}`, 'error');
+        }
 
         set({
           error,

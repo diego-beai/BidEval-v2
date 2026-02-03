@@ -110,3 +110,47 @@
         opacity: 1;
     }
 }
+
+.toast-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    color: inherit;
+    vertical-align: middle;
+}
+
+.toast-error .toast-count {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.toast-warning .toast-count {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.toast-clear-all {
+    pointer-events: auto;
+    align-self: flex-end;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast-clear-all:hover {
+    background: var(--bg-surface-alt);
+    color: var(--text-primary);
+}

@@ -46,9 +46,17 @@ export default function App() {
     return providers[0] || '';
   }, [clickedProvider, selectedFiles]);
 
-  // Persist activeView state
+  // Persist activeView state and clear stale errors on navigation
   useMemo(() => {
     localStorage.setItem('activeView', activeView);
+  }, [activeView]);
+
+  useEffect(() => {
+    // Clear processing error when navigating away from the upload view
+    if (error && !isProcessing) {
+      useRfqStore.getState().setError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
 
   const { loadDashboardData } = useDashboardStore();

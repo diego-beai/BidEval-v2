@@ -38,18 +38,28 @@ const ToastIcon = ({ type }: { type: ToastType }) => {
 };
 
 export const ToastContainer: React.FC = () => {
-    const { toasts, removeToast } = useToastStore();
+    const { toasts, removeToast, clearAllToasts } = useToastStore();
 
     if (toasts.length === 0) return null;
 
     return (
         <div className="toast-container">
+            {toasts.length > 2 && (
+                <button className="toast-clear-all" onClick={clearAllToasts}>
+                    Dismiss all ({toasts.length})
+                </button>
+            )}
             {toasts.map((toast) => (
                 <div key={toast.id} className={`toast toast-${toast.type} slide-in`}>
                     <div className="toast-icon">
                         <ToastIcon type={toast.type} />
                     </div>
-                    <div className="toast-message">{toast.message}</div>
+                    <div className="toast-message">
+                        {toast.message}
+                        {toast.count > 1 && (
+                            <span className="toast-count">×{toast.count}</span>
+                        )}
+                    </div>
                     <button className="toast-close" onClick={() => removeToast(toast.id)}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18"></line>

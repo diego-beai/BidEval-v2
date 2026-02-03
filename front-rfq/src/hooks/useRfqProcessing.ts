@@ -70,20 +70,19 @@ export function useRfqProcessing() {
 
       // Check if any files failed
       if (response.failureCount > 0) {
-        const failedFiles = response.fileResults
-          .filter(r => !r.success)
-          .map(r => r.fileName)
-          .join(', ');
+        const failedResults = response.fileResults.filter(r => !r.success);
+        const failedFiles = failedResults.map(r => r.fileName).join(', ');
+        const firstError = failedResults[0]?.error || 'Unknown error';
 
         if (response.successCount === 0) {
           // All files failed
-          setError(`All ${response.failureCount} files failed to process: ${failedFiles}`);
+          setError(`All ${response.failureCount} files failed to process. Reason: ${firstError}. Files: ${failedFiles}`);
           return false;
         } else {
           // Partial failure - still save successful results
           setResults(
             response.combinedResults,
-            `${response.successCount} of ${response.totalFiles} files processed. Failed: ${failedFiles}`
+            `${response.successCount} of ${response.totalFiles} files processed. Failed (${firstError}): ${failedFiles}`
           );
           return true;
         }
