@@ -542,8 +542,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         console.log('Final evaluation types found:', Array.from(types));
                         console.log('Total evaluation types count:', totalEvaluationTypesCount);
 
-                        // Set rfqCount to the number of unique RFQ documents
-                        setRfqCount(rfqDocuments.length);
+                        // Set rfqCount to the number of unique RFQ documents (by title)
+                        const uniqueTitles = new Set(rfqDocuments.map((doc: any) => doc.title));
+                        setRfqCount(uniqueTitles.size);
                         setEvaluationTypes(types);
                     } else {
                         console.log('RFQ query error or no data:', rfqError);
@@ -606,23 +607,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Fallback: count from tableData if Supabase fails
+        // Fallback: count distinct evaluation_types from tableData if Supabase returned 0
         if (rfqCount === 0 && tableData && tableData.length > 0) {
-            const uniqueRfqs = new Set();
             const types = new Set<string>();
-            
             tableData.forEach((item: any) => {
-                if (item.requirement_text) {
-                    const rfqKey = `${item.project_name || 'unknown'}-${item.requirement_text.substring(0, 50)}`;
-                    uniqueRfqs.add(rfqKey);
-                    if (item.evaluation_type) {
-                        types.add(item.evaluation_type);
-                    }
+                if (item.evaluation_type) {
+                    types.add(item.evaluation_type.trim());
                 }
             });
-            
-            setRfqCount(uniqueRfqs.size);
-            // Only set evaluation types if not already set from database
+            // Count evaluation types as a proxy for RFQ documents processed
+            setRfqCount(types.size);
             if (evaluationTypes.size === 0) {
                 setEvaluationTypes(types);
             }
