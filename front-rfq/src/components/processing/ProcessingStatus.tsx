@@ -6,10 +6,12 @@ import { ProcessingStage } from '../../types/rfq.types';
 interface ProcessingStatusProps {
   onViewResults?: () => void;
   onClose?: () => void;
+  onCancel?: () => void;
+  onCancelFile?: (fileName: string) => void;
 }
 
-export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose }: ProcessingStatusProps) {
-  const { status, isProcessing, results, rfqMetadata, processingStartTime, processingFileCount } = useRfqStore();
+export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose, onCancel, onCancelFile }: ProcessingStatusProps) {
+  const { status, isProcessing, results, rfqMetadata, processingStartTime, processingFileCount, fileTrackers } = useRfqStore();
   const { t } = useLanguageStore();
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -319,6 +321,149 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                 {formatElapsedTime(elapsedTime)}
               </span>
             </div>
+
+            {/* Per-file status list */}
+            {fileTrackers.length > 0 && (
+              <div style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                marginTop: '8px'
+              }}>
+                {fileTrackers.map((tracker) => {
+                  const isActive = tracker.status === 'processing';
+                  const isDone = tracker.status === 'completed';
+                  const isCancelled = tracker.status === 'cancelled';
+                  const isErr = tracker.status === 'error';
+                  return (
+                    <div
+                      key={tracker.fileName}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        background: isCancelled ? 'rgba(251, 191, 36, 0.08)' :
+                                   isErr ? 'rgba(239, 68, 68, 0.08)' :
+                                   isDone ? 'rgba(16, 185, 129, 0.08)' :
+                                   'rgba(18, 181, 176, 0.08)',
+                        border: `1px solid ${
+                          isCancelled ? 'rgba(251, 191, 36, 0.3)' :
+                          isErr ? 'rgba(239, 68, 68, 0.3)' :
+                          isDone ? 'rgba(16, 185, 129, 0.3)' :
+                          'rgba(18, 181, 176, 0.3)'
+                        }`,
+                        fontSize: '0.8rem',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {/* Status indicator */}
+                      <div style={{ width: '18px', height: '18px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isActive && (
+                          <div style={{
+                            width: '14px', height: '14px', borderRadius: '50%',
+                            border: '2px solid rgba(18, 181, 176, 0.3)',
+                            borderTopColor: 'var(--color-cyan)',
+                            animation: 'spin 1s linear infinite'
+                          }} />
+                        )}
+                        {isDone && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                        )}
+                        {isCancelled && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        )}
+                        {isErr && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                        )}
+                      </div>
+
+                      {/* File name */}
+                      <span style={{
+                        flex: 1,
+                        fontWeight: 500,
+                        color: isCancelled || isErr ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                        textDecoration: isCancelled ? 'line-through' : 'none',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {tracker.fileName}
+                      </span>
+
+                      {/* Status label */}
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        color: isCancelled ? '#fbbf24' : isErr ? '#ef4444' : isDone ? '#10b981' : 'var(--color-cyan)'
+                      }}>
+                        {isDone ? t('processing.file_done') : isCancelled ? t('processing.file_cancelled') : isErr ? 'Error' : t('processing.file_running')}
+                      </span>
+
+                      {/* Individual cancel button */}
+                      {isActive && onCancelFile && (
+                        <button
+                          onClick={() => onCancelFile(tracker.fileName)}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(239, 68, 68, 0.4)',
+                            borderRadius: '6px',
+                            color: 'var(--color-error)',
+                            cursor: 'pointer',
+                            padding: '3px 8px',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          {t('processing.cancel_file')}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Cancel all button */}
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                style={{
+                  marginTop: '12px',
+                  padding: '10px 24px',
+                  background: 'transparent',
+                  border: '2px solid var(--color-error)',
+                  borderRadius: '8px',
+                  color: 'var(--color-error)',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                {t('processing.cancel')}
+              </button>
+            )}
 
             {/* Warning banner for long operations */}
             <div style={{

@@ -504,6 +504,14 @@ export default function App() {
                     onClose={() => {
                       useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
                     }}
+                    onCancel={() => {
+                      useRfqStore.getState().cancelProcessing();
+                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
+                    }}
+                    onCancelFile={(fileName) => {
+                      useRfqStore.getState().cancelFileProcessing(fileName);
+                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
+                    }}
                   />
                 </div>
               </div>

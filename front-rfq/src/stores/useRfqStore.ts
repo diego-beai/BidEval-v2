@@ -28,6 +28,18 @@ export interface TableFilters {
 }
 
 /**
+ * Per-file processing tracker
+ */
+export type FileProcessingStatus = 'pending' | 'processing' | 'completed' | 'cancelled' | 'error';
+
+export interface FileProcessingTracker {
+  fileName: string;
+  status: FileProcessingStatus;
+  abortController: AbortController;
+  error?: string;
+}
+
+/**
  * Estado global de la aplicación usando Zustand
  */
 interface RfqState {
@@ -63,6 +75,8 @@ interface RfqState {
   isLoadingData: boolean;  // For data fetching (doesn't block UI)
   processingFileCount: number;
   processingStartTime: number | null; // Timestamp when processing started
+  processingAbortController: AbortController | null;
+  fileTrackers: FileProcessingTracker[];
   status: ProcessingStatus;
 
   // Results state
@@ -79,7 +93,10 @@ interface RfqState {
   error: string | null;
 
   // Actions
-  startProcessing: (simulate?: boolean) => void;
+  startProcessing: (simulate?: boolean) => AbortController;
+  cancelProcessing: () => void;
+  cancelFileProcessing: (fileName: string) => void;
+  updateFileTracker: (fileName: string, update: Partial<FileProcessingTracker>) => void;
   updateStatus: (status: Partial<ProcessingStatus>) => void;
   setResults: (results: RfqItem[], message?: string) => void;
   setError: (error: string | null) => void;
@@ -173,6 +190,8 @@ export const useRfqStore = create<RfqState>()(
       isLoadingData: false,
       processingFileCount: 0,
       processingStartTime: null,
+      processingAbortController: null,
+      fileTrackers: [],
       status: initialStatus,
       rawResults: null,
       results: null,
@@ -350,19 +369,96 @@ export const useRfqStore = create<RfqState>()(
       },
 
       startProcessing: (_simulate = true) => {
-        const fileCount = get().selectedFiles.length;
+        const files = get().selectedFiles;
+        const fileCount = files.length;
+        const abortController = new AbortController();
+
+        // Create per-file trackers with individual abort controllers
+        const trackers: FileProcessingTracker[] = files.map(f => ({
+          fileName: f.file.name,
+          status: 'processing' as FileProcessingStatus,
+          abortController: new AbortController()
+        }));
+
         set({
           isProcessing: true,
           processingFileCount: fileCount,
-          processingStartTime: Date.now(), // Track when processing started
+          processingStartTime: Date.now(),
+          processingAbortController: abortController,
+          fileTrackers: trackers,
           error: null,
           status: {
             stage: ProcessingStage.UPLOADING,
-            progress: 0, // No fake progress - we don't know the real progress
+            progress: 0,
             message: `Processing ${fileCount} file${fileCount > 1 ? 's' : ''}... This may take several minutes.`
           }
         });
-        // NOTE: No simulation - we show honest "processing" state until webhook responds
+        return abortController;
+      },
+
+      cancelProcessing: () => {
+        // Abort all individual file controllers
+        get().fileTrackers.forEach(t => {
+          if (t.status === 'processing') {
+            t.abortController.abort();
+          }
+        });
+        const controller = get().processingAbortController;
+        if (controller) {
+          controller.abort();
+        }
+        get().stopSimulation();
+
+        const { addToast } = useToastStore.getState();
+        addToast('Processing cancelled. The n8n workflow may still be running in the background.', 'warning');
+
+        set({
+          isProcessing: false,
+          processingFileCount: 0,
+          processingStartTime: null,
+          processingAbortController: null,
+          fileTrackers: [],
+          error: null,
+          status: initialStatus
+        });
+      },
+
+      cancelFileProcessing: (fileName: string) => {
+        const trackers = get().fileTrackers;
+        const tracker = trackers.find(t => t.fileName === fileName);
+        if (tracker && tracker.status === 'processing') {
+          tracker.abortController.abort();
+        }
+
+        const updated = trackers.map(t =>
+          t.fileName === fileName && t.status === 'processing'
+            ? { ...t, status: 'cancelled' as FileProcessingStatus }
+            : t
+        );
+        set({ fileTrackers: updated });
+
+        const { addToast } = useToastStore.getState();
+        addToast(`Cancelled: ${fileName}`, 'warning');
+
+        // If all files are now done (cancelled/completed/error), finish processing
+        const allDone = updated.every(t => t.status !== 'processing');
+        if (allDone) {
+          get().stopSimulation();
+          set({
+            isProcessing: false,
+            processingFileCount: 0,
+            processingStartTime: null,
+            processingAbortController: null,
+            status: initialStatus
+          });
+        }
+      },
+
+      updateFileTracker: (fileName: string, update: Partial<FileProcessingTracker>) => {
+        const trackers = get().fileTrackers.map(t =>
+          t.fileName === fileName ? { ...t, ...update } : t
+        );
+        set({ fileTrackers: trackers });
       },
 
       updateStatus: (statusUpdate) => {

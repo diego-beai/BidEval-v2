@@ -64,7 +64,8 @@ export async function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
   timeout = API_CONFIG.REQUEST_TIMEOUT,
-  retryConfig: Partial<RetryConfig> = {}
+  retryConfig: Partial<RetryConfig> = {},
+  externalSignal?: AbortSignal
 ): Promise<Response> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
   let lastError: Error | null = null;
@@ -72,6 +73,16 @@ export async function fetchWithTimeout(
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    // If an external signal is provided, forward its abort to our controller
+    const onExternalAbort = () => controller.abort();
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        clearTimeout(timeoutId);
+        throw new ApiError('Operation cancelled by user');
+      }
+      externalSignal.addEventListener('abort', onExternalAbort);
+    }
 
     try {
       // Log retry attempts
@@ -85,6 +96,7 @@ export async function fetchWithTimeout(
       });
 
       clearTimeout(timeoutId);
+      if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
@@ -114,6 +126,12 @@ export async function fetchWithTimeout(
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
+      if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+
+      // User-initiated cancellation via external signal
+      if (externalSignal?.aborted && error instanceof Error && error.name === 'AbortError') {
+        throw new ApiError('Operation cancelled by user');
+      }
 
       // Timeout error - don't retry for long-running operations
       if (error instanceof Error && error.name === 'AbortError') {

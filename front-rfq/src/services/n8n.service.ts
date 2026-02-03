@@ -52,7 +52,8 @@ export async function uploadRfqFile(
     proyecto?: string;
     proveedor?: string;
     tipoEvaluacion?: string[];
-  }
+  },
+  abortSignal?: AbortSignal
 ): Promise<RfqUploadResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
@@ -92,7 +93,9 @@ export async function uploadRfqFile(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      {},
+      abortSignal
     );
 
     // n8n devuelve directamente un array de resultados
@@ -172,7 +175,8 @@ export async function uploadMultipleRfqFiles(
   filesWithMetadata: FileWithMetadataInput[],
   globalMetadata?: {
     project_id?: string;
-  }
+  },
+  abortSignal?: AbortSignal
 ): Promise<MultiFileUploadResponse> {
   if (filesWithMetadata.length === 0) {
     throw new ApiError('No files to process');
@@ -186,7 +190,7 @@ export async function uploadMultipleRfqFiles(
         proyecto: metadata.proyecto,
         proveedor: metadata.proveedor,
         tipoEvaluacion: metadata.tipoEvaluacion
-      });
+      }, abortSignal);
 
       return {
         fileName: file.name,
@@ -931,4 +935,19 @@ export async function saveMappedResponses(
       error instanceof Error ? error.message : 'Unknown error while saving responses'
     );
   }
+}
+
+/**
+ * Note: n8n's public API does NOT support stopping running executions.
+ * The /executions/{id}/stop endpoint is not available.
+ * See: https://community.n8n.io/t/n8n-api-stop-cancel-execution/133701
+ *
+ * When we abort the fetch request, the HTTP connection is closed.
+ * Whether n8n stops the workflow depends on its internal behavior —
+ * synchronous webhook workflows may stop, but async ones will continue.
+ */
+export function cancelRunningN8nExecutions(): Promise<void> {
+  // No-op: n8n public API doesn't support stopping executions
+  console.log('ℹ️ HTTP requests aborted. n8n workflows may continue in the background.');
+  return Promise.resolve();
 }
