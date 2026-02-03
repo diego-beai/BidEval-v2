@@ -4,6 +4,7 @@ import { getProviderDisplayName } from '../../types/provider.types';
 import { FileWithMetadata, isFileMetadataComplete } from '../../types/rfq.types';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useProviderStore } from '../../stores/useProviderStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
 import { formatFileSize } from '../../utils/formatters';
 import './MultiFileMetadataModal.css';
 
@@ -47,6 +48,7 @@ export function MultiFileMetadataModal({
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
   const { projects } = useProjectStore();
   const { projectProviders, addLocalProvider } = useProviderStore();
+  const { t } = useLanguageStore();
   const [providerSearch, setProviderSearch] = useState('');
 
   // Hidden file input ref for adding more files
@@ -192,7 +194,7 @@ export function MultiFileMetadataModal({
           }}>
           {projects.length === 0 ? (
             <div className="mfm-dropdown-item mfm-dropdown-item--disabled">
-              No projects available
+              {t('modal.no_projects')}
             </div>
           ) : (
             projects.map(project => (
@@ -230,7 +232,7 @@ export function MultiFileMetadataModal({
           <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)' }}>
             <input
               type="text"
-              placeholder="Search or type new..."
+              placeholder={t('modal.search_or_type')}
               value={providerSearch}
               onChange={(e) => setProviderSearch(e.target.value)}
               onKeyDown={(e) => {
@@ -278,12 +280,12 @@ export function MultiFileMetadataModal({
                 handleProviderSelect(fileIndex, normalized);
               }}
             >
-              + Add "{providerSearch.trim().toUpperCase()}"
+              {t('modal.add_provider', { name: providerSearch.trim().toUpperCase() })}
             </button>
           )}
           {filtered.length === 0 && !providerSearch.trim() && (
             <div className="mfm-dropdown-item mfm-dropdown-item--disabled">
-              No providers yet. Type a name above.
+              {t('modal.no_providers')}
             </div>
           )}
         </div>
@@ -306,7 +308,7 @@ export function MultiFileMetadataModal({
               checked={metadata.tipoEvaluacion.length === EVALUATION_TYPES.length}
               onChange={() => toggleAllEvaluations(fileIndex)}
             />
-            <span>Select all</span>
+            <span>{t('modal.select_all')}</span>
           </label>
           <div className="mfm-divider" />
           {EVALUATION_TYPES.map(evaluation => (
@@ -338,9 +340,9 @@ export function MultiFileMetadataModal({
       <div className="mfm-modal">
         <div className="mfm-header">
           <div className="mfm-header-title">
-            <h3>Configure {files.length} file{files.length > 1 ? 's' : ''}</h3>
+            <h3>{t('modal.configure_files', { count: String(files.length), plural: files.length > 1 ? 's' : '' })}</h3>
             <span className={`mfm-badge ${allConfigured ? 'mfm-badge--complete' : ''}`}>
-              {configuredCount}/{files.length} ready
+              {t('modal.ready', { done: String(configuredCount), total: String(files.length), plural: configuredCount !== 1 ? 's' : '' })}
             </span>
           </div>
           <button className="mfm-close-btn" onClick={onClose} title="Close">
@@ -429,7 +431,7 @@ export function MultiFileMetadataModal({
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                         </svg>
-                        Copy from previous file
+                        {t('modal.copy_previous')}
                       </button>
                     )}
 
@@ -437,7 +439,7 @@ export function MultiFileMetadataModal({
                       {/* Project dropdown */}
                       <div className="mfm-field">
                         <label className="mfm-label">
-                          Project <span className="mfm-required">*</span>
+                          {t('modal.project')} <span className="mfm-required">*</span>
                         </label>
                         <div className="mfm-dropdown-container">
                           <button
@@ -454,7 +456,7 @@ export function MultiFileMetadataModal({
                             disabled={disabled}
                           >
                             <span title={metadata.proyecto}>
-                              {metadata.proyecto || 'Select project...'}
+                              {metadata.proyecto || t('modal.select_project')}
                             </span>
                             <span className="mfm-arrow">
                               {activeDropdown?.fileIndex === index && activeDropdown?.type === 'project' ? '▲' : '▼'}
@@ -466,7 +468,7 @@ export function MultiFileMetadataModal({
                       {/* Provider dropdown */}
                       <div className="mfm-field">
                         <label className="mfm-label">
-                          Provider <span className="mfm-required">*</span>
+                          {t('modal.provider')} <span className="mfm-required">*</span>
                         </label>
                         <div className="mfm-dropdown-container">
                           <button
@@ -484,7 +486,7 @@ export function MultiFileMetadataModal({
                           >
                             {metadata.proveedor
                               ? getProviderDisplayName(metadata.proveedor)
-                              : 'Select provider...'}
+                              : t('modal.select_provider')}
                             <span className="mfm-arrow">
                               {activeDropdown?.fileIndex === index && activeDropdown?.type === 'provider' ? '▲' : '▼'}
                             </span>
@@ -495,7 +497,7 @@ export function MultiFileMetadataModal({
                       {/* Evaluation types */}
                       <div className="mfm-field mfm-field--full">
                         <label className="mfm-label">
-                          Evaluation Types <span className="mfm-required">*</span>
+                          {t('modal.evaluation_types')} <span className="mfm-required">*</span>
                         </label>
                         <div className="mfm-dropdown-container">
                           <button
@@ -513,9 +515,9 @@ export function MultiFileMetadataModal({
                           >
                             <span className="mfm-dropdown-text">
                               {metadata.tipoEvaluacion.length === 0
-                                ? 'Select types...'
+                                ? t('modal.select_types')
                                 : metadata.tipoEvaluacion.length === EVALUATION_TYPES.length
-                                  ? 'All types'
+                                  ? t('modal.all_types')
                                   : metadata.tipoEvaluacion.join(', ')}
                             </span>
                             <span className="mfm-arrow">
@@ -543,7 +545,7 @@ export function MultiFileMetadataModal({
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Add more files
+              {t('modal.add_more_files')}
               <span className="mfm-file-count">({files.length}/7)</span>
             </button>
           )}
@@ -551,7 +553,7 @@ export function MultiFileMetadataModal({
 
         <div className="mfm-footer">
           <button type="button" className="mfm-btn mfm-btn--secondary" onClick={onClose}>
-            Cancel
+            {t('modal.cancel')}
           </button>
           <button
             type="button"
@@ -559,7 +561,7 @@ export function MultiFileMetadataModal({
             disabled={!allConfigured || disabled}
             onClick={onConfirm}
           >
-            Process {files.length} file{files.length > 1 ? 's' : ''}
+            {t('modal.process_files', { count: String(files.length), plural: files.length > 1 ? 's' : '' })}
           </button>
         </div>
       </div>

@@ -146,7 +146,7 @@
 
 .mfm-file-icon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--text-primary);
   opacity: 0.8;
 }
 
@@ -255,7 +255,7 @@
 /* Form Grid */
 .mfm-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 

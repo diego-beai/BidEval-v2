@@ -956,3 +956,62 @@ ALTER TABLE public.ranking_proveedores
     ADD COLUMN IF NOT EXISTS category_scores_json JSONB DEFAULT '{}',
     ADD COLUMN IF NOT EXISTS individual_scores_json JSONB DEFAULT '{}',
     ADD COLUMN IF NOT EXISTS evaluation_details JSONB DEFAULT '{}';
+
+-- ============================================
+-- FUNCIONES DE BÚSQUEDA VECTORIAL CON FILTRO POR PROYECTO
+-- Usadas por el chat AI para buscar solo en documentos del proyecto activo
+-- ============================================
+
+-- Función para buscar en documentos RFQ con filtro por project_id
+CREATE OR REPLACE FUNCTION match_rfq(
+  query_embedding vector(4096),
+  match_count int DEFAULT 10,
+  filter jsonb DEFAULT '{}'::jsonb
+)
+RETURNS TABLE (
+  id bigint,
+  content text,
+  metadata jsonb,
+  similarity float
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    r.id,
+    r.content,
+    r.metadata,
+    1 - (r.embedding <=> query_embedding) as similarity
+  FROM public.rfq r
+  WHERE
+    (filter->>'project_id' IS NULL OR r.metadata->>'project_id' = filter->>'project_id')
+  ORDER BY r.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Función para buscar en propuestas de proveedores con filtro por project_id
+CREATE OR REPLACE FUNCTION match_proposals(
+  query_embedding vector(4096),
+  match_count int DEFAULT 10,
+  filter jsonb DEFAULT '{}'::jsonb
+)
+RETURNS TABLE (
+  id bigint,
+  content text,
+  metadata jsonb,
+  similarity float
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    p.id,
+    p.content,
+    p.metadata,
+    1 - (p.embedding <=> query_embedding) as similarity
+  FROM public.proposals p
+  WHERE
+    (filter->>'project_id' IS NULL OR p.metadata->>'project_id' = filter->>'project_id')
+  ORDER BY p.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$ LANGUAGE plpgsql;

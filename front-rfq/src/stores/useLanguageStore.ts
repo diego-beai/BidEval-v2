@@ -656,6 +656,26 @@ const translations: any = {
         'scoring.delete_config_warning': 'Se borrarán todas las categorías, criterios y pesos. Podrás crear una nueva configuración después.',
         'scoring.delete_config_btn': 'Eliminar',
 
+        // MultiFile Metadata Modal
+        'modal.configure_files': 'Configurar {count} archivo{plural}',
+        'modal.ready': '{done}/{total} listo{plural}',
+        'modal.copy_previous': 'Copiar del archivo anterior',
+        'modal.project': 'Proyecto',
+        'modal.select_project': 'Seleccionar proyecto...',
+        'modal.provider': 'Proveedor',
+        'modal.select_provider': 'Seleccionar existente o añadir nuevo...',
+        'modal.evaluation_types': 'Tipos de Evaluación',
+        'modal.select_types': 'Seleccionar tipos...',
+        'modal.all_types': 'Todos los tipos',
+        'modal.add_more_files': 'Añadir más archivos',
+        'modal.cancel': 'Cancelar',
+        'modal.process_files': 'Procesar {count} archivo{plural}',
+        'modal.search_or_type': 'Buscar o escribir nuevo...',
+        'modal.add_provider': '+ Añadir "{name}"',
+        'modal.no_providers': 'Sin proveedores. Escribe un nombre arriba.',
+        'modal.no_projects': 'No hay proyectos disponibles',
+        'modal.select_all': 'Seleccionar todos',
+
         // ProcessingStatus
         'processing.title': 'Procesando tus propuestas con IA...',
         'processing.subtitle': 'El workflow de n8n está analizando tus documentos. Continuará hasta completarse.',
@@ -1322,6 +1342,26 @@ const translations: any = {
         'scoring.delete_config_confirm': 'Are you sure you want to delete the current scoring configuration?',
         'scoring.delete_config_warning': 'All categories, criteria, and weights will be removed. You can create a new configuration afterwards.',
         'scoring.delete_config_btn': 'Delete',
+
+        // MultiFile Metadata Modal
+        'modal.configure_files': 'Configure {count} file{plural}',
+        'modal.ready': '{done}/{total} ready',
+        'modal.copy_previous': 'Copy from previous file',
+        'modal.project': 'Project',
+        'modal.select_project': 'Select project...',
+        'modal.provider': 'Provider',
+        'modal.select_provider': 'Select existing or add new...',
+        'modal.evaluation_types': 'Evaluation Types',
+        'modal.select_types': 'Select types...',
+        'modal.all_types': 'All types',
+        'modal.add_more_files': 'Add more files',
+        'modal.cancel': 'Cancel',
+        'modal.process_files': 'Process {count} file{plural}',
+        'modal.search_or_type': 'Search or type new...',
+        'modal.add_provider': '+ Add "{name}"',
+        'modal.no_providers': 'No providers yet. Type a name above.',
+        'modal.no_projects': 'No projects available',
+        'modal.select_all': 'Select all',
 
         // ProcessingStatus
         'processing.title': 'Processing your proposals with AI...',
