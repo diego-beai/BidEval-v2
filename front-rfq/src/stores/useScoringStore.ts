@@ -173,6 +173,7 @@ export const useScoringStore = create<ScoringState>()(
             refreshScoring: async () => {
                 if (!supabase) {
                     console.error('[Scoring] Supabase not configured');
+                    set({ isCalculating: false });
                     return;
                 }
 

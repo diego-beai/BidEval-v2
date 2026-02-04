@@ -206,9 +206,14 @@ export const useMailStore = create<MailState>()(
                         }
                     } else {
                         // Fallback for other response formats
-                        const result = Array.isArray(data) ? data[0] : data;
-                        finalSubject = result?.subject || result?.output?.subject || 'Draft Generated';
-                        finalBody = result?.body || result?.output?.body || JSON.stringify(result, null, 2);
+                        if (Array.isArray(data) && data.length === 0) {
+                            finalSubject = 'Draft Generated';
+                            finalBody = '';
+                        } else {
+                            const result = Array.isArray(data) ? data[0] : data;
+                            finalSubject = result?.subject || result?.output?.subject || 'Draft Generated';
+                            finalBody = result?.body || result?.output?.body || JSON.stringify(result, null, 2) || '';
+                        }
                     }
 
                     set({

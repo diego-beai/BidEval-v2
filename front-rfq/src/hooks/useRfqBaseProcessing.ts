@@ -128,13 +128,8 @@ export function useRfqBaseProcessing() {
     } catch (error) {
       clearProgressTimer();
 
-      // No mostrar notificación de error - el archivo se procesa correctamente
-      // Solo limpiar el estado de procesamiento
-      updateRfqBaseStatus({
-        progress: 100,
-        stage: ProcessingStage.COMPLETED,
-        message: 'Archivo cargado'
-      });
+      // No mostrar notificación de error - solo limpiar el estado de procesamiento
+      setRfqBaseError(null);
 
       return false;
     }

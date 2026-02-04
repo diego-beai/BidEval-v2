@@ -512,6 +512,11 @@ export const useQAStore = create<QAState>((set, get) => ({
       return;
     }
 
+    if (!ids || ids.length === 0) {
+      set({ isLoading: false, error: null });
+      return;
+    }
+
     set({ isLoading: true, error: null });
 
     try {
@@ -562,6 +567,12 @@ export const useQAStore = create<QAState>((set, get) => ({
       loadingRequirements: new Set([...state.loadingRequirements, requirementId])
     }));
 
+    const clearLoading = () => {
+      set(state => ({
+        loadingRequirements: new Set([...state.loadingRequirements].filter(id => id !== requirementId))
+      }));
+    };
+
     try {
       const { data, error } = await (supabase! as any)
         .from('rfq_items_master')
@@ -571,10 +582,12 @@ export const useQAStore = create<QAState>((set, get) => ({
 
       if (error) {
         console.error('Error loading requirement details:', error);
+        clearLoading();
         return null;
       }
 
       if (!data) {
+        clearLoading();
         return null;
       }
 
@@ -594,9 +607,7 @@ export const useQAStore = create<QAState>((set, get) => ({
       return requirement;
     } catch (error) {
       console.error('Error loading requirement details:', error);
-      set(state => ({
-        loadingRequirements: new Set([...state.loadingRequirements].filter(id => id !== requirementId))
-      }));
+      clearLoading();
       return null;
     }
   },
