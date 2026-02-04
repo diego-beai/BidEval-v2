@@ -338,7 +338,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                   const isErr = tracker.status === 'error';
                   return (
                     <div
-                      key={tracker.fileName}
+                      key={tracker.id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -406,7 +406,7 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                       {/* Individual cancel button */}
                       {isActive && onCancelFile && (
                         <button
-                          onClick={() => onCancelFile(tracker.fileName)}
+                          onClick={() => onCancelFile(tracker.id)}
                           style={{
                             background: 'transparent',
                             border: '1px solid rgba(239, 68, 68, 0.4)',

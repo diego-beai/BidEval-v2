@@ -125,6 +125,13 @@ export function SupplierResponsePage() {
       }
 
       // 4. Get questions (including parent_question_id and response)
+      if (!tokenInfo.question_ids || tokenInfo.question_ids.length === 0) {
+        setQuestions([]);
+        setResponses({});
+        setPageState('valid');
+        return;
+      }
+
       const { data: questionsResult, error: questionsError } = await db
         .from('qa_audit')
         .select('id, question, discipline, importance, provider_name, project_id, parent_question_id, response')

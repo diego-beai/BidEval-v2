@@ -33,6 +33,7 @@ export interface TableFilters {
 export type FileProcessingStatus = 'pending' | 'processing' | 'completed' | 'cancelled' | 'error';
 
 export interface FileProcessingTracker {
+  id: string;
   fileName: string;
   status: FileProcessingStatus;
   abortController: AbortController;
@@ -95,8 +96,8 @@ interface RfqState {
   // Actions
   startProcessing: (simulate?: boolean) => AbortController;
   cancelProcessing: () => void;
-  cancelFileProcessing: (fileName: string) => void;
-  updateFileTracker: (fileName: string, update: Partial<FileProcessingTracker>) => void;
+  cancelFileProcessing: (fileId: string) => void;
+  updateFileTracker: (fileId: string, update: Partial<FileProcessingTracker>) => void;
   updateStatus: (status: Partial<ProcessingStatus>) => void;
   setResults: (results: RfqItem[], message?: string) => void;
   setError: (error: string | null) => void;
@@ -374,7 +375,8 @@ export const useRfqStore = create<RfqState>()(
         const abortController = new AbortController();
 
         // Create per-file trackers with individual abort controllers
-        const trackers: FileProcessingTracker[] = files.map(f => ({
+        const trackers: FileProcessingTracker[] = files.map((f, i) => ({
+          id: `file-${Date.now()}-${i}`,
           fileName: f.file.name,
           status: 'processing' as FileProcessingStatus,
           abortController: new AbortController()
@@ -423,22 +425,23 @@ export const useRfqStore = create<RfqState>()(
         });
       },
 
-      cancelFileProcessing: (fileName: string) => {
+      cancelFileProcessing: (fileId: string) => {
         const trackers = get().fileTrackers;
-        const tracker = trackers.find(t => t.fileName === fileName);
+        const tracker = trackers.find(t => t.id === fileId);
         if (tracker && tracker.status === 'processing') {
           tracker.abortController.abort();
         }
 
         const updated = trackers.map(t =>
-          t.fileName === fileName && t.status === 'processing'
+          t.id === fileId && t.status === 'processing'
             ? { ...t, status: 'cancelled' as FileProcessingStatus }
             : t
         );
         set({ fileTrackers: updated });
 
+        const cancelledName = tracker?.fileName ?? fileId;
         const { addToast } = useToastStore.getState();
-        addToast(`Cancelled: ${fileName}`, 'warning');
+        addToast(`Cancelled: ${cancelledName}`, 'warning');
 
         // If all files are now done (cancelled/completed/error), finish processing
         const allDone = updated.every(t => t.status !== 'processing');
@@ -454,9 +457,9 @@ export const useRfqStore = create<RfqState>()(
         }
       },
 
-      updateFileTracker: (fileName: string, update: Partial<FileProcessingTracker>) => {
+      updateFileTracker: (fileId: string, update: Partial<FileProcessingTracker>) => {
         const trackers = get().fileTrackers.map(t =>
-          t.fileName === fileName ? { ...t, ...update } : t
+          t.id === fileId ? { ...t, ...update } : t
         );
         set({ fileTrackers: trackers });
       },
@@ -600,8 +603,7 @@ export const useRfqStore = create<RfqState>()(
           }
         } catch (err: any) {
           console.error('[fetchAllTableData] Error:', err);
-          get().setError(`Error loading table data: ${err.message}`);
-          set({ tableData: [], projects: [] });
+          set({ error: `Error loading table data: ${err.message}`, tableData: [], projects: [] });
         } finally {
           set({ isLoadingData: false });
         }
@@ -671,8 +673,7 @@ export const useRfqStore = create<RfqState>()(
           console.log('[fetchProposalEvaluations] No Supabase connection, clearing proposal evaluations');
         } catch (err: any) {
           console.error('[fetchProposalEvaluations] Error:', err);
-          get().setError(err.message || 'Error loading proposal evaluations');
-          set({ proposalEvaluations: [] });
+          set({ error: err.message || 'Error loading proposal evaluations', proposalEvaluations: [] });
         } finally {
           set({ isLoadingData: false });
         }
@@ -865,7 +866,7 @@ export const useRfqStore = create<RfqState>()(
 
         } catch (err: any) {
           console.error('Error fetching pivot table data:', err);
-          get().setError(err.message || 'Error loading pivot table data');
+          set({ error: err.message || 'Error loading pivot table data' });
         } finally {
           set({ isLoadingData: false });
         }

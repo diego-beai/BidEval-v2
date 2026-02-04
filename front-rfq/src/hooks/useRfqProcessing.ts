@@ -74,7 +74,7 @@ export function useRfqProcessing() {
             tipoEvaluacion: metadata.tipoEvaluacion
           }, tracker.abortController.signal);
 
-          updateFileTracker(file.name, { status: 'completed' });
+          updateFileTracker(tracker.id, { status: 'completed' });
 
           return {
             fileName: file.name,
@@ -89,7 +89,7 @@ export function useRfqProcessing() {
             return { fileName: file.name, success: false, error: 'Cancelled by user', cancelled: true };
           }
 
-          updateFileTracker(file.name, {
+          updateFileTracker(tracker.id, {
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error'
           });
@@ -158,8 +158,8 @@ export function useRfqProcessing() {
     cancelRunningN8nExecutions().catch(() => {});
   }, [cancelProcessing]);
 
-  const handleCancelFile = useCallback((fileName: string) => {
-    cancelFileProcessing(fileName);
+  const handleCancelFile = useCallback((fileId: string) => {
+    cancelFileProcessing(fileId);
     cancelRunningN8nExecutions().catch(() => {});
   }, [cancelFileProcessing]);
 

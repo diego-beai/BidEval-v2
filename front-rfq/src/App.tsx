@@ -508,8 +508,8 @@ export default function App() {
                       useRfqStore.getState().cancelProcessing();
                       import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
                     }}
-                    onCancelFile={(fileName) => {
-                      useRfqStore.getState().cancelFileProcessing(fileName);
+                    onCancelFile={(fileId) => {
+                      useRfqStore.getState().cancelFileProcessing(fileId);
                       import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
                     }}
                   />
