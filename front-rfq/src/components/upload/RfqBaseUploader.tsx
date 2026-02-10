@@ -7,6 +7,8 @@ import { RfqBaseProcessingStatus } from '../processing/RfqBaseProcessingStatus';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { DonutChart, DonutChartData } from '../charts/DonutChart';
 import { EvaluationStats } from '../charts/EvaluationStats';
+import { supabase } from '../../lib/supabase';
+import { useProjectStore } from '../../stores/useProjectStore';
 
 export function RfqBaseUploader() {
   const {
@@ -18,8 +20,6 @@ export function RfqBaseUploader() {
     selectedRfqBaseFiles,
     setSelectedRfqBaseFiles,
     clearSelectedRfqBaseFiles,
-    tableData,
-    fetchAllTableData
   } = useRfqStore();
   const { t } = useLanguageStore();
 
@@ -28,96 +28,66 @@ export function RfqBaseUploader() {
   const [processingFileCount, setProcessingFileCount] = useState(0);
   const [showFileList, setShowFileList] = useState(false);
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
+  const [documentMetadata, setDocumentMetadata] = useState<any[]>([]);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
 
-  // Function to compute dashboard stats from tableData (rfq_items_master)
+  // Normalize legacy eval types to new 3-type system
+  const normalizeEvalType = (t: string): string => {
+    const lower = t.toLowerCase();
+    if (lower.includes('technical')) return 'Technical Evaluation';
+    if (lower.includes('econom') || lower.includes('commercial')) return 'Economical Evaluation';
+    return 'Others';
+  };
+
+  // Compute dashboard stats from document_metadata (actual documents, not requirements)
   const dashboardStats = useMemo(() => {
-    if (!tableData || tableData.length === 0) {
+    if (!documentMetadata || documentMetadata.length === 0) {
       return { totalDocuments: 0, evaluationTypeCounts: {} };
     }
 
-    // Map to track which projects have each evaluation type
-    const projectsByEvalType: Record<string, Set<string>> = {};
-    const uniqueProjects = new Set<string>();
-
-    // Map database evaluation values to display names
-    const evaluationTypeMap: Record<string, string> = {
-      'Technical Evaluation': 'Technical Evaluation',
-      'Economical Evaluation': 'Economical Evaluation',
-      'Others': 'Others',
-      // Normalize legacy types to Others
-      'Pre-FEED Deliverables': 'Others',
-      'FEED Deliverables': 'Others',
-      // Add possible variations
-      'technical': 'Technical Evaluation',
-      'economical': 'Economical Evaluation',
-      'pre-feed': 'Others',
-      'feed': 'Others',
-      'Technical': 'Technical Evaluation',
-      'Economical': 'Economical Evaluation',
-      'Pre-FEED': 'Others',
-      'FEED': 'Others',
-      'others': 'Others',
-      'Other': 'Others'
-    };
-
-    tableData.forEach((item: any) => {
-      const projectName = item.project_name;
-
-      // Track unique projects
-      if (projectName) {
-        uniqueProjects.add(projectName);
-      }
-
-      // Count unique documents per evaluation type
-      const evalType = item.evaluation_type || item.evaluation;
-      if (evalType && typeof evalType === 'string' && projectName) {
-        // Normalize the evaluation type name
-        const normalizedType = evaluationTypeMap[evalType] || evalType;
-
-        // Initialize Set if not exists
-        if (!projectsByEvalType[normalizedType]) {
-          projectsByEvalType[normalizedType] = new Set();
-        }
-
-        // Add project to this evaluation type's set
-        projectsByEvalType[normalizedType].add(projectName);
-      }
-    });
-
-    // Convert Sets to counts
     const evaluationTypeCounts: Record<string, number> = {};
-    Object.entries(projectsByEvalType).forEach(([evalType, projects]) => {
-      evaluationTypeCounts[evalType] = projects.size;
+
+    documentMetadata.forEach((doc: any) => {
+      const evalTypes: string[] = doc.evaluation_types || [];
+      evalTypes.forEach((et: string) => {
+        const normalized = normalizeEvalType(et);
+        evaluationTypeCounts[normalized] = (evaluationTypeCounts[normalized] || 0) + 1;
+      });
     });
 
     return {
-      totalDocuments: uniqueProjects.size,
+      totalDocuments: documentMetadata.length,
       evaluationTypeCounts
     };
-  }, [tableData]);
+  }, [documentMetadata]);
 
-  // Function to refresh data from the store
+  // Fetch document_metadata for current project
   const loadDashboardStats = useCallback(async () => {
+    if (!supabase || !activeProjectId) {
+      setDocumentMetadata([]);
+      return;
+    }
     setIsRefreshingStats(true);
     try {
-      await fetchAllTableData();
+      const { data, error } = await supabase
+        .from('document_metadata')
+        .select('id, title, evaluation_types, document_type, provider')
+        .eq('project_id', activeProjectId)
+        .eq('document_type', 'RFQ');
+
+      if (error) throw error;
+      setDocumentMetadata(data || []);
     } catch (err) {
-      console.error('Error refreshing dashboard stats:', err);
+      console.error('Error fetching document_metadata:', err);
     } finally {
       setIsRefreshingStats(false);
     }
-  }, [fetchAllTableData]);
+  }, [activeProjectId]);
 
-  // Load dashboard stats on component mount and set up periodic refresh
+  // Load on mount and refresh periodically
   useEffect(() => {
-    // Always load dashboard stats on mount, regardless of rfqBase state
     loadDashboardStats();
-
-    // Set up periodic refresh every 30 seconds to keep dashboard updated
-    const interval = setInterval(() => {
-      loadDashboardStats();
-    }, 30000); // 30 seconds
-
+    const interval = setInterval(loadDashboardStats, 30000);
     return () => clearInterval(interval);
   }, [loadDashboardStats]);
 

@@ -1054,7 +1054,22 @@ const translations: any = {
         'econ.confidence.medium': 'Confianza media',
         'econ.confidence.low': 'Baja confianza',
         'econ.load_demo': 'Cargar datos de ejemplo',
-        'econ.loading_demo': 'Cargando...'
+        'econ.loading_demo': 'Cargando...',
+
+        // Project detail modal - timeline & meta
+        'detail.timeline.title': 'Plazos',
+        'detail.timeline.opening': 'Apertura',
+        'detail.timeline.submission': 'Lím. ofertas',
+        'detail.timeline.questions': 'Plazo preg.',
+        'detail.timeline.responses': 'Plazo resp.',
+        'detail.timeline.evaluation': 'Evaluación',
+        'detail.timeline.award': 'Adjudicación',
+        'detail.timeline.overdue': 'Vencido',
+        'detail.timeline.days_short': 'd',
+        'detail.meta.type': 'Tipo',
+        'detail.meta.reference': 'Referencia',
+        'detail.meta.owner': 'Responsable',
+        'detail.meta.currency': 'Moneda'
     },
     en: {
         // ... existing translations
@@ -2099,7 +2114,22 @@ const translations: any = {
         'econ.confidence.medium': 'Medium confidence',
         'econ.confidence.low': 'Low confidence',
         'econ.load_demo': 'Load demo data',
-        'econ.loading_demo': 'Loading...'
+        'econ.loading_demo': 'Loading...',
+
+        // Project detail modal - timeline & meta
+        'detail.timeline.title': 'Deadlines',
+        'detail.timeline.opening': 'Opening',
+        'detail.timeline.submission': 'Submission',
+        'detail.timeline.questions': 'Questions',
+        'detail.timeline.responses': 'Responses',
+        'detail.timeline.evaluation': 'Evaluation',
+        'detail.timeline.award': 'Award',
+        'detail.timeline.overdue': 'Overdue',
+        'detail.timeline.days_short': 'd',
+        'detail.meta.type': 'Type',
+        'detail.meta.reference': 'Reference',
+        'detail.meta.owner': 'Owner',
+        'detail.meta.currency': 'Currency'
     }
 };
 

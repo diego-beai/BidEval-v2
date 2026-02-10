@@ -112,11 +112,19 @@ export default function App() {
       return { count: 0, progress: 0 };
     }
 
+    const normalizeEvalType = (et: string): string => {
+      const v = et.trim().toLowerCase();
+      if (v.includes('pre-feed') || v.includes('pre feed')) return 'Others';
+      if (v === 'feed deliverables' || v === 'feed') return 'Others';
+      if (v === 'others' || v === 'other') return 'Others';
+      return et.trim();
+    };
+
     const uniqueEvaluations = new Set<string>();
     results.forEach(result => {
       const providerEval = result.evaluations[selectedProvider];
       if (providerEval && providerEval.hasValue) {
-        uniqueEvaluations.add(result.evaluation);
+        uniqueEvaluations.add(normalizeEvalType(result.evaluation));
       }
     });
 
@@ -407,7 +415,7 @@ export default function App() {
                         border: '1px solid var(--border-color)'
                       }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                          {4 - (selectedProviderData?.count || selectedProviderProgress.count)}
+                          {3 - (selectedProviderData?.count || selectedProviderProgress.count)}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                           {t('proposal.remaining')}

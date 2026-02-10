@@ -76,11 +76,9 @@
     border: 2px solid var(--border-color);
 }
 
-/* Step number text */
-.stepper-number {
-    font-size: 0.65rem;
-    font-weight: 700;
-    line-height: 1;
+/* Step icon inside circle */
+.stepper-icon {
+    opacity: 0.85;
 }
 
 /* Label below circle */

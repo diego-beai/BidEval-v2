@@ -166,17 +166,6 @@ export const ExternalDataTable: React.FC = () => {
                 <button className="btn btnSecondary" onClick={fetchPivotTableData}>
                     {t('table.reload_data')}
                 </button>
-                {tableFilters.project_name && (
-                    <button
-                        className="btn btnSecondary"
-                        onClick={() => {
-                            setTableFilters({ project_name: '' });
-                            loadData();
-                        }}
-                    >
-                        {t('table.clear_project_filter')}
-                    </button>
-                )}
                 {projects.length === 0 && (
                     <button
                         className="btn btnPrimary"
@@ -196,11 +185,11 @@ export const ExternalDataTable: React.FC = () => {
     );
 
     // Determine columns dynamically from pivot data
-    const baseColumns = ['project_name', 'evaluation_type', 'phase', 'requirement_text'];
+    const baseColumns = ['evaluation_type', 'phase', 'requirement_text'];
 
     // Get all provider columns (any column that is not a base column)
     const allProviderColumns = data.length > 0
-        ? Object.keys(data[0]).filter(col => !baseColumns.includes(col) && col !== 'id' && col !== 'project_id' && col !== 'created_at')
+        ? Object.keys(data[0]).filter(col => !baseColumns.includes(col) && col !== 'id' && col !== 'project_id' && col !== 'project_name' && col !== 'created_at')
         : [];
 
     // Filter provider columns based on selection (if providers are selected, show only those columns)
@@ -212,7 +201,6 @@ export const ExternalDataTable: React.FC = () => {
     const columns = [...baseColumns, ...providerColumns];
 
     const getColumnWidth = (col: string, isProviderColumn: boolean) => {
-        if (col === 'project_name') return '200px';
         if (col === 'evaluation_type') return '120px';
         if (col === 'phase') return '115px';
         if (col === 'requirement_text') return '230px';
@@ -228,16 +216,15 @@ export const ExternalDataTable: React.FC = () => {
     };
 
     const filteredData = data.filter(row => {
-        const matchProject = !tableFilters.project_name || row.project_name?.toLowerCase().includes(tableFilters.project_name.toLowerCase());
         const matchEvalType = tableFilters.evaluation_type.length === 0 || tableFilters.evaluation_type.includes(String(row.evaluation_type));
         const matchPhase = tableFilters.phase.length === 0 || tableFilters.phase.includes(String(row.phase));
         // Provider filter: check if any selected provider has data in this row
         const matchProvider = tableFilters.provider.length === 0 ||
             tableFilters.provider.some(provider => row[provider] && String(row[provider]).trim() !== '');
-        return matchProject && matchEvalType && matchPhase && matchProvider;
+        return matchEvalType && matchPhase && matchProvider;
     });
 
-    const activeFilterCount = (tableFilters.evaluation_type.length + tableFilters.phase.length + tableFilters.provider.length + (tableFilters.project_name ? 1 : 0));
+    const activeFilterCount = (tableFilters.evaluation_type.length + tableFilters.phase.length + tableFilters.provider.length);
 
     const FilterDropdown = ({ label, options, selected, onToggle, onToggleAll, id, displayMap }: any) => {
         const isOpen = activeDropdown === id;
@@ -438,25 +425,6 @@ export const ExternalDataTable: React.FC = () => {
                     zIndex: 150
                 }}>
 
-                    {/* Project Filter - Now a Dropdown */}
-                    <div style={{ flex: '1 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '4px', color: 'var(--text-secondary)' }}>{t('table.project_name')}</label>
-                        <select
-                            style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-body)', color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer' }}
-                            value={tableFilters.project_name}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setTableFilters({ project_name: val });
-                                // El filtrado se hace automáticamente en el componente basado en tableFilters.project_name
-                            }}
-                        >
-                            <option value="">{t('table.select_project')}</option>
-                            {projects.map(p => (
-                                <option key={p} value={p}>{p}</option>
-                            ))}
-                        </select>
-                    </div>
-
                     <FilterDropdown
                         label={t('table.evaluation_type')}
                         id="eval"
@@ -600,7 +568,6 @@ export const ExternalDataTable: React.FC = () => {
                                     }}>
                                         {(
                                             {
-                                                'project_name': t('table.project'),
                                                 'evaluation_type': t('table.evaluation_type'),
                                                 'phase': t('table.phase'),
                                                 'requirement_text': t('table.requirement')

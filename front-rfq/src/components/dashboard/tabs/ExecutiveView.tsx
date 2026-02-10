@@ -179,9 +179,9 @@ export const ExecutiveView: React.FC = () => {
     const barChartData = useMemo(() => {
         const providersList = scoringResults?.ranking || [];
         return providersList.map(p => {
-            const name = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
+            const rawName = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
             const score = typeof p.overall_score === 'number' ? p.overall_score : Number(p.overall_score) || 0;
-            return { name, score, id: name };
+            return { name: displayProviderName(rawName), score, id: rawName };
         }).sort((a, b) => b.score - a.score);
     }, [scoringResults]);
 
@@ -336,21 +336,25 @@ export const ExecutiveView: React.FC = () => {
         const baseR = providerIdx === 0 ? 5 : 3.5;
         const strokeW = providerIdx === 0 ? 2 : 0;
 
-        // Check for overlapping values and apply offset
+        // Check for overlapping values and spread dots in a circle pattern
         let offsetX = 0;
         let offsetY = 0;
         if (payload) {
             const currentValue = Number(payload[providerName]) || 0;
-            const hasCloseNeighbor = sortedByScore.some((p) => {
-                if (p.provider_name === providerName) return false;
+            // Count how many providers have close values and find position in cluster
+            const closeNeighbors: number[] = [];
+            sortedByScore.forEach((p, idx) => {
                 const otherValue = Number(payload[p.provider_name]) || 0;
-                return Math.abs(currentValue - otherValue) < 0.3;
+                if (Math.abs(currentValue - otherValue) < 0.3) {
+                    closeNeighbors.push(idx);
+                }
             });
-            if (hasCloseNeighbor) {
-                const dir = providerIdx % 2 === 0 ? 1 : -1;
-                const mag = 2 + Math.floor(providerIdx / 2);
-                offsetX = dir * mag;
-                offsetY = -dir * mag;
+            if (closeNeighbors.length > 1) {
+                const posInCluster = closeNeighbors.indexOf(providerIdx);
+                const angle = (2 * Math.PI * posInCluster) / closeNeighbors.length;
+                const mag = 3 + closeNeighbors.length;
+                offsetX = Math.cos(angle) * mag;
+                offsetY = Math.sin(angle) * mag;
             }
         }
 
@@ -811,6 +815,9 @@ export const ExecutiveView: React.FC = () => {
                                         onMouseEnter={() => setHighlightedProvider(p.provider_name)}
                                         onMouseLeave={() => setHighlightedProvider(null)}
                                         style={{ transition: 'stroke-opacity 0.2s ease, fill-opacity 0.2s ease' }}
+                                        isAnimationActive={true}
+                                        animationDuration={800}
+                                        animationBegin={origIdx * 150}
                                     />
                                 );
                             })}
@@ -822,7 +829,7 @@ export const ExecutiveView: React.FC = () => {
                 {radarData.length > 0 && (
                     <div style={{ marginTop: '16px', overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                            <thead>
+                            <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                                 <tr>
                                     <th style={{
                                         textAlign: 'left',
@@ -832,6 +839,7 @@ export const ExecutiveView: React.FC = () => {
                                         fontWeight: 600,
                                         fontSize: '0.75rem',
                                         textTransform: 'uppercase',
+                                        background: 'var(--bg-surface)',
                                     }}>
                                         {t('executive.radar.title')}
                                     </th>
@@ -845,6 +853,7 @@ export const ExecutiveView: React.FC = () => {
                                             whiteSpace: 'nowrap',
                                             cursor: 'pointer',
                                             opacity: highlightedProvider && highlightedProvider !== p.provider_name ? 0.4 : 1,
+                                            background: 'var(--bg-surface)',
                                         }}
                                             onMouseEnter={() => setHighlightedProvider(p.provider_name)}
                                             onMouseLeave={() => setHighlightedProvider(null)}

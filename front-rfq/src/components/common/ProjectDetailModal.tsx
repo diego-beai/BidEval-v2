@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { Project, REQUIRED_EVAL_TYPES } from '../../stores/useProjectStore';
 import './ProjectDetailModal.css';
@@ -6,6 +7,34 @@ import './ProjectDetailModal.css';
 interface ProjectDetailModalProps {
     project: Project;
     onClose: () => void;
+    sidebarExpanded?: boolean;
+}
+
+const DEADLINE_FIELDS = [
+    { key: 'date_opening' as const, labelKey: 'detail.timeline.opening', color: '#3b82f6' },
+    { key: 'date_submission_deadline' as const, labelKey: 'detail.timeline.submission', color: '#f59e0b' },
+    { key: 'date_questions_deadline' as const, labelKey: 'detail.timeline.questions', color: '#f59e0b' },
+    { key: 'date_questions_response' as const, labelKey: 'detail.timeline.responses', color: '#f59e0b' },
+    { key: 'date_evaluation' as const, labelKey: 'detail.timeline.evaluation', color: '#12b5b0' },
+    { key: 'date_award' as const, labelKey: 'detail.timeline.award', color: '#22c55e' },
+];
+
+function formatDateShort(dateStr: string | null | undefined): string | null {
+    if (!dateStr) return null;
+    return new Date(dateStr).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function getDeadlineUrgency(dateStr: string | null | undefined): { level: 'overdue' | 'critical' | 'warning' | 'normal' | 'past'; daysLeft: number } | null {
+    if (!dateStr) return null;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return { level: 'overdue', daysLeft: diff };
+    if (diff <= 3) return { level: 'critical', daysLeft: diff };
+    if (diff <= 7) return { level: 'warning', daysLeft: diff };
+    return { level: 'normal', daysLeft: diff };
 }
 
 const STEPS = [
@@ -42,7 +71,7 @@ const StepIcon: React.FC<{ icon: string; size?: number }> = ({ icon, size = 18 }
     }
 };
 
-export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose }) => {
+export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose, sidebarExpanded }) => {
     const { t } = useLanguageStore();
     const activeIdx = getActiveStepIndex(project.status || 'setup');
     const [selectedStep, setSelectedStep] = useState(Math.min(activeIdx, STEPS.length - 1));
@@ -325,8 +354,8 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
         }
     };
 
-    return (
-        <div className="pdm-overlay" onClick={onClose}>
+    return createPortal(
+        <div className={`pdm-overlay ${sidebarExpanded ? 'sidebar-expanded' : ''}`} onClick={onClose}>
             <div className="pdm-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Close button */}
                 <button className="pdm-close" onClick={onClose}>
@@ -347,8 +376,119 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                         <span className="pdm-subtitle" style={{ color: getStatusColor(project.status) }}>
                             {t(`status.${project.status || 'setup'}`)}
                         </span>
+
+                        {/* Metadata chips */}
+                        {(project.project_type || project.reference_code || project.owner_name || (project.currency && project.currency !== 'EUR')) && (
+                            <div className="pdm-meta-chips">
+                                {project.project_type && (
+                                    <span className="pdm-meta-chip type">{project.project_type}</span>
+                                )}
+                                {project.reference_code && (
+                                    <span className="pdm-meta-chip ref">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        {project.reference_code}
+                                    </span>
+                                )}
+                                {project.owner_name && (
+                                    <span className="pdm-meta-chip owner">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        {project.owner_name}
+                                    </span>
+                                )}
+                                {project.currency && project.currency !== 'EUR' && (
+                                    <span className="pdm-meta-chip">{project.currency}</span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Description */}
+                        {project.description && (
+                            <p className="pdm-description">{project.description}</p>
+                        )}
                     </div>
                 </div>
+
+                {/* Deadline timeline strip */}
+                {(() => {
+                    const filledDeadlines = DEADLINE_FIELDS.filter(f => !!(project as any)[f.key]);
+                    if (filledDeadlines.length === 0) return null;
+
+                    // Find the next upcoming deadline for urgency indicator
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    let nearestIdx = -1;
+                    let nearestDiff = Infinity;
+                    DEADLINE_FIELDS.forEach((f, idx) => {
+                        const val = (project as any)[f.key];
+                        if (!val) return;
+                        const d = new Date(val);
+                        d.setHours(0, 0, 0, 0);
+                        const diff = d.getTime() - now.getTime();
+                        // Find the closest future or most recent past deadline
+                        if (diff >= 0 && diff < nearestDiff) {
+                            nearestDiff = diff;
+                            nearestIdx = idx;
+                        }
+                    });
+                    // If all are in the past, find the most recent one
+                    if (nearestIdx === -1) {
+                        let maxPast = -Infinity;
+                        DEADLINE_FIELDS.forEach((f, idx) => {
+                            const val = (project as any)[f.key];
+                            if (!val) return;
+                            const d = new Date(val);
+                            d.setHours(0, 0, 0, 0);
+                            const diff = d.getTime() - now.getTime();
+                            if (diff < 0 && diff > maxPast) {
+                                maxPast = diff;
+                                nearestIdx = idx;
+                            }
+                        });
+                    }
+
+                    return (
+                        <div className="pdm-timeline-strip">
+                            {DEADLINE_FIELDS.map((field, idx) => {
+                                const dateVal = (project as any)[field.key] as string | null;
+                                const formatted = formatDateShort(dateVal);
+                                const urgency = getDeadlineUrgency(dateVal);
+                                const isPast = urgency && (urgency.level === 'overdue');
+                                const isDimmed = !dateVal;
+                                const isNearest = idx === nearestIdx;
+                                const showUrgency = isNearest && urgency && urgency.level !== 'normal';
+
+                                return (
+                                    <React.Fragment key={field.key}>
+                                        {idx > 0 && (
+                                            <div className={`pdm-timeline-connector ${isDimmed ? 'dimmed' : ''} ${isPast ? 'past' : ''}`}
+                                                 style={!isDimmed && !isPast ? { background: field.color } : undefined} />
+                                        )}
+                                        <div className={`pdm-timeline-node ${isDimmed ? 'dimmed' : ''} ${isPast ? 'past' : ''}`}>
+                                            <div className={`pdm-timeline-dot ${isDimmed ? 'dimmed' : ''} ${isPast ? 'past' : ''}`}
+                                                 style={!isDimmed ? { borderColor: field.color, background: isPast ? 'transparent' : field.color } : undefined}>
+                                                {isPast && !isDimmed && (
+                                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={field.color} strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+                                                )}
+                                            </div>
+                                            <span className="pdm-timeline-label">{t(field.labelKey)}</span>
+                                            <span className={`pdm-timeline-date ${isPast ? 'past' : ''}`}
+                                                  style={!isDimmed && !isPast ? { color: field.color } : undefined}>
+                                                {formatted || '—'}
+                                            </span>
+                                            {showUrgency && (
+                                                <span className={`pdm-timeline-urgency ${urgency!.level}`}>
+                                                    {urgency!.level === 'overdue'
+                                                        ? t('detail.timeline.overdue')
+                                                        : `${urgency!.daysLeft}${t('detail.timeline.days_short')}`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    );
+                })()}
 
                 {/* Stepper timeline */}
                 <div className="pdm-stepper">
@@ -395,6 +535,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                     {renderPhaseContent(selectedStep)}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

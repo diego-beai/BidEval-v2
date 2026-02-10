@@ -258,6 +258,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                 <ProjectDetailModal
                     project={currentProject}
                     onClose={() => setShowProjectModal(false)}
+                    sidebarExpanded={isExpanded}
                 />
             )}
 
@@ -285,22 +286,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                 <line x1="3" y1="18" x2="21" y2="18"></line>
                             </svg>
                         </button>
-
-                        {/* Section title */}
-                        <span className="header-section-title">
-                            {activeView === 'home' ? t('nav.home')
-                                : activeView === 'projects-status' ? t('sidebar.projects_list')
-                                : activeView === 'upload' ? t('nav.upload')
-                                : activeView === 'table' ? t('nav.table')
-                                : activeView === 'qa' ? t('nav.qa')
-                                : activeView === 'decision' ? t('nav.decision')
-                                : activeView === 'economic' ? t('nav.economic')
-                                : activeView === 'mail' ? t('nav.mail')
-                                : activeView === 'chat' ? t('nav.chat')
-                                : activeView === 'rfp-gen' ? t('nav.rfp_generator')
-                                : activeView === 'suppliers' ? t('nav.suppliers')
-                                : ''}
-                        </span>
 
                         {/* Global Project Selector */}
                         <ProjectSelector onNewProject={onNewProject} />
