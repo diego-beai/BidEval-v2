@@ -28,6 +28,13 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
     const [isExpanded, setIsExpanded] = useState(false);
 
+    useEffect(() => {
+        document.documentElement.style.setProperty(
+            '--sidebar-current-width',
+            isExpanded ? 'var(--sidebar-width-expanded)' : 'var(--sidebar-width-collapsed)'
+        );
+    }, [isExpanded]);
+
     const [showNotifications, setShowNotifications] = useState(false);
     const [showProjectModal, setShowProjectModal] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
@@ -258,7 +265,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                 <ProjectDetailModal
                     project={currentProject}
                     onClose={() => setShowProjectModal(false)}
-                    sidebarExpanded={isExpanded}
                 />
             )}
 

@@ -141,6 +141,39 @@
     color: var(--accent, #12b5b0);
 }
 
+/* Step with warning */
+.setup-step-item.has-warning .setup-step-number {
+    border-color: #f59e0b;
+    background: #f59e0b;
+    color: white;
+}
+
+.setup-step-item.has-warning:not(:last-child)::after {
+    background: #f59e0b;
+}
+
+.setup-step-item.has-warning .setup-step-label {
+    color: #f59e0b;
+}
+
+/* Field validation error */
+.setup-field-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    margin-top: -8px;
+    margin-bottom: 12px;
+    font-size: 0.78rem;
+    color: #ef4444;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.setup-input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15) !important;
+}
+
 /* Body */
 .setup-wizard-body {
     flex: 1;

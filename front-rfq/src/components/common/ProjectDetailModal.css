@@ -2,7 +2,7 @@
 .pdm-overlay {
     position: fixed;
     top: 72px;
-    left: var(--sidebar-width-collapsed);
+    left: var(--sidebar-current-width, var(--sidebar-width-collapsed));
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.6);
@@ -12,10 +12,6 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
-}
-
-.pdm-overlay.sidebar-expanded {
-    left: var(--sidebar-width-expanded);
 }
 
 /* Modal */

@@ -86,6 +86,41 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
     t('setup.step.criteria') || 'Criterios',
   ];
 
+  // Per-step validation: returns null if valid, or a warning string
+  const getStepWarning = (step: number): string | null => {
+    switch (step) {
+      case 0:
+        if (formData.name.trim().length < 3) return t('setup.warn.name_short') || 'Nombre demasiado corto';
+        return null;
+      case 1:
+        return null; // Deadlines are optional
+      case 2:
+        return null; // Providers are optional
+      case 3: {
+        const scoringStore = useScoringConfigStore.getState();
+        const cats = scoringStore.draftCategories;
+        if (cats.length > 0) {
+          const total = cats.reduce((s, c) => s + c.weight, 0);
+          if (Math.abs(total - 100) >= 0.01) {
+            return (t('setup.warn.weights_invalid') || 'Los pesos no suman 100%') + ` (${total.toFixed(0)}%)`;
+          }
+          // Check sub-criteria within each category
+          for (const cat of cats) {
+            if (cat.criteria && cat.criteria.length > 0) {
+              const criteriaSum = cat.criteria.reduce((s, c) => s + c.weight, 0);
+              if (Math.abs(criteriaSum - cat.weight) >= 0.1) {
+                return t('setup.warn.criteria_mismatch') || 'Hay criterios descuadrados en alguna categoría';
+              }
+            }
+          }
+        }
+        return null;
+      }
+      default:
+        return null;
+    }
+  };
+
   const canGoNext = () => {
     if (currentStep === 0) {
       return formData.name.trim().length >= 3;
@@ -121,6 +156,21 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
       addToast(t('setup.error.name_required') || 'El nombre es obligatorio', 'warning');
       setCurrentStep(0);
       return;
+    }
+
+    // Validate criteria weights if categories exist
+    const scoringStore = useScoringConfigStore.getState();
+    const cats = scoringStore.draftCategories;
+    if (cats.length > 0) {
+      const total = cats.reduce((s, c) => s + c.weight, 0);
+      if (Math.abs(total - 100) >= 0.01) {
+        addToast(
+          (t('setup.error.weights_not_100') || 'Los pesos de las categorías deben sumar 100%') + ` (${total.toFixed(0)}%)`,
+          'warning'
+        );
+        setCurrentStep(3);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -298,23 +348,34 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
 
         {/* Step Indicators */}
         <div className="setup-wizard-steps">
-          {STEPS.map((step, idx) => (
-            <div
-              key={step.key}
-              className={`setup-step-item ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'completed' : ''}`}
-            >
-              <div className="setup-step-number">
-                {idx < currentStep ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  idx + 1
-                )}
+          {STEPS.map((step, idx) => {
+            const warning = idx < currentStep ? getStepWarning(idx) : null;
+            return (
+              <div
+                key={step.key}
+                className={`setup-step-item ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'completed' : ''} ${warning ? 'has-warning' : ''}`}
+                onClick={() => { if (idx < currentStep || (idx <= currentStep)) setCurrentStep(idx); }}
+                style={{ cursor: idx <= currentStep ? 'pointer' : 'default' }}
+              >
+                <div className="setup-step-number">
+                  {warning ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  ) : idx < currentStep ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    idx + 1
+                  )}
+                </div>
+                <span className="setup-step-label">{stepLabels[idx]}</span>
               </div>
-              <span className="setup-step-label">{stepLabels[idx]}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Body */}

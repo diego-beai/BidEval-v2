@@ -167,10 +167,27 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
 
   const updateCriterionWeight = (categoryIdx: number, criterionIdx: number, weight: number) => {
     const category = draftCategories[categoryIdx];
-    const updatedCriteria = category.criteria?.map((criterion, idx) => 
+    const updatedCriteria = category.criteria?.map((criterion, idx) =>
       idx === criterionIdx ? { ...criterion, weight } : criterion
     ) || [];
     updateCategory(categoryIdx, { criteria: updatedCriteria });
+  };
+
+  // Auto-balance: redistribute criteria weights proportionally to match category weight
+  const autoBalanceCriteria = (categoryIdx: number) => {
+    const category = draftCategories[categoryIdx];
+    const criteria = category.criteria || [];
+    if (criteria.length === 0) return;
+
+    const equalWeight = parseFloat((category.weight / criteria.length).toFixed(2));
+    const remainder = parseFloat((category.weight - equalWeight * criteria.length).toFixed(2));
+
+    const balanced = criteria.map((c, i) => ({
+      ...c,
+      weight: i === 0 ? parseFloat((equalWeight + remainder).toFixed(2)) : equalWeight,
+    }));
+
+    updateCategory(categoryIdx, { criteria: balanced });
   };
 
   // Info text based on project type
@@ -267,32 +284,41 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
             <div className="setup-category-color" style={{ background: cat.color }} />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <span className="setup-category-name">{getCategoryDisplayName(cat)}</span>
-              {(cat.criteria?.length || 0) > 0 && (
-                <span style={{
-                  fontSize: '0.7rem',
-                  color: expandedCategories.has(idx) ? 'var(--accent, #12b5b0)' : 'var(--text-tertiary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'color 0.2s',
-                }}>
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    style={{
-                      transform: expandedCategories.has(idx) ? 'rotate(90deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s'
-                    }}
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                  {cat.criteria.length} {cat.criteria.length === 1 ? 'criterio' : 'criterios'} dentro
-                </span>
-              )}
+              {(cat.criteria?.length || 0) > 0 && (() => {
+                const criteriaSum = (cat.criteria || []).reduce((s, c) => s + c.weight, 0);
+                const isCriteriaMatch = Math.abs(criteriaSum - cat.weight) < 0.1;
+                return (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    color: !isCriteriaMatch ? '#f59e0b' : expandedCategories.has(idx) ? 'var(--accent, #12b5b0)' : 'var(--text-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'color 0.2s',
+                  }}>
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      style={{
+                        transform: expandedCategories.has(idx) ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s'
+                      }}
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                    {cat.criteria.length} {cat.criteria.length === 1 ? 'criterio' : 'criterios'}
+                    {!isCriteriaMatch && (
+                      <span style={{ color: '#f59e0b', fontWeight: 600 }}>
+                        ({criteriaSum.toFixed(1)}% / {cat.weight}%)
+                      </span>
+                    )}
+                  </span>
+                );
+              })()}
             </div>
             <input
               className="setup-category-weight-input"
@@ -382,22 +408,44 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
                     );
                   })()}
                 </span>
-                <button
-                  className="setup-category-action-btn"
-                  onClick={() => {
-                    setAddingCriteria(prev => new Set(prev).add(idx));
-                    setNewCriterionNames(prev => ({ ...prev, [idx]: '' }));
-                    setNewCriterionWeights(prev => ({ ...prev, [idx]: 10 }));
-                  }}
-                  title="Añadir criterio"
-                  style={{ fontSize: '0.7rem', padding: '4px 8px' }}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  Añadir
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {(() => {
+                    const cSum = (cat.criteria || []).reduce((s, c) => s + c.weight, 0);
+                    const off = Math.abs(cSum - cat.weight) >= 0.1;
+                    if (!off || (cat.criteria?.length || 0) === 0) return null;
+                    return (
+                      <button
+                        className="setup-category-action-btn"
+                        onClick={() => autoBalanceCriteria(idx)}
+                        title={t('setup.criteria.auto_balance') || 'Auto-equilibrar pesos'}
+                        style={{ fontSize: '0.7rem', padding: '4px 8px', color: '#f59e0b' }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+                          <line x1="12" y1="3" x2="12" y2="21" />
+                          <path d="M17 8l-5-5-5 5" />
+                          <path d="M17 16l-5 5-5-5" />
+                        </svg>
+                        {t('setup.criteria.balance') || 'Equilibrar'}
+                      </button>
+                    );
+                  })()}
+                  <button
+                    className="setup-category-action-btn"
+                    onClick={() => {
+                      setAddingCriteria(prev => new Set(prev).add(idx));
+                      setNewCriterionNames(prev => ({ ...prev, [idx]: '' }));
+                      setNewCriterionWeights(prev => ({ ...prev, [idx]: 10 }));
+                    }}
+                    title="Añadir criterio"
+                    style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    {t('setup.providers.add') || 'Añadir'}
+                  </button>
+                </div>
               </div>
 
               {/* Criteria List */}

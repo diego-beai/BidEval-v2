@@ -62,6 +62,48 @@ export const StepDeadlines: React.FC<StepDeadlinesProps> = ({ data, onChange }) 
 
   const filledDates = DATE_FIELDS.filter(f => !!data[f.key]);
 
+  // Get min date for each field: must be >= previous field's date
+  const getMinDate = (fieldIdx: number): string => {
+    for (let i = fieldIdx - 1; i >= 0; i--) {
+      const prev = data[DATE_FIELDS[i].key];
+      if (prev) return prev;
+    }
+    return '';
+  };
+
+  // Check if a date is out of order (before a previous date or after a later date)
+  const isOutOfOrder = (fieldIdx: number): boolean => {
+    const val = data[DATE_FIELDS[fieldIdx].key];
+    if (!val) return false;
+    // Check against all previous filled dates
+    for (let i = 0; i < fieldIdx; i++) {
+      const prev = data[DATE_FIELDS[i].key];
+      if (prev && val < prev) return true;
+    }
+    // Check against all later filled dates
+    for (let i = fieldIdx + 1; i < DATE_FIELDS.length; i++) {
+      const next = data[DATE_FIELDS[i].key];
+      if (next && val > next) return true;
+    }
+    return false;
+  };
+
+  // When a date changes, auto-fix later dates that would be before it
+  const handleDateChange = (fieldIdx: number, newValue: string) => {
+    const updates: Partial<ProjectSetupData> = { [DATE_FIELDS[fieldIdx].key]: newValue };
+    if (newValue) {
+      for (let i = fieldIdx + 1; i < DATE_FIELDS.length; i++) {
+        const laterVal = data[DATE_FIELDS[i].key];
+        if (laterVal && laterVal < newValue) {
+          updates[DATE_FIELDS[i].key] = newValue;
+        }
+      }
+    }
+    onChange(updates);
+  };
+
+  const hasOrderError = DATE_FIELDS.some((_, idx) => isOutOfOrder(idx));
+
   return (
     <div>
       <div style={{ marginBottom: '16px' }}>
@@ -70,23 +112,49 @@ export const StepDeadlines: React.FC<StepDeadlinesProps> = ({ data, onChange }) 
         </p>
       </div>
 
+      {hasOrderError && (
+        <div style={{
+          padding: '10px 14px',
+          marginBottom: '12px',
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          color: '#f59e0b',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          {t('setup.dates.order_warning') || 'Las fechas deben seguir un orden cronológico'}
+        </div>
+      )}
+
       <div className="setup-dates-grid">
-        {DATE_FIELDS.map(field => (
-          <div key={field.key} className="setup-date-field">
-            <label>
-              <div className="date-icon" style={{ background: `${field.color}15` }}>
-                {fieldIcons[field.key]}
-              </div>
-              {fieldLabels[field.key]}
-            </label>
-            <input
-              className="setup-input"
-              type="date"
-              value={data[field.key]}
-              onChange={(e) => onChange({ [field.key]: e.target.value })}
-            />
-          </div>
-        ))}
+        {DATE_FIELDS.map((field, idx) => {
+          const outOfOrder = isOutOfOrder(idx);
+          return (
+            <div key={field.key} className="setup-date-field" style={outOfOrder ? { borderColor: '#f59e0b' } : {}}>
+              <label>
+                <div className="date-icon" style={{ background: `${field.color}15` }}>
+                  {fieldIcons[field.key]}
+                </div>
+                {fieldLabels[field.key]}
+              </label>
+              <input
+                className="setup-input"
+                type="date"
+                value={data[field.key]}
+                min={getMinDate(idx)}
+                onChange={(e) => handleDateChange(idx, e.target.value)}
+                style={outOfOrder ? { borderColor: '#f59e0b', boxShadow: '0 0 0 1px rgba(245, 158, 11, 0.3)' } : {}}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Visual Timeline */}

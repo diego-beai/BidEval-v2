@@ -7,7 +7,6 @@ import './ProjectDetailModal.css';
 interface ProjectDetailModalProps {
     project: Project;
     onClose: () => void;
-    sidebarExpanded?: boolean;
 }
 
 const DEADLINE_FIELDS = [
@@ -71,7 +70,7 @@ const StepIcon: React.FC<{ icon: string; size?: number }> = ({ icon, size = 18 }
     }
 };
 
-export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose, sidebarExpanded }) => {
+export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose }) => {
     const { t } = useLanguageStore();
     const activeIdx = getActiveStepIndex(project.status || 'setup');
     const [selectedStep, setSelectedStep] = useState(Math.min(activeIdx, STEPS.length - 1));
@@ -355,7 +354,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
     };
 
     return createPortal(
-        <div className={`pdm-overlay ${sidebarExpanded ? 'sidebar-expanded' : ''}`} onClick={onClose}>
+        <div className="pdm-overlay" onClick={onClose}>
             <div className="pdm-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Close button */}
                 <button className="pdm-close" onClick={onClose}>
