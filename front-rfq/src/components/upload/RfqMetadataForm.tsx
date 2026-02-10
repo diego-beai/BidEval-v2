@@ -20,8 +20,7 @@ interface RfqMetadataFormProps {
 const EVALUATION_TYPES = [
   'Technical Evaluation',
   'Economical Evaluation',
-  'Pre-FEED Deliverables',
-  'FEED Deliverables'
+  'Others'
 ];
 
 export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMetadataFormProps) {

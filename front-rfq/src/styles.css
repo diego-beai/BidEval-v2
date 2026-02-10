@@ -76,3 +76,50 @@ body {
     color: var(--text-primary);
     margin: 0;
 }
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulseGlow {
+    0% {
+        box-shadow: 0 0 8px rgba(18, 181, 176, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(18, 181, 176, 0.4);
+    }
+
+    100% {
+        box-shadow: 0 0 8px rgba(18, 181, 176, 0.2);
+    }
+}
+
+@keyframes shine {
+    from {
+        left: -100%;
+    }
+
+    to {
+        left: 200%;
+    }
+}

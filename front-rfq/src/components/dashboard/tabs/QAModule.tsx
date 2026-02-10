@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { useQAStore } from '../../../stores/useQAStore';
 import { useMailStore } from '../../../stores/useMailStore';
 import { useToastStore } from '../../../stores/useToastStore';
@@ -1276,8 +1277,8 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
         {
           error && (
             <div className="qa-error">
-              <Icons.Error /> {error}
-              {error.includes('Q&A table is not configured') && (
+              <Icons.Error /> {t(error)}
+              {error.includes('qa.error.table_not_found') && (
                 <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
                   Please run the setup_qa_table.sql script in Supabase
                 </div>
@@ -1298,7 +1299,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
         {/* Disciplines View */}
         <div className="qa-disciplinas-container">
-        {groupedQuestions.map((group) => (
+          {groupedQuestions.map((group) => (
           <div key={group.disciplina} className="disciplina-group card">
             {/* Discipline Header */}
             <div
@@ -1900,7 +1901,7 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
                   <label>{t('qa.modal.email_preview')}</label>
                   <div
                     className="email-preview-content"
-                    dangerouslySetInnerHTML={{ __html: sendResult.email_html }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(sendResult.email_html) }}
                   />
                 </div>
               )}

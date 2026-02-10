@@ -20,7 +20,7 @@ interface N8nChatHistoryRow {
  */
 function generateSessionId(projectId?: string | null): string {
   const projectPart = projectId ? `proj-${projectId.substring(0, 8)}` : 'global';
-  return `chat-${projectPart}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `chat-${projectPart}-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 /**
@@ -28,11 +28,13 @@ function generateSessionId(projectId?: string | null): string {
  * @param message - El mensaje del usuario
  * @param sessionId - ID de sesión opcional
  * @param projectId - ID del proyecto activo para filtrar las respuestas
+ * @param documentIds - IDs de documentos seleccionados para acotar el contexto
  */
 export async function sendChatMessage(
   message: string,
   sessionId?: string,
-  projectId?: string | null
+  projectId?: string | null,
+  documentIds?: string[]
 ): Promise<{ response: string; sessionId: string }> {
   // Si no hay sessionId, generar uno nuevo que incluya el projectId
   const currentSessionId = sessionId || generateSessionId(projectId);
@@ -40,12 +42,17 @@ export async function sendChatMessage(
   try {
     // Payload según el formato esperado por n8n chatTrigger
     // Incluye project_id para filtrar datos por proyecto
-    const payload = {
+    // Incluye document_ids para acotar a documentos específicos
+    const payload: Record<string, unknown> = {
       action: 'sendMessage',
       sessionId: currentSessionId,
       chatInput: message,
       project_id: projectId || ''
     };
+
+    if (documentIds && documentIds.length > 0) {
+      payload.document_ids = documentIds;
+    }
 
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_CHAT_URL,

@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 
+export interface UploadLink {
+  token: string;
+  provider_name: string;
+  url: string;
+  expires_at: string;
+}
+
 interface ProviderState {
   projectProviders: string[];
   isLoading: boolean;
   fetchProjectProviders: (projectId: string) => Promise<void>;
   addLocalProvider: (name: string) => void;
   clearProviders: () => void;
+  generateUploadLink: (projectId: string, providerName: string) => Promise<UploadLink | null>;
 }
 
 export const useProviderStore = create<ProviderState>()((set, get) => ({
@@ -65,5 +73,36 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
 
   clearProviders: () => {
     set({ projectProviders: [] });
-  }
+  },
+
+  generateUploadLink: async (projectId: string, providerName: string) => {
+    if (!supabase || !projectId || !providerName) return null;
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from('supplier_upload_tokens')
+        .insert([{
+          project_id: projectId,
+          provider_name: providerName.toUpperCase(),
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[useProviderStore] Error generating upload link:', error);
+        return null;
+      }
+
+      const baseUrl = window.location.origin;
+      return {
+        token: data.token,
+        provider_name: data.provider_name,
+        url: `${baseUrl}/upload/${data.token}`,
+        expires_at: data.expires_at,
+      } as UploadLink;
+    } catch (err) {
+      console.error('[useProviderStore] Error generating upload link:', err);
+      return null;
+    }
+  },
 }));

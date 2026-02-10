@@ -32,9 +32,8 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
       const colors = [
         'rgba(18, 181, 176, 0.8)',  // Technical - cyan
         'rgba(245, 158, 11, 0.8)',  // Economic - amber
-        'rgba(59, 130, 246, 0.8)',   // Pre-FEED - blue
-        'rgba(139, 92, 246, 0.8)',   // FEED - purple
-        'rgba(236, 72, 153, 0.8)',   // Other - pink
+        'rgba(139, 92, 246, 0.8)',  // Others - purple
+        'rgba(236, 72, 153, 0.8)',  // Extra - pink
       ];
 
       const data: DonutChartData[] = Object.entries(evaluationCounts).map(([label, value], index) => ({
@@ -50,8 +49,7 @@ export const RfqSummaryChart: React.FC<RfqSummaryChartProps> = ({ className }) =
       setChartData([
         { label: 'Technical', value: 0, color: 'rgba(18, 181, 176, 0.8)', isEmpty: true },
         { label: 'Economic', value: 0, color: 'rgba(245, 158, 11, 0.8)', isEmpty: true },
-        { label: 'Pre-FEED', value: 0, color: 'rgba(59, 130, 246, 0.8)', isEmpty: true },
-        { label: 'FEED', value: 0, color: 'rgba(139, 92, 246, 0.8)', isEmpty: true },
+        { label: 'Others', value: 0, color: 'rgba(139, 92, 246, 0.8)', isEmpty: true },
       ]);
     }
   }, [pivotTableData]);

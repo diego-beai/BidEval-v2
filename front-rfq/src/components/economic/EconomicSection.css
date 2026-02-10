@@ -1,0 +1,527 @@
+/* ============================================
+   EconomicSection styles
+   ============================================ */
+
+.economic-section {
+    padding: 28px 32px;
+    height: 100%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Header */
+.econ-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.econ-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.econ-subtitle {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+/* Summary cards row */
+.econ-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.econ-summary-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.econ-summary-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.econ-summary-card.highlight {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.econ-card-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.econ-card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.econ-card-detail {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* Comparison table */
+.econ-table-wrapper {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.econ-table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.econ-table-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.econ-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.econ-table thead {
+    background: var(--bg-surface-alt);
+}
+
+.econ-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.econ-table th.col-center {
+    text-align: center;
+}
+
+.econ-table th.col-right {
+    text-align: right;
+}
+
+.econ-row {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+    cursor: pointer;
+}
+
+.econ-row:last-child {
+    border-bottom: none;
+}
+
+.econ-row:hover {
+    background: var(--bg-hover);
+}
+
+.econ-row.cheapest {
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.econ-row.cheapest:hover {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.econ-table td {
+    padding: 14px 16px;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.econ-table td.col-center {
+    text-align: center;
+}
+
+.econ-table td.col-right {
+    text-align: right;
+}
+
+/* Rank badge */
+.econ-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.econ-rank.rank-1 {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.econ-rank.rank-2 {
+    background: rgba(6, 182, 212, 0.12);
+    color: #06b6d4;
+}
+
+.econ-rank.rank-3 {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+
+.econ-rank.rank-other {
+    background: var(--bg-surface-alt);
+    color: var(--text-secondary);
+}
+
+/* Provider cell */
+.econ-provider {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Price */
+.econ-price {
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.econ-price.best {
+    color: #10b981;
+}
+
+/* Discount badge */
+.econ-discount {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.econ-discount.none {
+    background: var(--bg-surface-alt);
+    color: var(--text-tertiary);
+}
+
+/* Payment / TCO / Tags */
+.econ-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--bg-surface-alt);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.econ-tag.green {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.econ-tag.amber {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+/* Expand row */
+.econ-expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.econ-expand-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.econ-expand-btn.open {
+    transform: rotate(180deg);
+}
+
+/* Detail row */
+.econ-detail-row td {
+    padding: 0 !important;
+    background: var(--bg-surface-alt);
+}
+
+.econ-detail-content {
+    padding: 16px 20px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.econ-detail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.econ-detail-group-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.econ-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    padding: 4px 0;
+}
+
+.econ-detail-item .label {
+    color: var(--text-secondary);
+}
+
+.econ-detail-item .value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Loading & Empty */
+.econ-loading,
+.econ-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-tertiary);
+    gap: 12px;
+    text-align: center;
+}
+
+.econ-loading p,
+.econ-empty p {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.econ-empty span {
+    font-size: 0.85rem;
+}
+
+.econ-demo-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 20px;
+    border: 1px solid var(--color-primary);
+    border-radius: 10px;
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.econ-demo-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+.econ-demo-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.econ-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    animation: econSpin 0.8s linear infinite;
+}
+
+@keyframes econSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* TCO highlight card */
+.econ-summary-card.highlight-tco {
+    border-color: rgba(6, 182, 212, 0.4);
+    background: rgba(6, 182, 212, 0.04);
+}
+
+/* Export CSV button */
+.econ-export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.econ-export-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+}
+
+/* Sortable column headers */
+.econ-sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+}
+
+.econ-sortable:hover {
+    color: var(--text-primary);
+}
+
+.econ-sortable.active {
+    color: var(--color-primary);
+}
+
+.econ-sort-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.econ-sort-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Confidence badges */
+.econ-detail-confidence {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.econ-confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: default;
+}
+
+.econ-confidence-badge.confidence-high {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.econ-confidence-badge.confidence-medium {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+
+.econ-confidence-badge.confidence-low {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+/* Bar visual in table */
+.econ-price-bar-track {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-surface-alt);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.econ-price-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .economic-section {
+        padding: 16px;
+    }
+
+    .econ-summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .econ-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .econ-table {
+        min-width: 700px;
+    }
+
+    .econ-detail-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .econ-summary-cards {
+        grid-template-columns: 1fr;
+    }
+}

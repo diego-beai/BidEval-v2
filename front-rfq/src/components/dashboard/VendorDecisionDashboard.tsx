@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
-import { ScoringMatrix } from './tabs/ScoringMatrix';
-import { ExecutiveView } from './tabs/ExecutiveView';
 import './Dashboard.css';
+
+// Lazy-load heavy tab components (ExecutiveView uses Recharts ~200KB, ScoringMatrix has wizard)
+const ExecutiveView = lazy(() => import('./tabs/ExecutiveView').then(m => ({ default: m.ExecutiveView })));
+const ScoringMatrix = lazy(() => import('./tabs/ScoringMatrix').then(m => ({ default: m.ScoringMatrix })));
 
 type DashboardTab = 'executive' | 'scoring';
 
@@ -69,8 +71,10 @@ export const VendorDecisionDashboard: React.FC = () => {
             </div>
 
             <div className="fade-in">
-                {activeTab === 'executive' && <ExecutiveView />}
-                {activeTab === 'scoring' && <ScoringMatrix />}
+                <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div>}>
+                    {activeTab === 'executive' && <ExecutiveView />}
+                    {activeTab === 'scoring' && <ScoringMatrix />}
+                </Suspense>
             </div>
         </div>
     );

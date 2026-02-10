@@ -381,13 +381,14 @@ export async function uploadRfqBase(
       projectId: projectId
     });
 
-    // Mostrar alerta para debug
-    console.warn('🔍 DEBUG - Error details:', JSON.stringify({
-      hasMessage: error instanceof Error && !!error.message,
-      isApiError: error instanceof ApiError,
-      errorString: String(error),
-      errorKeys: error && typeof error === 'object' ? Object.keys(error) : []
-    }, null, 2));
+    if (import.meta.env.DEV) {
+      console.warn('🔍 DEBUG - Error details:', JSON.stringify({
+        hasMessage: error instanceof Error && !!error.message,
+        isApiError: error instanceof ApiError,
+        errorString: String(error),
+        errorKeys: error && typeof error === 'object' ? Object.keys(error) : []
+      }, null, 2));
+    }
 
     if (error instanceof ApiError) {
       throw error;
@@ -667,14 +668,15 @@ export async function generateTechnicalAudit(
     throw new ApiError(errorMessage);
 
   } catch (error) {
-    console.error('❌ Error generating technical audit:', {
-      error,
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      payload,
-      endpoint: API_CONFIG.N8N_QA_AUDIT_URL,
-      isDev: import.meta.env.DEV
-    });
+    if (import.meta.env.DEV) {
+      console.error('❌ Error generating technical audit:', {
+        error,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        payload,
+        endpoint: API_CONFIG.N8N_QA_AUDIT_URL,
+      });
+    }
 
     if (error instanceof ApiError) {
       // Mejorar mensajes de error según el código HTTP
@@ -933,6 +935,126 @@ export async function saveMappedResponses(
     }
     throw new ApiError(
       error instanceof Error ? error.message : 'Unknown error while saving responses'
+    );
+  }
+}
+
+/**
+ * Payload para generar un documento RFP con IA
+ */
+export interface GenerateRfpPayload {
+  project_id: string;
+  project_name: string;
+  project_type: string;
+  description: string;
+  requirements: string;
+  providers?: string[];
+  criteria?: Array<{ name: string; weight: number }>;
+  deadlines?: {
+    opening?: string;
+    submission?: string;
+    evaluation?: string;
+    award?: string;
+  };
+  language?: string;
+  sections?: string[];
+}
+
+/**
+ * Respuesta del webhook de generacion de RFP
+ */
+export interface GenerateRfpResponse {
+  success: boolean;
+  document: string;
+  title: string;
+  sections: Array<{
+    title: string;
+    content: string;
+  }>;
+  metadata?: {
+    word_count: number;
+    generated_at: string;
+    model: string;
+  };
+  message?: string;
+}
+
+/**
+ * Genera un documento RFP usando IA a partir de requisitos del proyecto
+ *
+ * @param payload - Datos del proyecto y requisitos para generar el RFP
+ * @returns Documento RFP generado con secciones
+ */
+export async function generateRfpDocument(
+  payload: GenerateRfpPayload
+): Promise<GenerateRfpResponse> {
+  try {
+    console.log('📝 Generating RFP document:', {
+      projectId: payload.project_id,
+      projectName: payload.project_name,
+      projectType: payload.project_type,
+      requirementsLength: payload.requirements.length,
+      endpoint: API_CONFIG.N8N_RFP_GENERATE_URL
+    });
+
+    const startTime = Date.now();
+
+    const response = await fetchWithTimeout(
+      API_CONFIG.N8N_RFP_GENERATE_URL,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      },
+      API_CONFIG.REQUEST_TIMEOUT
+    );
+
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    const responseText = await response.text();
+
+    if (!responseText.trim()) {
+      throw new ApiError('El servidor devolvió una respuesta vacía.');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new ApiError('La respuesta del servidor no es JSON válido.');
+    }
+
+    console.log('📥 RFP generation response:', {
+      status: response.status,
+      elapsedTime: `${elapsedTime}s`,
+      hasDocument: !!data.document,
+      sectionsCount: data.sections?.length || 0
+    });
+
+    if (response.ok) {
+      const rfpResponse: GenerateRfpResponse = {
+        success: data.success !== false,
+        document: data.document || data.content || '',
+        title: data.title || `${payload.project_type} - ${payload.project_name}`,
+        sections: data.sections || [],
+        metadata: data.metadata,
+        message: data.message || 'RFP generated successfully'
+      };
+
+      return rfpResponse;
+    }
+
+    throw new ApiError(data.error || data.message || `Server error (${response.status})`);
+
+  } catch (error) {
+    console.error('❌ Error generating RFP:', error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(
+      error instanceof Error ? error.message : 'Unknown error while generating RFP'
     );
   }
 }

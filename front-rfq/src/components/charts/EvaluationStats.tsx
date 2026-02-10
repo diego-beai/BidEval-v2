@@ -16,9 +16,9 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
   const getStatusColor = () => {
     switch (status) {
       case 'processing':
-        return '#f59e0b'; // Orange
+        return '#f59e0b'; // Amber
       case 'completed':
-        return 'var(--color-success)'; // Green
+        return '#10b981'; // Emerald Green
       case 'error':
         return 'var(--color-error)'; // Red
       default:

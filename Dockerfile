@@ -13,14 +13,16 @@ RUN npm ci --legacy-peer-deps
 COPY front-rfq/ ./
 
 # Build arguments for environment variables
+# Only Supabase credentials are needed at build time.
+# n8n webhook URLs use relative paths (/api/n8n/*) proxied by nginx.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_N8N_WEBHOOK_URL
+ARG VITE_SUPABASE_SCHEMA=desarrollo
 
 # Set environment variables for build
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-ENV VITE_N8N_WEBHOOK_URL=$VITE_N8N_WEBHOOK_URL
+ENV VITE_SUPABASE_SCHEMA=$VITE_SUPABASE_SCHEMA
 
 # Build the application
 RUN npm run build

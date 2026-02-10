@@ -262,47 +262,24 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
             const startOfLastWeek = new Date(startOfThisWeek);
             startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
 
-            // Contar total de propuestas (document_type = 'PROPOSAL') filtradas por proyecto
-            const { count: totalCount, error: totalError } = await supabase
-                .from('document_metadata')
-                .select('*', { count: 'exact', head: true })
-                .eq('document_type', 'PROPOSAL')
-                .eq('project_id', activeProjectId);
+            // Fetch all proposal counts in parallel
+            const [totalResult, thisWeekResult, lastWeekResult] = await Promise.all([
+                supabase.from('document_metadata').select('*', { count: 'exact', head: true }).eq('document_type', 'PROPOSAL').eq('project_id', activeProjectId),
+                supabase.from('document_metadata').select('*', { count: 'exact', head: true }).eq('document_type', 'PROPOSAL').eq('project_id', activeProjectId).gte('created_at', startOfThisWeek.toISOString()),
+                supabase.from('document_metadata').select('*', { count: 'exact', head: true }).eq('document_type', 'PROPOSAL').eq('project_id', activeProjectId).gte('created_at', startOfLastWeek.toISOString()).lt('created_at', startOfThisWeek.toISOString()),
+            ]);
+
+            const { count: totalCount, error: totalError } = totalResult;
+            const { count: thisWeekCount, error: thisWeekError } = thisWeekResult;
+            const { count: lastWeekCount, error: lastWeekError } = lastWeekResult;
 
             if (totalError) {
                 console.error('Error fetching total proposals count:', totalError);
-                set({
-                    totalProposals: 0,
-                    proposalsThisWeek: 0,
-                    proposalsGrowthPercentage: 0
-                });
+                set({ totalProposals: 0, proposalsThisWeek: 0, proposalsGrowthPercentage: 0 });
                 return;
             }
-
-            // Contar propuestas de esta semana filtradas por proyecto
-            const { count: thisWeekCount, error: thisWeekError } = await supabase
-                .from('document_metadata')
-                .select('*', { count: 'exact', head: true })
-                .eq('document_type', 'PROPOSAL')
-                .eq('project_id', activeProjectId)
-                .gte('created_at', startOfThisWeek.toISOString());
-
-            if (thisWeekError) {
-                console.error('Error fetching this week proposals:', thisWeekError);
-            }
-
-            // Contar propuestas de la semana pasada filtradas por proyecto
-            const { count: lastWeekCount, error: lastWeekError } = await supabase
-                .from('document_metadata')
-                .select('*', { count: 'exact', head: true })
-                .eq('document_type', 'PROPOSAL')
-                .eq('project_id', activeProjectId)
-                .gte('created_at', startOfLastWeek.toISOString())
-                .lt('created_at', startOfThisWeek.toISOString());
-
-            if (lastWeekError) {
-                console.error('Error fetching last week proposals:', lastWeekError);
-            }
+            if (thisWeekError) console.error('Error fetching this week proposals:', thisWeekError);
+            if (lastWeekError) console.error('Error fetching last week proposals:', lastWeekError);
 
             // Calcular porcentaje de crecimiento
             const thisWeek = thisWeekCount || 0;

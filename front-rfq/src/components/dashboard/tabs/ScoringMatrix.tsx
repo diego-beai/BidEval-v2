@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom';
 import { useScoringStore } from '../../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
-import { ScoringSetupWizard, InlineCriteriaEditor } from '../scoring';
+
+// Lazy-load wizard and editor (only rendered on user action)
+const ScoringSetupWizard = lazy(() => import('../scoring').then(m => ({ default: m.ScoringSetupWizard })));
+const InlineCriteriaEditor = lazy(() => import('../scoring').then(m => ({ default: m.InlineCriteriaEditor })));
 
 const displayProviderName = (name: string) => name === 'TECNICASREUNIDAS' ? 'TR' : name;
 
@@ -147,11 +150,15 @@ export const ScoringMatrix: React.FC = () => {
             categories.forEach((cat) => {
                 if (!cat || !cat.name) return;
                 const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                // Detect if criteria use relative (sum~100) or absolute (sum~catWeight) convention
+                const criteriaSum = catCriteria.reduce((s, c) => s + (c.weight || 0), 0);
+                const isRelative = catCriteria.length > 0 && Math.abs(criteriaSum - 100) < 1;
                 catCriteria.forEach((crit) => {
                     if (!crit || !crit.name) return;
-                    // Calculate actual weight contribution (criterion weight * category weight / 100)
-                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
-                    // Ensure all values are primitives (not objects)
+                    // If relative weights (sum=100), convert to absolute; otherwise use directly
+                    const actualWeight = isRelative
+                        ? ((crit.weight || 0) * (cat.weight || 0)) / 100
+                        : (crit.weight || 0);
                     const critName = typeof crit.name === 'string' ? crit.name : String(crit.name || '');
                     const critDisplayName = typeof crit.display_name === 'string' ? crit.display_name : String(crit.display_name || '');
                     const critDesc = typeof crit.description === 'string' ? crit.description : '';
@@ -954,15 +961,19 @@ export const ScoringMatrix: React.FC = () => {
 
             {/* Scoring Setup Wizard */}
             {showWizard && (
-                <ScoringSetupWizard onClose={() => setShowWizard(false)} />
+                <Suspense fallback={null}>
+                    <ScoringSetupWizard onClose={() => setShowWizard(false)} />
+                </Suspense>
             )}
 
             {/* Inline Criteria Editor */}
             {showConfigEditor && (
-                <InlineCriteriaEditor
-                    isOpen={showConfigEditor}
-                    onClose={() => setShowConfigEditor(false)}
-                />
+                <Suspense fallback={null}>
+                    <InlineCriteriaEditor
+                        isOpen={showConfigEditor}
+                        onClose={() => setShowConfigEditor(false)}
+                    />
+                </Suspense>
             )}
         </div>
     );

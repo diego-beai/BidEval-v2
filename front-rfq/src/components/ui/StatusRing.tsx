@@ -5,28 +5,25 @@ export const StatusRing = ({
     size = '60px',
     interactive = true
 }: {
-    statuses: { technical: boolean, economical: boolean, prefeed: boolean, feed: boolean },
+    statuses: { technical: boolean, economical: boolean, other: boolean },
     size?: string,
     interactive?: boolean
 }) => {
     const colors = {
         technical: 'rgba(18, 181, 176, 0.8)',   // Cyan
         economical: 'rgba(245, 158, 11, 0.8)',  // Amber/Orange
-        prefeed: 'rgba(59, 130, 246, 0.8)',     // Blue
-        feed: 'rgba(139, 92, 246, 0.8)',        // Purple
+        other: 'rgba(139, 92, 246, 0.8)',        // Purple
         missing: 'rgba(255, 255, 255, 0.05)'    // Very subtle grey
     };
 
-    // Mapping:
-    // Top-Right (0-90): Economical
-    // Bottom-Right (90-180): Pre-FEED
-    // Bottom-Left (180-270): FEED
-    // Top-Left (270-360): Technical
+    // Mapping (3 segments, 120° each):
+    // Top-Right (0-120): Technical
+    // Bottom (120-240): Economical
+    // Top-Left (240-360): Others
 
-    const c1 = statuses.economical ? colors.economical : colors.missing;
-    const c2 = statuses.prefeed ? colors.prefeed : colors.missing;
-    const c3 = statuses.feed ? colors.feed : colors.missing;
-    const c4 = statuses.technical ? colors.technical : colors.missing;
+    const c1 = statuses.technical ? colors.technical : colors.missing;
+    const c2 = statuses.economical ? colors.economical : colors.missing;
+    const c3 = statuses.other ? colors.other : colors.missing;
 
     const [isHovered, setIsHovered] = useState(false);
 
@@ -39,10 +36,9 @@ export const StatusRing = ({
                 height: size,
                 borderRadius: '50%',
                 background: `conic-gradient(
-                    ${c1} 0deg 90deg,
-                    ${c2} 90deg 180deg,
-                    ${c3} 180deg 270deg,
-                    ${c4} 270deg 360deg
+                    ${c1} 0deg 120deg,
+                    ${c2} 120deg 240deg,
+                    ${c3} 240deg 360deg
                 )`,
                 transform: isHovered ? 'scale(1.1)' : 'scale(1)',
                 transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',

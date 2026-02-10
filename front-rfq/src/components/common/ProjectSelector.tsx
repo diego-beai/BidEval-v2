@@ -6,9 +6,10 @@ import './ProjectSelector.css';
 
 interface ProjectSelectorProps {
   compact?: boolean;
+  onNewProject?: () => void;
 }
 
-export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = false }) => {
+export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = false, onNewProject }) => {
   const {
     projects,
     activeProjectId,
@@ -37,11 +38,11 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
 
   const activeProject = getActiveProject();
 
-  // Sort projects so "PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)" always appears first
+  // Sort projects: active project first, then alphabetically
   const sortedProjects = [...projects].sort((a, b) => {
-    if (a.display_name === 'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)') return -1;
-    if (b.display_name === 'PROJECT H2 PLANT IN LA ZAIDA, ZARAGOZA (SPAIN)') return 1;
-    return 0;
+    if (a.id === activeProjectId) return -1;
+    if (b.id === activeProjectId) return 1;
+    return a.display_name.localeCompare(b.display_name);
   });
 
   // Load projects on mount
@@ -250,12 +251,12 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
   };
 
   const formatProjectName = (name: string) => {
-    // Truncate long names
+    const formatted = name.replace(/_/g, ' ');
     const maxLength = compact ? 20 : 35;
-    if (name.length > maxLength) {
-      return name.substring(0, maxLength) + '...';
+    if (formatted.length > maxLength) {
+      return formatted.substring(0, maxLength) + '...';
     }
-    return name;
+    return formatted;
   };
 
   return (
@@ -283,6 +284,19 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
           <span className="project-name" title={activeProject?.display_name}>
             {isLoading ? t('project.loading') : (activeProject?.display_name ? formatProjectName(activeProject.display_name) : t('project.select'))}
           </span>
+
+          {activeProject?.project_type && (
+            <span style={{
+              fontSize: '0.6rem',
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: '4px',
+              background: activeProject.project_type === 'RFP' ? 'rgba(18, 181, 176, 0.15)' : activeProject.project_type === 'RFQ' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+              color: activeProject.project_type === 'RFP' ? '#12b5b0' : activeProject.project_type === 'RFQ' ? '#3b82f6' : '#f59e0b',
+            }}>
+              {activeProject.project_type}
+            </span>
+          )}
 
           {activeProject && !compact && (
             <span className="project-stats">
@@ -369,6 +383,19 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
                         <span className="project-item-name" title={project.display_name}>
                           {formatProjectName(project.display_name)}
                         </span>
+                        {project.project_type && (
+                          <span style={{
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: project.project_type === 'RFP' ? 'rgba(18, 181, 176, 0.15)' : project.project_type === 'RFQ' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                            color: project.project_type === 'RFP' ? '#12b5b0' : project.project_type === 'RFQ' ? '#3b82f6' : '#f59e0b',
+                            flexShrink: 0,
+                          }}>
+                            {project.project_type}
+                          </span>
+                        )}
                         {project.id === activeProjectId && (
                           <svg
                             className="check-icon"
@@ -493,7 +520,14 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
               </div>
             </div>
           ) : (
-            <button className="new-project-btn" onClick={handleStartCreating}>
+            <button className="new-project-btn" onClick={() => {
+              if (onNewProject) {
+                setIsOpen(false);
+                onNewProject();
+              } else {
+                handleStartCreating();
+              }
+            }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />

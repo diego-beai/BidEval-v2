@@ -32,6 +32,8 @@ export const API_CONFIG = {
   N8N_QA_SEND_EMAIL_URL: import.meta.env.VITE_N8N_QA_SEND_EMAIL_URL || '/api/n8n/qa-send-email',
   // URL del webhook para procesar respuesta de email con IA (usa proxy nginx)
   N8N_QA_PROCESS_EMAIL_RESPONSE_URL: import.meta.env.VITE_N8N_QA_PROCESS_EMAIL_RESPONSE_URL || '/api/n8n/qa-process-email-response',
+  // URL del webhook para generar RFP con IA a partir de requisitos (usa proxy nginx)
+  N8N_RFP_GENERATE_URL: import.meta.env.VITE_N8N_RFP_GENERATE_URL || '/api/n8n/rfp-generate',
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto (procesamiento de PDFs puede tardar hasta 30 min)
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_FILE_TYPES: ['application/pdf'],

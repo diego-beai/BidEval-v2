@@ -355,7 +355,10 @@ export const DEFAULT_CRITERIA: Record<string, CriterionDraft[]> = {
 export function buildDefaultConfiguration(): CategoryDraft[] {
   return DEFAULT_CATEGORIES.map((category) => ({
     ...category,
-    criteria: DEFAULT_CRITERIA[category.name] || [],
+    criteria: (DEFAULT_CRITERIA[category.name] || []).map(c => ({
+      ...c,
+      weight: parseFloat((c.weight * category.weight / 100).toFixed(2)),
+    })),
   }));
 }
 

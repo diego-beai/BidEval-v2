@@ -50,11 +50,19 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
       const evaluations: Record<string, boolean> = {
         'Technical Evaluation': false,
         'Economical Evaluation': false,
-        'Pre-FEED Deliverables': false,
-        'FEED Deliverables': false
+        'Others': false
       };
 
       const evaluationTypes = new Set<string>();
+
+      // Normalize legacy eval types to the 3 canonical types
+      const normalizeEvalType = (et: string): string => {
+        const v = et.trim().toLowerCase();
+        if (v.includes('pre-feed') || v.includes('pre feed')) return 'Others';
+        if (v === 'feed deliverables' || v === 'feed') return 'Others';
+        if (v === 'others' || v === 'other') return 'Others';
+        return et.trim();
+      };
 
       // Count from RFQ data (tableData)
       if (tableData && tableData.length > 0) {
@@ -68,7 +76,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
 
           const evalType = item.evaluation_type || item.evaluation;
           if (evalType) {
-            const normalizedEvalType = evalType.trim();
+            const normalizedEvalType = normalizeEvalType(evalType);
             evaluationTypes.add(normalizedEvalType);
             if (evaluations.hasOwnProperty(normalizedEvalType)) {
               evaluations[normalizedEvalType as keyof typeof evaluations] = true;
@@ -90,7 +98,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
 
           const evalType = item.evaluation_type;
           if (evalType) {
-            const normalizedEvalType = evalType.trim();
+            const normalizedEvalType = normalizeEvalType(evalType);
             evaluationTypes.add(normalizedEvalType);
             if (evaluations.hasOwnProperty(normalizedEvalType)) {
               evaluations[normalizedEvalType as keyof typeof evaluations] = true;
@@ -105,7 +113,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
           // Check evaluations by provider key
           const providerEval = result.evaluations[provider] || result.evaluations[normalized];
           if (providerEval && providerEval.hasValue) {
-            const normalizedEvalType = result.evaluation;
+            const normalizedEvalType = normalizeEvalType(result.evaluation);
             evaluationTypes.add(normalizedEvalType);
             if (evaluations.hasOwnProperty(normalizedEvalType)) {
               evaluations[normalizedEvalType as keyof typeof evaluations] = true;
@@ -114,10 +122,12 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
         });
       }
 
+      // Count required types covered (Technical + Economical = 2 required)
+      const requiredCovered = (evaluations['Technical Evaluation'] ? 1 : 0) + (evaluations['Economical Evaluation'] ? 1 : 0);
       const count = evaluationTypes.size;
       progress[provider] = {
         count,
-        progress: Math.min((count / 4) * 100, 100),
+        progress: Math.min((requiredCovered / 2) * 100, 100),
         evaluations
       };
     });
@@ -237,7 +247,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
                   color: 'var(--text-secondary)'
                 }}
               >
-                {data.count}/4 {t('chart.types')}
+                {data.count}/3 {t('chart.types')}
               </div>
             </div>
           </div>

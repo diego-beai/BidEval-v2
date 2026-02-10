@@ -4,6 +4,20 @@ import remarkGfm from 'remark-gfm';
 import './ChatPage.css';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useChatStore } from '../../stores/useChatStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+import { supabase } from '../../lib/supabase';
+
+/**
+ * Document metadata from Supabase
+ */
+interface ProjectDocument {
+    id: string;
+    file_name: string;
+    document_type: 'RFQ' | 'PROPOSAL';
+    provider: string | null;
+    evaluation_types: string[] | null;
+    created_at: string;
+}
 
 /**
  * Error Boundary para capturar errores de renderizado de Markdown
@@ -41,37 +55,24 @@ class MarkdownErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
 
 /**
  * Detecta y reformatea tablas mal formateadas (todo en una línea)
- * Convierte: | A | B | |---|---| | 1 | 2 |
- * A formato Markdown válido con saltos de línea
  */
 function reformatInlineTables(content: string): string {
-    // Detectar si hay separadores de tabla (|---|) en una línea sin saltos previos
     if (!content.includes('|---') && !content.includes('| ---')) {
         return content;
     }
 
     let result = content;
-
-    // Dividir por líneas para procesar cada una
     const lines = result.split('\n');
     const processedLines: string[] = [];
 
     for (const line of lines) {
-        // Si la línea contiene un separador de tabla inline
         if ((line.includes('|---') || line.includes('| ---')) && line.includes('| |')) {
-            // Encontrar donde empieza el separador
-            // Patrón: cabecera | |---| datos
             const separatorMatch = line.match(/^(.*?\|)\s*(\|[-:\s|]+\|)\s*(\|.*)$/);
 
             if (separatorMatch) {
                 const [, header, separator, dataRows] = separatorMatch;
-
-                // Dividir las filas de datos - cada fila empieza después de || o | |
-                // La separación entre filas es cuando hay || seguido de un nombre (mayúscula)
                 let remainingData = dataRows;
                 const rows: string[] = [];
-
-                // Buscar patrones como: | | IDOM | o || IDOM |
                 const rowPattern = /\|\s*\|\s*([A-Z][A-Za-z]*)\s*\|/g;
                 let lastIndex = 0;
                 let match;
@@ -88,7 +89,6 @@ function reformatInlineTables(content: string): string {
                     lastIndex = match.index + 1;
                 }
 
-                // Agregar la última fila
                 if (lastIndex > 0) {
                     const lastRow = remainingData.slice(lastIndex - 1).trim();
                     if (lastRow && !lastRow.startsWith('|')) {
@@ -98,7 +98,6 @@ function reformatInlineTables(content: string): string {
                     }
                 }
 
-                // Si no encontramos filas con el patrón, intentar dividir por ||
                 if (rows.length === 0) {
                     const simpleSplit = dataRows.split(/\|\s*\|/).filter(r => r.trim());
                     for (const row of simpleSplit) {
@@ -109,7 +108,6 @@ function reformatInlineTables(content: string): string {
                     }
                 }
 
-                // Construir la tabla formateada
                 const formattedTable = [
                     header.trim(),
                     separator.trim(),
@@ -126,28 +124,21 @@ function reformatInlineTables(content: string): string {
     return processedLines.join('\n');
 }
 
-/**
- * Sanitiza contenido para evitar errores de parsing
- */
+// FIX: js-hoist-regexp — hoist regex out of functions to avoid re-creation per call
+const RE_CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
+const RE_CONTROL_CHARS_TEST = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/; // without /g for .test()
+const RE_EXCESSIVE_UNDERSCORES = /_{3,}/g;
+const RE_EXCESSIVE_ASTERISKS = /\*{3,}/g;
+
 function sanitizeContent(content: string): string {
     if (typeof content !== 'string') return '';
-
-    // Remover caracteres de control problemáticos excepto saltos de línea y tabs
-    let safe = content.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-
-    // Remover secuencias que pueden romper el parser
-    safe = safe.replace(/_{3,}/g, '___'); // Limitar underscores consecutivos
-    safe = safe.replace(/\*{3,}/g, '***'); // Limitar asteriscos consecutivos
-
-    // Intentar reformatear tablas inline
+    let safe = content.replace(RE_CONTROL_CHARS, '');
+    safe = safe.replace(RE_EXCESSIVE_UNDERSCORES, '___');
+    safe = safe.replace(RE_EXCESSIVE_ASTERISKS, '***');
     safe = reformatInlineTables(safe);
-
     return safe;
 }
 
-/**
- * Renderiza texto plano de forma segura
- */
 const PlainText: React.FC<{ content: string }> = ({ content }) => (
     <pre style={{
         whiteSpace: 'pre-wrap',
@@ -159,14 +150,8 @@ const PlainText: React.FC<{ content: string }> = ({ content }) => (
     </pre>
 );
 
-/**
- * Componente seguro para renderizar Markdown
- * Usa Error Boundary para capturar errores de renderizado
- */
 const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
     const safeContent = useMemo(() => sanitizeContent(content), [content]);
-
-    // Fallback en texto plano
     const fallback = <PlainText content={safeContent} />;
 
     return (
@@ -181,7 +166,6 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
                             ? <code style={{ background: 'var(--bg-tertiary)', padding: '2px 6px', borderRadius: '4px' }}>{children}</code>
                             : <code className={className}>{children}</code>;
                     },
-                    // Soporte para tablas Markdown
                     table: ({ children }) => (
                         <div style={{ overflowX: 'auto', margin: '1em 0' }}>
                             <table style={{
@@ -229,7 +213,6 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
                             {children}
                         </td>
                     ),
-                    // Soporte para listas
                     ul: ({ children }) => (
                         <ul style={{ margin: '0.5em 0', paddingLeft: '1.5em' }}>{children}</ul>
                     ),
@@ -239,14 +222,11 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
                     li: ({ children }) => (
                         <li style={{ margin: '0.3em 0' }}>{children}</li>
                     ),
-                    // Headers
                     h1: ({ children }) => <h1 style={{ fontSize: '1.4em', margin: '0.8em 0 0.4em', fontWeight: 700 }}>{children}</h1>,
                     h2: ({ children }) => <h2 style={{ fontSize: '1.2em', margin: '0.8em 0 0.4em', fontWeight: 600 }}>{children}</h2>,
                     h3: ({ children }) => <h3 style={{ fontSize: '1.1em', margin: '0.6em 0 0.3em', fontWeight: 600 }}>{children}</h3>,
-                    // Strong y emphasis
                     strong: ({ children }) => <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{children}</strong>,
                     em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
-                    // Separador horizontal
                     hr: () => <hr style={{ border: 'none', borderTop: '1px solid rgba(128, 128, 128, 0.3)', margin: '1em 0' }} />
                 }}
             >
@@ -256,34 +236,195 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
     );
 };
 
-export const ChatPage: React.FC = () => {
-    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded } = useChatStore();
+/**
+ * Document Context Panel - sidebar showing project documents
+ */
+const DocumentPanel: React.FC<{
+    documents: ProjectDocument[];
+    selectedIds: string[];
+    onToggle: (id: string) => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+    isLoading: boolean;
+}> = ({ documents, selectedIds, onToggle, onSelectAll, onDeselectAll, isLoading }) => {
     const { t } = useLanguageStore();
+    const [filter, setFilter] = useState<'all' | 'RFQ' | 'PROPOSAL'>('all');
+
+    const filtered = useMemo(() => {
+        if (filter === 'all') return documents;
+        return documents.filter(d => d.document_type === filter);
+    }, [documents, filter]);
+
+    const rfqCount = documents.filter(d => d.document_type === 'RFQ').length;
+    const proposalCount = documents.filter(d => d.document_type === 'PROPOSAL').length;
+
+    return (
+        <div className="chat-docs-panel">
+            <div className="chat-docs-header">
+                <div className="chat-docs-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>{t('chat.docs_panel')}</span>
+                    {selectedIds.length > 0 && (
+                        <span className="chat-docs-badge">
+                            {selectedIds.length}
+                        </span>
+                    )}
+                </div>
+                <div className="chat-docs-actions">
+                    <button className="chat-docs-action-btn" onClick={onSelectAll} title={t('chat.docs_select_all')}>
+                        {t('chat.docs_select_all')}
+                    </button>
+                    <button className="chat-docs-action-btn" onClick={onDeselectAll} title={t('chat.docs_deselect_all')}>
+                        {t('chat.docs_deselect_all')}
+                    </button>
+                </div>
+            </div>
+
+            <div className="chat-docs-filters">
+                <button
+                    className={`chat-docs-filter ${filter === 'all' ? 'active' : ''}`}
+                    onClick={() => setFilter('all')}
+                >
+                    {t('chat.docs_all')} ({documents.length})
+                </button>
+                <button
+                    className={`chat-docs-filter ${filter === 'RFQ' ? 'active' : ''}`}
+                    onClick={() => setFilter('RFQ')}
+                >
+                    {t('chat.docs_rfq')} ({rfqCount})
+                </button>
+                <button
+                    className={`chat-docs-filter ${filter === 'PROPOSAL' ? 'active' : ''}`}
+                    onClick={() => setFilter('PROPOSAL')}
+                >
+                    {t('chat.docs_proposals')} ({proposalCount})
+                </button>
+            </div>
+
+            <div className="chat-docs-list">
+                {isLoading ? (
+                    <div className="chat-docs-loading">
+                        <div className="typing-indicator">
+                            <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                        </div>
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="chat-docs-empty">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                        <span>{t('chat.docs_none')}</span>
+                    </div>
+                ) : (
+                    filtered.map(doc => {
+                        const isSelected = selectedIds.includes(doc.id);
+                        return (
+                            <div
+                                key={doc.id}
+                                className={`chat-doc-item ${isSelected ? 'selected' : ''}`}
+                                onClick={() => onToggle(doc.id)}
+                            >
+                                <div className="chat-doc-checkbox">
+                                    {isSelected && (
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <div className="chat-doc-info">
+                                    <span className="chat-doc-name" title={doc.file_name}>
+                                        {doc.file_name}
+                                    </span>
+                                    <div className="chat-doc-meta">
+                                        <span className={`chat-doc-type ${doc.document_type.toLowerCase()}`}>
+                                            {doc.document_type}
+                                        </span>
+                                        {doc.provider && (
+                                            <span className="chat-doc-provider">{doc.provider}</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+export const ChatPage: React.FC = () => {
+    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded, selectedDocumentIds, setSelectedDocumentIds, toggleDocumentId } = useChatStore();
+    const { t } = useLanguageStore();
+    const { activeProjectId } = useProjectStore();
     const [input, setInput] = useState('');
+    const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+    const [docsLoading, setDocsLoading] = useState(false);
+    const [docsPanelOpen, setDocsPanelOpen] = useState(true);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const isLoading = status === 'sending';
     const isLoadingHistory = status === 'connecting';
 
-    // Cargar historial al montar el componente
+    // Load project documents
+    useEffect(() => {
+        const loadDocuments = async () => {
+            if (!activeProjectId || !supabase) {
+                setDocuments([]);
+                return;
+            }
+
+            setDocsLoading(true);
+            try {
+                const { data, error } = await (supabase as any)
+                    .from('document_metadata')
+                    .select('id, file_name, document_type, provider, evaluation_types, created_at')
+                    .eq('project_id', activeProjectId)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('[ChatPage] Error loading documents:', error);
+                    setDocuments([]);
+                } else {
+                    setDocuments((data || []) as ProjectDocument[]);
+                }
+            } catch (err) {
+                console.error('[ChatPage] Error loading documents:', err);
+                setDocuments([]);
+            } finally {
+                setDocsLoading(false);
+            }
+        };
+
+        loadDocuments();
+    }, [activeProjectId]);
+
+    // Load history
     useEffect(() => {
         if (!historyLoaded) {
             loadHistory();
         }
     }, [historyLoaded, loadHistory]);
 
-    // Limpiar mensajes corruptos al montar el componente
+    // Clean corrupt messages
+    // FIX: js-hoist-regexp — reuse hoisted regex instead of inline creation
     useEffect(() => {
         const hasCorruptMessages = messages.some(msg => {
             if (typeof msg.content !== 'string') return true;
-            // Detectar caracteres problemáticos
-            if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(msg.content)) return true;
+            if (RE_CONTROL_CHARS_TEST.test(msg.content)) return true;
             return false;
         });
 
         if (hasCorruptMessages) {
-            console.warn('[ChatPage] Detectados mensajes corruptos, limpiando...');
+            console.warn('[ChatPage] Detected corrupt messages, cleaning...');
             clearMessages();
         }
     }, []);
@@ -296,17 +437,16 @@ export const ChatPage: React.FC = () => {
         }
     }, [input]);
 
-    // Scroll to bottom on new message
+    // Scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = async () => {
-        if (!input.trim() || isLoading) return;
+    const handleSend = async (text?: string) => {
+        const content = text || input;
+        if (!content.trim() || isLoading) return;
 
-        const content = input;
-        setInput('');
-
+        if (!text) setInput('');
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
         await sendMessage(content);
@@ -323,131 +463,201 @@ export const ChatPage: React.FC = () => {
         navigator.clipboard.writeText(text);
     };
 
-    // Filtrar mensajes válidos para renderizar
+    const handleSelectAll = () => {
+        setSelectedDocumentIds(documents.map(d => d.id));
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedDocumentIds([]);
+    };
+
     const validMessages = useMemo(() => {
         return messages.filter(msg => typeof msg.content === 'string' && msg.content.length > 0);
     }, [messages]);
 
-    return (
-        <div className="chat-page">
-            <div style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                zIndex: 20
-            }}>
-                <button
-                    onClick={() => clearMessages()}
-                    className="chat-clear-btn"
-                    title={t('chat.clear_conversation')}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18"></path>
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                </button>
-            </div>
+    // Suggestion prompts for the welcome screen
+    const suggestions = [
+        { key: 'compare', label: t('chat.suggestion_compare'), icon: 'M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z' },
+        { key: 'summary', label: t('chat.suggestion_summary'), icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2' },
+        { key: 'gaps', label: t('chat.suggestion_gaps'), icon: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01' },
+        { key: 'price', label: t('chat.suggestion_price'), icon: 'M12 1v22 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+    ];
 
-            {isLoadingHistory ? (
-                <div className="chat-welcome">
-                    <div className="typing-indicator" style={{ margin: '0 auto' }}>
-                        <span className="typing-dot"></span>
-                        <span className="typing-dot"></span>
-                        <span className="typing-dot"></span>
+    return (
+        <div className={`chat-page ${docsPanelOpen ? 'with-panel' : ''}`}>
+            {/* Document Panel Toggle */}
+            <button
+                className="chat-panel-toggle"
+                onClick={() => setDocsPanelOpen(!docsPanelOpen)}
+                title={t('chat.docs_panel')}
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {docsPanelOpen ? (
+                        <><path d="M11 19l-7-7 7-7" /><path d="M18 19l-7-7 7-7" /></>
+                    ) : (
+                        <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></>
+                    )}
+                </svg>
+                {!docsPanelOpen && selectedDocumentIds.length > 0 && (
+                    <span className="chat-docs-badge">{selectedDocumentIds.length}</span>
+                )}
+            </button>
+
+            {/* Document Panel */}
+            {docsPanelOpen && (
+                <DocumentPanel
+                    documents={documents}
+                    selectedIds={selectedDocumentIds}
+                    onToggle={toggleDocumentId}
+                    onSelectAll={handleSelectAll}
+                    onDeselectAll={handleDeselectAll}
+                    isLoading={docsLoading}
+                />
+            )}
+
+            {/* Main Chat Area */}
+            <div className="chat-main">
+                {/* Header actions */}
+                <div className="chat-header-actions">
+                    {selectedDocumentIds.length > 0 && (
+                        <div className="chat-context-indicator">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            {selectedDocumentIds.length} {t('chat.docs_selected')}
+                        </div>
+                    )}
+                    <button
+                        onClick={() => clearMessages()}
+                        className="chat-clear-btn"
+                        title={t('chat.clear_conversation')}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {isLoadingHistory ? (
+                    <div className="chat-welcome">
+                        <div className="typing-indicator" style={{ margin: '0 auto' }}>
+                            <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                        </div>
+                        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>
+                            {t('chat.loadingHistory') || 'Loading chat history...'}
+                        </p>
                     </div>
-                    <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>
-                        {t('chat.loadingHistory') || 'Loading chat history...'}
-                    </p>
-                </div>
-            ) : validMessages.length === 0 ? (
-                <div className="chat-welcome">
-                    <h1>{t('chat.welcome')}</h1>
-                </div>
-            ) : (
-                <div className="chat-messages">
-                    {validMessages.map(msg => (
-                        <div key={msg.id} className={`message ${msg.role}`}>
-                            {msg.role === 'assistant' && (
+                ) : validMessages.length === 0 ? (
+                    <div className="chat-welcome">
+                        <h1>{t('chat.welcome')}</h1>
+                        <p className="chat-welcome-subtitle">{t('chat.welcome_subtitle')}</p>
+
+                        {/* Suggestion chips */}
+                        <div className="chat-suggestions">
+                            {suggestions.map(s => (
+                                <button
+                                    key={s.key}
+                                    className="chat-suggestion-btn"
+                                    onClick={() => handleSend(s.label)}
+                                >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d={s.icon} />
+                                    </svg>
+                                    {s.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="chat-messages">
+                        {validMessages.map(msg => (
+                            <div key={msg.id} className={`message ${msg.role}`}>
+                                {msg.role === 'assistant' && (
+                                    <div className="message-avatar">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                                            <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+                                        </svg>
+                                    </div>
+                                )}
+                                <div className="message-bubble-container">
+                                    <div className="message-content markdown-body">
+                                        <SafeMarkdown content={msg.content} />
+                                    </div>
+                                    <button
+                                        className="copy-btn-message"
+                                        onClick={() => handleCopy(msg.content)}
+                                        title={t('chat.copy_clipboard')}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="message assistant">
                                 <div className="message-avatar">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
                                         <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
                                     </svg>
                                 </div>
-                            )}
-                            <div className="message-bubble-container">
-                                <div className="message-content markdown-body">
-                                    <SafeMarkdown content={msg.content} />
-                                </div>
-                                <button
-                                    className="copy-btn-message"
-                                    onClick={() => handleCopy(msg.content)}
-                                    title={t('chat.copy_clipboard')}
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                    {isLoading && (
-                        <div className="message assistant">
-                            <div className="message-avatar">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
-                                    <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
-                                </svg>
-                            </div>
-                            <div className="message-bubble-container">
-                                <div className="message-content">
-                                    <div className="typing-indicator">
-                                        <span className="typing-dot"></span>
-                                        <span className="typing-dot"></span>
-                                        <span className="typing-dot"></span>
+                                <div className="message-bubble-container">
+                                    <div className="message-content">
+                                        <div className="typing-indicator">
+                                            <span className="typing-dot"></span>
+                                            <span className="typing-dot"></span>
+                                            <span className="typing-dot"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
+
+                <div className="chat-input-container">
+                    <div
+                        className="chat-input-wrapper"
+                        onClick={() => textareaRef.current?.focus()}
+                    >
+                        <textarea
+                            ref={textareaRef}
+                            className="chat-textarea"
+                            placeholder={t('chat.placeholder') || "Ask me anything..."}
+                            rows={1}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                        />
+
+                        <div className="chat-input-actions">
+                            <button
+                                className="send-btn"
+                                onClick={() => handleSend()}
+                                disabled={!input.trim() || isLoading}
+                            >
+                                {isLoading ? (
+                                    <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="19" x2="12" y2="5"></line>
+                                        <polyline points="5 12 12 5 19 12"></polyline>
+                                    </svg>
+                                )}
+                            </button>
                         </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
-            )}
-
-            <div className="chat-input-container">
-                <div
-                    className="chat-input-wrapper"
-                    onClick={() => textareaRef.current?.focus()}
-                >
-                    <textarea
-                        ref={textareaRef}
-                        className="chat-textarea"
-                        placeholder={t('chat.placeholder') || "Ask me anything..."}
-                        rows={1}
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                    />
-
-                    <div className="chat-input-actions">
-                        <button
-                            className="send-btn"
-                            onClick={handleSend}
-                            disabled={!input.trim() || isLoading}
-                        >
-                            {isLoading ? (
-                                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            ) : (
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="12" y1="19" x2="12" y2="5"></line>
-                                    <polyline points="5 12 12 5 19 12"></polyline>
-                                </svg>
-                            )}
-                        </button>
                     </div>
                 </div>
             </div>

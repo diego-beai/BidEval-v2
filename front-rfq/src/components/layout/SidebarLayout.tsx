@@ -7,18 +7,29 @@ import { useSessionViewStore } from '../../stores/useSessionViewStore';
 import { TourProvider } from '../onboarding/TourProvider';
 import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { ProjectSelector } from '../common/ProjectSelector';
+import { ProjectProgressStepper } from '../common/ProjectProgressStepper';
+import { ProjectDetailModal } from '../common/ProjectDetailModal';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useQAStore } from '../../stores/useQAStore';
+import { useProjectStore } from '../../stores/useProjectStore';
+
 
 interface SidebarLayoutProps {
     children: React.ReactNode;
     activeView: string;
     onNavigate: (view: string) => void;
+    onNewProject?: () => void;
 }
 
-export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeView, onNavigate }) => {
+export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeView, onNavigate, onNewProject }) => {
+    const activeProjectId = useProjectStore(state => state.activeProjectId);
+    const projects = useProjectStore(state => state.projects);
+    const currentProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
+
     const [isExpanded, setIsExpanded] = useState(false);
+
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showProjectModal, setShowProjectModal] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
     const { t, language, setLanguage } = useLanguageStore();
     const activeSessions = useActiveSessions();
@@ -77,24 +88,14 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         return activeSessions.some(s => s.module === module && s.hasUnreadContent);
     };
 
-    const keyMap: Record<string, string> = {
-        'home': 'header.home',
-        'upload': 'header.upload',
-        'table': 'header.table',
-        'qa': 'header.qa',
-        'decision': 'header.decision',
-        'chat': 'header.chat',
-        'mail': 'header.mail'
-    };
-
-    const NavItem = ({ view, labelKey, icon }: { view: string, labelKey: string, icon: React.ReactNode }) => {
+    const NavItem = ({ view, labelKey, icon, disabled }: { view: string, labelKey: string, icon: React.ReactNode, disabled?: boolean }) => {
         const hasSession = hasActiveSession(view);
 
         return (
             <button
-                className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''}`}
-                onClick={() => onNavigate(view)}
-                title={!isExpanded ? t(labelKey) : ''}
+                className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''} ${disabled ? 'disabled' : ''}`}
+                onClick={() => !disabled && onNavigate(view)}
+                title={!isExpanded ? t(labelKey) : disabled ? (language === 'es' ? 'Selecciona un proyecto primero' : 'Select a project first') : ''}
                 data-tour={`nav-${view}`}
             >
                 <div className="nav-icon">{icon}</div>
@@ -110,7 +111,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
             <aside className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
                     {/* Brand Logo or Text - Hidden when collapsed */}
-                    <div className="sidebar-brand"><span style={{ color: '#ffffff' }}>Bid</span><span style={{ color: '#12b5b0' }}>Eval</span></div>
+                    <div className="sidebar-brand"><span style={{ color: 'var(--text-primary)' }}>Bid</span><span style={{ color: '#12b5b0' }}>Eval</span></div>
 
                     {/* Toggle Button */}
                     <button className="sidebar-toggle-btn" onClick={toggleSidebar}>
@@ -122,40 +123,110 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                 </div>
 
                 <nav className="sidebar-nav">
+                    {/* General section */}
                     <NavItem
                         view="home"
                         labelKey="nav.home"
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>}
                     />
                     <NavItem
+                        view="projects-status"
+                        labelKey="sidebar.projects_list"
+                        icon={
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        }
+                    />
+
+                    {/* Active project section - always visible, disabled when no project */}
+                    <div className="nav-section-divider" />
+                    <div className="nav-section-label">
+                        <span className="nav-section-dot" style={!currentProject ? { opacity: 0.3 } : undefined} />
+                        <span className="nav-section-text" style={!currentProject ? { opacity: 0.4 } : undefined}>
+                            {currentProject
+                                ? (currentProject.display_name || currentProject.name.replace(/_/g, ' '))
+                                : (language === 'es' ? 'Proyecto' : 'Project')
+                            }
+                        </span>
+                    </div>
+                    <NavItem
                         view="upload"
                         labelKey="nav.upload"
+                        disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
                     />
                     <NavItem
                         view="table"
                         labelKey="nav.table"
+                        disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18v16H3V4zm0 5h18M3 14h18M9 4v16M15 4v16" /></svg>}
                     />
                     <NavItem
                         view="qa"
                         labelKey="nav.qa"
+                        disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                     />
                     <NavItem
                         view="decision"
                         labelKey="nav.decision"
+                        disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
                     />
+                    <NavItem
+                        view="economic"
+                        labelKey="nav.economic"
+                        disabled={!currentProject}
+                        icon={
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                            </svg>
+                        }
+                    />
+                    <NavItem
+                        view="mail"
+                        labelKey="nav.mail"
+                        disabled={!currentProject}
+                        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                    />
+
+                    {/* Tools section */}
+                    <div className="nav-section-divider" />
+                    <div className="nav-section-label">
+                        <span className="nav-section-text">{t('sidebar.tools')}</span>
+                    </div>
                     <NavItem
                         view="chat"
                         labelKey="nav.chat"
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
                     />
                     <NavItem
-                        view="mail"
-                        labelKey="nav.mail"
-                        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                        view="rfp-gen"
+                        labelKey="nav.rfp_generator"
+                        icon={
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <path d="M12 18v-6" />
+                                <path d="M9 15l3-3 3 3" />
+                            </svg>
+                        }
+                    />
+                    <NavItem
+                        view="suppliers"
+                        labelKey="nav.suppliers"
+                        icon={
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                        }
                     />
                 </nav>
 
@@ -182,6 +253,13 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     )}
                 </div>
             </aside>
+            {/* Project Detail Modal */}
+            {showProjectModal && currentProject && (
+                <ProjectDetailModal
+                    project={currentProject}
+                    onClose={() => setShowProjectModal(false)}
+                />
+            )}
 
             {/* Main Content Area */}
             <div className={`main-content ${isExpanded ? 'expanded-margin' : ''}`}>
@@ -208,14 +286,32 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             </svg>
                         </button>
 
-                        <h2 className="page-title">
-                            {t(keyMap[activeView] || 'header.home')}
-                        </h2>
+                        {/* Section title */}
+                        <span className="header-section-title">
+                            {activeView === 'home' ? t('nav.home')
+                                : activeView === 'projects-status' ? t('sidebar.projects_list')
+                                : activeView === 'upload' ? t('nav.upload')
+                                : activeView === 'table' ? t('nav.table')
+                                : activeView === 'qa' ? t('nav.qa')
+                                : activeView === 'decision' ? t('nav.decision')
+                                : activeView === 'economic' ? t('nav.economic')
+                                : activeView === 'mail' ? t('nav.mail')
+                                : activeView === 'chat' ? t('nav.chat')
+                                : activeView === 'rfp-gen' ? t('nav.rfp_generator')
+                                : activeView === 'suppliers' ? t('nav.suppliers')
+                                : ''}
+                        </span>
 
                         {/* Global Project Selector */}
-                        <div style={{ marginLeft: '16px' }}>
-                            <ProjectSelector />
-                        </div>
+                        <ProjectSelector onNewProject={onNewProject} />
+
+                        {/* Progress Stepper */}
+                        {currentProject && (
+                            <ProjectProgressStepper
+                                project={currentProject}
+                                onClick={() => setShowProjectModal(true)}
+                            />
+                        )}
 
                         {/* Global Processing Indicator - shows when processing proposals */}
                         {isProcessing && (
@@ -226,10 +322,11 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '10px',
-                                    padding: '8px 14px',
-                                    background: 'rgba(18, 181, 176, 0.1)',
-                                    border: '1px solid rgba(18, 181, 176, 0.3)',
-                                    borderRadius: '20px',
+                                    height: '42px', // Match selector height
+                                    padding: '0 16px',
+                                    background: 'rgba(6, 182, 212, 0.08)',
+                                    border: '1px solid rgba(6, 182, 212, 0.2)',
+                                    borderRadius: '12px',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
                                     animation: 'pulse-glow 2s ease-in-out infinite'
@@ -605,10 +702,13 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             )}
                         </div>
 
+
+
+                        <div style={{ flex: 1 }}></div>
                         <div style={{ width: '1px', height: '20px', background: 'var(--border-color)', margin: '0 8px' }}></div>
                         <ThemeToggle />
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-secondary)', color: 'white', display: 'grid', placeItems: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                            D
+                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-secondary)', color: 'white', display: 'grid', placeItems: 'center' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                         </div>
                     </div>
                 </header>
@@ -622,6 +722,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
             {/* Onboarding Tour */}
             <TourProvider onNavigate={onNavigate} />
-        </div>
+        </div >
     );
 };

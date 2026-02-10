@@ -9,8 +9,8 @@ interface TourProviderProps {
 }
 
 export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavigate }) => {
-    const { isRunning, hasCompletedTour, startTour, stopTour, completeTour, setStep, currentStep } = useOnboardingStore();
-    const { t } = useLanguageStore();
+    const { isRunning, hasCompletedTour, startTour, completeTour, setStep, currentStep } = useOnboardingStore();
+    const { t, language } = useLanguageStore();
 
     // Auto-start tour on first visit
     useEffect(() => {
@@ -27,17 +27,19 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
     // The tour will now stay on the main dashboard while highlighting sidebar items
 
     const steps: Step[] = [
+        // 0. Welcome
         {
             target: 'body',
             content: (
                 <div className="tour-content">
-                    <h3>{t('tour.welcome.title')}</h3>
+                    <h3>{language === 'es' ? 'Bienvenido a ' : 'Welcome to '}Bid<span style={{ color: '#12b5b0' }}>Eval</span></h3>
                     <p>{t('tour.welcome.description')}</p>
                 </div>
             ),
             placement: 'center',
             disableBeacon: true,
         },
+        // 1. Sidebar overview
         {
             target: '.sidebar',
             content: (
@@ -49,6 +51,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 2. Home dashboard
         {
             target: '[data-tour="nav-home"]',
             content: (
@@ -60,6 +63,19 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 3. Projects list
+        {
+            target: '[data-tour="nav-projects-status"]',
+            content: (
+                <div className="tour-content">
+                    <h3>{t('tour.projects_status.title')}</h3>
+                    <p>{t('tour.projects_status.description')}</p>
+                </div>
+            ),
+            placement: 'right',
+            disableBeacon: true,
+        },
+        // 4. Upload documents
         {
             target: '[data-tour="nav-upload"]',
             content: (
@@ -71,6 +87,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 5. Data explorer
         {
             target: '[data-tour="nav-table"]',
             content: (
@@ -82,6 +99,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 6. Q&A
         {
             target: '[data-tour="nav-qa"]',
             content: (
@@ -93,6 +111,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 7. Scoring / Decision
         {
             target: '[data-tour="nav-decision"]',
             content: (
@@ -104,17 +123,19 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 8. Economic section
         {
-            target: '[data-tour="nav-chat"]',
+            target: '[data-tour="nav-economic"]',
             content: (
                 <div className="tour-content">
-                    <h3>{t('tour.chat.title')}</h3>
-                    <p>{t('tour.chat.description')}</p>
+                    <h3>{t('tour.economic.title')}</h3>
+                    <p>{t('tour.economic.description')}</p>
                 </div>
             ),
             placement: 'right',
             disableBeacon: true,
         },
+        // 9. Mail
         {
             target: '[data-tour="nav-mail"]',
             content: (
@@ -126,6 +147,43 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
+        // 10. AI Chat
+        {
+            target: '[data-tour="nav-chat"]',
+            content: (
+                <div className="tour-content">
+                    <h3>{t('tour.chat.title')}</h3>
+                    <p>{t('tour.chat.description')}</p>
+                </div>
+            ),
+            placement: 'right',
+            disableBeacon: true,
+        },
+        // 11. RFP Generator
+        {
+            target: '[data-tour="nav-rfp-gen"]',
+            content: (
+                <div className="tour-content">
+                    <h3>{t('tour.rfp_gen.title')}</h3>
+                    <p>{t('tour.rfp_gen.description')}</p>
+                </div>
+            ),
+            placement: 'right',
+            disableBeacon: true,
+        },
+        // 12. Supplier directory
+        {
+            target: '[data-tour="nav-suppliers"]',
+            content: (
+                <div className="tour-content">
+                    <h3>{t('tour.suppliers.title')}</h3>
+                    <p>{t('tour.suppliers.description')}</p>
+                </div>
+            ),
+            placement: 'right',
+            disableBeacon: true,
+        },
+        // 13. Project selector
         {
             target: '[data-tour="project-selector"]',
             content: (
@@ -137,6 +195,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'bottom',
             disableBeacon: true,
         },
+        // 14. Header settings
         {
             target: '.header-actions',
             content: (
@@ -148,6 +207,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'bottom',
             disableBeacon: true,
         },
+        // 15. Finish
         {
             target: 'body',
             content: (
@@ -168,7 +228,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
         if (finishedStatuses.includes(status)) {
             completeTour();
         } else if (action === ACTIONS.CLOSE) {
-            stopTour();
+            completeTour();
         } else if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
             setStep(index + 1);
         }

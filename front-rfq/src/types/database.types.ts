@@ -50,6 +50,22 @@ export interface Database {
           name: string
           display_name: string
           description?: string | null
+          status: string
+          ai_context?: string | null
+          is_active: boolean
+          project_type: 'RFP' | 'RFQ' | 'RFI'
+          disciplines?: string[] | null
+          reference_code?: string | null
+          owner_name?: string | null
+          date_opening?: string | null
+          date_submission_deadline?: string | null
+          date_questions_deadline?: string | null
+          date_questions_response?: string | null
+          date_evaluation?: string | null
+          date_award?: string | null
+          invited_suppliers: string[]
+          organization_id?: string | null
+          created_by?: string | null
           created_at: string
           updated_at: string
         }
@@ -58,6 +74,22 @@ export interface Database {
           name: string
           display_name: string
           description?: string | null
+          status?: string
+          ai_context?: string | null
+          is_active?: boolean
+          project_type?: 'RFP' | 'RFQ' | 'RFI'
+          disciplines?: string[] | null
+          reference_code?: string | null
+          owner_name?: string | null
+          date_opening?: string | null
+          date_submission_deadline?: string | null
+          date_questions_deadline?: string | null
+          date_questions_response?: string | null
+          date_evaluation?: string | null
+          date_award?: string | null
+          invited_suppliers?: string[]
+          organization_id?: string | null
+          created_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -66,6 +98,60 @@ export interface Database {
           name?: string
           display_name?: string
           description?: string | null
+          status?: string
+          ai_context?: string | null
+          is_active?: boolean
+          project_type?: 'RFP' | 'RFQ' | 'RFI'
+          disciplines?: string[] | null
+          reference_code?: string | null
+          owner_name?: string | null
+          date_opening?: string | null
+          date_submission_deadline?: string | null
+          date_questions_deadline?: string | null
+          date_questions_response?: string | null
+          date_evaluation?: string | null
+          date_award?: string | null
+          invited_suppliers?: string[]
+          organization_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      project_providers: {
+        Row: {
+          id: string
+          project_id: string
+          provider_name: string
+          provider_email?: string | null
+          provider_contact?: string | null
+          status: 'invited' | 'accepted' | 'declined' | 'submitted' | 'disqualified'
+          invited_at: string
+          responded_at?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          provider_name: string
+          provider_email?: string | null
+          provider_contact?: string | null
+          status?: 'invited' | 'accepted' | 'declined' | 'submitted' | 'disqualified'
+          invited_at?: string
+          responded_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          provider_name?: string
+          provider_email?: string | null
+          provider_contact?: string | null
+          status?: 'invited' | 'accepted' | 'declined' | 'submitted' | 'disqualified'
+          invited_at?: string
+          responded_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -246,6 +332,192 @@ export interface Database {
           name?: string
           weights?: ScoringWeights
           is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      qa_audit: {
+        Row: {
+          id: string
+          requirement_id?: string | null
+          project_id: string
+          provider_name: string
+          discipline?: string | null
+          question: string
+          importance?: Importancia | null
+          status: EstadoPregunta
+          response?: string | null
+          parent_question_id?: string | null
+          responded_at?: string | null
+          response_source?: 'portal' | 'manual' | 'email' | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          requirement_id?: string | null
+          project_id: string
+          provider_name: string
+          discipline?: string | null
+          question: string
+          importance?: Importancia | null
+          status?: EstadoPregunta
+          response?: string | null
+          parent_question_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          requirement_id?: string | null
+          project_id?: string
+          provider_name?: string
+          discipline?: string | null
+          question?: string
+          importance?: Importancia | null
+          status?: EstadoPregunta
+          response?: string | null
+          parent_question_id?: string | null
+          responded_at?: string | null
+          response_source?: 'portal' | 'manual' | 'email' | null
+          created_at?: string
+        }
+      }
+      economic_offers: {
+        Row: {
+          id: string
+          project_id: string
+          provider_name: string
+          total_price?: number | null
+          currency: string
+          price_breakdown: Record<string, number> | null
+          payment_terms?: string | null
+          payment_schedule: Array<{milestone: string; event: string}> | null
+          discount_percentage: number
+          discount_conditions?: string | null
+          tco_value?: number | null
+          tco_period_years?: number | null
+          tco_breakdown: Record<string, number> | null
+          validity_days: number
+          price_escalation?: string | null
+          guarantees?: string | null
+          insurance_included: boolean
+          taxes_included: boolean
+          optional_items: Array<{description: string; price: number}> | null
+          alternative_offers: Array<{description: string; total_price: number; details?: string}> | null
+          extraction_confidence?: number | null
+          raw_notes?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          provider_name: string
+          total_price?: number | null
+          currency?: string
+          price_breakdown?: Record<string, number> | null
+          payment_terms?: string | null
+          payment_schedule?: Array<{milestone: string; event: string}> | null
+          discount_percentage?: number
+          discount_conditions?: string | null
+          tco_value?: number | null
+          tco_period_years?: number | null
+          tco_breakdown?: Record<string, number> | null
+          validity_days?: number
+          price_escalation?: string | null
+          guarantees?: string | null
+          insurance_included?: boolean
+          taxes_included?: boolean
+          optional_items?: Array<{description: string; price: number}> | null
+          alternative_offers?: Array<{description: string; total_price: number; details?: string}> | null
+          extraction_confidence?: number | null
+          raw_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          provider_name?: string
+          total_price?: number | null
+          currency?: string
+          price_breakdown?: Record<string, number> | null
+          payment_terms?: string | null
+          payment_schedule?: Array<{milestone: string; event: string}> | null
+          discount_percentage?: number
+          discount_conditions?: string | null
+          tco_value?: number | null
+          tco_period_years?: number | null
+          tco_breakdown?: Record<string, number> | null
+          validity_days?: number
+          price_escalation?: string | null
+          guarantees?: string | null
+          insurance_included?: boolean
+          taxes_included?: boolean
+          optional_items?: Array<{description: string; price: number}> | null
+          alternative_offers?: Array<{description: string; total_price: number; details?: string}> | null
+          extraction_confidence?: number | null
+          raw_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          plan: 'trial' | 'starter' | 'professional' | 'enterprise'
+          max_projects: number
+          max_users: number
+          settings: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          plan?: 'trial' | 'starter' | 'professional' | 'enterprise'
+          max_projects?: number
+          max_users?: number
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          plan?: 'trial' | 'starter' | 'professional' | 'enterprise'
+          max_projects?: number
+          max_users?: number
+          settings?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      organization_members: {
+        Row: {
+          id: string
+          organization_id: string
+          user_id: string
+          role: 'owner' | 'admin' | 'member' | 'viewer'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          user_id: string
+          role?: 'owner' | 'admin' | 'member' | 'viewer'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          user_id?: string
+          role?: 'owner' | 'admin' | 'member' | 'viewer'
           created_at?: string
           updated_at?: string
         }

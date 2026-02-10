@@ -11,11 +11,17 @@ if (!hasCredentials) {
   console.warn('⚠️ Supabase not configured. The QA module will work with mock data until you configure Supabase credentials in .env.local');
 }
 
+// Schema: 'desarrollo' para local, 'public' para produccion
+const dbSchema = import.meta.env.VITE_SUPABASE_SCHEMA || 'public';
+
 // Solo crear cliente si hay credenciales válidas
 export const supabase: SupabaseClient<Database> | null = hasCredentials
   ? createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false
+      },
+      db: {
+        schema: dbSchema as any
       }
     })
   : null;

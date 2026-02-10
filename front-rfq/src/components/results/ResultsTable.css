@@ -1,9 +1,9 @@
 .results-container {
   width: 100%;
   margin-top: 2rem;
-  background: var(--bg-secondary);
+  background: var(--bg-surface-alt);
   border-radius: 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
@@ -13,14 +13,14 @@
   align-items: center;
   padding: 1.5rem;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .results-title {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .results-actions {
@@ -30,9 +30,9 @@
 
 .export-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
@@ -55,24 +55,24 @@
 }
 
 .export-excel {
-  border-color: #10b981;
+  border-color: var(--color-success);
 }
 
 .export-csv:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+  box-shadow: 0 0 0 2px rgba(18, 181, 176, 0.1);
 }
 
 .export-excel:hover {
-  border-color: #10b981;
+  border-color: var(--color-success);
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
 }
 
 .filter-toggle-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
@@ -88,7 +88,7 @@
 
 .filter-toggle-btn.has-filters {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+  background: rgba(18, 181, 176, 0.1);
   color: var(--accent);
 }
 
@@ -97,17 +97,17 @@
   display: flex;
   align-items: center;
   gap: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
-  background: var(--bg-secondary);
+  background: var(--bg-surface-alt);
 }
 
 .zoom-btn {
   padding: 0.5rem 0.75rem;
   border: none;
-  background: var(--bg-secondary);
-  color: var(--text);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
@@ -126,18 +126,18 @@
 }
 
 .zoom-btn:first-child {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--border-color);
 }
 
 .zoom-btn:last-child {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--border-color);
 }
 
 .zoom-level {
   padding: 0.5rem 0.75rem;
   border: none;
   background: transparent;
-  color: var(--text);
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 0.813rem;
   font-weight: 500;
@@ -155,7 +155,7 @@
 .filters-section {
   padding: 1.5rem;
   background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .filters-grid {
@@ -174,15 +174,15 @@
 .filter-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .filter-input,
 .filter-select {
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -192,7 +192,7 @@
 .filter-input:focus,
 .filter-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.1);
 }
 
 .filter-input::placeholder {
@@ -204,8 +204,8 @@
 }
 
 .filter-select option {
-  background: var(--bg-secondary);
-  color: var(--text);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
 }
 
 .filters-actions {
@@ -216,9 +216,9 @@
 
 .clear-filters-btn {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.875rem;
@@ -227,9 +227,9 @@
 }
 
 .clear-filters-btn:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #dc2626;
+  background: var(--color-error);
+  color: var(--text-on-primary);
+  border-color: var(--color-error);
   transform: translateY(-1px);
 }
 
@@ -249,9 +249,9 @@
 .provider-dropdown-btn {
   width: 100%;
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--border);
-  background: var(--bg-secondary);
-  color: var(--text);
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface-alt);
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 0.875rem;
   cursor: pointer;
@@ -270,7 +270,7 @@
 .provider-dropdown-btn:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 59, 130, 246), 0.1);
+  box-shadow: 0 0 0 3px rgba(18, 181, 176, 0.1);
 }
 
 .dropdown-arrow {
@@ -289,8 +289,8 @@
   grid-template-columns: 1fr;
   gap: 0.25rem;
   padding: 0.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: var(--bg-surface-alt);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   max-height: 300px;
   overflow-y: auto;
@@ -320,13 +320,13 @@
 }
 
 .checkbox-item span {
-  color: var(--text);
+  color: var(--text-primary);
   user-select: none;
 }
 
 .checkbox-all {
   font-weight: 600;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
 }
@@ -353,16 +353,16 @@
   padding: 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
   background: var(--bg-surface);
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--border-color);
   white-space: nowrap;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .results-table td {
   padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
 }
 
@@ -412,7 +412,7 @@
 }
 
 .col-provider.has-value {
-  color: var(--text);
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -433,7 +433,7 @@
 .results-summary {
   padding: 1rem 1.5rem;
   background: var(--bg-surface);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-color);
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
@@ -443,7 +443,7 @@
 }
 
 .results-summary strong {
-  color: var(--text);
+  color: var(--text-primary);
   margin-right: 0.5rem;
 }
 

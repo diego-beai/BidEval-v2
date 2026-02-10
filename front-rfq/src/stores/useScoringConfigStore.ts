@@ -291,8 +291,9 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Delete existing configuration for this project
+          // Delete existing configuration for this project in parallel
           // Note: Using 'as any' because these tables may not be in the generated types yet
+          // Criteria must be deleted first (FK dependency on categories)
           await (supabase as any)
             .from('scoring_criteria')
             .delete()

@@ -4,6 +4,21 @@ CREATE TABLE IF NOT EXISTS public.projects (
     name TEXT NOT NULL UNIQUE, -- Nombre normalizado (sin caracteres especiales, mayúsculas)
     display_name TEXT NOT NULL, -- Nombre para mostrar (puede tener caracteres especiales)
     description TEXT,
+    status TEXT DEFAULT 'Setup', -- Setup, Ingestion, Evaluation, Completed
+    ai_context TEXT, -- Contexto específico para el prompt del LLM (ej. "Green Hydrogen Plant", "Solar Farm")
+    is_active BOOLEAN DEFAULT true, -- Soft-delete support
+    project_type TEXT DEFAULT 'RFQ' CHECK (project_type IN ('RFP', 'RFQ', 'RFI')), -- T12: Project type
+    disciplines TEXT[] DEFAULT NULL, -- Disciplines involved in the project
+    currency TEXT DEFAULT 'EUR', -- Moneda base del proyecto para comparaciones economicas
+    reference_code TEXT, -- Codigo de referencia interno / expediente
+    owner_name TEXT, -- Propietario / responsable del proceso
+    date_opening TIMESTAMPTZ, -- T3: Project opening date
+    date_submission_deadline TIMESTAMPTZ, -- T3: Deadline for supplier submissions
+    date_questions_deadline TIMESTAMPTZ, -- Plazo para envio de preguntas
+    date_questions_response TIMESTAMPTZ, -- Plazo para respuesta de preguntas
+    date_evaluation TIMESTAMPTZ, -- T3: Deadline for evaluation completion
+    date_award TIMESTAMPTZ, -- T3: Deadline for contract award
+    invited_suppliers TEXT[] DEFAULT '{}', -- T4: Suppliers invited to bid
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -11,6 +26,25 @@ CREATE TABLE IF NOT EXISTS public.projects (
 -- Índice para búsquedas rápidas por nombre
 CREATE INDEX IF NOT EXISTS idx_projects_name ON public.projects(name);
 CREATE INDEX IF NOT EXISTS idx_projects_display_name ON public.projects(display_name);
+CREATE INDEX IF NOT EXISTS idx_projects_is_active ON public.projects(is_active) WHERE is_active = true;
+
+-- 0b. PROVEEDORES POR PROYECTO (relational table for setup wizard)
+CREATE TABLE IF NOT EXISTS public.project_providers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+    provider_name TEXT NOT NULL,
+    provider_email TEXT,
+    provider_contact TEXT,
+    status TEXT DEFAULT 'invited' CHECK (status IN ('invited', 'accepted', 'declined', 'submitted', 'disqualified')),
+    invited_at TIMESTAMPTZ DEFAULT NOW(),
+    responded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_project_provider UNIQUE(project_id, provider_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_providers_project ON public.project_providers(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_providers_status ON public.project_providers(project_id, status);
 
 -- 1. REGISTRO GLOBAL DE DOCUMENTOS
 CREATE TABLE IF NOT EXISTS public.document_metadata (
@@ -65,6 +99,13 @@ CREATE TABLE IF NOT EXISTS public.provider_responses (
     CONSTRAINT unique_requirement_provider_file UNIQUE(requirement_id, provider_name, file_id)
 );
 
+-- Indexes for provider_responses (FK join performance)
+CREATE INDEX IF NOT EXISTS idx_provider_responses_requirement ON public.provider_responses(requirement_id);
+CREATE INDEX IF NOT EXISTS idx_provider_responses_provider ON public.provider_responses(provider_name);
+
+-- Composite index for document_metadata common queries
+CREATE INDEX IF NOT EXISTS idx_document_metadata_project_type ON public.document_metadata(project_id, document_type);
+
 -- 5. AUDITORÍA TÉCNICA (Q&A)
 CREATE TABLE IF NOT EXISTS public.qa_audit (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -76,11 +117,33 @@ CREATE TABLE IF NOT EXISTS public.qa_audit (
     importance TEXT CHECK (importance IN ('High', 'Medium', 'Low')),
     status TEXT DEFAULT 'Pending',
     response TEXT,
+    parent_question_id UUID REFERENCES public.qa_audit(id) ON DELETE SET NULL, -- For follow-up threads
+    responded_at TIMESTAMPTZ,
+    response_source TEXT CHECK (response_source IN ('portal', 'manual', 'email')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Índice para búsquedas por proyecto
 CREATE INDEX IF NOT EXISTS idx_qa_audit_project_id ON public.qa_audit(project_id);
+CREATE INDEX IF NOT EXISTS idx_qa_audit_project_status ON public.qa_audit(project_id, status);
+CREATE INDEX IF NOT EXISTS idx_qa_audit_parent_question ON public.qa_audit(parent_question_id) WHERE parent_question_id IS NOT NULL;
+
+-- 5a. NOTIFICACIONES Q&A
+CREATE TABLE IF NOT EXISTS public.qa_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+    provider_name TEXT NOT NULL,
+    notification_type TEXT NOT NULL CHECK (notification_type IN ('supplier_responded', 'evaluation_updated', 'questions_sent')),
+    title TEXT NOT NULL,
+    message TEXT,
+    metadata JSONB DEFAULT '{}',
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    read_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_qa_notifications_project ON public.qa_notifications(project_id);
+CREATE INDEX IF NOT EXISTS idx_qa_notifications_unread ON public.qa_notifications(project_id, is_read) WHERE is_read = false;
 
 -- 5b. TOKENS DE RESPUESTA DE PROVEEDORES
 -- Sistema para enviar preguntas Q&A a proveedores vía link único
@@ -120,16 +183,8 @@ DROP POLICY IF EXISTS "Allow insert tokens" ON public.qa_response_tokens;
 CREATE POLICY "Allow insert tokens" ON public.qa_response_tokens
     FOR INSERT WITH CHECK (true);
 
--- Agregar campos adicionales a qa_audit para tracking de respuestas (si no existen)
-ALTER TABLE public.qa_audit
-    ADD COLUMN IF NOT EXISTS responded_at TIMESTAMPTZ,
-    ADD COLUMN IF NOT EXISTS response_source TEXT CHECK (response_source IN ('portal', 'manual', 'email'));
-
--- Agregar columna requirement_id para vincular preguntas QA con requisitos
-ALTER TABLE public.qa_audit
-    ADD COLUMN IF NOT EXISTS requirement_id UUID REFERENCES public.rfq_items_master(id) ON DELETE SET NULL;
-
--- Índice para búsquedas por requirement_id
+-- Note: responded_at, response_source, and requirement_id are now defined
+-- in the CREATE TABLE statement above. Keeping index for requirement_id.
 CREATE INDEX IF NOT EXISTS idx_qa_audit_requirement_id ON public.qa_audit(requirement_id);
 
 -- Status values for qa_audit.status:
@@ -205,11 +260,21 @@ $$ LANGUAGE plpgsql;
 
 -- Vista para facilitar consultas con nombres de proyectos
 CREATE OR REPLACE VIEW v_projects_with_stats AS
-SELECT 
+SELECT
     p.id,
     p.name,
     p.display_name,
     p.description,
+    p.status,
+    p.ai_context,
+    p.is_active,
+    p.project_type,
+    p.disciplines,
+    p.date_opening,
+    p.date_submission_deadline,
+    p.date_evaluation,
+    p.date_award,
+    p.invited_suppliers,
     p.created_at,
     p.updated_at,
     COUNT(DISTINCT dm.id) as document_count,
@@ -219,7 +284,10 @@ FROM public.projects p
 LEFT JOIN public.document_metadata dm ON dm.project_id = p.id
 LEFT JOIN public.rfq_items_master rim ON rim.project_id = p.id
 LEFT JOIN public.qa_audit qa ON qa.project_id = p.id
-GROUP BY p.id, p.name, p.display_name, p.description, p.created_at, p.updated_at;
+GROUP BY p.id, p.name, p.display_name, p.description, p.status, p.ai_context,
+         p.is_active, p.project_type, p.disciplines,
+         p.date_opening, p.date_submission_deadline, p.date_evaluation, p.date_award,
+         p.invited_suppliers, p.created_at, p.updated_at;
 
 -- ============================================
 -- SCRIPT DE MIGRACIÓN (ejecutar solo si hay datos existentes)
@@ -881,6 +949,7 @@ ORDER BY sc.project_id, sc.sort_order, scr.sort_order;
 
 -- Habilitar RLS en tablas que no lo tenían
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_providers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.document_metadata ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rfq ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
@@ -898,6 +967,10 @@ ALTER TABLE public.scoring_weight_configs ENABLE ROW LEVEL SECURITY;
 -- Políticas permisivas para tablas core (TODO: restringir cuando se implemente auth)
 DROP POLICY IF EXISTS "Allow all on projects" ON public.projects;
 CREATE POLICY "Allow all on projects" ON public.projects
+    FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Allow all on project_providers" ON public.project_providers;
+CREATE POLICY "Allow all on project_providers" ON public.project_providers
     FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow all on document_metadata" ON public.document_metadata;
@@ -1015,3 +1088,341 @@ BEGIN
   LIMIT match_count;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ============================================
+-- TABLA DE OFERTAS ECONÓMICAS (T8)
+-- Sección económica dedicada por proveedor y proyecto
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.economic_offers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+    provider_name TEXT NOT NULL,
+
+    -- Core pricing
+    total_price DECIMAL(15,2),
+    currency TEXT DEFAULT 'EUR',
+    price_breakdown JSONB DEFAULT '{}',
+
+    -- Payment terms
+    payment_terms TEXT,
+    payment_schedule JSONB DEFAULT '[]',
+
+    -- Discounts
+    discount_percentage DECIMAL(5,2) DEFAULT 0,
+    discount_conditions TEXT,
+
+    -- TCO (Total Cost of Ownership)
+    tco_value DECIMAL(15,2),
+    tco_period_years INTEGER,
+    tco_breakdown JSONB DEFAULT '{}',
+
+    -- Additional economic data
+    validity_days INTEGER DEFAULT 90,
+    price_escalation TEXT,
+    guarantees TEXT,
+    insurance_included BOOLEAN DEFAULT false,
+    taxes_included BOOLEAN DEFAULT false,
+
+    -- Optional items / alternatives
+    optional_items JSONB DEFAULT '[]',
+    alternative_offers JSONB DEFAULT '[]',
+
+    -- AI-extracted metadata
+    extraction_confidence DECIMAL(3,2),
+    raw_notes TEXT,
+
+    -- Metadata
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    CONSTRAINT unique_economic_offer UNIQUE(project_id, provider_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_economic_offers_project ON public.economic_offers(project_id);
+CREATE INDEX IF NOT EXISTS idx_economic_offers_provider ON public.economic_offers(provider_name);
+
+-- Trigger for updated_at on economic_offers
+CREATE OR REPLACE FUNCTION update_economic_offers_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_economic_offers_updated ON public.economic_offers;
+CREATE TRIGGER trigger_economic_offers_updated
+    BEFORE UPDATE ON public.economic_offers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_economic_offers_updated_at();
+
+-- Vista de comparación económica
+CREATE OR REPLACE VIEW public.v_economic_comparison AS
+SELECT
+    eo.project_id,
+    eo.provider_name,
+    eo.total_price,
+    eo.currency,
+    eo.discount_percentage,
+    eo.tco_value,
+    eo.tco_period_years,
+    eo.validity_days,
+    eo.taxes_included,
+    eo.insurance_included,
+    eo.payment_terms,
+    ROUND(eo.total_price * (1 - COALESCE(eo.discount_percentage, 0) / 100), 2) AS net_price,
+    RANK() OVER (PARTITION BY eo.project_id ORDER BY eo.total_price ASC) AS price_rank,
+    jsonb_array_length(COALESCE(eo.optional_items, '[]'::jsonb)) AS optional_items_count,
+    jsonb_array_length(COALESCE(eo.alternative_offers, '[]'::jsonb)) AS alternative_offers_count,
+    eo.created_at,
+    eo.updated_at
+FROM public.economic_offers eo
+ORDER BY eo.project_id, eo.total_price ASC;
+
+-- RLS for economic_offers
+ALTER TABLE public.economic_offers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on economic_offers" ON public.economic_offers;
+CREATE POLICY "Allow all on economic_offers" ON public.economic_offers
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- RLS for qa_notifications
+ALTER TABLE public.qa_notifications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on qa_notifications" ON public.qa_notifications;
+CREATE POLICY "Allow all on qa_notifications" ON public.qa_notifications
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- TABLA DE COMUNICACIONES / EMAILS ENVIADOS (T15)
+-- Historial de correos enviados a proveedores por proyecto
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.project_communications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+    provider_name TEXT NOT NULL,
+    recipient_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    tone TEXT DEFAULT 'formal',
+    status TEXT DEFAULT 'sent' CHECK (status IN ('draft', 'sent', 'failed', 'read')),
+    qa_item_ids TEXT[] DEFAULT '{}',  -- IDs of Q&A items included in the email
+    sent_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_comms_project ON public.project_communications(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_comms_provider ON public.project_communications(project_id, provider_name);
+CREATE INDEX IF NOT EXISTS idx_project_comms_sent_at ON public.project_communications(sent_at DESC);
+
+-- RLS for project_communications
+ALTER TABLE public.project_communications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on project_communications" ON public.project_communications;
+CREATE POLICY "Allow all on project_communications" ON public.project_communications
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- DIRECTORIO GLOBAL DE PROVEEDORES (T16)
+-- Información de contacto y notas globales (no por proyecto)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.supplier_directory (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    email TEXT,
+    phone TEXT,
+    contact_person TEXT,
+    category TEXT DEFAULT 'engineering',
+    website TEXT,
+    notes TEXT,
+    tags TEXT[] DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplier_directory_name ON public.supplier_directory(name);
+CREATE INDEX IF NOT EXISTS idx_supplier_directory_category ON public.supplier_directory(category);
+
+ALTER TABLE public.supplier_directory ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on supplier_directory" ON public.supplier_directory;
+CREATE POLICY "Allow all on supplier_directory" ON public.supplier_directory
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- VISTA: Historial agregado de proveedores across projects
+CREATE OR REPLACE VIEW public.v_supplier_history AS
+SELECT
+    COALESCE(sd.name, pp.provider_name) AS supplier_name,
+    sd.display_name,
+    sd.email,
+    sd.phone,
+    sd.contact_person,
+    sd.category,
+    sd.website,
+    sd.notes,
+    sd.tags,
+    COUNT(DISTINCT pp.project_id) AS project_count,
+    ARRAY_AGG(DISTINCT p.display_name) FILTER (WHERE p.display_name IS NOT NULL) AS project_names,
+    AVG(rp.overall_score) AS avg_score,
+    MAX(rp.overall_score) AS best_score,
+    MIN(rp.overall_score) AS worst_score,
+    COUNT(DISTINCT rp.id) AS times_scored,
+    MAX(pp.invited_at) AS last_participation,
+    ARRAY_AGG(DISTINCT pp.status) FILTER (WHERE pp.status IS NOT NULL) AS statuses
+FROM public.project_providers pp
+LEFT JOIN public.supplier_directory sd ON UPPER(sd.name) = UPPER(pp.provider_name)
+LEFT JOIN public.projects p ON p.id = pp.project_id
+LEFT JOIN public.ranking_proveedores rp ON UPPER(rp.provider_name) = UPPER(pp.provider_name) AND rp.project_id = pp.project_id
+GROUP BY COALESCE(sd.name, pp.provider_name), sd.display_name, sd.email, sd.phone, sd.contact_person, sd.category, sd.website, sd.notes, sd.tags;
+
+-- ============================================
+-- TOKENS DE SUBIDA EXTERNA DE OFERTAS (T17)
+-- Links para que proveedores suban PDFs sin login
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.supplier_upload_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE NOT NULL,
+    provider_name TEXT NOT NULL,
+    token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '30 days'),
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accessed', 'uploaded', 'expired')),
+    files_uploaded INT DEFAULT 0,
+    accessed_at TIMESTAMPTZ,
+    uploaded_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplier_upload_tokens_token ON public.supplier_upload_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_supplier_upload_tokens_project ON public.supplier_upload_tokens(project_id);
+
+ALTER TABLE public.supplier_upload_tokens ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow all on supplier_upload_tokens" ON public.supplier_upload_tokens;
+CREATE POLICY "Allow all on supplier_upload_tokens" ON public.supplier_upload_tokens
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================
+-- FUNCIONES AUXILIARES DE GESTIÓN DE PROYECTOS
+-- ============================================
+
+-- Soft-delete project (referenced by frontend)
+CREATE OR REPLACE FUNCTION soft_delete_project(p_project_id UUID)
+RETURNS JSONB AS $$
+BEGIN
+    UPDATE public.projects
+    SET is_active = false, updated_at = NOW()
+    WHERE id = p_project_id;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Project not found');
+    END IF;
+
+    RETURN jsonb_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Update project name (referenced by frontend)
+CREATE OR REPLACE FUNCTION update_project_name(p_project_id UUID, p_new_display_name TEXT)
+RETURNS JSONB AS $$
+DECLARE
+    v_new_name TEXT;
+BEGIN
+    v_new_name := normalize_project_name(p_new_display_name);
+
+    UPDATE public.projects
+    SET display_name = p_new_display_name,
+        name = v_new_name,
+        updated_at = NOW()
+    WHERE id = p_project_id;
+
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('success', false, 'error', 'Project not found');
+    END IF;
+
+    RETURN jsonb_build_object('success', true, 'name', v_new_name, 'display_name', p_new_display_name);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- MULTI-TENANT FOUNDATION (T23)
+-- Organizations, membership, and tenant isolation
+-- ============================================
+
+-- Organizations
+CREATE TABLE IF NOT EXISTS public.organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    plan TEXT DEFAULT 'trial' CHECK (plan IN ('trial', 'starter', 'professional', 'enterprise')),
+    max_projects INTEGER DEFAULT 5,
+    max_users INTEGER DEFAULT 3,
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_organizations_slug ON public.organizations(slug);
+
+-- Organization members (user <-> org)
+CREATE TABLE IF NOT EXISTS public.organization_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE NOT NULL,
+    user_id UUID NOT NULL,
+    role TEXT DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(organization_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_members_user ON public.organization_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_org_members_org ON public.organization_members(organization_id);
+
+-- Add organization_id and created_by to projects (nullable for migration)
+ALTER TABLE public.projects
+    ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id),
+    ADD COLUMN IF NOT EXISTS created_by UUID;
+
+CREATE INDEX IF NOT EXISTS idx_projects_org ON public.projects(organization_id);
+
+-- RLS for organizations
+ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all on organizations" ON public.organizations;
+CREATE POLICY "Allow all on organizations" ON public.organizations
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- RLS for organization_members
+ALTER TABLE public.organization_members ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all on organization_members" ON public.organization_members;
+CREATE POLICY "Allow all on organization_members" ON public.organization_members
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- Triggers
+DROP TRIGGER IF EXISTS set_organizations_updated_at ON public.organizations;
+CREATE TRIGGER set_organizations_updated_at
+    BEFORE UPDATE ON public.organizations
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS set_org_members_updated_at ON public.organization_members;
+CREATE TRIGGER set_org_members_updated_at
+    BEFORE UPDATE ON public.organization_members
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at();
+
+-- Helper: get user's organization (requires Supabase Auth)
+CREATE OR REPLACE FUNCTION public.get_user_org_id()
+RETURNS UUID AS $$
+BEGIN
+    BEGIN
+        RETURN (
+            SELECT organization_id
+            FROM public.organization_members
+            WHERE user_id = auth.uid()
+            LIMIT 1
+        );
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL;
+    END;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

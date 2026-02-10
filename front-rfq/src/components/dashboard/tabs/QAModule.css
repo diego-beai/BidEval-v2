@@ -333,8 +333,12 @@
 
 .module-stat-label {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #6b7280);
   margin-top: 4px;
+}
+
+.requisito-link {
+  color: var(--text-primary, #1f2937);
 }
 
 /* Module Empty State */
@@ -906,20 +910,36 @@
 
 .badge-borrador {
   background-color: rgba(14, 165, 233, 0.1);
-  color: #0284c7;
-  border: 1px solid #0ea5e9;
 }
 
 .badge-aprobada {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669;
-  border: 1px solid #10b981;
+  background-color: var(--color-success, rgba(16, 185, 129, 0.1));
+  color: var(--text-on-success, #059669);
+  border: 1px solid var(--border-success, #10b981);
 }
 
 .badge-alta {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  border: 1px solid #ef4444;
+  background-color: var(--color-danger, rgba(239, 68, 68, 0.1));
+  color: var(--text-on-danger, #dc2626);
+  border: 1px solid var(--border-danger, #ef4444);
+}
+
+.badge-pendiente {
+  background-color: var(--color-warning, rgba(245, 158, 11, 0.1));
+  color: var(--text-on-warning, #0284c7);
+  border: 1px solid var(--border-warning, #f59e0b);
+}
+
+.badge-enviada {
+  background-color: var(--color-info, rgba(6, 182, 212, 0.1));
+  color: var(--text-on-info, #17a2b8);
+  border: 1px solid var(--border-info, #1e3a5f);
+}
+
+.badge-respondida {
+  background-color: var(--color-success, rgba(16, 185, 129, 0.1));
+  color: var(--text-on-success, #059669);
+  border: 1px solid var(--border-success, #10b981);
 }
 
 .badge-original {
@@ -1120,11 +1140,11 @@
   background: transparent;
 }
 
-/* Override for QA Module - ensure white text on dark background */
+/* Override for QA Module - ensure proper text color on dark/light backgrounds */
 .questions-viewer-section .question-text,
 .question-card .question-text,
 .preguntas-list .question-text {
-  color: #ffffff !important;
+  color: var(--text-primary, #ffffff) !important;
 }
 
 .question-edit-textarea {

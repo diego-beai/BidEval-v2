@@ -13,6 +13,7 @@ import './Dashboard.css';
 
 interface HomeDashboardProps {
     onNavigate: (view: string) => void;
+    onNewProject?: () => void;
 }
 
 const normalizeProviderName = (name: string) => {
@@ -24,7 +25,7 @@ const normalizeProviderName = (name: string) => {
         .replace(/\s+/g, '');
 };
 
-export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
+export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewProject }) => {
     const { t } = useLanguageStore();
     const {
         totalProposals,
@@ -68,7 +69,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
     // Reload all data when active project changes
     useEffect(() => {
-        console.log('[HomeDashboard] Active project changed to:', activeProjectId);
         // Reload all data filtered by the new project
         loadDashboardData();
         fetchAllTableData();
@@ -85,7 +85,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         return () => {
             stopRealtimeUpdates();
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Refresh proposal evaluations periodically
@@ -103,10 +103,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         const normalizeEvaluationType = (evalType: string) => {
             const v = evalType.trim().toLowerCase();
-            if (v.includes('pre-feed') || v.includes('pre feed')) return 'Pre-FEED Deliverables';
-            if (v.includes('feed')) return 'FEED Deliverables';
+            if (v.includes('pre-feed') || v.includes('pre feed')) return 'Others';
+            if (v.includes('feed') && !v.includes('econom') && !v.includes('technic')) return 'Others';
             if (v.includes('econom')) return 'Economical Evaluation';
             if (v.includes('technic')) return 'Technical Evaluation';
+            if (v === 'others' || v === 'other') return 'Others';
             return evalType.trim();
         };
 
@@ -144,13 +145,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
 
         // Use provider ranking data if available
         if (providerRanking && providerRanking.length > 0) {
-            console.log('[HomeDashboard] Provider ranking data found:', providerRanking.length, 'providers');
-            console.log('[HomeDashboard] Sample ranking:', providerRanking[0]);
-            
-            // Debug: Mostrar todos los campos disponibles
-            if (providerRanking.length > 0) {
-                console.log('[HomeDashboard] Available fields in ranking:', Object.keys(providerRanking[0]));
-            }
+
 
             if (tableData && tableData.length > 0) {
                 tableData.forEach((item: any) => {
@@ -189,9 +184,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 const providerName = ranking.provider_name;
                 if (!providerName) return;
 
-                console.log('[HomeDashboard] Processing provider:', providerName);
                 const normalizedProvider = matchProvider(String(providerName));
-                console.log('[HomeDashboard] Normalized provider:', normalizedProvider);
                 if (!normalizedProvider) {
                     console.warn('[HomeDashboard] Provider not found in map:', providerName);
                     return;
@@ -238,8 +231,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             const reorderEvaluationTypes = (evaluations: any) => {
                 const providers = Object.keys(evaluations);
 
-                console.log('[HomeDashboard] Providers found:', providers);
-                console.log('[HomeDashboard] Current evaluations:', evaluations);
 
                 // Fixed order by category weight (most important first)
                 const sortedTypes = ['Technical', 'Economic', 'Execution', 'HSE/ESG'];
@@ -253,14 +244,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     evaluations[provider] = reordered;
                 });
 
-                console.log('[HomeDashboard] Final evaluations after reordering:', evaluations);
             };
 
             reorderEvaluationTypes(evaluations);
         } else {
             console.warn('[HomeDashboard] No provider ranking data available. Using fallback logic.');
-            console.log('[HomeDashboard] tableData length:', tableData?.length || 0);
-            console.log('[HomeDashboard] proposalEvaluations length:', proposalEvaluations?.length || 0);
 
             // Fallback to old logic if no ranking data
             // Count RFQ evaluations from tableData (rfq_items_master)
@@ -489,22 +477,18 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             if (supabase) {
                 // If no project selected, keep zeros
                 if (!activeProjectId) {
-                    console.log('[HomeDashboard] No active project, keeping RFQ count at 0');
                     return;
                 }
 
                 try {
-                    console.log('Fetching RFQ documents from document_metadata for project:', activeProjectId);
                     const { data: rfqDocuments, error: rfqError } = await supabase
                         .from('document_metadata')
-                        .select('id, title, project_name, evaluation_types, provider, created_at')
+                        .select('id, title, evaluation_types, provider, created_at')
                         .eq('document_type', 'RFQ')
                         .eq('project_id', activeProjectId);
 
-                    console.log('RFQ query result:', { rfqDocuments, rfqError });
 
                     if (!rfqError && rfqDocuments) {
-                        console.log('Found', rfqDocuments.length, 'RFQ documents');
 
                         // Collect all evaluation types and count total
                         const types = new Set<string>();
@@ -512,7 +496,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                         let totalEvaluationTypesCount = 0;
 
                         rfqDocuments.forEach((doc: any) => {
-                            console.log('RFQ Document:', doc.title, 'Types:', doc.evaluation_types, 'Type of evaluation_types:', typeof doc.evaluation_types, 'Is Array:', Array.isArray(doc.evaluation_types));
                             if (doc.evaluation_types) {
                                 // Handle both string and array cases
                                 if (Array.isArray(doc.evaluation_types)) {
@@ -539,15 +522,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             }
                         });
 
-                        console.log('Final evaluation types found:', Array.from(types));
-                        console.log('Total evaluation types count:', totalEvaluationTypesCount);
 
                         // Set rfqCount to the number of unique RFQ documents (by title)
                         const uniqueTitles = new Set(rfqDocuments.map((doc: any) => doc.title));
                         setRfqCount(uniqueTitles.size);
                         setEvaluationTypes(types);
                     } else {
-                        console.log('RFQ query error or no data:', rfqError);
                     }
                 } catch (err) {
                     console.warn('Error fetching RFQ documents from metadata:', err);
@@ -562,12 +542,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             if (supabase) {
                 // If no project selected, keep zeros (already reset at top of useEffect)
                 if (!activeProjectId) {
-                    console.log('[HomeDashboard] No active project, keeping providers count at 0');
                     return;
                 }
 
                 try {
-                    console.log('Fetching unique providers from proposals for project:', activeProjectId);
                     const { data: proposals, error: proposalError } = await supabase
                         .from('document_metadata')
                         .select('provider')
@@ -584,11 +562,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                             }
                         });
 
-                        console.log('Unique providers from proposals:', Array.from(uniqueProviders));
-                        console.log('Total unique providers:', uniqueProviders.size);
                         setProvidersCount(uniqueProviders.size);
                     } else {
-                        console.log('Proposals query error:', proposalError);
                     }
                 } catch (err) {
                     console.warn('Error fetching providers from proposals:', err);
@@ -600,14 +575,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         fetchProvidersCount();
     }, [activeProjectId]);
 
-    // Calculate metrics from both tableData and proposalEvaluations
-    const calculatedMetrics = useMemo(() => {
-        const uniqueProjects = new Set<string>();
-        let updatedToday = 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Fallback: count distinct evaluation_types from tableData if Supabase returned 0
+    // Fallback: set rfqCount from tableData when Supabase returned 0
+    useEffect(() => {
         if (rfqCount === 0 && tableData && tableData.length > 0) {
             const types = new Set<string>();
             tableData.forEach((item: any) => {
@@ -615,12 +584,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                     types.add(item.evaluation_type.trim());
                 }
             });
-            // Count evaluation types as a proxy for RFQ documents processed
-            setRfqCount(types.size);
-            if (evaluationTypes.size === 0) {
-                setEvaluationTypes(types);
+            if (types.size > 0) {
+                setRfqCount(types.size);
+                if (evaluationTypes.size === 0) {
+                    setEvaluationTypes(types);
+                }
             }
         }
+    }, [rfqCount, tableData, evaluationTypes.size]);
+
+    // Calculate metrics from both tableData and proposalEvaluations
+    const calculatedMetrics = useMemo(() => {
+        const uniqueProjects = new Set<string>();
+        let updatedToday = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         // Count items updated today
         if (tableData && tableData.length > 0) {
@@ -658,10 +636,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
         return {
             totalItems: (tableData?.length || 0) + proposalCount,
             totalProjects: uniqueProjects.size,
-            totalEvaluations: rfqCount, // Ahora usa el conteo real de RFQs desde document_metadata
+            totalEvaluations: rfqCount,
             updatedToday
         };
-    }, [tableData, proposalEvaluations]);
+    }, [tableData, proposalEvaluations, rfqCount]);
 
     const dashboardMetrics = {
         totalProcessed: totalProposals,
@@ -775,14 +753,15 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                 transition: 'all 0.2s'
                             }}
-                            onClick={() => onNavigate('upload')}
+                            onClick={() => onNewProject ? onNewProject() : onNavigate('upload')}
                             onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                             onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
-                                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
-                            {t('home.hero.btn_new')}
+                            {t('setup.btn.new_project')}
                         </button>
                         <button
                             className="btn"
@@ -818,58 +797,58 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
             {/* Key Metrics Grid */}
             <div style={{ width: '100%', marginBottom: '10px' }}>
                 <div className="stats-grid">
-                <DashboardCard
-                    title={t('home.card.total_processed')}
-                    value={dashboardMetrics.totalProcessed.toString()}
-                    trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% ${t('home.card.this_week')} (${proposalsThisWeek} ${t('home.card.proposals')})`}
-                    isPositiveTrend={proposalsGrowthPercentage >= 0}
-                    icon={
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
-                        </svg>
-                    }
-                    color="var(--color-primary)"
-                />
-                <DashboardCard
-                    title={t('home.card.rfqs_processed')}
-                    value={dashboardMetrics.activeRfqs.toString()}
-                    trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 4) * 100) : 0}% ${t('home.card.coverage')}`}
-                    icon={
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                        </svg>
-                    }
-                    color="#f59e0b"
-                />
-                <DashboardCard
-                    title={t('home.card.providers')}
-                    value={providersCount.toString()}
-                    trend={`${dashboardMetrics.providers.length} ${t('home.card.with_scores')}`}
-                    icon={
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
-                    }
-                    color="var(--color-cyan)"
-                />
-                <DashboardCard
-                    title={t('home.card.avg_score')}
-                    value={avgScore > 0 ? `${avgScore.toFixed(1)}/10` : 'N/A'}
-                    trend={avgScore === 0 ? t('home.card.no_scoring_yet') : avgScore < 6 ? t('home.card.below_threshold') : t('home.card.score_summary')}
-                    isPositiveTrend={avgScore >= 6}
-                    icon={
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                    }
-                    color="#10b981"
-                />
+                    <DashboardCard
+                        title={t('home.card.total_processed')}
+                        value={dashboardMetrics.totalProcessed.toString()}
+                        trend={`${proposalsGrowthPercentage >= 0 ? '+' : ''}${proposalsGrowthPercentage}% ${t('home.card.this_week')} (${proposalsThisWeek} ${t('home.card.proposals')})`}
+                        isPositiveTrend={proposalsGrowthPercentage >= 0}
+                        icon={
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                            </svg>
+                        }
+                        color="var(--color-primary)"
+                    />
+                    <DashboardCard
+                        title={t('home.card.rfqs_processed')}
+                        value={dashboardMetrics.activeRfqs.toString()}
+                        trend={`${evaluationTypes.size > 0 ? Math.round((evaluationTypes.size / 3) * 100) : 0}% ${t('home.card.coverage')}`}
+                        icon={
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                        }
+                        color="#f59e0b"
+                    />
+                    <DashboardCard
+                        title={t('home.card.providers')}
+                        value={providersCount.toString()}
+                        trend={`${dashboardMetrics.providers.length} ${t('home.card.with_scores')}`}
+                        icon={
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        }
+                        color="var(--color-cyan)"
+                    />
+                    <DashboardCard
+                        title={t('home.card.avg_score')}
+                        value={avgScore > 0 ? `${avgScore.toFixed(1)}/10` : 'N/A'}
+                        trend={avgScore === 0 ? t('home.card.no_scoring_yet') : avgScore < 6 ? t('home.card.below_threshold') : t('home.card.score_summary')}
+                        isPositiveTrend={avgScore >= 6}
+                        icon={
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        }
+                        color="#10b981"
+                    />
                 </div>
             </div>
 
@@ -880,53 +859,53 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate }) => {
                 const topPerformer = sortedByScore[0];
 
                 return (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '20px',
-                    padding: '8px',
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-lg)',
-                    boxShadow: 'var(--shadow-sm)',
-                    marginBottom: '8px'
-                }}>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.top_performer')}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '20px',
+                        padding: '8px',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-lg)',
+                        boxShadow: 'var(--shadow-sm)',
+                        marginBottom: '8px'
+                    }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                                {t('home.scoring.top_performer')}
+                            </div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                                {topPerformer?.provider_name || 'N/A'}
+                            </div>
                         </div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                            {topPerformer?.provider_name || 'N/A'}
+                        <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                                {t('home.scoring.top_score')}
+                            </div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
+                                {topPerformer?.overall_score?.toFixed(1) || 'N/A'}/10
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                                {t('home.scoring.compliance_rate')}
+                            </div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>
+                                {(() => {
+                                    const avgCompliance = scoringResults.ranking.reduce((sum, r) => sum + (r.compliance_percentage || 0), 0) / scoringResults.ranking.length;
+                                    return `${avgCompliance.toFixed(0)}%`;
+                                })()}
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
+                                {t('home.scoring.criteria_applied')}
+                            </div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
+                                {scoringCriteria.length > 0 ? scoringCriteria.length : scoringCategories.length > 0 ? scoringCategories.length : 'N/A'}
+                            </div>
                         </div>
                     </div>
-                    <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.top_score')}
-                        </div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
-                            {topPerformer?.overall_score?.toFixed(1) || 'N/A'}/10
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.compliance_rate')}
-                        </div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>
-                            {(() => {
-                                const avgCompliance = scoringResults.ranking.reduce((sum, r) => sum + (r.compliance_percentage || 0), 0) / scoringResults.ranking.length;
-                                return `${avgCompliance.toFixed(0)}%`;
-                            })()}
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
-                            {t('home.scoring.criteria_applied')}
-                        </div>
-                        <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#f59e0b' }}>
-                            {scoringCriteria.length > 0 ? scoringCriteria.length : scoringCategories.length > 0 ? scoringCategories.length : 'N/A'}
-                        </div>
-                    </div>
-                </div>
                 );
             })()}
 
@@ -1461,16 +1440,3 @@ const LegendItem = ({ color, label }: any) => (
     </div>
 );
 
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-`;
-document.head.appendChild(style);

@@ -17,15 +17,13 @@ export interface ProviderDonutGridProps {
 const EVALUATION_COLORS: Record<string, string> = {
   'Technical Evaluation': 'rgba(18, 181, 176, 0.8)',
   'Economical Evaluation': 'rgba(245, 158, 11, 0.8)',
-  'Pre-FEED Deliverables': 'rgba(59, 130, 246, 0.8)',
-  'FEED Deliverables': 'rgba(139, 92, 246, 0.8)'
+  'Others': 'rgba(139, 92, 246, 0.8)'
 };
 
 const ALL_EVALUATION_TYPES = [
   'Technical Evaluation',
   'Economical Evaluation',
-  'Pre-FEED Deliverables',
-  'FEED Deliverables'
+  'Others'
 ];
 
 export const ProviderDonutGrid: React.FC<ProviderDonutGridProps> = ({
@@ -38,7 +36,7 @@ export const ProviderDonutGrid: React.FC<ProviderDonutGridProps> = ({
       const hasEval = evaluations.includes(evalType);
       return {
         label: evalType.split(' ')[0], // "Technical", "Economical", etc.
-        value: hasEval ? 25 : 0, // 25% por cada evaluación
+        value: hasEval ? 33 : 0, // ~33% por cada evaluación
         color: EVALUATION_COLORS[evalType],
         isEmpty: !hasEval
       };

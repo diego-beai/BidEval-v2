@@ -145,43 +145,55 @@ export function initializeOperationsSubscriptions() {
     unsubscribers.forEach(unsub => unsub());
     unsubscribers = [];
 
-    const refresh = () => useOperationsStore.getState().refreshOperations();
+    // FIX: rerender-defer-reads — debounce refresh so simultaneous store changes
+    // trigger only one re-render instead of up to 4
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefresh = () => {
+        if (refreshTimer) clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+            useOperationsStore.getState().refreshOperations();
+            refreshTimer = null;
+        }, 16); // ~1 frame
+    };
 
     // Suscribirse a cambios de estado en cada store
     unsubscribers.push(
         useChatStore.subscribe(
             (state) => state.status,
-            () => refresh()
+            () => debouncedRefresh()
         )
     );
 
     unsubscribers.push(
         useMailStore.subscribe(
             (state) => state.isGenerating,
-            () => refresh()
+            () => debouncedRefresh()
         )
     );
 
     unsubscribers.push(
         useRfqStore.subscribe(
             (state) => state.isProcessing,
-            () => refresh()
+            () => debouncedRefresh()
         )
     );
 
     unsubscribers.push(
         useScoringStore.subscribe(
             (state) => state.isCalculating,
-            () => refresh()
+            () => debouncedRefresh()
         )
     );
 
     // Refresh inicial
-    refresh();
+    debouncedRefresh();
 
     // También hacer refresh periódico para capturar cambios de progreso
-    const intervalId = setInterval(refresh, 1000);
-    unsubscribers.push(() => clearInterval(intervalId));
+    const intervalId = setInterval(debouncedRefresh, 1000);
+    unsubscribers.push(() => {
+        clearInterval(intervalId);
+        if (refreshTimer) clearTimeout(refreshTimer);
+    });
 }
 
 export function cleanupOperationsSubscriptions() {

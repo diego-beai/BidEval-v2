@@ -12,8 +12,7 @@ import './MultiFileMetadataModal.css';
 const EVALUATION_TYPES = [
   'Technical Evaluation',
   'Economical Evaluation',
-  'Pre-FEED Deliverables',
-  'FEED Deliverables'
+  'Others'
 ];
 
 interface DropdownPosition {

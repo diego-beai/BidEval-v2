@@ -43,17 +43,21 @@ export function RfqBaseUploader() {
     const evaluationTypeMap: Record<string, string> = {
       'Technical Evaluation': 'Technical Evaluation',
       'Economical Evaluation': 'Economical Evaluation',
-      'Pre-FEED Deliverables': 'Pre-FEED Deliverables',
-      'FEED Deliverables': 'FEED Deliverables',
+      'Others': 'Others',
+      // Normalize legacy types to Others
+      'Pre-FEED Deliverables': 'Others',
+      'FEED Deliverables': 'Others',
       // Add possible variations
       'technical': 'Technical Evaluation',
       'economical': 'Economical Evaluation',
-      'pre-feed': 'Pre-FEED Deliverables',
-      'feed': 'FEED Deliverables',
+      'pre-feed': 'Others',
+      'feed': 'Others',
       'Technical': 'Technical Evaluation',
       'Economical': 'Economical Evaluation',
-      'Pre-FEED': 'Pre-FEED Deliverables',
-      'FEED': 'FEED Deliverables'
+      'Pre-FEED': 'Others',
+      'FEED': 'Others',
+      'others': 'Others',
+      'Other': 'Others'
     };
 
     tableData.forEach((item: any) => {
@@ -180,15 +184,13 @@ export function RfqBaseUploader() {
     const allEvaluationTypes = [
       'Technical Evaluation',
       'Economical Evaluation',
-      'Pre-FEED Deliverables',
-      'FEED Deliverables'
+      'Others'
     ];
 
     const colors: Record<string, string> = {
       'Technical Evaluation': 'rgba(18, 181, 176, 0.8)',
       'Economical Evaluation': 'rgba(245, 158, 11, 0.8)',
-      'Pre-FEED Deliverables': 'rgba(59, 130, 246, 0.8)',
-      'FEED Deliverables': 'rgba(139, 92, 246, 0.8)'
+      'Others': 'rgba(139, 92, 246, 0.8)'
     };
 
     // Always try to use Supabase data first, even if it's being loaded
@@ -456,8 +458,7 @@ export function RfqBaseUploader() {
                       const colors: Record<string, string> = {
                         'Technical Evaluation': 'rgba(20, 184, 166, 0.8)',
                         'Economical Evaluation': 'rgba(245, 158, 11, 0.8)',
-                        'Pre-FEED Deliverables': 'rgba(59, 130, 246, 0.8)',
-                        'FEED Deliverables': 'rgba(139, 92, 246, 0.8)'
+                        'Others': 'rgba(139, 92, 246, 0.8)'
                       };
                       
                       // Find matching color or use default

@@ -167,7 +167,6 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     // If no project selected, clear questions
     if (!projectId && !projectDisplayName) {
-      console.log('📋 No project selected, clearing Q&A questions');
       set({
         questions: [],
         isLoading: false,
@@ -177,18 +176,17 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
 
     try {
-      console.log('📋 Loading Q&A questions from Supabase:', {
+      console.log('[QAStore] Loading Q&A for project:', {
         projectId: projectId,
         projectDisplayName: projectDisplayName,
         table: 'qa_audit',
         hasCredentials: isSupabaseConfigured()
       });
 
-      // Try to query by project_id first (UUID), then by project_name (display name)
+      // Query by project_id (UUID)
       let data: any[] | null = null;
       let error: any = null;
 
-      // First, try by project_id (UUID)
       if (projectId) {
         const result = await supabase!
           .from('qa_audit')
@@ -198,100 +196,22 @@ export const useQAStore = create<QAState>((set, get) => ({
 
         data = result.data;
         error = result.error;
-
-        console.log('📋 Q&A query by project_id result:', {
-          projectId: projectId,
-          dataCount: data?.length || 0,
-          error: error
-        });
       }
-
-      // If no data found by UUID, try by project_name (display name)
-      if ((!data || data.length === 0) && projectDisplayName) {
-        const result = await supabase!
-          .from('qa_audit')
-          .select('*')
-          .eq('project_name', projectDisplayName)
-          .order('created_at', { ascending: false });
-
-        data = result.data;
-        error = result.error;
-
-        console.log('📋 Q&A query by project_name result:', {
-          projectDisplayName: projectDisplayName,
-          dataCount: data?.length || 0,
-          error: error
-        });
-      }
-
-      console.log('📋 Q&A final query result:', {
-        dataCount: data?.length || 0,
-        data: data,
-        error: error
-      });
 
       if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          table: 'qa_audit',
-          projectId: projectId
-        });
-
-        // PGRST116 means "no rows found" for .single() queries - not an error for our use case
-        // Only show table config error if table truly doesn't exist (42P01) or permission denied
-        if (error.code === '42P01' || error.message.includes('relation') && error.message.includes('does not exist')) {
-          console.warn('⚠️ The qa_audit table does not exist in Supabase. Check the database structure.');
-          set({
-            questions: [],
-            isLoading: false,
-            error: 'The Q&A table is not configured. Contact the administrator.'
-          });
-          return;
-        }
-
-        // For other errors, throw to be handled by catch block
-        throw error;
+        // Only log, never show query errors to user — empty state handles it
+        console.warn('[QAStore] Query error (non-blocking):', error.message);
       }
 
-      // No error - set questions (empty array is valid for projects with no Q&A data)
       set({
         questions: (data || []).map((item: any) => mapQAAuditToQAQuestion(item)),
         isLoading: false,
         error: null
       });
-
-      console.log('📋 Q&A loaded successfully:', {
-        projectId,
-        questionCount: data?.length || 0
-      });
-    } catch (error) {
-      console.error('Error loading Q&A questions:', error);
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Unknown error loading questions';
-
-      // Check if it's truly a table-not-found error (PostgreSQL error code 42P01)
-      const isTableNotFound = error instanceof Error && (
-        errorMessage.includes('42P01') ||
-        (errorMessage.includes('relation') && errorMessage.includes('does not exist'))
-      );
-
-      if (isTableNotFound) {
-        console.warn('⚠️ qa_audit table not found. Verify it exists in Supabase.');
-        set({
-          error: 'The Q&A table is not configured. Contact the administrator.',
-          isLoading: false,
-          questions: []
-        });
-        return;
-      }
-
-      // For generic errors, show the message but don't treat empty data as an error
+    } catch (err: any) {
+      console.warn('[QAStore] Unexpected error:', err.message);
       set({
-        error: errorMessage,
+        error: null,
         isLoading: false,
         questions: []
       });
@@ -658,9 +578,18 @@ export const useQAStore = create<QAState>((set, get) => ({
   // Agrupar por disciplina
   getGroupedByDisciplina: () => {
     const filteredQuestions = get().getFilteredQuestions();
-    const disciplinas: Disciplina[] = ['Electrical', 'Mechanical', 'Civil', 'Process', 'General', 'Cost'];
 
-    return disciplinas.map(disciplina => {
+    // Get unique disciplines from actual questions (don't show empty disciplines)
+    const uniqueDisciplines = Array.from(
+      new Set(filteredQuestions.map(q => q.disciplina || q.discipline))
+    ).filter(Boolean) as Disciplina[];
+
+    // If no questions, return empty array (no disciplines to show)
+    if (uniqueDisciplines.length === 0) {
+      return [];
+    }
+
+    return uniqueDisciplines.map(disciplina => {
       const preguntas = filteredQuestions.filter(q => (q.disciplina || q.discipline) === disciplina);
 
       return {
@@ -680,27 +609,37 @@ export const useQAStore = create<QAState>((set, get) => ({
   },
 
   // Obtener estadísticas generales
+  // FIX: js-combine-iterations — single pass instead of 3 separate filter() loops
   getStats: () => {
     const questions = get().getFilteredQuestions();
 
+    const porEstado = {} as Record<EstadoPregunta, number>;
+    const porDisciplina = {} as Record<Disciplina, number>;
+    const porImportancia = {} as Record<Importancia, number>;
+
+    // Initialize estado counts
     const estados: EstadoPregunta[] = ['Draft', 'Pending', 'Approved', 'Sent', 'Answered', 'Discarded'];
-    const disciplinas: Disciplina[] = ['Electrical', 'Mechanical', 'Civil', 'Process', 'General', 'Cost'];
+    for (const e of estados) porEstado[e] = 0;
     const importancias: Importancia[] = ['High', 'Medium', 'Low'];
+    for (const i of importancias) porImportancia[i] = 0;
+
+    // Single pass: count all dimensions at once
+    for (const q of questions) {
+      const estado = (q.estado || q.status) as EstadoPregunta;
+      if (estado) porEstado[estado] = (porEstado[estado] || 0) + 1;
+
+      const disc = (q.disciplina || q.discipline) as Disciplina;
+      if (disc) porDisciplina[disc] = (porDisciplina[disc] || 0) + 1;
+
+      const imp = (q.importancia || q.importance) as Importancia;
+      if (imp) porImportancia[imp] = (porImportancia[imp] || 0) + 1;
+    }
 
     return {
       total: questions.length,
-      porEstado: estados.reduce((acc, estado) => ({
-        ...acc,
-        [estado]: questions.filter(q => (q.estado || q.status) === estado).length
-      }), {} as Record<EstadoPregunta, number>),
-      porDisciplina: disciplinas.reduce((acc, disciplina) => ({
-        ...acc,
-        [disciplina]: questions.filter(q => (q.disciplina || q.discipline) === disciplina).length
-      }), {} as Record<Disciplina, number>),
-      porImportancia: importancias.reduce((acc, importancia) => ({
-        ...acc,
-        [importancia]: questions.filter(q => (q.importancia || q.importance) === importancia).length
-      }), {} as Record<Importancia, number>),
+      porEstado,
+      porDisciplina,
+      porImportancia,
     };
   },
 
@@ -726,7 +665,7 @@ export const useQAStore = create<QAState>((set, get) => ({
       supabase!.removeChannel(existingChannel);
     }
 
-    // Subscribe to changes for both project_id and project_name columns
+    // Subscribe to changes for project_id
     const channel = supabase!
       .channel(`qa-changes-${projectId}`)
       .on(
@@ -737,8 +676,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           table: 'qa_audit',
           filter: `project_id=eq.${projectId}`
         },
-        (payload) => {
-          console.log('Q&A change received (project_id):', payload);
+        () => {
           get().loadQuestions();
         }
       )

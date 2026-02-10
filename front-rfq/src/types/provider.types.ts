@@ -18,8 +18,7 @@ export enum Provider {
 export enum EvaluationType {
   TECHNICAL = 'Technical Evaluation',
   ECONOMICAL = 'Economical Evaluation',
-  PRE_FEED = 'Pre-FEED Deliverables',
-  FEED = 'FEED Deliverables'
+  OTHERS = 'Others'
 }
 
 /**

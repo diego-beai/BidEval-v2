@@ -7,6 +7,7 @@
   --color-primary-light: #e0f7f6;
   --color-secondary: #0a2540;
   --color-cyan: #12b5b0;
+  --accent: #12b5b0;
 
   /* Status Colors */
   --color-success: #10b981;
@@ -34,6 +35,7 @@
   --bg-surface: #ffffff;
   --bg-surface-alt: #f1f5f9;
   --bg-hover: #f3f4f6;
+  --bg-card: #ffffff;
 
   /* Text (Light) */
   --text-primary: #0f172a;
@@ -57,6 +59,7 @@
   /* Dark Gray Surface */
   --bg-surface-alt: #1e1e1e;
   --bg-hover: #2a2a2a;
+  --bg-card: #141414;
 
   /* Text */
   --text-primary: #ededed;
@@ -68,10 +71,15 @@
   --border-color: #27272a;
   --border-color-hover: #3f3f46;
 
+  --accent: #12b5b0;
+
   /* Shadows (less visible in dark mode, adjusted for depth) */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+
+  /* Primary Light (Dark Variant) */
+  --color-primary-light: rgba(18, 181, 176, 0.15);
 }
 
 /* =========================================================================
@@ -751,6 +759,7 @@ tr:last-child td {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -777,7 +786,7 @@ tr:last-child td {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%);
   pointer-events: none;
 }
 
@@ -1078,6 +1087,7 @@ tr:last-child td {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

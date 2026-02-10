@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import App from './App';
 import { SupplierResponsePage } from './pages/SupplierResponsePage';
+import { SupplierUploadPage } from './pages/SupplierUploadPage';
 import { ThemeProvider } from './context/ThemeContext';
 import '../styles.css';
 import { initPerformanceMonitoring } from './utils/performance';
@@ -33,6 +34,8 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           {/* Public route for supplier responses */}
           <Route path="/respond/:token" element={<SupplierResponsePage />} />
+          {/* Public route for supplier proposal uploads */}
+          <Route path="/upload/:token" element={<SupplierUploadPage />} />
           {/* Main application */}
           <Route path="/*" element={<App />} />
         </Routes>

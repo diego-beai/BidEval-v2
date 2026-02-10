@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { useSessionViewStore } from './useSessionViewStore';
+import { supabase } from '../lib/supabase';
 import type { QAQuestion } from '../types/qa.types';
 
 // Interface for Q&A items in the mail context
@@ -11,6 +12,21 @@ export interface MailQAItem {
     question: string;
     importance: string;
     provider_name: string;
+}
+
+// Interface for sent communication records
+export interface SentCommunication {
+    id: string;
+    project_id: string;
+    provider_name: string;
+    recipient_email: string;
+    subject: string;
+    body: string;
+    tone: string;
+    status: 'draft' | 'sent' | 'failed' | 'read';
+    qa_item_ids: string[];
+    sent_at: string;
+    created_at: string;
 }
 
 interface MailState {
@@ -26,6 +42,10 @@ interface MailState {
     // Q&A Items State
     pendingQAItems: MailQAItem[];
     selectedQAItemIds: string[];
+
+    // Sent Communications
+    sentMessages: SentCommunication[];
+    isLoadingSent: boolean;
 
     // Actions
     setSubject: (subject: string) => void;
@@ -46,8 +66,13 @@ interface MailState {
     clearQAItems: () => void;
     getSelectedQAItems: () => MailQAItem[];
 
+    // Sent Communications Actions
+    loadSentMessages: (projectId: string) => Promise<void>;
+    saveSentMessage: (msg: Omit<SentCommunication, 'id' | 'created_at'>) => Promise<void>;
+
     // API Interaction (can be moved deeper if needed)
     generateDraft: (params: {
+        project_id?: string;
         project_name: string;
         provider_name: string;
         provider_key: string;
@@ -69,6 +94,8 @@ export const useMailStore = create<MailState>()(
             error: null,
             pendingQAItems: [],
             selectedQAItemIds: [],
+            sentMessages: [],
+            isLoadingSent: false,
 
             setSubject: (subject) => set({ subject }),
             setBody: (body) => set({ body }),
@@ -151,6 +178,61 @@ export const useMailStore = create<MailState>()(
                 );
             },
 
+            // Sent Communications Actions
+            loadSentMessages: async (projectId: string) => {
+                if (!supabase || !projectId) return;
+
+                set({ isLoadingSent: true });
+                try {
+                    const { data, error } = await (supabase
+                        .from('project_communications' as any)
+                        .select('*')
+                        .eq('project_id', projectId)
+                        .order('sent_at', { ascending: false })) as { data: any[] | null; error: any };
+
+                    if (error) {
+                        console.error('[MailStore] Error loading sent messages:', error);
+                        set({ isLoadingSent: false });
+                        return;
+                    }
+
+                    set({
+                        sentMessages: (data || []) as SentCommunication[],
+                        isLoadingSent: false
+                    });
+                } catch (err) {
+                    console.error('[MailStore] Error loading sent messages:', err);
+                    set({ isLoadingSent: false });
+                }
+            },
+
+            saveSentMessage: async (msg) => {
+                if (!supabase) return;
+
+                try {
+                    const { data, error } = await (supabase
+                        .from('project_communications' as any)
+                        .insert([msg] as any)
+                        .select()
+                        .single()) as { data: any; error: any };
+
+                    if (error) {
+                        console.error('[MailStore] Error saving sent message:', error);
+                        set({ error: `Failed to save message: ${error.message}` });
+                        return;
+                    }
+
+                    if (data) {
+                        set(state => ({
+                            sentMessages: [data as SentCommunication, ...state.sentMessages]
+                        }));
+                    }
+                } catch (err) {
+                    console.error('[MailStore] Error saving sent message:', err);
+                    set({ error: err instanceof Error ? err.message : 'Failed to save message' });
+                }
+            },
+
             generateDraft: async (params) => {
                 set({ isGenerating: true, error: null, hasGenerated: false });
 
@@ -164,15 +246,21 @@ export const useMailStore = create<MailState>()(
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        const errorBody = await response.text().catch(() => 'Unknown error');
+                        throw new Error(`HTTP ${response.status}: ${errorBody}`);
                     }
 
-                    const data = await response.json();
-                    
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch {
+                        throw new Error('Invalid JSON response from server');
+                    }
+
                     // Handle the new webhook output structure: [{ text: "```json\n{...}\n```" }]
                     let finalSubject = '';
                     let finalBody = '';
-                    
+
                     if (Array.isArray(data) && data.length > 0 && data[0].text) {
                         // Extract JSON from the text field
                         let rawText = data[0].text;

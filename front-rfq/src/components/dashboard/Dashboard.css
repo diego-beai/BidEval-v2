@@ -197,12 +197,15 @@
 }
 
 /* Scoring Matrix */
+/* FIX: rendering-content-visibility — skip rendering offscreen table sections */
 .scoring-grid-container {
     overflow-x: auto;
     background-color: var(--bg-surface);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     padding: 0;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
 }
 
 .scoring-table th,

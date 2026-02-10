@@ -29,6 +29,9 @@ interface ChatState {
   historyLoaded: boolean;
   currentProjectId: string | null;
 
+  // Document context for multi-doc querying
+  selectedDocumentIds: string[];
+
   // Mapa de conversaciones por proyecto (projectId -> conversación)
   projectConversations: Record<string, ProjectConversation>;
 
@@ -45,6 +48,8 @@ interface ChatState {
   handleProjectChange: (newProjectId: string | null) => void;
   saveCurrentConversation: () => void;
   loadProjectConversation: (projectId: string | null) => void;
+  setSelectedDocumentIds: (ids: string[]) => void;
+  toggleDocumentId: (id: string) => void;
 }
 
 /**
@@ -75,6 +80,7 @@ export const useChatStore = create<ChatState>()(
         error: null,
         historyLoaded: false,
         currentProjectId: null,
+        selectedDocumentIds: [],
         projectConversations: {},
 
         toggleChat: () => {
@@ -110,11 +116,13 @@ export const useChatStore = create<ChatState>()(
             // Obtener el proyecto activo para filtrar las respuestas del chat
             const activeProjectId = useProjectStore.getState().activeProjectId;
 
-            // Enviar mensaje a n8n con el project_id
+            // Enviar mensaje a n8n con el project_id y document_ids
+            const selectedDocs = get().selectedDocumentIds;
             const { response, sessionId } = await sendChatMessage(
               trimmedContent,
               get().sessionId || undefined,
-              activeProjectId
+              activeProjectId,
+              selectedDocs.length > 0 ? selectedDocs : undefined
             );
 
             // Agregar respuesta del asistente
@@ -296,6 +304,7 @@ export const useChatStore = create<ChatState>()(
               messages: [],
               sessionId: null,
               currentProjectId: null,
+              selectedDocumentIds: [],
               status: ChatStatus.IDLE,
               error: null,
               historyLoaded: true,
@@ -328,6 +337,19 @@ export const useChatStore = create<ChatState>()(
               historyLoaded: true,
               unreadCount: 0
             });
+          }
+        },
+
+        setSelectedDocumentIds: (ids: string[]) => {
+          set({ selectedDocumentIds: ids });
+        },
+
+        toggleDocumentId: (id: string) => {
+          const current = get().selectedDocumentIds;
+          if (current.includes(id)) {
+            set({ selectedDocumentIds: current.filter(d => d !== id) });
+          } else {
+            set({ selectedDocumentIds: [...current, id] });
           }
         },
 
@@ -429,10 +451,15 @@ export const useChatStore = create<ChatState>()(
 
 // Suscribirse a cambios del proyecto activo
 // Cuando el proyecto cambie, guardar la conversación actual y cargar la del nuevo proyecto
+let _chatProjectChangeTimeout: ReturnType<typeof setTimeout> | null = null;
 useProjectStore.subscribe(
   (state) => state.activeProjectId,
   (newProjectId) => {
-    useChatStore.getState().handleProjectChange(newProjectId);
+    if (_chatProjectChangeTimeout) clearTimeout(_chatProjectChangeTimeout);
+    _chatProjectChangeTimeout = setTimeout(() => {
+      useChatStore.getState().handleProjectChange(newProjectId);
+      _chatProjectChangeTimeout = null;
+    }, 50);
   }
 );
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
@@ -37,6 +37,7 @@ export const ExecutiveView: React.FC = () => {
     const { t } = useLanguageStore();
     const { activeProjectId } = useProjectStore();
     const { projectProviders } = useProviderStore();
+    const [highlightedProvider, setHighlightedProvider] = useState<string | null>(null);
 
     // Get criteria labels (from dynamic config or fallback to translations)
     const CRITERIA_LABELS = useMemo(() => {
@@ -306,6 +307,71 @@ export const ExecutiveView: React.FC = () => {
         return getProviderColor(id, projectProviders);
     };
 
+    // Stroke dash patterns for visual separation when lines overlap
+    const STROKE_PATTERNS = ['', '8 4', '4 4', '12 4 4 4', '2 4', '16 4'];
+    const getStrokePattern = (index: number): string => STROKE_PATTERNS[index % STROKE_PATTERNS.length];
+    const getStrokeWidth = (index: number): number => index === 0 ? 3.5 : 2.5;
+
+    // Rank-based fill opacity for gradient defs
+    const getFillOpacity = (rank: number): [number, number] => {
+        if (rank === 0) return [0.25, 0.08];
+        if (rank === 1) return [0.15, 0.05];
+        if (rank === 2) return [0.10, 0.03];
+        return [0.05, 0.02];
+    };
+
+    // Convert hex color to rgba string
+    const hexToRgba = (hex: string, alpha: number): string => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (!result) return `rgba(100,100,100,${alpha})`;
+        return `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${alpha})`;
+    };
+
+    // Custom dot renderer with offset for close values
+    const renderCustomDot = (providerName: string, providerIdx: number) => (props: any) => {
+        const { cx, cy, payload } = props;
+        if (cx == null || cy == null) return null;
+
+        const color = getColor(providerName, providerIdx);
+        const baseR = providerIdx === 0 ? 5 : 3.5;
+        const strokeW = providerIdx === 0 ? 2 : 0;
+
+        // Check for overlapping values and apply offset
+        let offsetX = 0;
+        let offsetY = 0;
+        if (payload) {
+            const currentValue = Number(payload[providerName]) || 0;
+            const hasCloseNeighbor = sortedByScore.some((p) => {
+                if (p.provider_name === providerName) return false;
+                const otherValue = Number(payload[p.provider_name]) || 0;
+                return Math.abs(currentValue - otherValue) < 0.3;
+            });
+            if (hasCloseNeighbor) {
+                const dir = providerIdx % 2 === 0 ? 1 : -1;
+                const mag = 2 + Math.floor(providerIdx / 2);
+                offsetX = dir * mag;
+                offsetY = -dir * mag;
+            }
+        }
+
+        // Dim non-highlighted providers
+        const opacity = highlightedProvider
+            ? (highlightedProvider === providerName ? 1 : 0.2)
+            : 1;
+
+        return (
+            <circle
+                cx={cx + offsetX}
+                cy={cy + offsetY}
+                r={baseR}
+                fill={color}
+                stroke="var(--bg-surface)"
+                strokeWidth={strokeW}
+                opacity={opacity}
+            />
+        );
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -446,7 +512,7 @@ export const ExecutiveView: React.FC = () => {
                                     opacity: 0.8,
                                     marginTop: '4px'
                                 }}>
-                                    {runnerUp ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : 0}% {t('executive.advantage')}
+                                    {runnerUp && runnerUp.overall_score > 0 ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : '0.0'}% {t('executive.advantage')}
                                 </div>
                             </div>
 
@@ -638,19 +704,23 @@ export const ExecutiveView: React.FC = () => {
                 </div>
                 <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                        <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
                             <defs>
-                                {providers.map((p, i) => (
-                                    <linearGradient key={`gradient-${p.provider_name}`} id={`gradient-${p.provider_name}`} x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor={getColor(p.provider_name, i)} stopOpacity={0.3} />
-                                        <stop offset="100%" stopColor={getColor(p.provider_name, i)} stopOpacity={0.05} />
-                                    </linearGradient>
-                                ))}
+                                {sortedByScore.map((p, i) => {
+                                    const [topOpacity, bottomOpacity] = getFillOpacity(i);
+                                    return (
+                                        <linearGradient key={`gradient-${p.provider_name}`} id={`gradient-${p.provider_name}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={getColor(p.provider_name, i)} stopOpacity={topOpacity} />
+                                            <stop offset="100%" stopColor={getColor(p.provider_name, i)} stopOpacity={bottomOpacity} />
+                                        </linearGradient>
+                                    );
+                                })}
                             </defs>
                             <PolarGrid
                                 stroke="var(--border-color)"
-                                strokeWidth={1.5}
+                                strokeWidth={1}
                                 strokeDasharray="3 3"
+                                gridType="polygon"
                             />
                             <PolarAngleAxis
                                 dataKey="subject"
@@ -663,52 +733,179 @@ export const ExecutiveView: React.FC = () => {
                             <PolarRadiusAxis
                                 angle={30}
                                 domain={[0, 10]}
+                                tickCount={6}
                                 tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
                                 stroke="var(--border-color)"
                             />
                             <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'var(--bg-surface)',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '10px',
-                                    boxShadow: 'var(--shadow-lg)',
-                                    padding: '12px'
+                                content={({ label, payload }) => {
+                                    if (!payload || payload.length === 0) return null;
+                                    const sorted = [...payload].sort((a: any, b: any) => (b.value as number) - (a.value as number));
+                                    return (
+                                        <div style={{
+                                            backgroundColor: 'var(--bg-surface)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '10px',
+                                            boxShadow: 'var(--shadow-lg)',
+                                            padding: '12px 16px',
+                                            minWidth: '180px'
+                                        }}>
+                                            <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                {label}
+                                            </div>
+                                            {sorted.map((entry: any, idx: number) => (
+                                                <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '0.85rem' }}>
+                                                    <span style={{ width: 10, height: 10, borderRadius: '50%', background: entry.color, flexShrink: 0 }} />
+                                                    <span style={{ flex: 1, fontWeight: idx === 0 ? 700 : 500, color: 'var(--text-primary)' }}>{entry.name}</span>
+                                                    <span style={{ fontWeight: 700, color: entry.color }}>{Number(entry.value).toFixed(1)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
                                 }}
-                                itemStyle={{
-                                    color: 'var(--text-primary)',
-                                    fontSize: '0.875rem',
-                                    fontWeight: 600
-                                }}
-                                labelStyle={{
-                                    color: 'var(--text-secondary)',
-                                    fontWeight: 700,
-                                    marginBottom: '8px'
-                                }}
-                                formatter={(value: any) => Number(value).toFixed(2)}
                             />
                             <Legend
                                 wrapperStyle={{
                                     paddingTop: '24px',
-                                    fontSize: '0.875rem',
+                                    fontSize: '0.85rem',
                                     fontWeight: 600
                                 }}
                                 iconType="circle"
+                                onMouseEnter={(e: any) => {
+                                    const name = e?.dataKey || sortedByScore.find(p => displayProviderName(p.provider_name) === e?.value)?.provider_name;
+                                    if (name) setHighlightedProvider(name);
+                                }}
+                                onMouseLeave={() => setHighlightedProvider(null)}
+                                formatter={(value: string) => {
+                                    const match = sortedByScore.find(p => displayProviderName(p.provider_name) === value);
+                                    const dimmed = highlightedProvider && match && highlightedProvider !== match.provider_name;
+                                    return (
+                                        <span style={{
+                                            color: 'var(--text-primary)',
+                                            fontWeight: 500,
+                                            fontSize: '0.8rem',
+                                            opacity: dimmed ? 0.3 : 1,
+                                            transition: 'opacity 0.2s ease'
+                                        }}>{value}</span>
+                                    );
+                                }}
                             />
-                            {providers.map((p, i) => (
-                                <Radar
-                                    key={p.provider_name}
-                                    name={displayProviderName(p.provider_name)}
-                                    dataKey={p.provider_name}
-                                    stroke={getColor(p.provider_name, i)}
-                                    fill={`url(#gradient-${p.provider_name})`}
-                                    strokeWidth={2.5}
-                                    dot={{ fill: getColor(p.provider_name, i), r: 4 }}
-                                    activeDot={{ r: 6, strokeWidth: 2, stroke: 'var(--bg-surface)' }}
-                                />
-                            ))}
+                            {/* Render in reverse order so the top provider (index 0) draws on top in SVG */}
+                            {[...sortedByScore].reverse().map((p) => {
+                                const origIdx = sortedByScore.findIndex(s => s.provider_name === p.provider_name);
+                                const isHighlighted = highlightedProvider === p.provider_name;
+                                const isDimmed = highlightedProvider && !isHighlighted;
+                                return (
+                                    <Radar
+                                        key={p.provider_name}
+                                        name={displayProviderName(p.provider_name)}
+                                        dataKey={p.provider_name}
+                                        stroke={getColor(p.provider_name, origIdx)}
+                                        fill={`url(#gradient-${p.provider_name})`}
+                                        strokeWidth={isHighlighted ? 4 : getStrokeWidth(origIdx)}
+                                        strokeDasharray={getStrokePattern(origIdx)}
+                                        strokeOpacity={isDimmed ? 0.2 : 1}
+                                        fillOpacity={isDimmed ? 0.05 : 1}
+                                        dot={renderCustomDot(p.provider_name, origIdx)}
+                                        activeDot={{ r: 7, strokeWidth: 2, stroke: 'var(--bg-surface)' }}
+                                        onMouseEnter={() => setHighlightedProvider(p.provider_name)}
+                                        onMouseLeave={() => setHighlightedProvider(null)}
+                                        style={{ transition: 'stroke-opacity 0.2s ease, fill-opacity 0.2s ease' }}
+                                    />
+                                );
+                            })}
                         </RadarChart>
                     </ResponsiveContainer>
                 </div>
+
+                {/* Score Comparison Mini-Table */}
+                {radarData.length > 0 && (
+                    <div style={{ marginTop: '16px', overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                            <thead>
+                                <tr>
+                                    <th style={{
+                                        textAlign: 'left',
+                                        padding: '6px 8px',
+                                        borderBottom: '2px solid var(--border-color)',
+                                        color: 'var(--text-secondary)',
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem',
+                                        textTransform: 'uppercase',
+                                    }}>
+                                        {t('executive.radar.title')}
+                                    </th>
+                                    {sortedByScore.map((p, i) => (
+                                        <th key={p.provider_name} style={{
+                                            textAlign: 'center',
+                                            padding: '6px 8px',
+                                            borderBottom: '2px solid var(--border-color)',
+                                            fontWeight: 600,
+                                            fontSize: '0.75rem',
+                                            whiteSpace: 'nowrap',
+                                            cursor: 'pointer',
+                                            opacity: highlightedProvider && highlightedProvider !== p.provider_name ? 0.4 : 1,
+                                        }}
+                                            onMouseEnter={() => setHighlightedProvider(p.provider_name)}
+                                            onMouseLeave={() => setHighlightedProvider(null)}
+                                        >
+                                            <span style={{
+                                                display: 'inline-block',
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: '50%',
+                                                background: getColor(p.provider_name, i),
+                                                marginRight: 4,
+                                                verticalAlign: 'middle',
+                                            }} />
+                                            <span style={{ color: 'var(--text-primary)', verticalAlign: 'middle' }}>
+                                                {displayProviderName(p.provider_name)}
+                                            </span>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {radarData.map((row) => (
+                                    <tr key={row.subject}>
+                                        <td style={{
+                                            padding: '5px 8px',
+                                            color: 'var(--text-primary)',
+                                            fontWeight: 500,
+                                            borderBottom: '1px solid var(--border-color)',
+                                        }}>
+                                            {row.subject}
+                                        </td>
+                                        {sortedByScore.map((p, i) => {
+                                            const val = Number((row as any)[p.provider_name]) || 0;
+                                            const intensity = Math.min(val / 10, 1);
+                                            const color = getColor(p.provider_name, i);
+                                            const isHl = highlightedProvider === p.provider_name;
+                                            const isDim = highlightedProvider && !isHl;
+                                            return (
+                                                <td key={p.provider_name} style={{
+                                                    textAlign: 'center',
+                                                    padding: '5px 8px',
+                                                    fontWeight: 600,
+                                                    borderBottom: '1px solid var(--border-color)',
+                                                    background: hexToRgba(color, intensity * 0.2),
+                                                    color: 'var(--text-primary)',
+                                                    opacity: isDim ? 0.3 : 1,
+                                                    transition: 'opacity 0.2s ease',
+                                                }}
+                                                    onMouseEnter={() => setHighlightedProvider(p.provider_name)}
+                                                    onMouseLeave={() => setHighlightedProvider(null)}
+                                                >
+                                                    {val.toFixed(1)}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
 
             {/* Bar Chart */}

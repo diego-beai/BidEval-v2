@@ -22,7 +22,14 @@ import { useProviderStore } from './stores/useProviderStore';
 import { getProviderDisplayName } from './types/provider.types';
 
 
-type ViewType = 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'chat' | 'mail';
+import { AllProjectsStatusPage } from './pages/AllProjectsStatusPage';
+import { ProjectSetupWizard } from './components/setup/ProjectSetupWizard';
+import { LandingPage } from './pages/LandingPage';
+import { EconomicSection } from './components/economic/EconomicSection';
+import { RfpGeneratorPage } from './pages/RfpGeneratorPage';
+import { SupplierDirectoryPage } from './pages/SupplierDirectoryPage';
+
+type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'mail' | 'rfp-gen' | 'suppliers' | 'projects-status';
 
 export default function App() {
   const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
@@ -30,6 +37,7 @@ export default function App() {
     const saved = localStorage.getItem('activeView') as ViewType;
     return saved || 'home';
   });
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   // Track clicked provider from the grid (separate from files)
   const [clickedProvider, setClickedProvider] = useState<string>('');
@@ -46,8 +54,8 @@ export default function App() {
     return providers[0] || '';
   }, [clickedProvider, selectedFiles]);
 
-  // Persist activeView state and clear stale errors on navigation
-  useMemo(() => {
+  // Persist activeView state
+  useEffect(() => {
     localStorage.setItem('activeView', activeView);
   }, [activeView]);
 
@@ -113,7 +121,7 @@ export default function App() {
     });
 
     const count = uniqueEvaluations.size;
-    const progressValue = (count / 4) * 100;
+    const progressValue = (count / 3) * 100;
 
     return {
       count,
@@ -288,7 +296,7 @@ export default function App() {
                     border: '1px solid rgba(18, 181, 176, 0.2)'
                   }}>
                     <p style={{ margin: 0, fontSize: '14px', color: 'var(--accent)', fontWeight: 500 }}>
-                      Processing {processingFileCount} proposal{processingFileCount > 1 ? 's' : ''}...
+                      {t('sidebar.processing_files').replace('{count}', processingFileCount.toString())}
                     </p>
                   </div>
                 )}
@@ -316,7 +324,7 @@ export default function App() {
                         {selectedProvider}
                       </h3>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                        Evaluation Progress
+                        {t('proposal.eval_progress')}
                       </p>
                     </div>
 
@@ -388,7 +396,7 @@ export default function App() {
                           {selectedProviderData?.count || selectedProviderProgress.count}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                          Completed
+                          {t('proposal.completed_count')}
                         </div>
                       </div>
                       <div style={{
@@ -506,11 +514,11 @@ export default function App() {
                     }}
                     onCancel={() => {
                       useRfqStore.getState().cancelProcessing();
-                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
+                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => { }));
                     }}
                     onCancelFile={(fileId) => {
                       useRfqStore.getState().cancelFileProcessing(fileId);
-                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => {}));
+                      import('./services/n8n.service').then(m => m.cancelRunningN8nExecutions().catch(() => { }));
                     }}
                   />
                 </div>
@@ -534,12 +542,22 @@ export default function App() {
     </div>
   );
 
+  // Landing page renders outside the main app layout
+  if (activeView === 'landing') {
+    return (
+      <LandingPage
+        onEnterApp={() => setActiveView('home')}
+        language={useLanguageStore.getState().language}
+      />
+    );
+  }
+
   return (
     <>
       <Preloader />
-      <SidebarLayout activeView={activeView} onNavigate={(view) => setActiveView(view as ViewType)}>
+      <SidebarLayout activeView={activeView} onNavigate={(view) => setActiveView(view as ViewType)} onNewProject={() => setShowSetupWizard(true)}>
 
-        {activeView === 'home' && <HomeDashboard onNavigate={(view) => setActiveView(view as ViewType)} />}
+        {activeView === 'home' && <HomeDashboard onNavigate={(view) => setActiveView(view as ViewType)} onNewProject={() => setShowSetupWizard(true)} />}
 
         {activeView === 'upload' && renderUploadView()}
 
@@ -557,12 +575,27 @@ export default function App() {
 
         {activeView === 'decision' && <VendorDecisionDashboard />}
 
+        {activeView === 'economic' && <EconomicSection />}
+
         {activeView === 'chat' && <ChatPage />}
 
         {activeView === 'mail' && <MailDashboard />}
 
+        {activeView === 'rfp-gen' && <RfpGeneratorPage />}
+
+        {activeView === 'suppliers' && <SupplierDirectoryPage />}
+
+        {activeView === 'projects-status' && (
+          <AllProjectsStatusPage />
+        )}
       </SidebarLayout>
       <ToastContainer />
+      {showSetupWizard && (
+        <ProjectSetupWizard
+          onClose={() => setShowSetupWizard(false)}
+          onCreated={() => setShowSetupWizard(false)}
+        />
+      )}
     </>
   );
 }
