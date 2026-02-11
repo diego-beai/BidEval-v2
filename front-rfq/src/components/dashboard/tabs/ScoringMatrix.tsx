@@ -40,18 +40,20 @@ const getScoringCriteria = (t: (key: string) => string) => DEFAULT_SCORING_CRITE
 }));
 
 // Function to get translated category name (for fallback mode)
-const getCategoryName = (category: string, t: (key: string) => string): string => {
+const getCategoryName = (category: string, t: (key: string) => string, displayName?: string): string => {
+    // If a display_name is provided from the DB, use it directly
+    if (displayName) return displayName;
     const categoryMap: Record<string, string> = {
         'technical': t('scoring.category.technical'),
         'economic': t('scoring.category.economic'),
         'execution': t('scoring.category.execution'),
         'hse_compliance': t('scoring.category.hse_compliance'),
     };
-    return categoryMap[category] || category;
+    return categoryMap[category] || category.replace(/_/g, ' ').toUpperCase();
 };
 
 // Default category info (fallback when no dynamic configuration)
-const DEFAULT_CATEGORY_INFO: Record<string, { weight: number; color: string }> = {
+const DEFAULT_CATEGORY_INFO: Record<string, { weight: number; color: string; displayName?: string }> = {
     'technical': { weight: 30, color: '#12b5b0' },
     'economic': { weight: 35, color: '#f59e0b' },
     'execution': { weight: 20, color: '#3b82f6' },
@@ -123,10 +125,11 @@ export const ScoringMatrix: React.FC = () => {
                 if (cat && cat.name) {
                     const catName = typeof cat.name === 'string' ? cat.name : String(cat.name);
                     const catColor = typeof cat.color === 'string' ? cat.color : '#12b5b0';
-                    acc[catName] = { weight: Number(cat.weight) || 0, color: catColor };
+                    const catDisplayName = typeof cat.display_name === 'string' ? cat.display_name : '';
+                    acc[catName] = { weight: Number(cat.weight) || 0, color: catColor, displayName: catDisplayName };
                 }
                 return acc;
-            }, {} as Record<string, { weight: number; color: string }>);
+            }, {} as Record<string, { weight: number; color: string; displayName?: string }>);
             console.log('[ScoringMatrix] CATEGORY_INFO from DB:', Object.keys(result));
             return result;
         }
@@ -282,7 +285,7 @@ export const ScoringMatrix: React.FC = () => {
                 overall_score: newOverall,
                 scores: newScores,
             };
-        }).sort((a, b) => a.provider_name.localeCompare(b.provider_name))
+        }).sort((a, b) => (a.provider_name || '').localeCompare(b.provider_name || ''))
           .map((p, idx) => ({ ...p, position: idx + 1 }));
     }, [scoringResults, customWeights, customCategoryWeights, SCORING_CRITERIA, CATEGORY_INFO]);
 
@@ -709,7 +712,7 @@ export const ScoringMatrix: React.FC = () => {
                                                 color: info.color,
                                                 borderLeft: `4px solid ${info.color}`
                                             }}>
-                                                {getCategoryName(category, t)} ({categoryWeight}%)
+                                                {getCategoryName(category, t, info.displayName)} ({categoryWeight}%)
                                                 {categoryChanged && (
                                                     <span style={{
                                                         marginLeft: '8px',
@@ -776,7 +779,7 @@ export const ScoringMatrix: React.FC = () => {
                                         {/* Category Subtotal */}
                                         <tr style={{ background: `${info.color}08` }}>
                                             <td style={{ padding: '12px 16px', fontWeight: 600, color: info.color }}>
-                                                {getCategoryName(category, t)} {t('scoring.average')}
+                                                {getCategoryName(category, t, info.displayName)} {t('scoring.average')}
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '12px 16px' }}>
                                                 <span style={{ fontWeight: 700, color: info.color }}>{categoryWeight}%</span>

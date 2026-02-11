@@ -211,17 +211,42 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
 
     fetchMetrics: async () => {
         try {
-            const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const metrics = Array.isArray(data) ? data[0] : (data.data ? data.data[0] : data);
-                set({
-                    metrics,
-                    lastUpdated: new Date()
+            const projectId = useProjectStore.getState().activeProjectId;
+
+            if (supabase && projectId) {
+                // Use Supabase directly instead of n8n webhook
+                const { data, error } = await supabase
+                    .from('rfq_items_master')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('project_id', projectId);
+
+                if (!error) {
+                    set({
+                        metrics: {
+                            total_items: (data as any)?.length ?? 0,
+                            total_projects: 1,
+                            updated_today: 0
+                        },
+                        lastUpdated: new Date()
+                    });
+                }
+            } else {
+                // Fallback to n8n webhook
+                const url = projectId
+                    ? `${API_CONFIG.N8N_TABLA_URL}?project_id=${projectId}`
+                    : API_CONFIG.N8N_TABLA_URL;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                if (response.ok) {
+                    const data = await response.json();
+                    const metrics = Array.isArray(data) ? data[0] : (data.data ? data.data[0] : data);
+                    set({
+                        metrics,
+                        lastUpdated: new Date()
+                    });
+                }
             }
         } catch (err) {
             console.error('Error fetching metrics:', err);

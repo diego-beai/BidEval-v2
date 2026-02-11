@@ -327,6 +327,9 @@ export const ExecutiveView: React.FC = () => {
         return `rgba(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, ${alpha})`;
     };
 
+    // Sanitize string for SVG id attributes (no spaces or special chars)
+    const svgId = (str: string): string => str.replace(/[^a-zA-Z0-9_-]/g, '_');
+
     // Custom dot renderer with offset for close values
     const renderCustomDot = (providerName: string, providerIdx: number) => (props: any) => {
         const { cx, cy, payload } = props;
@@ -708,12 +711,12 @@ export const ExecutiveView: React.FC = () => {
                 </div>
                 <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                        <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
                             <defs>
                                 {sortedByScore.map((p, i) => {
                                     const [topOpacity, bottomOpacity] = getFillOpacity(i);
                                     return (
-                                        <linearGradient key={`gradient-${p.provider_name}`} id={`gradient-${p.provider_name}`} x1="0" y1="0" x2="0" y2="1">
+                                        <linearGradient key={`gradient-${p.provider_name}`} id={`gradient-${svgId(p.provider_name)}`} x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor={getColor(p.provider_name, i)} stopOpacity={topOpacity} />
                                             <stop offset="100%" stopColor={getColor(p.provider_name, i)} stopOpacity={bottomOpacity} />
                                         </linearGradient>
@@ -805,7 +808,7 @@ export const ExecutiveView: React.FC = () => {
                                         name={displayProviderName(p.provider_name)}
                                         dataKey={p.provider_name}
                                         stroke={getColor(p.provider_name, origIdx)}
-                                        fill={`url(#gradient-${p.provider_name})`}
+                                        fill={`url(#gradient-${svgId(p.provider_name)})`}
                                         strokeWidth={isHighlighted ? 4 : getStrokeWidth(origIdx)}
                                         strokeDasharray={getStrokePattern(origIdx)}
                                         strokeOpacity={isDimmed ? 0.2 : 1}
@@ -919,23 +922,22 @@ export const ExecutiveView: React.FC = () => {
 
             {/* Bar Chart */}
             <div className="widget-card" style={{
-                minHeight: '480px',
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
-                padding: '28px',
+                padding: '20px',
                 animation: 'fadeInUp 0.5s ease-out 0.2s backwards'
             }}>
                 <div style={{
-                    marginBottom: '24px'
+                    marginBottom: '12px'
                 }}>
                     <div>
-                        <div className="widget-title" style={{ margin: '0 0 6px 0' }}>
+                        <div className="widget-title" style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>
                             {t('executive.bar.title')}
                         </div>
                         <div style={{
-                            fontSize: '0.875rem',
+                            fontSize: '0.8rem',
                             color: 'var(--text-secondary)',
                             fontWeight: 500
                         }}>
@@ -943,7 +945,7 @@ export const ExecutiveView: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
+                <div style={{ flex: 1, width: '100%', minHeight: '200px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                             data={barChartData}
@@ -952,7 +954,7 @@ export const ExecutiveView: React.FC = () => {
                         >
                             <defs>
                                 {barChartData.map((entry, index) => (
-                                    <linearGradient key={`bar-gradient-${entry.id}`} id={`bar-gradient-${entry.id}`} x1="0" y1="0" x2="1" y2="0">
+                                    <linearGradient key={`bar-gradient-${entry.id}`} id={`bar-gradient-${svgId(entry.id)}`} x1="0" y1="0" x2="1" y2="0">
                                         <stop offset="0%" stopColor={getColor(entry.id, index)} stopOpacity={0.8} />
                                         <stop offset="100%" stopColor={getColor(entry.id, index)} stopOpacity={1} />
                                     </linearGradient>
@@ -975,8 +977,21 @@ export const ExecutiveView: React.FC = () => {
                             <YAxis
                                 type="category"
                                 dataKey="name"
-                                width={120}
-                                tick={{ fill: 'var(--text-primary)', fontSize: 13, fontWeight: 700 }}
+                                width={140}
+                                tick={(props: any) => {
+                                    const { x, y, payload } = props;
+                                    const name = payload.value || '';
+                                    const maxLen = 18;
+                                    const display = name.length > maxLen ? name.slice(0, maxLen) + '...' : name;
+                                    return (
+                                        <g>
+                                            <title>{name}</title>
+                                            <text x={x - 4} y={y} textAnchor="end" fill="var(--text-primary)" fontSize={11} fontWeight={600} dominantBaseline="middle">
+                                                {display}
+                                            </text>
+                                        </g>
+                                    );
+                                }}
                                 stroke="var(--border-color)"
                                 tickLine={false}
                             />
@@ -1012,7 +1027,7 @@ export const ExecutiveView: React.FC = () => {
                                 {barChartData.map((entry, index) => (
                                     <Cell
                                         key={`cell-${index}`}
-                                        fill={`url(#bar-gradient-${entry.id})`}
+                                        fill={`url(#bar-gradient-${svgId(entry.id)})`}
                                         stroke={getColor(entry.id, index)}
                                         strokeWidth={entry.id === winner.provider_name ? 3 : 0}
                                     />
@@ -1025,23 +1040,22 @@ export const ExecutiveView: React.FC = () => {
 
             {/* Category Weight Distribution */}
             <div className="widget-card" style={{
-                minHeight: '480px',
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
-                padding: '28px',
+                padding: '20px',
                 animation: 'fadeInUp 0.5s ease-out 0.3s backwards'
             }}>
                 <div style={{
-                    marginBottom: '24px'
+                    marginBottom: '12px'
                 }}>
                     <div>
-                        <div className="widget-title" style={{ margin: '0 0 6px 0' }}>
+                        <div className="widget-title" style={{ margin: '0 0 4px 0', fontSize: '1rem' }}>
                             {t('executive.criteria_weight')}
                         </div>
                         <div style={{
-                            fontSize: '0.875rem',
+                            fontSize: '0.8rem',
                             color: 'var(--text-secondary)',
                             fontWeight: 500
                         }}>
@@ -1049,7 +1063,7 @@ export const ExecutiveView: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div style={{ flex: 1, width: '100%', minHeight: '350px', display: 'flex', alignItems: 'center' }}>
+                <div style={{ flex: 1, width: '100%', minHeight: '180px', display: 'flex', alignItems: 'center' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <defs>
@@ -1107,12 +1121,10 @@ export const ExecutiveView: React.FC = () => {
                                 }
                                 cx="50%"
                                 cy="50%"
-                                labelLine={{
-                                    stroke: 'var(--text-secondary)',
-                                    strokeWidth: 1.5
-                                }}
-                                label={(entry) => `${entry.value}%`}
-                                outerRadius="60%"
+                                labelLine={false}
+                                label={false}
+                                outerRadius="70%"
+                                innerRadius="40%"
                                 dataKey="value"
                                 animationBegin={300}
                                 animationDuration={800}
@@ -1155,13 +1167,21 @@ export const ExecutiveView: React.FC = () => {
                             />
                             <Legend
                                 verticalAlign="bottom"
-                                height={50}
+                                height={80}
                                 wrapperStyle={{
-                                    paddingTop: '20px',
-                                    fontSize: '0.875rem',
+                                    paddingTop: '12px',
+                                    fontSize: '0.75rem',
                                     fontWeight: 600
                                 }}
                                 iconType="circle"
+                                formatter={(value: string, entry: any) => {
+                                    const weight = entry?.payload?.value;
+                                    return (
+                                        <span style={{ color: 'var(--text-primary)', fontSize: '0.75rem' }}>
+                                            {value} ({weight}%)
+                                        </span>
+                                    );
+                                }}
                             />
                         </PieChart>
                     </ResponsiveContainer>

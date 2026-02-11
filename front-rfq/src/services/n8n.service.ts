@@ -69,20 +69,26 @@ export async function uploadRfqFile(
       file_title: fileTitle,
       file_url: "",
       file_binary: fileBase64,
-      // Project ID at root level for easy access in n8n
       project_id: additionalMetadata?.project_id || null,
       metadata: {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
         fileSize: file.size,
         fileId: fileId,
-        ...(additionalMetadata?.project_id && { project_id: additionalMetadata.project_id }),
-        ...(additionalMetadata?.proyecto && { proyecto: additionalMetadata.proyecto }),
-        ...(additionalMetadata?.proveedor && { proveedor: additionalMetadata.proveedor }),
-        ...(additionalMetadata?.tipoEvaluacion && { tipoEvaluacion: additionalMetadata.tipoEvaluacion })
+        project_id: additionalMetadata?.project_id || null,
+        proyecto: additionalMetadata?.proyecto || null,
+        proveedor: additionalMetadata?.proveedor || null,
+        tipoEvaluacion: additionalMetadata?.tipoEvaluacion || []
       }
     };
 
+    console.log('📤 [UPLOAD] Sending to:', API_CONFIG.N8N_WEBHOOK_URL);
+    console.log('📤 [UPLOAD] project_id:', payload.project_id);
+    console.log('📤 [UPLOAD] metadata.proveedor:', payload.metadata.proveedor);
+    console.log('📤 [UPLOAD] metadata.tipoEvaluacion:', payload.metadata.tipoEvaluacion);
+    console.log('📤 [UPLOAD] metadata.proyecto:', payload.metadata.proyecto);
+    console.log('📤 [UPLOAD] file_title:', payload.file_title);
+    console.log('📤 [UPLOAD] payload size:', JSON.stringify(payload).length, 'bytes');
 
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_WEBHOOK_URL,
@@ -98,8 +104,27 @@ export async function uploadRfqFile(
       abortSignal
     );
 
-    // n8n devuelve directamente un array de resultados
-    const data = await response.json();
+    // Leer respuesta como texto primero para evitar "Unexpected end of JSON input"
+    const responseText = await response.text();
+
+    if (!responseText.trim()) {
+      throw new ApiError(
+        'El servidor devolvió una respuesta vacía. El workflow de n8n puede estar teniendo problemas con peticiones simultáneas.'
+      );
+    }
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ JSON parse error for file:', payload.file_title, {
+        responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 300)
+      });
+      throw new ApiError(
+        `Respuesta inválida del servidor al procesar "${payload.file_title}". El workflow puede tener un error interno.`
+      );
+    }
 
     // Si n8n devuelve un array directamente, úsalo
     if (Array.isArray(data)) {

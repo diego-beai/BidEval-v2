@@ -1,0 +1,247 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "content": "## /rfp-generate - AI RFP Document Generator\n\nGenerates a complete RFP/RFQ/RFI document using AI based on project requirements.\n\n**Method**: POST\n**Body**: { project_id, project_name, project_type, description, requirements, providers?, criteria?, deadlines?, language?, sections? }\n\n**Flow**: Webhook → Set Fields → LLM Chain → Parse & Structure Output → Respond\n\n**Returns**: { success, document, title, sections: [{title, content}], metadata: {word_count, generated_at, model} }",
+                "height": 400,
+                "width": 2200,
+                "color": 6
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -400,
+                8640
+            ],
+            "id": "dda179ec-aeee-40a9-b70d-2a3f939065a4",
+            "name": "Sticky Note RFP Generate"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "rfp-generate-desarrollo",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -320,
+                8800
+            ],
+            "id": "c7a2ec1a-13d0-4ad0-aec5-2e878dc28458",
+            "name": "Webhook RFP Generate",
+            "webhookId": "rfp-generate-webhook-001"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "rfp-project-id",
+                            "name": "project_id",
+                            "value": "={{ $json.body.project_id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-project-name",
+                            "name": "project_name",
+                            "value": "={{ $json.body.project_name }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-project-type",
+                            "name": "project_type",
+                            "value": "={{ $json.body.project_type || 'RFP' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-description",
+                            "name": "description",
+                            "value": "={{ $json.body.description }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-requirements",
+                            "name": "requirements",
+                            "value": "={{ $json.body.requirements }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-language",
+                            "name": "language",
+                            "value": "={{ $json.body.language || 'es' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "rfp-sections",
+                            "name": "sections",
+                            "value": "={{ $json.body.sections }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "rfp-criteria",
+                            "name": "criteria",
+                            "value": "={{ $json.body.criteria }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "rfp-deadlines",
+                            "name": "deadlines",
+                            "value": "={{ $json.body.deadlines }}",
+                            "type": "object"
+                        },
+                        {
+                            "id": "rfp-providers",
+                            "name": "providers",
+                            "value": "={{ $json.body.providers }}",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -112,
+                8800
+            ],
+            "id": "10acf480-dd0a-4985-8fd7-d345cd6e1b98",
+            "name": "Set RFP Params"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### INPUT\n\n## PROJECT: {{ $json.project_name }}\n## TYPE: {{ $json.project_type }}\n## LANGUAGE: {{ $json.language }}\n\n## DESCRIPTION:\n{{ $json.description }}\n\n## REQUIREMENTS:\n{{ $json.requirements }}\n\n## SECTIONS TO INCLUDE:\n{{ JSON.stringify($json.sections) }}\n\n## EVALUATION CRITERIA:\n{{ JSON.stringify($json.criteria) }}\n\n## DEADLINES:\n{{ JSON.stringify($json.deadlines) }}\n\n## INVITED PROVIDERS:\n{{ JSON.stringify($json.providers) }}\n\n### INSTRUCTIONS\nGenerate a complete, professional {{ $json.project_type }} document with ALL the requested sections.\nThe document must be in {{ $json.language === 'en' ? 'English' : 'Spanish' }}.\nUse Markdown formatting for the document body.\nEach section should be comprehensive and detailed.\nInclude the evaluation criteria and deadlines in the appropriate sections.\n\nReturn ONLY the JSON object. Do NOT include any text before or after the JSON.\n\n### OUTPUT SCHEMA\n{\n  \"title\": \"Document title\",\n  \"document\": \"Full document content in Markdown\",\n  \"sections\": [\n    { \"title\": \"Section Name\", \"content\": \"Section content in Markdown\" }\n  ]\n}",
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=You are an expert procurement specialist and technical writer with extensive experience in industrial projects (energy, P2X, green hydrogen, EPC).\n\n### ROLE\nGenerate formal {{ $json.project_type }} (Request for Proposal/Quotation/Information) documents that are professional, comprehensive, and aligned with industry best practices.\n\n### GUIDELINES\n1. **Structure**: Follow standard {{ $json.project_type }} format with clear sections, numbering, and professional language.\n2. **Content**: Each section must be substantive (not just headers). Include specific requirements, evaluation methodology, and clear instructions for bidders.\n3. **Evaluation Criteria**: If criteria with weights are provided, include them in a dedicated section with a clear scoring methodology.\n4. **Deadlines**: If deadlines are provided, include a timeline section with key dates.\n5. **Providers**: If invited providers are listed, reference the closed bidding process.\n6. **Language**: Write entirely in the requested language. Use formal, professional tone.\n7. **Formatting**: Use Markdown (headers ##, bold **, bullet points -, tables |) for readability.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any conversational text, explanations, or reasoning.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n- The 'document' field must contain the FULL document text, not just a summary."
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                80,
+                8800
+            ],
+            "id": "6f4bceff-8c21-4166-9610-24c84be6cea0",
+            "name": "RFP Generation Chain"
+        },
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {
+                    "temperature": 0.2
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                80,
+                9008
+            ],
+            "id": "0e422f7a-0081-465f-9d1d-f9d20dd1710f",
+            "name": "Mistral RFP Model",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse LLM output and structure the RFP response\nconst llmOutput = $input.first().json;\nconst params = $('Set RFP Params').first().json;\nlet result;\n\ntry {\n  const rawText = llmOutput.text || llmOutput.output || JSON.stringify(llmOutput);\n  \n  let parsed;\n  if (typeof rawText === 'string') {\n    const cleaned = rawText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n    parsed = JSON.parse(cleaned);\n  } else {\n    parsed = rawText;\n  }\n  \n  // Build sections array\n  const sections = (parsed.sections || []).map(s => ({\n    title: s.title || 'Untitled Section',\n    content: s.content || ''\n  }));\n  \n  // Build full document\n  const document = parsed.document || sections.map(s => `## ${s.title}\\n\\n${s.content}`).join('\\n\\n');\n  \n  // Calculate word count\n  const wordCount = document.split(/\\s+/).filter(w => w.length > 0).length;\n  \n  result = {\n    success: true,\n    title: parsed.title || `${params.project_type} - ${params.project_name}`,\n    document: document,\n    sections: sections,\n    metadata: {\n      word_count: wordCount,\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest'\n    },\n    message: `RFP generated successfully (${wordCount} words, ${sections.length} sections)`\n  };\n  \n  console.log(`✅ RFP Generated:`);\n  console.log(`   ├─ Title: ${result.title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   └─ Words: ${wordCount}`);\n} catch (err) {\n  console.error('❌ Error parsing RFP output:', err.message);\n  result = {\n    success: false,\n    title: '',\n    document: '',\n    sections: [],\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error generating RFP: ' + err.message\n  };\n}\n\nreturn [{ json: result }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                288,
+                8800
+            ],
+            "id": "c730f47c-3b0f-440d-a1fb-4a091fff0a32",
+            "name": "Parse RFP Output"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                480,
+                8800
+            ],
+            "id": "effde403-bc9e-4bf5-b192-e47dd5496953",
+            "name": "Respond RFP Generate"
+        }
+    ],
+    "connections": {
+        "Webhook RFP Generate": {
+            "main": [
+                [
+                    {
+                        "node": "Set RFP Params",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set RFP Params": {
+            "main": [
+                [
+                    {
+                        "node": "RFP Generation Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "RFP Generation Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Parse RFP Output",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral RFP Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "RFP Generation Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse RFP Output": {
+            "main": [
+                [
+                    {
+                        "node": "Respond RFP Generate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

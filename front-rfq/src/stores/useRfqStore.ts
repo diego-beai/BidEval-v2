@@ -583,7 +583,10 @@ export const useRfqStore = create<RfqState>()(
             console.log('[fetchAllTableData] Loaded', data?.length, 'items for project', activeProjectId);
           } else {
             // Fallback to n8n if Supabase not configured
-            const response = await fetch(API_CONFIG.N8N_TABLA_URL, {
+            const tablaUrl = activeProjectId
+              ? `${API_CONFIG.N8N_TABLA_URL}?project_id=${activeProjectId}`
+              : API_CONFIG.N8N_TABLA_URL;
+            const response = await fetch(tablaUrl, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' }
             });

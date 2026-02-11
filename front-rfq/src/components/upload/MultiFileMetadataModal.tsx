@@ -45,7 +45,7 @@ export function MultiFileMetadataModal({
   disabled = false
 }: MultiFileMetadataModalProps) {
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
-  const { projects } = useProjectStore();
+  const { projects, activeProjectId } = useProjectStore();
   const { projectProviders, addLocalProvider } = useProviderStore();
   const { t } = useLanguageStore();
   const [providerSearch, setProviderSearch] = useState('');
@@ -238,7 +238,7 @@ export function MultiFileMetadataModal({
                 if (e.key === 'Enter' && providerSearch.trim()) {
                   e.preventDefault();
                   const normalized = providerSearch.trim().toUpperCase();
-                  addLocalProvider(normalized);
+                  addLocalProvider(normalized, activeProjectId || undefined);
                   handleProviderSelect(fileIndex, normalized);
                 }
               }}
@@ -275,7 +275,7 @@ export function MultiFileMetadataModal({
               style={{ color: 'var(--accent)', fontWeight: 600 }}
               onClick={() => {
                 const normalized = providerSearch.trim().toUpperCase();
-                addLocalProvider(normalized);
+                addLocalProvider(normalized, activeProjectId || undefined);
                 handleProviderSelect(fileIndex, normalized);
               }}
             >
@@ -435,35 +435,6 @@ export function MultiFileMetadataModal({
                     )}
 
                     <div className="mfm-form-grid">
-                      {/* Project dropdown */}
-                      <div className="mfm-field">
-                        <label className="mfm-label">
-                          {t('modal.project')} <span className="mfm-required">*</span>
-                        </label>
-                        <div className="mfm-dropdown-container">
-                          <button
-                            type="button"
-                            ref={(el) => setButtonRef(index, 'project', el)}
-                            className={`mfm-dropdown-btn ${!metadata.proyecto ? 'mfm-placeholder' : ''}`}
-                            onClick={() => {
-                              if (activeDropdown?.fileIndex === index && activeDropdown?.type === 'project') {
-                                closeDropdown();
-                              } else {
-                                openDropdown(index, 'project');
-                              }
-                            }}
-                            disabled={disabled}
-                          >
-                            <span title={metadata.proyecto}>
-                              {metadata.proyecto || t('modal.select_project')}
-                            </span>
-                            <span className="mfm-arrow">
-                              {activeDropdown?.fileIndex === index && activeDropdown?.type === 'project' ? '▲' : '▼'}
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-
                       {/* Provider dropdown */}
                       <div className="mfm-field">
                         <label className="mfm-label">

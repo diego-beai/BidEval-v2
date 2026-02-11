@@ -9,7 +9,6 @@ import { useOnboardingStore } from '../../stores/useOnboardingStore';
 import { ProjectSelector } from '../common/ProjectSelector';
 import { ProjectProgressStepper } from '../common/ProjectProgressStepper';
 import { ProjectDetailModal } from '../common/ProjectDetailModal';
-import { useRfqStore } from '../../stores/useRfqStore';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 
@@ -43,9 +42,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const activeSessions = useActiveSessions();
     const markAsViewed = useSessionViewStore(state => state.markAsViewed);
     const { resetTour, startTour, hasCompletedTour } = useOnboardingStore();
-    const { isProcessing, processingFileCount, processingStartTime } = useRfqStore();
     const { notifications, unreadNotificationCount, markNotificationRead, markAllNotificationsRead, deleteNotification, clearAllNotifications, loadNotifications } = useQAStore();
-    const [elapsedTime, setElapsedTime] = useState(0);
 
     // Fetch notifications on mount
     useEffect(() => {
@@ -62,25 +59,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    // Update elapsed time every second when processing
-    useEffect(() => {
-        if (isProcessing && processingStartTime) {
-            const interval = setInterval(() => {
-                setElapsedTime(Math.floor((Date.now() - processingStartTime) / 1000));
-            }, 1000);
-            return () => clearInterval(interval);
-        } else {
-            setElapsedTime(0);
-        }
-    }, [isProcessing, processingStartTime]);
-
-    // Format elapsed time as MM:SS
-    const formatElapsedTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
     const toggleSidebar = () => setIsExpanded(!isExpanded);
 
     // Marcar como visto cuando el usuario entra a una sección
@@ -306,68 +284,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             />
                         )}
 
-                        {/* Global Processing Indicator - shows when processing proposals */}
-                        {isProcessing && (
-                            <button
-                                onClick={() => onNavigate('upload')}
-                                style={{
-                                    marginLeft: '16px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    height: '42px', // Match selector height
-                                    padding: '0 16px',
-                                    background: 'rgba(6, 182, 212, 0.08)',
-                                    border: '1px solid rgba(6, 182, 212, 0.2)',
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    animation: 'pulse-glow 2s ease-in-out infinite'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(18, 181, 176, 0.2)';
-                                    e.currentTarget.style.borderColor = 'rgba(18, 181, 176, 0.5)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(18, 181, 176, 0.1)';
-                                    e.currentTarget.style.borderColor = 'rgba(18, 181, 176, 0.3)';
-                                }}
-                                title={t('sidebar.click_view_status')}
-                            >
-                                {/* Spinner */}
-                                <div style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    border: '2px solid rgba(18, 181, 176, 0.3)',
-                                    borderTopColor: '#12b5b0',
-                                    animation: 'spin 0.8s linear infinite'
-                                }}></div>
-
-                                {/* Text */}
-                                <span style={{
-                                    fontSize: '0.8rem',
-                                    fontWeight: 600,
-                                    color: '#12b5b0',
-                                    whiteSpace: 'nowrap'
-                                }}>
-                                    {t('sidebar.processing_files').replace('{count}', processingFileCount.toString())}
-                                </span>
-
-                                {/* Elapsed time */}
-                                <span style={{
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    color: '#12b5b0',
-                                    background: 'rgba(18, 181, 176, 0.15)',
-                                    padding: '2px 8px',
-                                    borderRadius: '10px',
-                                    fontFamily: 'monospace'
-                                }}>
-                                    {formatElapsedTime(elapsedTime)}
-                                </span>
-                            </button>
-                        )}
+                        {/* Global Processing Indicator removed - was adding noise to the header */}
                     </div>
 
                     <div className="header-actions">

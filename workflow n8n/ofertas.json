@@ -1,0 +1,2041 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "getAll",
+                "tableId": "rfq_items_master",
+                "returnAll": true,
+                "matchType": "allFilters",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "evaluation_type",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.tipo_evaluacion_actual }}"
+                        },
+                        {
+                            "keyName": "project_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $('Set File ID').first().json.project_id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -4016,
+                4096
+            ],
+            "id": "ca5147b7-6d0e-49fe-a2b3-8e67c6b03de7",
+            "name": "Get many rows1",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "qwen3-embedding:8b"
+            },
+            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+            "typeVersion": 1,
+            "position": [
+                -976,
+                5200
+            ],
+            "id": "5f7afe6e-3f7e-4bd7-b8ab-e9a2b1fd66fe",
+            "name": "Embeddings Ollama3",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### DOCUMENT AUDIT: CROSS-VALIDATION\n\n**[1. USER MANUAL SELECTION]**\n- Project: \"{{ $('Set File ID').item.json.proyect_name }}\"\n- Provider: \"{{ $('Set File ID').item.json.proveedor }}\"\n- Evaluation Type: \"{{ $('Set File ID').item.json.evaluation }}\"\n- File Name: \"{{ $('Set File ID').item.json.file_title }}\"\n\n---\n**[2. ACTUAL PDF EVIDENCE (Extracted text)]**\n{{ $json.texto_muestra }}\n\n---\n### MAPPING AND VALIDATION INSTRUCTIONS:\n\n#### RULE 1: SYNONYMS AND CANONICAL TYPES\nYou can only use these 4 exact names. Map the evidence as follows:\n- **\"Commercial Proposal\" / \"Oferta Económica\" / \"Price Schedule\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\" / \"Metodología\"** → MUST BE `Technical Evaluation`.\n- **\"Technical & Economical Proposal\"** → MUST INCLUDE BOTH: `Technical Evaluation` AND `Economical Evaluation`.\n- **Drawing lists** → `Pre-FEED Deliverables` or `FEED Deliverables`.\n\n#### RULE 2: TITLE AND FILE NAME ARE DECISIVE\n- Analyze the **File Name** and **Title** of the document. If they say \"Oferta Técnica\" or \"Technical Proposal\", the type is `Technical Evaluation`.\n- **IMPORTANT:** DO NOT add other types for minor mentions. Example: If a technical document mentions \"estimated prices\", DO NOT add `Economical Evaluation`. Only add it if you see a complete PRICE TABLE.\n- Be conservative: when in doubt, follow the File Name.\n\n#### RULE 3: INTENTION BALANCING\n- If the PDF is mixed but the user has selected one of the valid types present, mark `tipos_validados: true`.\n\n### OUTPUT FORMAT (SINGLE JSON):\n{\n  \"modo_usado\": \"VALIDADOR\",\n  \"proyecto_detectado\": \"Actual Name\",\n  \"proyecto_valido\": true | false,\n  \"proyecto_nota\": \"Summary\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"proveedor_valido\": true | false,\n  \"proveedor_nota\": \"Explanation\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"],\n  \"tipos_validados\": true | false,\n  \"tipos_nota\": \"Explain why you validated or rejected the types.\",\n  \"razonamiento\": \"Mention the File Name and Title found.\"\n}",
+                "hasOutputParser": true,
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=Act as a strict validator. If there are flagrant discrepancies between the user's suggestion and the actual PDF content, prioritize the PDF content and mark validation as false and report the correct provider/type.\n\nSupported providers: Tecnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY"
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -1472,
+                4736
+            ],
+            "id": "3f33721e-2352-4a45-80dc-1ff3a9f44173",
+            "name": "Validador de Ofertas"
+        },
+        {
+            "parameters": {
+                "model": "mistral:7b",
+                "options": {
+                    "temperature": 0.1,
+                    "numCtx": 4096,
+                    "numPredict": 1024
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+            "typeVersion": 1,
+            "position": [
+                -1520,
+                4928
+            ],
+            "id": "360bdae8-7ad3-4558-b5ca-5ec54397c4e6",
+            "name": "Ollama Chat Model1",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"modo_usado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proyecto_valido\": {\n      \"type\": \"boolean\"\n    },\n    \"proyecto_nota\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_detectado\": {\n      \"type\": \"string\"\n    },\n    \"proveedor_valido\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el proveedor detectado es distinto al que el usuario seleccionó.\"\n    },\n    \"proveedor_nota\": {\n      \"type\": \"string\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      },\n      \"description\": \"Array con los tipos que realmente tienen evidencia en el doc.\"\n    },\n    \"tipos_validados\": {\n      \"type\": \"boolean\",\n      \"description\": \"DEBE ser false si el tipo seleccionado por el usuario no tiene evidencia clara en el PDF.\"\n    },\n    \"tipos_nota\": {\n      \"type\": \"string\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"proyecto_detectado\",\n    \"proyecto_valido\",\n    \"proveedor_detectado\",\n    \"proveedor_valido\",\n    \"tipos_validados\",\n    \"razonamiento\"\n  ]\n}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.3,
+            "position": [
+                -1280,
+                4928
+            ],
+            "id": "97c51c8b-2f7b-4434-a0e8-0491f10a77ab",
+            "name": "Structured Output Parser4"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### TECHNICAL AND COMMERCIAL CLASSIFICATION (RFQ)\n\n### DOCUMENT SAMPLE (First 2 pages):\n{{ $json.texto_muestra }}\n\n---\n### CLASSIFICATION TASK:\nIdentify project, provider and evaluation types.\n\n**GOLDEN RULE FOR NOMENCLATURE:**\nYou must translate document titles to these exact names:\n- **\"Commercial Proposal\" / \"Oferta Económica\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\"** → MUST BE `Technical Evaluation`.\n- **Document lists** → `Pre-FEED Deliverables` or `FEED Deliverables` (depending on context).\n\n#### REQUIREMENTS:\n1. **PROVIDER**: Must be one of: IDOM, SENER, TRESCA, SACYR, TECNICASREUNIDAS, EA, WORLEY.\n2. **TYPES**: The `tipos_detectados` array can only contain the canonical names mentioned above.\n\n---\n### OUTPUT FORMAT (JSON):\n{\n  \"modo_usado\": \"CLASIFICADOR\",\n  \"proyecto_detectado\": \"Name\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"Justification: 'Commercial Proposal' detected -> Economical Evaluation mapped.\"\n}",
+                "hasOutputParser": true,
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "Identify the provider and evaluation types present in the document based only on the first pages."
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -1472,
+                5168
+            ],
+            "id": "e5d397f2-39bb-4823-8e8e-3c26f46bca34",
+            "name": "Clasificador de Tipo de Evaluacion y Proveedor"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "267128b5-e2c0-44ae-9973-7f18dffe292e",
+                            "leftValue": "={{ $('Set File ID').item.json.proveedor }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "a9d65ff4-430e-45db-8ca8-6078e5ee32fa",
+                            "leftValue": "={{ $('Set File ID').item.json.evaluation[0] }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "d5c265e7-00e5-42f4-95ad-4eca1e3ef530",
+                            "leftValue": "={{ $('Set File ID').item.json.proyect_name }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                -1744,
+                4928
+            ],
+            "id": "f36e9061-0584-4559-ba0c-ea6634cd89ee",
+            "name": "If"
+        },
+        {
+            "parameters": {
+                "model": "qwen3:8b",
+                "options": {
+                    "temperature": 0.1,
+                    "numCtx": 8192,
+                    "numPredict": 1536
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmOllama",
+            "typeVersion": 1,
+            "position": [
+                -1760,
+                4368
+            ],
+            "id": "f22968bc-cf2e-4df1-9f5e-e00b3b6aa683",
+            "name": "Ollama Model1",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "mistral:7b",
+                "options": {
+                    "temperature": 0.1,
+                    "numCtx": 4096,
+                    "numPredict": 1024
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmOllama",
+            "typeVersion": 1,
+            "position": [
+                -1520,
+                5376
+            ],
+            "id": "184bb983-08d3-49ed-b4dc-dda574d78bc7",
+            "name": "Ollama Model",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "content": "### Ingesta de Ofertas de Proveedores",
+                "height": 1744,
+                "width": 4608,
+                "color": 5
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -4992,
+                3776
+            ],
+            "id": "3a904b66-cd68-4186-bd32-8ae9f5c6446d",
+            "name": "Sticky Note5"
+        },
+        {
+            "parameters": {
+                "batchSize": 50,
+                "options": {
+                    "reset": "={{ $json.reiniciar_bucle ? true : false }}"
+                }
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -3184,
+                4160
+            ],
+            "id": "7c5039c7-4233-49e8-9df1-054f351c573f",
+            "name": "Loop Over Phases"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
+            },
+            "id": "77893ccf-2b2c-4ce3-aaf5-314237d11861",
+            "name": "Parsear y Preparar Update",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1232,
+                4144
+            ]
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### EVALUATION GROUP\n- Type: {{ $json.evaluation_type }}\n- Total requirements in this batch: {{ $json.total_requisitos }}\n- Batch: {{ $json.batch_index }} of {{ $json.total_batches }}\n\n### RFQ REQUIREMENTS (LIST)\nBelow are the RFQ requirements to evaluate. Each has an 'id' and 'requirement_text' that describes what the provider must address.\n\n{{ JSON.stringify($json.requisitos, null, 2) }}\n\n### FULL PROPOSAL TEXT\n\n{{ $('Loop Over Items1').first().json.texto_oferta_completo }}\n---\n### TASK\nFor EACH requirement, search the proposal text and determine if the provider addresses it.\n\n### EVALUATION CRITERIA FOR TECHNICAL REQUIREMENTS:\n\n**INCLUDED** - Use when ANY of these apply:\n- The proposal explicitly mentions or addresses the requirement\n- The proposal describes work, methodology or deliverables that cover this requirement\n- The proposal references applicable standards, norms or codes related to the requirement\n- The proposal includes this item in its scope of work, even if described differently\n- The requirement is implicitly covered by broader statements (e.g., 'complete engineering services' covers individual engineering disciplines)\n\n**PARTIALLY INCLUDED** - Use when:\n- The proposal mentions the topic but with less detail or scope than required\n- Only part of the requirement is addressed\n- The proposal mentions it as optional or conditional\n- Related work is described but not this specific item\n\n**NOT INCLUDED** - Use ONLY when:\n- There is NO mention or reference to this requirement anywhere in the proposal\n- The proposal explicitly excludes this item\n- After thorough search, nothing in the proposal relates to this requirement\n\n### IMPORTANT MATCHING GUIDELINES:\n- Look for SEMANTIC matches, not just exact text. Proposals use different terminology than RFQs.\n- A proposal saying 'we will deliver all engineering documents per discipline' covers individual document requirements.\n- Consider that proposals often group items differently than the RFQ lists them.\n- When in doubt between INCLUDED and PARTIALLY INCLUDED, choose INCLUDED.\n- When in doubt between PARTIALLY INCLUDED and NOT INCLUDED, choose PARTIALLY INCLUDED.\n- Real proposals typically address 60-80% of requirements. If you find less than 40% INCLUDED, reconsider your matching criteria.\n\n### FOR ECONOMICAL EVALUATIONS - EXTRACT THE ACTUAL VALUE:\n**CRITICAL**: For economic items, the 'cumple' field must contain the ACTUAL VALUE found, not a label.\n\nFormat for 'cumple' field:\n- If value found: \"[VALUE] [CURRENCY/UNIT] - [DESCRIPTION]\"\n  Examples:\n  - \"84,3 EUR/h - TARIFA (Process, Mechanical, Piping)\"\n  - \"312.640,62 EUR - PRE-FEED TOTAL BASE QUOTATION\"\n  - \"5.231,21 EUR - Geotechnical survey - Confirmed\"\n\n- If NO value found: \"NO VALUE FOUND - [REASON]\"\n\n### OUTPUT FORMAT (JSON)\n[\n  {\n    \"id\": \"<requirement id>\",\n    \"cumple\": \"[For Technical: INCLUDED/PARTIALLY INCLUDED/NOT INCLUDED | For Economic: VALUE or NO VALUE FOUND]\",\n    \"gap_analysis\": \"[Brief quote or evidence from proposal, or 'No mention found']\"\n  }\n]\n\nJSON only, no explanations.",
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=You are an expert procurement evaluator analyzing supplier proposals against RFQ/RFP requirements.\n\nRULES:\n- For TECHNICAL: Use labels INCLUDED, PARTIALLY INCLUDED, or NOT INCLUDED\n- For ECONOMICAL: Extract ACTUAL VALUES with currency/units (e.g., '312.640,62 EUR - PRE-FEED TOTAL'). If no value found: 'NO VALUE FOUND - [reason]'\n- Look for SEMANTIC matches - proposals often use different terminology than the RFQ\n- Be thorough: search the ENTIRE proposal text for each requirement before marking NOT INCLUDED\n- A well-prepared proposal typically addresses most requirements. If your analysis shows very few INCLUDED, you may be matching too strictly.\n- ALL responses in ENGLISH\n- JSON only"
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.7,
+            "position": [
+                -1680,
+                4016
+            ],
+            "id": "a93dea45-d8d0-4193-a118-b50f7a8c8d9d",
+            "name": "LLM Chain"
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "schema": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "desarrollo"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "document_metadata",
+                    "mode": "list",
+                    "cachedResultName": "document_metadata"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "id": "={{ $('Set File ID').first().json.file_id }}",
+                        "title": "={{ $('Set File ID').item.json.file_title }}",
+                        "project_id": "={{ $('Set File ID').item.json.project_id }}",
+                        "evaluation_types": "={{ $('Set File ID').item.json.evaluation }}",
+                        "document_type": "PROPOSAL",
+                        "provider": "={{ $('Set File ID').item.json.proveedor }}"
+                    },
+                    "matchingColumns": [
+                        "id"
+                    ],
+                    "schema": [
+                        {
+                            "id": "id",
+                            "displayName": "id",
+                            "required": true,
+                            "defaultMatch": true,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "title",
+                            "displayName": "title",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "project_id",
+                            "displayName": "project_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "document_type",
+                            "displayName": "document_type",
+                            "required": true,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "provider",
+                            "displayName": "provider",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "evaluation_types",
+                            "displayName": "evaluation_types",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "array",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "created_at",
+                            "displayName": "created_at",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "dateTime",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                -3984,
+                4928
+            ],
+            "id": "6c14fbf9-3dbb-4459-8dd5-269cb9500e16",
+            "name": "Insert Document Metadata",
+            "executeOnce": true,
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "delete",
+                "tableId": "proposals",
+                "filterType": "string",
+                "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
+            },
+            "id": "4c9def07-28eb-47c2-a2f4-f297b06088e8",
+            "name": "Delete Old Doc Rows",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -4192,
+                4928
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "10646eae-ae46-4327-a4dc-9987c2d76173",
+                            "name": "file_id",
+                            "value": "={{ $json.body.file_id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "77d782de-169d-4a46-8a8e-a3831c04d90f",
+                            "name": "file_title",
+                            "value": "={{ $json.body.file_title }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "9bde4d7f-e4f3-4ebd-9338-dce1350f9eab",
+                            "name": "file_url",
+                            "value": "={{ $json.body.file_url }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "b1dbe9b9-248a-4593-a769-a085b34e0810",
+                            "name": "file_binary",
+                            "value": "={{ $json.body.file_binary }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "74d93dce-cddc-4947-ae19-88bc5cacd146",
+                            "name": "file_metadata",
+                            "value": "={{ $json.body.metadata }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "5e43f8d4-b48e-4188-89c8-3723f184dbeb",
+                            "name": "proyect_name",
+                            "value": "={{ $json.body.metadata.proyecto }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "1093ebc6-8dd8-4c5d-b146-b6f01b069be6",
+                            "name": "proveedor",
+                            "value": "={{ $json.body.user_proveedor }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "6e0e6e2a-9b88-403e-aa0a-da0eecccd3f9",
+                            "name": "evaluation",
+                            "value": "={{ $json.body.metadata.tipoEvaluacion }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "project-id-uuid-field",
+                            "name": "project_id",
+                            "value": "={{ $json.body.project_id }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "67412ea7-4fa9-45cf-9f19-94acd690c705",
+            "name": "Set File ID",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -4384,
+                4928
+            ]
+        },
+        {
+            "parameters": {
+                "jsonMode": "expressionData",
+                "jsonData": "={{ $json.text }}",
+                "options": {
+                    "metadata": {
+                        "metadataValues": [
+                            {
+                                "name": "file_id",
+                                "value": "={{ $json.metadata.file_id }}"
+                            },
+                            {
+                                "name": "file_title",
+                                "value": "={{ $json.metadata.file_title }}"
+                            },
+                            {
+                                "name": "tipo_evaluacion",
+                                "value": "={{ $json.metadata.tipo_evaluacion }}"
+                            },
+                            {
+                                "name": "proveedor",
+                                "value": "={{ $json.metadata.proveedor }}"
+                            },
+                            {
+                                "name": "project_name",
+                                "value": "={{ $json.metadata.project_name }}"
+                            },
+                            {
+                                "name": "project_id",
+                                "value": "={{ $json.metadata.project_id }}"
+                            }
+                        ]
+                    }
+                }
+            },
+            "id": "be07054a-a0c3-4bd9-9160-c17505a2a2ca",
+            "name": "Default Data Loader",
+            "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+            "typeVersion": 1,
+            "position": [
+                -768,
+                5232
+            ]
+        },
+        {
+            "parameters": {
+                "chunkSize": 1200,
+                "chunkOverlap": 200,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+            "typeVersion": 1,
+            "position": [
+                -864,
+                5408
+            ],
+            "id": "540f690e-193a-4de6-ac8f-f2f978491551",
+            "name": "Recursive Character Text Splitter"
+        },
+        {
+            "parameters": {
+                "mode": "insert",
+                "tableName": {
+                    "__rl": true,
+                    "value": "proposals",
+                    "mode": "list",
+                    "cachedResultName": "proposals"
+                },
+                "options": {
+                    "queryName": "match_proposals"
+                }
+            },
+            "id": "590db468-6de6-4cca-b699-4c25af87b595",
+            "name": "Insert into Supabase Vectorstore",
+            "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+            "typeVersion": 1,
+            "position": [
+                -896,
+                4912
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            },
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Validar Contenido PDF (FIX PAGINACIÓN)\n// =============================================\n\nconst input = $input.first().json;\n\n// Variables de inicialización\nlet pages = [];\nlet totalChars = 0;\nlet hasTablesDetected = false;\n\n// --- 1. PROCESAMIENTO DEL TEXTO ---\n\n// CASO A: Viene desglosado por páginas (Array)\nif (input.pages && Array.isArray(input.pages) && input.pages.length > 0) {\n  pages = input.pages;\n  pages.forEach(page => {\n    const text = page.text || page.pageContent || \"\";\n    totalChars += text.length;\n    // Detección simple de tablas\n    if ((text.match(/\\s{4,}/g) || []).length > 5) hasTablesDetected = true;\n  });\n\n// CASO B: Viene todo el texto junto (String) - ESTE ES TU CASO ACTUAL\n} else if (input.text && typeof input.text === 'string') {\n  const text = input.text;\n  totalChars = text.length;\n  // Creamos una \"página única\" contenedora para no romper el flujo\n  pages = [{ text: text, pageNumber: 1 }];\n  \n  // Detectar tablas en el texto completo\n  if ((text.match(/\\s{4,}/g) || []).length > 20) hasTablesDetected = true;\n  \n} else {\n  // CASO C: Vacío\n  pages = [];\n}\n\n// --- 2. CÁLCULO DE PÁGINAS REALES (FIX CRÍTICO) ---\n\n// Intentamos leer el metadato 'numpages' que se ve en tu captura\nlet realPageCount = input.numpages || input.numPages || input.numberOfPages || 0;\n\n// Si no existe el metadato, usamos la longitud del array (fallback)\nif (!realPageCount || realPageCount === 0) {\n    realPageCount = pages.length;\n}\n\n// Si sigue siendo 1 pero el texto es enorme (>10k chars), estimamos\nif (realPageCount <= 1 && totalChars > 10000) {\n    // Estimación conservadora: 3000 caracteres por página técnica\n    realPageCount = Math.ceil(totalChars / 3000);\n}\n\n// Evitar división por cero\nrealPageCount = Math.max(1, realPageCount);\n\n\n// --- 3. MÉTRICAS FINALES ---\n\nconst avgCharsPerPage = totalChars / realPageCount;\n\n// CRITERIO: ¿Necesita OCR?\n// Si hay texto (< 100 chars/pag) es probable que sea escaneado.\nconst needsOCR = avgCharsPerPage < 100; \n\n// Metadatos\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\ntry {\n  const metaNode = $('Set File ID').first().json;\n  fileId = metaNode.file_id;\n  fileTitle = metaNode.file_title;\n} catch (e) {}\n\n// --- LOGGING ---\nconsole.log(`📄 Análisis: ${fileTitle}`);\nconsole.log(`   ├─ Páginas (Metadato): ${input.numpages}`); \nconsole.log(`   ├─ Páginas (Usadas): ${realPageCount}`);\nconsole.log(`   ├─ Caracteres Totales: ${totalChars}`);\nconsole.log(`   ├─ Promedio/Pág: ${Math.round(avgCharsPerPage)}`);\n\nreturn {\n  json: {\n    // Métricas corregidas\n    totalPages: realPageCount, // Ahora dirá 235\n    totalChars: totalChars,\n    avgCharsPerPage: Math.round(avgCharsPerPage), // Ahora será un número razonable (~2800)\n    hasTables: hasTablesDetected,\n    needsOCR: needsOCR,\n    \n    // Contenido\n    pages: pages, \n    \n    // Metadatos\n    fileId: fileId,\n    fileName: fileTitle\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3312,
+                4928
+            ],
+            "id": "ebf833f4-b426-4c5c-8a85-44d2c175071f",
+            "name": "Validar Contenido PDF"
+        },
+        {
+            "parameters": {
+                "operation": "pdf",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1.1,
+            "position": [
+                -3584,
+                4928
+            ],
+            "id": "bf864744-1bde-4174-b7ef-6b0a9708b5a2",
+            "name": "Extract from File"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "57b9c551-9997-4ed5-8ddd-f80c108a177c",
+                            "leftValue": "={{ $json.needsOCR }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                -3024,
+                4928
+            ],
+            "id": "34574817-123d-43c3-a0b2-6daf975c8ae2",
+            "name": "¿Necesita OCR?"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Aggregate OCR Pages (CORREGIDO)\n// =============================================\n\nconst items = $input.all();\nlet fullText = \"\";\nlet pagesArray = [];\n\n// OPCIÓN A: Si Tesseract devuelve múltiples items (1 por página)\nif (items.length > 1) {\n  items.forEach((item, idx) => {\n    const pageText = item.json.text || \"\";\n    fullText += pageText + \"\\n\\n\";\n    \n    // Construimos array compatible con vectorstore\n    pagesArray.push({\n      text: pageText,\n      pageNumber: idx + 1\n    });\n  });\n}\n// OPCIÓN B: Si Tesseract devuelve un solo item con todo el texto\nelse if (items.length === 1) {\n  fullText = items[0].json.text || \"\";\n  pagesArray = [{\n    text: fullText,\n    pageNumber: 1\n  }];\n}\n\n// RECUPERAR METADATOS ORIGINALES (CRÍTICO)\nlet fileId, fileName, proveedor;\ntry {\n  fileId = $('Set File ID').first().json.file_id;\n  fileName = $('Set File ID').first().json.file_title;\n  proveedor = $('Set File ID').first().json.proveedor || \"OTROS\";\n} catch (e) {\n  console.error(\"⚠️ No se pudieron recuperar metadatos:\", e.message);\n  fileId = \"unknown\";\n  fileName = \"unknown\";\n  proveedor = \"OTROS\";\n}\n\nconsole.log(`🔄 OCR Agregado: ${items.length} páginas → ${fullText.length} caracteres`);\n\n// ESTRUCTURA COMPATIBLE CON VECTORSTORE\nreturn {\n  json: {\n    pages: pagesArray, // ← Array de páginas (requerido por Default Data Loader)\n    text: fullText, // ← Texto completo (backup)\n    \n    // Metadatos críticos\n    file_id: fileId,\n    file_title: fileName,\n    proveedor: proveedor,\n    \n    // Marca de origen\n    origen_datos: \"OCR_TESSERACT\",\n    ocr_pages_processed: items.length,\n    ocr_total_chars: fullText.length\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2384,
+                4816
+            ],
+            "id": "87fb2178-8783-48fd-87ad-30688bc60d16",
+            "name": "Aggregate OCR Pages"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
+            },
+            "id": "3354e044-dde7-44e0-bd5f-08b9588bd25e",
+            "name": "Preparar Texto de Muestra",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1936,
+                4928
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Format for Vectorstore (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM\n// =============================================\n\n// 1. RECUPERAR CONTENIDO\nlet fullText = \"\";\nlet totalPages = 1;\n\ntry {\n    const mergeData = $('Merge1').first().json;\n    if (mergeData.pages && mergeData.pages[0]) {\n        fullText = mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n    } else {\n        fullText = mergeData.text || \"\";\n    }\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.log(\"❌ Error leyendo de Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet proyecto = \"\";\nlet projectId = null;\n\ntry {\n    const fileNode = $('Set File ID').first().json;\n    fileId = fileNode.file_id || \"unknown\";\n    fileTitle = fileNode.file_title || \"unknown\";\n    proveedor = fileNode.proveedor || \"OTROS\";\n    proyecto = fileNode.proyect_name || \"\";\n    projectId = fileNode.project_id || null;\n    \n    if (fileNode.evaluation && Array.isArray(fileNode.evaluation) && fileNode.evaluation.length > 0) {\n        tipoEval = fileNode.evaluation;\n    } else if (fileNode.evaluation && typeof fileNode.evaluation === 'string') {\n        tipoEval = [fileNode.evaluation];\n    }\n} catch(e) {\n    console.log(\"❌ Error leyendo Set File ID\");\n}\n\n// 3. GENERAR SALIDA\nreturn {\n    json: {\n        text: fullText,\n        metadata: {\n            file_id: fileId,\n            file_title: fileTitle,\n            proveedor: proveedor,\n            tipo_evaluacion: tipoEval,\n            project_name: proyecto,\n            project_id: projectId,\n            processed_at: new Date().toISOString(),\n            total_pages: totalPages\n        }\n    }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1072,
+                4912
+            ],
+            "id": "248457b4-b7c3-4c03-a14e-c2842399f6b9",
+            "name": "Format for Vectorstore"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Expandir por Tipo de Evaluación (v3 - DIRECTO DEL USUARIO)\n// SIN clasificador ni validador LLM - usa datos del usuario directamente\n// =============================================\n\n// 1. RECUPERAR TEXTO Y CONTENIDO BASE\nlet fullText = \"\";\nlet totalPages = 1;\ntry {\n    const mergeData = $('Merge1').first().json;\n    fullText = (mergeData.pages && mergeData.pages[0]) \n        ? mergeData.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\") \n        : (mergeData.text || \"\");\n    totalPages = mergeData.totalPages || 1;\n} catch (e) {\n    console.error(\"❌ Error leyendo Merge1\");\n}\n\n// 2. USAR DIRECTAMENTE DATOS DEL USUARIO (Set File ID)\nlet fileId = \"unknown\";\nlet proveedor = \"OTROS\";\nlet tipoEval = [\"Technical Evaluation\"];\nlet projectName = \"proyecto_sin_especificar\";\n\ntry {\n    const fileData = $('Set File ID').first().json;\n    fileId = fileData.file_id || \"unknown\";\n    proveedor = fileData.proveedor || \"OTROS\";\n    projectName = fileData.proyect_name || \"proyecto_sin_especificar\";\n    \n    // Tipos de evaluación del usuario\n    if (fileData.evaluation && Array.isArray(fileData.evaluation) && fileData.evaluation.length > 0) {\n        tipoEval = fileData.evaluation;\n    } else if (fileData.evaluation && typeof fileData.evaluation === 'string') {\n        tipoEval = [fileData.evaluation];\n    }\n    \n    console.log(`✅ Usando datos del usuario directamente:`);\n    console.log(`   Proveedor: ${proveedor}`);\n    console.log(`   Proyecto: ${projectName}`);\n    console.log(`   Tipos: ${JSON.stringify(tipoEval)}`);\n} catch (e) {\n    console.error(\"❌ Error leyendo Set File ID:\", e.message);\n}\n\n// 3. NORMALIZAR TIPOS\nif (!Array.isArray(tipoEval)) tipoEval = [tipoEval];\ntipoEval = tipoEval.filter(t => t && t.trim() !== \"\");\nif (tipoEval.length === 0) tipoEval = [\"Technical Evaluation\"];\n\n// Normalizar tipos antiguos (Deliverables, FEED) a Others\ntipoEval = tipoEval.map(t => {\n    if (t === 'Technical Evaluation' || t === 'Economical Evaluation' || t === 'Others') return t;\n    if (t.includes('Deliverables') || t.includes('FEED')) return 'Others';\n    return t;\n});\ntipoEval = [...new Set(tipoEval)]; // Eliminar duplicados tras mapeo\n\n// 4. GENERAR FILAS\nreturn tipoEval.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion_actual: tipo,\n        proveedor_detectado: proveedor,\n        proyecto_nombre: projectName,\n        texto_oferta_completo: fullText,\n        indice_actual: idx + 1,\n        total_tipos: tipoEval.length,\n        file_id: fileId\n    }\n}));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -4736,
+                4224
+            ],
+            "id": "511f98ee-e543-4e0e-81aa-838109202d95",
+            "name": "Expandir por Tipo de Evaluación"
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -4432,
+                4144
+            ],
+            "id": "46e886a3-e935-4905-99cb-e099624b369b",
+            "name": "Loop Over Items1"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://unlaconic-ardelle-pretenceful.ngrok-free.dev/v1/convert/file",
+                "sendBody": true,
+                "contentType": "multipart-form-data",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "parameterType": "formBinaryData",
+                            "name": "files",
+                            "inputDataFieldName": "data"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 300000
+                }
+            },
+            "id": "a54a36d5-8cbc-48d5-a048-c015f25c40a1",
+            "name": "Docling OCR",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                -2592,
+                4720
+            ],
+            "retryOnFail": true
+        },
+        {
+            "parameters": {
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"proveedor_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa proveedora (Ej: SACYR, IDOM, etc.)\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"Technical Evaluation\",\n          \"Economical Evaluation\",\n          \"Pre-FEED Deliverables\",\n          \"FEED Deliverables\"\n        ]\n      },\n      \"description\": \"Lista de tipos de oferta detectados en el documento.\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\",\n      \"description\": \"Breve explicación de por qué se eligieron esos tipos.\"\n    }\n  },\n  \"required\": [\n    \"proveedor_detectado\",\n    \"tipos_detectados\"\n  ]\n}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.3,
+            "position": [
+                -1280,
+                5376
+            ],
+            "id": "a4dd367f-d5e1-4fd2-a7a9-1fe69af4d5c5",
+            "name": "Structured Output Parser"
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3.2,
+            "position": [
+                -2128,
+                4928
+            ],
+            "id": "7e03c844-7402-45c0-a082-7e384acc52f8",
+            "name": "Merge1"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\n\nreturn items.map(item => ({\n    json: {\n        ...item.json, // Mantiene todos los datos originales (incluido tipo_evaluacion)\n        \n        // Aquí está la corrección: Usamos dos puntos, no el igual.\n        reiniciar_bucle: true \n    }\n}));\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3424,
+                4096
+            ],
+            "id": "60e29286-7925-4788-bd43-830843c4386e",
+            "name": "Reset Items"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -3984,
+                3872
+            ],
+            "id": "326e0872-0e7b-4763-adfc-436900f412d5",
+            "name": "Respond to Webhook"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "ofertas-desarrollo",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -4816,
+                4928
+            ],
+            "id": "71503a6d-4c1d-4469-ba38-827b6aa98c5e",
+            "name": "Webhook",
+            "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3808,
+                4928
+            ],
+            "id": "a81550b3-502f-4a99-98fc-afd770d96503",
+            "name": "Base64 a Binary"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Convertir Base64 a Binary Data (CORREGIDO v3)\n// =============================================\n\n// LEER DIRECTAMENTE DEL NODO \"Set File ID\"\nlet inputData;\ntry {\n    inputData = $('Set File ID').first().json;\n} catch (e) {\n    throw new Error(\"❌ No se puede acceder al nodo 'Set File ID'\");\n}\n\nconst base64Data = inputData.file_binary;\n\n// --- VALIDACIÓN CRÍTICA ---\nif (!base64Data || base64Data === \"\") {\n    console.error(\"❌ ERROR: file_binary está vacío\");\n    console.error(\"Datos en 'Set File ID':\", Object.keys(inputData));\n    console.error(\"file_id:\", inputData.file_id);\n    console.error(\"file_title:\", inputData.file_title);\n    \n    throw new Error(\n        \"❌ CRÍTICO: 'file_binary' no existe en 'Set File ID'. \" +\n        \"Verifica la configuración del nodo.\"\n    );\n}\n\n// Validar que sea string\nif (typeof base64Data !== 'string') {\n    throw new Error(`❌ ERROR: 'file_binary' debe ser string, es ${typeof base64Data}`);\n}\n\n// Logging\nconsole.log(\"✅ file_binary recibido de 'Set File ID'\");\nconsole.log(`   ├─ Longitud: ${base64Data.length} caracteres`);\nconsole.log(`   ├─ Archivo: ${inputData.file_title}`);\n\n// Convertir base64 a binary\nlet binaryData;\ntry {\n    binaryData = Buffer.from(base64Data, 'base64');\n} catch (e) {\n    throw new Error(`❌ ERROR decodificando base64: ${e.message}`);\n}\n\n// Validar tamaño\nif (binaryData.length === 0) {\n    throw new Error(\"❌ ERROR: Archivo decodificado vacío (0 bytes)\");\n}\n\nconsole.log(`✅ Binary generado: ${binaryData.length} bytes`);\n\n// Retornar formato n8n\nreturn {\n    json: {\n        file_id: inputData.file_id,\n        file_title: inputData.file_title,\n        file_url: inputData.file_url || \"unknown\"\n    },\n    binary: {\n        data: {\n            data: binaryData.toString('base64'),\n            mimeType: 'application/pdf',\n            fileName: inputData.file_title || 'document.pdf',\n            fileSize: binaryData.length\n        }\n    }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2800,
+                4816
+            ],
+            "id": "37dc16a8-b870-48a3-b12a-451dcbff5c8f",
+            "name": "Base64 a Binary1"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Generate Stable ID + Detectar Modo (NOMBRES CORRECTOS)\n// =============================================\n\nfunction simpleHash(str) {\n  let hash = 0;\n  for (let i = 0; i < str.length; i++) {\n    const char = str.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  return Math.abs(hash).toString(16).padStart(16, '0').substring(0, 16);\n}\n\nconst body = $json.body;\n\n// CAMPOS EXISTENTES\nconst originalFileId = body.file_id || \"unknown\";\nconst fileTitle = body.file_title || \"unknown.pdf\";\nconst fileBinary = body.file_binary || \"\";\nconst fileUrl = body.file_url || \"unknown\";\n\n// ✅ EXTRAER METADATA DEL USUARIO (NOMBRES CORRECTOS)\nconst metadata = body.metadata || {};\nconst rfqProjectId = metadata.proyect_name || null;        // ← proyect_name\nconst userProveedor = metadata.proveedor || null;          // ← proveedor\nconst userTipoEval = metadata.evaluation || null;          // ← evaluation (Array)\n\n// ✅ DETERMINAR MODO DE OPERACIÓN\nlet modoOperacion = \"CLASIFICADOR\"; // Por defecto\nlet datosCompletos = false;\n\n// Verificar si tiene datos suficientes para VALIDACIÓN\nif (userProveedor && userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0) {\n    modoOperacion = \"VALIDADOR\";\n    datosCompletos = true;\n} else if (userProveedor || (userTipoEval && Array.isArray(userTipoEval) && userTipoEval.length > 0)) {\n    modoOperacion = \"HIBRIDO\"; // Tiene algunos datos pero no todos\n}\n\n// Generar ID estable del archivo (incluye project_id para evitar colisiones entre proyectos)\nconst projectId = body.project_id || metadata.project_id || '';\nconst normalizedTitle = fileTitle.toLowerCase().trim();\nconst stableId = simpleHash(normalizedTitle + '_' + projectId);\n\n// LOGGING\nconsole.log(\"=== ANÁLISIS DE METADATA ===\");\nconsole.log(`Modo Operación: ${modoOperacion}`);\nconsole.log(`RFQ Project Name: ${rfqProjectId || 'No especificado'}`);\nconsole.log(`Proveedor (Usuario): ${userProveedor || 'No especificado'}`);\nconsole.log(`Evaluation (Usuario): ${JSON.stringify(userTipoEval) || 'No especificado'}`);\nconsole.log(`Datos Completos: ${datosCompletos}`);\nconsole.log(`Original ID: ${originalFileId}`);\nconsole.log(`Nombre archivo: ${fileTitle}`);\nconsole.log(`ID ESTABLE generado: ${stableId}`);\n\n// RETORNO\nreturn {\n  json: {\n    // Datos directos en raíz\n    file_id: stableId,\n    file_id_original: originalFileId,\n    file_title: fileTitle,\n    file_binary: fileBinary,\n    file_url: fileUrl,\n    \n    rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n    user_proveedor: userProveedor,\n    user_tipo_evaluacion: userTipoEval,\n    modo_operacion: modoOperacion,\n    datos_usuario_completos: datosCompletos,\n    \n    // Mantener body completo\n    body: {\n      ...body,\n      file_id: stableId,\n      file_id_original: originalFileId,\n      rfq_project_id: rfqProjectId || \"proyecto_sin_especificar\",\n      user_proveedor: userProveedor,\n      user_tipo_evaluacion: userTipoEval,\n      modo_operacion: modoOperacion,\n      datos_usuario_completos: datosCompletos\n    }\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -4576,
+                4928
+            ],
+            "id": "76620735-cd36-474f-a30e-f994517338b6",
+            "name": "Code in JavaScript1"
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "schema": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "desarrollo"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "provider_responses",
+                    "mode": "list",
+                    "cachedResultName": "provider_responses"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "provider_name": "={{ $json.provider_name }}",
+                        "evaluation_value": "={{ $json.evaluation_value }}",
+                        "comment": "={{ $json.comment }}",
+                        "requirement_id": "={{ $json.requirement_id }}",
+                        "file_id": "={{ $('Set File ID').first().json.file_id }}",
+                        "project_id": "={{ $('Set File ID').first().json.project_id }}",
+                        "updated_at": "={{ $now }}"
+                    },
+                    "matchingColumns": [
+                        "provider_name",
+                        "file_id",
+                        "requirement_id"
+                    ],
+                    "schema": [
+                        {
+                            "id": "id",
+                            "displayName": "id",
+                            "required": false,
+                            "defaultMatch": true,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": true
+                        },
+                        {
+                            "id": "requirement_id",
+                            "displayName": "requirement_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "provider_name",
+                            "displayName": "provider_name",
+                            "required": true,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "evaluation_value",
+                            "displayName": "evaluation_value",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "comment",
+                            "displayName": "comment",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "file_id",
+                            "displayName": "file_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "updated_at",
+                            "displayName": "updated_at",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "dateTime",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "project_id",
+                            "displayName": "project_id",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "score",
+                            "displayName": "score",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false,
+                            "removed": true
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.6,
+            "position": [
+                -720,
+                4368
+            ],
+            "id": "854417ca-94cb-476b-83d4-fb5fae54ad77",
+            "name": "Insert or update rows in a table",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODO: Preparar Todo para LLM (SIN RAG, SIN FASES)\n// Pasa TODOS los requisitos directamente al LLM\n// =============================================\n\nconst items = $input.all();\n\nconsole.log('📥 Requisitos recibidos:', items.length);\n\n// Obtener texto completo de la oferta desde Loop Over Items1\nlet textoOfertaCompleto = \"\";\nlet evaluationType = \"Technical Evaluation\";\n\ntry {\n    const loopData = $('Loop Over Items1').first().json;\n    textoOfertaCompleto = loopData.texto_oferta_completo || \"\";\n    evaluationType = loopData.tipo_evaluacion_actual || \"Technical Evaluation\";\n    console.log('✅ Datos obtenidos de Loop Over Items1');\n    console.log('   ├─ Tipo evaluación:', evaluationType);\n    console.log('   └─ Texto oferta:', textoOfertaCompleto.length, 'chars');\n} catch(e) {\n    console.warn('⚠️ No se pudo obtener texto de oferta de Loop Over Items1:', e.message);\n    // Fallback: intentar obtener de otro lugar\n    try {\n        const expandirData = $('Expandir por Tipo de Evaluación').first().json;\n        textoOfertaCompleto = expandirData.texto_oferta_completo || \"\";\n        evaluationType = expandirData.tipo_evaluacion_actual || \"Technical Evaluation\";\n        console.log('✅ Fallback: Datos obtenidos de Expandir por Tipo de Evaluación');\n    } catch(e2) {\n        console.error('❌ No se pudo obtener texto de ningún nodo');\n    }\n}\n\n// Formatear TODOS los requisitos (sin batching)\nconst todosLosRequisitos = items.map(item => ({\n    id: item.json.id || \"\",\n    requirement_text: item.json.requirement_text || item.json.text || \"NO ESPECIFICADO\",\n    evaluation_type: item.json.evaluation_type || evaluationType\n}));\n\nconsole.log('📋 Preparación directa (sin RAG ni fases):');\nconsole.log('   ├─ Total requisitos:', todosLosRequisitos.length);\nconsole.log('   ├─ Tipo evaluación:', evaluationType);\nconsole.log('   └─ Tamaño texto oferta:', textoOfertaCompleto.length, 'chars');\n\n// Retornar UN SOLO item con TODOS los requisitos\nreturn [{\n    json: {\n        evaluation_type: evaluationType,\n        requisitos: todosLosRequisitos,\n        total_requisitos: todosLosRequisitos.length,\n        batch_index: 1,\n        total_batches: 1,\n        context: textoOfertaCompleto,\n        texto_length: textoOfertaCompleto.length\n    }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2672,
+                4016
+            ],
+            "id": "4681a64e-95f1-4e82-a4c0-80424c05641d",
+            "name": "Preparar Todo para LLM1"
+        },
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -1744,
+                4224
+            ],
+            "id": "5e6f85fd-b6e9-46eb-8e7c-7a09322a9424",
+            "name": "Mistral Cloud Chat Model3",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "ministral-14b-latest",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -1488,
+                5040
+            ],
+            "id": "07b9d7ed-1c2c-4c34-8c5b-6af04989125f",
+            "name": "Mistral Cloud Chat Model5",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "ministral-14b-latest",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -1408,
+                5376
+            ],
+            "id": "968762bf-33a6-4d5e-ac6f-b734aa560a21",
+            "name": "Mistral Cloud Chat Model6",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": false,
+                        "leftValue": ""
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-has-economic-type",
+                            "leftValue": "={{ ($('Set File ID').first().json.evaluation || []).join(',').toLowerCase() }}",
+                            "rightValue": "econom",
+                            "operator": {
+                                "type": "string",
+                                "operation": "contains"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -2368,
+                3776
+            ],
+            "id": "4eeb1d4d-8a18-454a-9ee0-dcfd05616372",
+            "name": "Has Economic Evaluation?"
+        },
+        {
+            "parameters": {
+                "content": "## Economic Data Extraction (T8)\n\nExtracts structured economic/financial data from supplier proposals.\nOnly triggered when the offer includes Economical Evaluation type.\n\n**Flow**: Merge1 -> IF (Has Economic?) -> Check If Economic -> Extract Economic Data (LLM) -> Parse Economic JSON -> Save Economic Offer (Supabase UPSERT)\n\n**Target table**: economic_offers (project_id, provider_name unique constraint)",
+                "height": 520,
+                "width": 2500,
+                "color": 5
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -2448,
+                3456
+            ],
+            "id": "dfbbd026-1f6d-46b7-a61f-3ae68fbea520",
+            "name": "Sticky Note Economic"
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODE: Check If Economic Offer\n// Determines if this supplier proposal contains economic/pricing data\n// and prepares text for LLM extraction.\n// =============================================\n\n// Get the merged proposal data\nconst mergeData = $input.first().json;\n\n// Get metadata from Set File ID\nlet providerName = 'UNKNOWN';\nlet projectId = null;\nlet projectName = '';\nlet evaluationTypes = [];\n\ntry {\n    const fileData = $('Set File ID').first().json;\n    providerName = fileData.proveedor || 'UNKNOWN';\n    projectId = fileData.project_id || null;\n    projectName = fileData.proyect_name || '';\n    \n    if (fileData.evaluation && Array.isArray(fileData.evaluation)) {\n        evaluationTypes = fileData.evaluation;\n    } else if (fileData.evaluation && typeof fileData.evaluation === 'string') {\n        evaluationTypes = [fileData.evaluation];\n    }\n} catch (e) {\n    console.log('Warning: Could not read Set File ID:', e.message);\n}\n\n// Check if evaluation types include economic\nconst hasEconomic = evaluationTypes.some(t => \n    t.toLowerCase().includes('econom') || \n    t.toLowerCase().includes('commercial') ||\n    t.toLowerCase().includes('pricing')\n);\n\n// Also check text content for economic indicators as fallback\nlet fullText = '';\ntry {\n    if (mergeData.pages && Array.isArray(mergeData.pages)) {\n        fullText = mergeData.pages.map(p => p.text || '').join('\\n\\n');\n    } else {\n        fullText = mergeData.text || '';\n    }\n} catch (e) {\n    fullText = '';\n}\n\n// Economic indicators in text\nconst economicKeywords = ['total price', 'precio total', 'price breakdown', 'desglose', \n    'payment terms', 'condiciones de pago', 'discount', 'descuento', 'EUR/h', 'USD/h',\n    'lump sum', 'suma alzada', 'cost estimate', 'presupuesto', 'budget',\n    'fee schedule', 'tarifa', 'quotation', 'cotizacion', 'oferta economica',\n    'commercial proposal', 'propuesta economica', 'pricing schedule'];\n\nconst textLower = fullText.substring(0, 50000).toLowerCase();\nconst textHasEconomic = economicKeywords.some(kw => textLower.includes(kw));\n\nconst shouldExtract = hasEconomic || textHasEconomic;\n\nconsole.log(`Economic Check:`);\nconsole.log(`  Provider: ${providerName}`);\nconsole.log(`  Project ID: ${projectId}`);\nconsole.log(`  Eval types: ${JSON.stringify(evaluationTypes)}`);\nconsole.log(`  Has economic type: ${hasEconomic}`);\nconsole.log(`  Text has economic keywords: ${textHasEconomic}`);\nconsole.log(`  Should extract: ${shouldExtract}`);\n\nif (!shouldExtract) {\n    console.log('Skipping economic extraction - no economic content detected');\n    return [];\n}\n\n// Limit text to ~60k chars for LLM context\nconst textForExtraction = fullText.substring(0, 60000);\n\nreturn [{\n    json: {\n        provider_name: providerName,\n        project_id: projectId,\n        project_name: projectName,\n        proposal_text: textForExtraction,\n        text_length: fullText.length,\n        evaluation_types: evaluationTypes\n    }\n}];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2128,
+                3776
+            ],
+            "id": "39dbde31-e3da-4229-a645-6957d69c143e",
+            "name": "Check If Economic Offer"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### SUPPLIER PROPOSAL - ECONOMIC DATA EXTRACTION\n\n## PROJECT: {{ $json.project_name }}\n## PROVIDER: {{ $json.provider_name }}\n\n### PROPOSAL TEXT:\n{{ $json.proposal_text }}\n\n---\n### INSTRUCTIONS:\nExtract ALL economic and financial data from this supplier proposal.\nReturn ONLY a valid JSON object. Do NOT include markdown code blocks.\nIf a field is not found in the text, use null.\nFor total_price, look for the main bid amount, lump sum, or total cost figure.\nFor price_breakdown, extract line items, cost by discipline, or cost by phase.\nFor payment terms, look for Net 30/60/90, milestone payments, etc.\n\nReturn ONLY valid JSON starting with { and ending with }.",
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "You are an expert procurement analyst specializing in extracting economic and financial data from supplier proposals for large-scale industrial projects (EPC, P2X, Green Hydrogen, Energy).\n\n### TASK\nExtract all economic/financial data from the supplier proposal text.\n\n### OUTPUT SCHEMA (return ONLY this JSON structure):\n{\n  \"total_price\": <number or null>,\n  \"currency\": \"<ISO 4217 code, default EUR>\",\n  \"price_breakdown\": <object with line items like {\"engineering\": X, \"procurement\": Y, \"construction\": Z} or null>,\n  \"discount_percentage\": <number, 0 if none>,\n  \"discount_conditions\": <string or null>,\n  \"tco_value\": <number or null>,\n  \"tco_period_years\": <number or null>,\n  \"tco_breakdown\": <object like {\"capex\": X, \"opex_annual\": Y} or null>,\n  \"payment_terms\": <string describing terms like \"Net 60\" or \"30/40/30\" or null>,\n  \"payment_schedule\": <array of {\"milestone\": \"percentage\", \"event\": \"description\"} or null>,\n  \"validity_days\": <number, default 90>,\n  \"price_escalation\": <string describing escalation clauses or null>,\n  \"guarantees\": <string describing financial/performance guarantees or null>,\n  \"insurance_included\": <boolean>,\n  \"taxes_included\": <boolean>,\n  \"optional_items\": <array of {\"description\": \"X\", \"price\": Y} or null>,\n  \"alternative_offers\": <array of {\"description\": \"X\", \"total_price\": Y, \"details\": \"...\"} or null>,\n  \"extraction_confidence\": <number 0.0-1.0>,\n  \"raw_notes\": <string with any additional economic observations>\n}\n\n### CRITICAL RULES:\n1. Return ONLY the JSON object. No explanations, no markdown.\n2. Numbers must be actual numbers, not strings (e.g., 1500000 not \"1,500,000\").\n3. If you find prices in different currencies, note the original and convert to EUR if possible.\n4. For price_breakdown, use descriptive keys in English.\n5. extraction_confidence should reflect how much economic data you actually found (0.1 = almost nothing, 0.9 = very detailed).\n6. Be thorough: check tables, headers, footers, appendices for pricing data.\n7. Look for both explicit prices and calculated totals."
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -1808,
+                3776
+            ],
+            "id": "d3530376-9513-46c4-b36c-37c573b2e50b",
+            "name": "Extract Economic Data"
+        },
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {
+                    "temperature": 0.1
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -1808,
+                3984
+            ],
+            "id": "c18cb177-c380-4896-9b37-c9fdeb31c6f6",
+            "name": "Mistral Economic Model",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// =============================================\n// NODE: Parse Economic JSON\n// Parses and validates the LLM economic extraction output\n// =============================================\n\nconst llmOutput = $input.first().json;\nconst inputData = $('Check If Economic Offer').first().json;\n\nlet parsed = null;\n\ntry {\n    // The LLM chain returns output in .text or .output\n    let rawText = llmOutput.text || llmOutput.output || JSON.stringify(llmOutput);\n    \n    if (typeof rawText === 'string') {\n        // Clean potential markdown code blocks\n        rawText = rawText.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n        \n        // Find JSON boundaries\n        const start = rawText.indexOf('{');\n        const end = rawText.lastIndexOf('}');\n        if (start !== -1 && end !== -1 && end > start) {\n            rawText = rawText.substring(start, end + 1);\n        }\n        \n        parsed = JSON.parse(rawText);\n    } else {\n        parsed = rawText;\n    }\n} catch (err) {\n    console.error('Error parsing economic JSON:', err.message);\n    // Return minimal valid record so we still save something\n    parsed = {\n        total_price: null,\n        currency: 'EUR',\n        extraction_confidence: 0.0,\n        raw_notes: 'LLM output could not be parsed: ' + err.message\n    };\n}\n\n// Helper to safely convert to number\nfunction toNumber(val) {\n    if (val === null || val === undefined) return null;\n    if (typeof val === 'number') return val;\n    if (typeof val === 'string') {\n        // Remove currency symbols, commas, spaces\n        const cleaned = val.replace(/[^0-9.-]/g, '');\n        const num = parseFloat(cleaned);\n        return isNaN(num) ? null : num;\n    }\n    return null;\n}\n\n// Helper to safely convert to JSON string for Supabase JSONB columns\nfunction toJsonString(val) {\n    if (val === null || val === undefined) return null;\n    if (typeof val === 'string') return val;\n    return JSON.stringify(val);\n}\n\n// Build the record for Supabase\nconst record = {\n    project_id: inputData.project_id,\n    provider_name: inputData.provider_name,\n    \n    // Core pricing\n    total_price: toNumber(parsed.total_price),\n    currency: parsed.currency || 'EUR',\n    price_breakdown: toJsonString(parsed.price_breakdown || {}),\n    \n    // Payment terms\n    payment_terms: parsed.payment_terms || null,\n    payment_schedule: toJsonString(parsed.payment_schedule || []),\n    \n    // Discounts\n    discount_percentage: toNumber(parsed.discount_percentage) || 0,\n    discount_conditions: parsed.discount_conditions || null,\n    \n    // TCO\n    tco_value: toNumber(parsed.tco_value),\n    tco_period_years: parsed.tco_period_years ? parseInt(parsed.tco_period_years) : null,\n    tco_breakdown: toJsonString(parsed.tco_breakdown || {}),\n    \n    // Additional\n    validity_days: parsed.validity_days ? parseInt(parsed.validity_days) : 90,\n    price_escalation: parsed.price_escalation || null,\n    guarantees: parsed.guarantees || null,\n    insurance_included: parsed.insurance_included === true,\n    taxes_included: parsed.taxes_included === true,\n    \n    // Optional / alternatives\n    optional_items: toJsonString(parsed.optional_items || []),\n    alternative_offers: toJsonString(parsed.alternative_offers || []),\n    \n    // AI metadata\n    extraction_confidence: toNumber(parsed.extraction_confidence) || 0,\n    raw_notes: parsed.raw_notes || null\n};\n\nconsole.log('Economic data parsed successfully:');\nconsole.log(`  Provider: ${record.provider_name}`);\nconsole.log(`  Total price: ${record.total_price} ${record.currency}`);\nconsole.log(`  Confidence: ${record.extraction_confidence}`);\nconsole.log(`  Has breakdown: ${record.price_breakdown !== '{}'}`);\nconsole.log(`  Has payment terms: ${!!record.payment_terms}`);\n\n// Validate: skip save if no project_id or provider_name\nif (!record.project_id || !record.provider_name || record.provider_name === 'UNKNOWN') {\n    console.log('WARNING: Missing project_id or provider_name, skipping save');\n    return [];\n}\n\nreturn [{ json: record }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -1488,
+                3776
+            ],
+            "id": "8e90baa8-82da-42c5-ab0e-841de81dc978",
+            "name": "Parse Economic JSON"
+        },
+        {
+            "parameters": {
+                "operation": "upsert",
+                "schema": {
+                    "__rl": true,
+                    "value": "=desarrollo",
+                    "mode": "name"
+                },
+                "table": {
+                    "__rl": true,
+                    "value": "economic_offers",
+                    "mode": "list",
+                    "cachedResultName": "economic_offers"
+                },
+                "columns": {
+                    "mappingMode": "defineBelow",
+                    "value": {
+                        "insurance_included": "={{ $json.insurance_included }}",
+                        "taxes_included": "={{ $json.taxes_included }}",
+                        "total_price": "={{ $json.total_price }}",
+                        "discount_percentage": "={{ $json.discount_percentage }}",
+                        "tco_value": "={{ $json.tco_value }}",
+                        "tco_period_years": "={{ $json.tco_period_years }}",
+                        "validity_days": "={{ $json.validity_days }}",
+                        "extraction_confidence": "={{ $json.extraction_confidence }}",
+                        "project_id": "={{ $json.project_id }}",
+                        "provider_name": "={{ $json.provider_name }}",
+                        "currency": "={{ $json.currency }}",
+                        "price_breakdown": "={{ $json.price_breakdown }}",
+                        "payment_terms": "={{ $json.payment_terms }}",
+                        "discount_conditions": "={{ $json.discount_conditions }}",
+                        "tco_breakdown": "={{ $json.tco_breakdown }}",
+                        "price_escalation": "={{ $json.price_escalation }}",
+                        "guarantees": "={{ $json.guarantees }}",
+                        "alternative_offers": "={{ $json.alternative_offers }}",
+                        "raw_notes": "={{ $json.raw_notes }}",
+                        "created_at": "={{ $now.toISO() }}",
+                        "updated_at": "={{ $now.toISO() }}",
+                        "payment_schedule": "={{ $json.payment_schedule }}",
+                        "optional_items": "={{ $json.optional_items }}"
+                    },
+                    "matchingColumns": [
+                        "project_id",
+                        "provider_name"
+                    ],
+                    "schema": [
+                        {
+                            "id": "id",
+                            "displayName": "id",
+                            "required": false,
+                            "defaultMatch": true,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": true
+                        },
+                        {
+                            "id": "project_id",
+                            "displayName": "project_id",
+                            "required": true,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "provider_name",
+                            "displayName": "provider_name",
+                            "required": true,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": true,
+                            "removed": false
+                        },
+                        {
+                            "id": "total_price",
+                            "displayName": "total_price",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "currency",
+                            "displayName": "currency",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "price_breakdown",
+                            "displayName": "price_breakdown",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "payment_terms",
+                            "displayName": "payment_terms",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "payment_schedule",
+                            "displayName": "payment_schedule",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "discount_percentage",
+                            "displayName": "discount_percentage",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "discount_conditions",
+                            "displayName": "discount_conditions",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "tco_value",
+                            "displayName": "tco_value",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "tco_period_years",
+                            "displayName": "tco_period_years",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "tco_breakdown",
+                            "displayName": "tco_breakdown",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "validity_days",
+                            "displayName": "validity_days",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "price_escalation",
+                            "displayName": "price_escalation",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "guarantees",
+                            "displayName": "guarantees",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "insurance_included",
+                            "displayName": "insurance_included",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "boolean",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "taxes_included",
+                            "displayName": "taxes_included",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "boolean",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "optional_items",
+                            "displayName": "optional_items",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "alternative_offers",
+                            "displayName": "alternative_offers",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "extraction_confidence",
+                            "displayName": "extraction_confidence",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "number",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "raw_notes",
+                            "displayName": "raw_notes",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "string",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "created_at",
+                            "displayName": "created_at",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "dateTime",
+                            "canBeUsedToMatch": false
+                        },
+                        {
+                            "id": "updated_at",
+                            "displayName": "updated_at",
+                            "required": false,
+                            "defaultMatch": false,
+                            "display": true,
+                            "type": "dateTime",
+                            "canBeUsedToMatch": false
+                        }
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [
+                -1136,
+                3776
+            ],
+            "id": "12261a2a-769c-4330-ad23-3e11d320ba6c",
+            "name": "Save Economic Offer",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Get many rows1": {
+            "main": [
+                [
+                    {
+                        "node": "Reset Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Embeddings Ollama3": {
+            "ai_embedding": [
+                [
+                    {
+                        "node": "Insert into Supabase Vectorstore",
+                        "type": "ai_embedding",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validador de Ofertas": {
+            "main": [
+                [
+                    {
+                        "node": "Format for Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser4": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Validador de Ofertas",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Clasificador de Tipo de Evaluacion y Proveedor": {
+            "main": [
+                [
+                    {
+                        "node": "Format for Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If": {
+            "main": [
+                [
+                    {
+                        "node": "Format for Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Format for Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Phases": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Preparar Todo para LLM1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parsear y Preparar Update": {
+            "main": [
+                [
+                    {
+                        "node": "Insert or update rows in a table",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "LLM Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Parsear y Preparar Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert Document Metadata": {
+            "main": [
+                [
+                    {
+                        "node": "Base64 a Binary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Delete Old Doc Rows": {
+            "main": [
+                [
+                    {
+                        "node": "Insert Document Metadata",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set File ID": {
+            "main": [
+                [
+                    {
+                        "node": "Delete Old Doc Rows",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Default Data Loader": {
+            "ai_document": [
+                [
+                    {
+                        "node": "Insert into Supabase Vectorstore",
+                        "type": "ai_document",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Recursive Character Text Splitter": {
+            "ai_textSplitter": [
+                [
+                    {
+                        "node": "Default Data Loader",
+                        "type": "ai_textSplitter",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert into Supabase Vectorstore": {
+            "main": [
+                [
+                    {
+                        "node": "Expandir por Tipo de Evaluación",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validar Contenido PDF": {
+            "main": [
+                [
+                    {
+                        "node": "¿Necesita OCR?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract from File": {
+            "main": [
+                [
+                    {
+                        "node": "Validar Contenido PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "¿Necesita OCR?": {
+            "main": [
+                [
+                    {
+                        "node": "Base64 a Binary1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Merge1",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Aggregate OCR Pages": {
+            "main": [
+                [
+                    {
+                        "node": "Merge1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Preparar Texto de Muestra": {
+            "main": [
+                [
+                    {
+                        "node": "Format for Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format for Vectorstore": {
+            "main": [
+                [
+                    {
+                        "node": "Insert into Supabase Vectorstore",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Expandir por Tipo de Evaluación": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items1": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get many rows1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Docling OCR": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate OCR Pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge1": {
+            "main": [
+                [
+                    {
+                        "node": "Has Economic Evaluation?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Reset Items": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Phases",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Code in JavaScript1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Base64 a Binary": {
+            "main": [
+                [
+                    {
+                        "node": "Extract from File",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Base64 a Binary1": {
+            "main": [
+                [
+                    {
+                        "node": "Docling OCR",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Code in JavaScript1": {
+            "main": [
+                [
+                    {
+                        "node": "Set File ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Insert or update rows in a table": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Phases",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Preparar Todo para LLM1": {
+            "main": [
+                [
+                    {
+                        "node": "LLM Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Cloud Chat Model3": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Cloud Chat Model5": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Validador de Ofertas",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Cloud Chat Model6": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Clasificador de Tipo de Evaluacion y Proveedor",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Economic Evaluation?": {
+            "main": [
+                [
+                    {
+                        "node": "Check If Economic Offer",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Preparar Texto de Muestra",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Preparar Texto de Muestra",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check If Economic Offer": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Economic Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Economic Data": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Economic JSON",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Economic Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Extract Economic Data",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Economic JSON": {
+            "main": [
+                [
+                    {
+                        "node": "Save Economic Offer",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {
+        "Webhook": [
+            {
+                "headers": {
+                    "host": "n8n.beaienergy.com",
+                    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+                    "content-length": "23892",
+                    "accept": "*/*",
+                    "accept-encoding": "gzip, deflate, br, zstd",
+                    "accept-language": "es-ES,es;q=0.9",
+                    "content-type": "application/json",
+                    "origin": "http://localhost:9102",
+                    "referer": "http://localhost:9102/",
+                    "sec-ch-ua": "\"Not(A:Brand\";v=\"8\", \"Chromium\";v=\"144\", \"Google Chrome\";v=\"144\"",
+                    "sec-ch-ua-mobile": "?0",
+                    "sec-ch-ua-platform": "\"macOS\"",
+                    "sec-fetch-dest": "empty",
+                    "sec-fetch-mode": "cors",
+                    "sec-fetch-site": "same-origin",
+                    "x-forwarded-for": "92.187.62.136",
+                    "x-forwarded-host": "n8n.beaienergy.com",
+                    "x-forwarded-port": "443",
+                    "x-forwarded-proto": "https",
+                    "x-forwarded-server": "0a67c8c4e180",
+                    "x-real-ip": "92.187.62.136"
+                },
+                "params": {},
+                "query": {},
+                "body": {
+                    "file_id": "rfq-1770822363670-tr6npw211",
+                    "file_title": "Oferta_Tecnica.pdf",
+                    "file_url": "",
+                    "file_binary": "JVBERi0xLjMKMSAwIG9iago8PAovQ291bnQgMTEKL0tpZHMgWzMgMCBSCjUgMCBSCjcgMCBSCjkgMCBSCjExIDAgUgoxMyAwIFIKMTUgMCBSCjE3IDAgUgoxOSAwIFIKMjEgMCBSCjIzIDAgUl0KL01lZGlhQm94IFswIDAgNTk1LjI4IDg0MS44OV0KL1R5cGUgL1BhZ2VzCj4+CmVuZG9iagoyIDAgb2JqCjw8Ci9PcGVuQWN0aW9uIFszIDAgUiAvRml0SCBudWxsXQovUGFnZUxheW91dCAvT25lQ29sdW1uCi9QYWdlcyAxIDAgUgovVHlwZSAvQ2F0YWxvZwo+PgplbmRvYmoKMyAwIG9iago8PAovQ29udGVudHMgNCAwIFIKL1BhcmVudCAxIDAgUgovUmVzb3VyY2VzIDI4IDAgUgovVHlwZSAvUGFnZQo+PgplbmRvYmoKNCAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovTGVuZ3RoIDUxOAo+PgpzdHJlYW0KeJyVU8tu2kAU3fMVZ0kWTOZtD7uGYESFCCFeZjOYgboi49QmqiL143vNQ2mNStuFPX5ozmvOlfjc48wk+N67y3GbCTjGOfINxnnvG+ibEkykSLlkSiNfgzPlpOws9Rb9ya5a+R0WdVWEpsE4bssYQl3GLWb79Q3yr4SJxx6nTZou61IsJz3BtCR2mTJlkDjLjMYLjLXMqfP7Dk9nlRyTs1KpO1Kl0EymsMIxaQ9aiUYe6FqBD5tQ7z3yUMSy8B+CDnASogunLBMOJhFMqpNzoZLO0gKT5fdQ7CusA6ZxG2JJtj3eMapis6/fiqKsYvtzsfORFLRPh5T8Sxnicd/EN5j7/VtNEQ4+tB19WQrJwuiUGXtVSeabgGw8vr90JzruROKY1dDOsdT8xV5oSKZfe7xW9RD/etBH7cYwbaBTzri4SjOaZkPMB0JIqZTWXRxp2tPQljNxPYOnsA5D3JW7la/w3K82ZVFGj3Hz6qN/vuniUrGpM1oTgryKuwzUnxCL0g+xzBYD2mkGbdaDyXw24Fx0MlcQ/KKgnDlDxaKquSOZTrjtLP9Jdor5iKxpAvRV5CwUXwg0C6s61FXr31xE7dpZUzRfml/FGu18U1K+vi34EKOHeTa9H89H00+zizDSiyxovCQJb3UfSAyXv91POfwhAOAHsPBbBnF7IOuLX0L5CV/1Lt0KZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8Ci9Db250ZW50cyA2IDAgUgovUGFyZW50IDEgMCBSCi9SZXNvdXJjZXMgMjkgMCBSCi9UeXBlIC9QYWdlCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9GaWx0ZXIgL0ZsYXRlRGVjb2RlCi9MZW5ndGggMTA4MQo+PgpzdHJlYW0KeJyNVl1z2jgUfedX3KcdOlMUfVi2lbdAgNndtssGZvrSFwUEox1jU9tsms7++L2yMTGOahgGHBN8zrn3HF2Jwx8DSmQEL4PxCu5mDBShFFZbmK4G3wG/E4ywGGLKiQhgtQFKhOK8c8l3MJwn2bNOYJFna1MUME13NjUmt+kOPpWbD7D6BzHh7wHFhwJ8hyqGp/mAkYAjO4+JkBCpkMgA9iDDkCjR3CewbFRSmDdKWeCVGgWKxLySiiy8YnP6GEFtpjBpqdc2S2FjINEw3R/wS/1LeSddAjGdLs5DEkXNvdNVieHAqF8Mi0jE6r4xGarOBXVRErsfvFxrIJgCjqkGUwuGNZZQGCzCpDC2ybPO4Nsw29q1xR9Ni4NO9bcP8ApMgk6zwpVrfhwQzqRrq91TJnmrui0ZrWa8TzIjMTbHSS7Musxyh40qTWoRXiMnaivK/Liu+mzTzRHvrE4ITDLs/h7VOPWumkOi09ImaARiMI4tPOTZ1hT4oE6wYlMcDMpN7E+9wcdM6pUcxhgT0Sd5iLCvTmzViMwm8BvsdPERDqbMs+9Hu7drp9ykJt9ZTfw0ISdBP82Xo8FaM4TNtza5h5nN9xpbUJo8rWKHBrvaG6PQhtqrj/jnFoVUfq6zojSuSXuUZ0v7b1a0FDXxZ97EhSIgktYi+fldLwAGE5OXFrkrLabogHpiLAWJQwjZtUwMAUbw+/IvUJSye06Z7LSwBpJKEta7Hs5ALHiP1F+6GxpB6C+dw5PZmrwKf5WBxTkQSzQ/0Xm7G+3J4R2M9ViQUhKpcIlJohiMWDUUcgNjpymOCA1ABpyoyGli1cupaajbHWJxQPgZUSnC3wFyFlct9CBOElzWpWkD8li4ZpwAZYgDrQsoqCDUD/iQXqgTARp0BmNM4Nh/hxbhPFZ+efqAgdvoTRszwETgbO/FDDAuXHgxp0WJI+ENsPlPk2SfXUKSSL7ZFbvVjFTLVoS4cPx9+ZxNp48wxxCdBjVOPp+RNVdj5AUVc9FQt3At9XFj4SHX+3XmM7cmaczt1BMRwW4h4ZQLn9mnbjXGXKLHMYnoLeiMog+fPy8ns0ef+30kARYmbvJkgpMyMZeBoESFNIbLC+bjnAbXIP4+DeNWGqgkQf+0mi4m8Ij7cYLTvHTb3cLtaL5A1HTdQIzbgbhO9zD5+gCL7MXkvjjUFN04jNtxuE6BceC+OJza1XWqRsd1Gka3oGMciEvEXtx5p0EfS5OH6yy+PJwHRBOAQMVE0d5xEODBQqnr4wD3Fjyr5a8w/YGbuTu9eBJw4usbCTfw/bmYeKw/YfdNghuw0Xrmsb5plH+RoqFo/Q3oeLyrrH8++JzvJ6mdv4FkiqenY15knTODgLhzZOAsdEcajubLGlFSfvHp4NDYe3iaLUbYGjlyXo/mXz6N8GQC8B/AQu8I8LuKbMhavfsfeZMuugplbmRzdHJlYW0KZW5kb2JqCjcgMCBvYmoKPDwKL0NvbnRlbnRzIDggMCBSCi9QYXJlbnQgMSAwIFIKL1Jlc291cmNlcyAzMCAwIFIKL1R5cGUgL1BhZ2UKPj4KZW5kb2JqCjggMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTA4Cj4+CnN0cmVhbQp4nJWW227bOBCG7/0Uc7VwgZgRqXPu6tjJZtF0vYn3ZlGgYGTaZUCJLik3SLEPv0PRshVXkLMIHB1szf/Px+GMGPwxCkicwssogIBE+EnyDB5uRxTcn9mMpku4vKGQkyCA5Rrmy9F3wHshJTSDLGAkjGC5wgfDnLGTg9nA+FbpJ65gYXQhrIV5tZGVEEZWG/hUrz7A8hljwl8jSiKGNlhGwhjSPCFxBCXESULysL1W8Nja3duiUa+vNMpJxhpf6IU1qTkzjMC9qPVKK72RHF5hoXgFKwHzZ1HsCqmro6G9kxAjOSeMJSRN22vnpLHAgAb9FmhKUurR0DjJTw7oBllTZPdyjhFsjd7qSoDiYOVmJ0VVCyg7eWy54e5b0WbhUsLrNbcCbubz2QVwhSH5ikOB3yptj3l2PeNyUjbkeWzE9520stZ2r/Fws4ClKCpZcPgyfhDrKwjoV7z7dX/3y4erXrEkzUgwKBaQNMgaQB+3CiMZUaJstRO2xny7ADYeIH7BqxU38idmegF6W8uyOfeExFoWCK/AB9B7oW0tLNbAVvGf2hK4RjIFsjVNbv2eE0aicNhznsSNZ1w9UUlcRRSuIHTga1wDXDt7AVu9apLRayMKYWBXQYm3lHbOMLsn/qxhrZXSL5P6m5hY/MH3nQBeCCXcYuOz3rd7wJkWG076PUeJq9gBz/izKG08/11LhcCcMyzGy7s7D87Kcqd4U1iv8FhyU7t9U0M424NVrfvayJUsRWXxt1wR+LxfLGELjsVSOdvClBILeJ96v2c8sHiwEGtcZqxv+KYNnuFJuXtFxuVW1LKWP/CGlVVzw2gsFWSM+mhCrvgK6n3BoucW3pMSHX5te6G9ezsJQhLu9zY7fHyDoXBtdKU3hpfcQdw6AvoYuduQepur7ztxjpUWAc0iB2JCm65jBEydC4o9B9trnLZdru3WML7BLd9FyigjSdCGy3PC6Gk0FsUkinujLbB8cZN1A4bIJKNtQBbHrmOcRIwCHABJb8T5gbaFa8V/dMy+HTmsl0raZHOgkrndiKqPx7WJEzfDBkvHMQJ6BXfHHYp7vxDbesdVHzyv2sJ7I8rcgEreo3ovLOZMJ6yPplc40DzJKyLYU94hMRM4HyqYciuxxyxuZp027xoTdtO3B4R9QBtHhKa/op120EaMsOQ8WnbVDB2Eanpr0Sud4px2cZ5X8jjZJO3D6RV+wTnt4jwvsfjtboYcf//4z5+LC+wVNVeqr14PCMOYpPFwdbLwTDP2CMMruMbKNH5890H0WoM1eV7LQ0wneR9ErzBck+cl5haHcDM7Ljqt1sJa4oAQ/6dA8YUqZMMFGmAnG3znGs92xg+ypa77N7uX6a/ONCJ5+h6ZHF9PrLB9WH384do8L3Dv5+3bV4ST+RVCdjK+GE2cKotJvp+uccDe/Hexm5c4fIObsIDFE1eAk9vPnyZBQAH+BVjwDYHwshEbU3oU/Q8UWh6OCmVuZHN0cmVhbQplbmRvYmoKOSAwIG9iago8PAovQ29udGVudHMgMTAgMCBSCi9QYXJlbnQgMSAwIFIKL1Jlc291cmNlcyAzMSAwIFIKL1R5cGUgL1BhZ2UKPj4KZW5kb2JqCjEwIDAgb2JqCjw8Ci9GaWx0ZXIgL0ZsYXRlRGVjb2RlCi9MZW5ndGggOTcwCj4+CnN0cmVhbQp4nI2V227bOBCG7/0UcxPAQWNWokQdjMUCreN4sci2bqwF9sI3tMRoWVCkqkPaFH34DiU7PlS1c2HLkqX5v5l/ZkTh75FDWAhfRw44xMdPEEfwsMCrceBEcHyo8tH7BN7euRATx4HkEebJ6AvgNc8lbgSRQ4nnQ5LhA15M6cmhymG8UGbDFSwrk4q6hrnOpRaikjqH+ya7huQzxoRPI5f4FKloRDwGYRwQ5kMBLAhI7O3OFax29Fss1x/kCv2YRLTjQhbaZWphPGJBylbUDYdEpFqmHEpTwb9aZjyDTGxBzR5sS+RhREtEaUDCcHduiXYo7jCK65Eo7EtEXz49jHugO9dZq77zQgrdGFiP3xVS83p9vQfpdCi4zqBOEFNCnV7HZUF8ckBBrFzMIPkK45WAEstgtIBWQy3rRhTcQogjiNRo+Od2/g5pCtFIlUnRcG0Ut2jra7zb3vIo87biqcSbMQLf1KayJ5NK5EKL/p99EofEYUAC9xzx2BIoXiNi3lomUUPKMWSDDVQ3aF5tNTNZC22mJyIM6x5AwFwSnS3LGGACM6PaQvOjDKZAsTzWH5TFXEtUVkKZG2DOFXKUmJo1L+UZxxv5sL7nv0qfV3mvbms7BZ9ddZLYiZ0Fw7HdkITxxdiJKEr0oUGXTvLzHZgNR3YcEkYXIy8rUW99N+XW6imWHDaYzmBgFnl2ei6W4yOOCMbOWlwdWIccjW4wBZ6ZKfyB9YeyLJ6GFXBjhMFFhb/o6pyCfyJwfsaZFxGXDs84PZjxW1H/LzOr0o3LepzMF6+fcOYGxGfnMrM7NOonfD/T2bGoHammknaehc6VTI3agXQdDlylXH/nlV0NZWv3AAbBpSi7Hzxvu6gTymAGuDxfWmBwxhk2UnTejZfOITBXL8tI6lS1z8LiInhjqhvYLZQM97XNIu+nv8ZsyhLfJzfwfLjL3ifz//CZ1DyJ6pm81ko/pCT+jZXegZUPIm134Pb8w+L+tT76uJLoBR8dbPFfN7Wov7Q2u8VqiZ4tMP9Vu0mNUSLbvWDRxc7httqYifhWcp2Jqje24N9kIa2zitvCHPHPvDeDBvoeI8FZA/HX9rWyHpvNZ2ysJwN/Qhxd2biWHt8ZaA1eignrLs78N+vrzu5+dfduS9t8miuJJnbGCl3LjVRdybsMUlOUppaWGVfyE68k3yhRD4NTrP75TZMJtWsiVC2E7kfktFc8iE58pDiJOO+UkXjrI3Po0bcN/yAep/Bwt5xQh7LJ3Xx+O1l8uJ84jgvwA2DJcwL+205s7Lp70Z/BGZsRCmVuZHN0cmVhbQplbmRvYmoKMTEgMCBvYmoKPDwKL0NvbnRlbnRzIDEyIDAgUgovUGFyZW50IDEgMCBSCi9SZXNvdXJjZXMgMzIgMCBSCi9UeXBlIC9QYWdlCj4+CmVuZG9iagoxMiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovTGVuZ3RoIDg4Ngo+PgpzdHJlYW0KeJyVl11v0zAUhu/7K84NCCRq/B2bO7p1A7Shslbi2qRmC2qTLenEh/jx2PlY08yNi6Yta9Se5xy/r9+4FD5NMBIJ/JxgwIi7X6kV3Fy6u1piBYeX8nYyW8HbCwIaYQyr7zBfTR7A3WMEEQUKU8Q4rNbuA0xTOriUt/DqclN8MxtYlEVqqwrm+W2WW1tm+S1c7davYfXD1YQvE4I4dV1RhZiAREskOGxBSIk0615vYNl137ZFeLCvhGukaN2X64XWk/pmOIL5w2N2X8Da+pZ+23RX+H/uH221K/bdtG0wV8a3QalESdK9rtvo1Q2uUVvBXQQGQphbEZiS+vOlhZnvVSqEOSREIKV8r6T+8X1+LrbfSrtv58ENSlDCnurRBAk5rEe0QlQGC94Um341KjWiuqsmnYjPilHtPJAEi81/3aN+NeYWXe5nFQJpMizHVLMegXKrbPe4MWlW5P2iXNUjtkUTjVgyrClIgrgO1jy3616L3f1GKBoUCisk5V4ohTjzoOXeVNKZMBGN2YmQenDx2E9mayv4mm2qw2E69VpIp94BhHDurX0Cxfn1hzMunGel928ZUrYhdcoegKgjKHwKiGIweVGFtG4n6bQ+XC7GvS4nAK5dHMDZnd1mqdm8gcX1ImSBhtVZ4AAluET4JJTCL/a1j4Vd5wbpzE/5czfMem5I3DvpKPJ9vivyrIBLU6aZCfihwwz9MOv7Ic65smbdD1gUMESLGhpi1jdEnETEMUN0owwNMesbIg746LqHL4+ZN0TACi1laIUmDdya4pN0IbjvhadweBI/IUiR8SgQGmk8Clma0tx5b4eCoEOMBkGccW3TO1QrDt4DIdkb0GgOxDmEHZW9HWQ0B+KA2TIFP4zJfRA883CnfgMbDYI4S/5XEIjaBKNB4CTlyXgQ3G3tGj6YqjJBN7SQ0RiIUz6+PDtqg4YwuvvjAEKO2qCdYHT3xwHeBvONe6aVLjfTKmSBBnQkABoLxDlyfP+7fnXkKEAZwpFHmykzAwtb2j8hyVvGaADEIR+WczgrinKd5SZ8EGhBwQBgmNTKxznqqPDtHKP7P15/ZVMnuDuJ31yFRG8go/s+zuB90euDIAM1+PZAiUSEAnXTtMUEpgd/68O0/f4Obi4WU4qpmF7M5+fTy89XU4wJwF+AhXF5LN7WMLdn9tB/+2YBZwplbmRzdHJlYW0KZW5kb2JqCjEzIDAgb2JqCjw8Ci9Db250ZW50cyAxNCAwIFIKL1BhcmVudCAxIDAgUgovUmVzb3VyY2VzIDMzIDAgUgovVHlwZSAvUGFnZQo+PgplbmRvYmoKMTQgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxODEwCj4+CnN0cmVhbQp4nKVY2W7bOBR9z1fcxxRoWJHa8+bETppB2kljo4MCfWFkxtWMFpeS0wXz8XMpUbKsMJQ7RZE6im2ecw/PXUgGf5w4xA/h24kDDvHwJ4gjuL8+oaD+yc3JxQreXFGIiePA6hEWq5OvgH9zKaERRA4jrgerNX7RjRkbvcgNnF5n5QPP4E6WiagqWBSbtBBCpsUGbuv1K1j9jWvChxNKPIY0WERcH8I4IL4HOfhBQGK3e85g2dHVtKhn5BV6MYlYwwu5sCY0RcYn8FZIyfNUFDWv4Acsy8f6G5diT0QzcHEFxYCxgIRh99wwGCxplEevgC++AzR0iBPBGW2+LwVcKJoxIxTDoj6JIkWzkxtO52mVpNssLfie0legcUQ8t1+zfRqtycKIBOZFn0f5FVzUNJqg6QWuWsu05G2aiCJJBywPLcOMmjhIMdiDNWEg2HK/dQHSCv3WUtQP4tFLE02a7zKepGUBa6GdVZrU0midWiM0fDwKblZtRQFvPy0/LeGJeiYNrWHFMSbVMUCdpJCUcltKXqdPA3kdEge4+uELqt1pG8RoS+85iYuBtugQl1k5oP1EUYI7N+jZIYz11AiYEfExELOPi48zWLhzeAN383dLg6D2WLSg00i9oFtZ/hBJXRrM2ssXUhJRuzX9mMSOFfGmqGq5y1V1Uf40iahxjKZkDiUsOAZomXNZ32W8qGGAWY8wOzmtsWk5pzF/05++i13B7k8Pu0Bo5bDIcB9lmpiqY4dg9Gcn7REQq9mdSUQrfy3i9Op2EZ/b0vVQSbstmUsce2VZKIck9U7yzKSbxrBachpkuZrN5qocY16vxD8ZN4loDUeLOA31m06kzTRhdaLjkcBeXFTypY/oxJcSXaOYqyWOE9h1j4GRac6fhORwF5gEtcaiBZ1G+ZVK6WNE1F4p/SggzF5MrkWlqhXMy6StXSZndlA2Zx6BNUvKQnxHW/4lMcovBhntMbUyHgFkkdE+sPouI3H4fGANCCifqTnnkmfpmq/h8+mH2ZsPl59fjUdWn+Ea8X5k1c9qZNUTGbZoI7jjkCiwBcaI56CBvk2N85Dm20w024mG3RXPyAucpRKVNSVs1UfQBKIXC7O5eCxlLoDDzfLP4Tb1XL3IJ8xaYdUBIW64xo5Dz9ElOPXflhUgKyk2/CETFYJXCF8AFg9Fc9vOkIqpFE9ppYyJM58Houb40fP9X9OiFrLgzRdFBnxXl/L1/m38s5l2gBaKbLQpcdR4iLRxWRRLSMVm3Z8GXo847N+RaImbORriNZ5nOIby0M7GmuI8lUpcqWflRmkCSxUpbsrPRga+W6f4kZRXZvY+uja2Ol/rUgFufrXjSuM1gndbS54nAjV60UPvUl38Wf/TpgJtbbdOm+Nbs1v3nSb4e1dJymoE9qLxPSyMnnVXTi/5msO6WxlqkRTKvJXY7FLl3wyqFH/FNwUkaZI1rJ7Q6+dGJd0oIpFdyTO4ubpXW1pVO7EGTIgmSvHt86tzWOQjG6oketEYZgohzjH2MqYozA4pzLa4lU88G5LAOpBkbegNj733zMB+SEI6CXx5CHxZFu3wgssOwR8xwExDrrkZ0MNTtrXvOXiCaGvFAr2a8Z8l5Px7mh9Wgk7sxtPgY1Kiz7/whxRdjqUFH7qPatd3qlQCNm2ba7MMaomtvP1MlWLpy18gjkngu1al1v3SvTtRjv+Vcgx7nx+bU44p/WtZqqXhfameVIVWtVwcnWYsDEhsnz+wHI1bhxYIhpEKKPou0XJQT6g3r/pRrKl7lcCRSX3CnIYsoMS1C3yGPasWG1UUQeVCItMaEZQF78VXzHicDnjSAOIQqkoszqBolRzrE6/5YSlev1SHzew8n4Te0ewukF3Of5Ryghs2tJF3zeiu01fgI9BVuuKutei4jb0bUYFKJRFmcvYkFHrGB8Vy3zJluZE8xyQ+3rEOI4yaHevCrG9mg8ljcDo47vqOxlRdbZqv2mIcMtQpJiIhO7wWW6Xbpnj0JIYa68GsWxoPi6HhFq+5cjOtfYU7uRtduuEEG+g7QQtfD48bITUueo8jGZZYNRb90lUeDenBVaThFEB9POTY22svU19khyXMpJ2G7bQ7PBEwnLLoMbjv2inFpKM1rrAVeRpAyUoM5ps4mlIfz77hi1dsjaoYOrVO6wNVD0ZIk5wabyznxVDOacCLNMcSLc2CWkMK+1SYgLjtRmLTBfmzMyp18cjr292Jx6PQ3gPuB2O9ql5NCR/PN52SGtFqzGnIlbRJaY1KSzmNYepEv2BRimMBs1sU52rXPukNLdoPTCZZNZrVoNNwS5zXCzXhFSasTl5rZFreaawXUr8ppS5Eo47GEBSHVOaTWDdd32EH/7drPmJvv7o7w9bnn10tFvOz6/e3Z3jABfgX4I5vCARvGrBTSveg/wFPvAOxCmVuZHN0cmVhbQplbmRvYmoKMTUgMCBvYmoKPDwKL0NvbnRlbnRzIDE2IDAgUgovUGFyZW50IDEgMCBSCi9SZXNvdXJjZXMgMzQgMCBSCi9UeXBlIC9QYWdlCj4+CmVuZG9iagoxNiAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovTGVuZ3RoIDEwOTEKPj4Kc3RyZWFtCnicjZfdcts2EIXv/RR76U5rhAAJ/uSuimWPO3Gr2n4BWIRYtBShgJQzk+nDZ0FQMiVDIMcjU5Soswe7HxYAgz+uIsIz+H4VQUQSfKVFDk/3+GmRRjmcXkx1tXiBT3cUChJF8LKB5cvVN8DPYkpoDnnESJzAS4k/iAvGzi6mguv7Wr+KGlZGr2XbwrKpVCOlUU0FX7vyF3j5FzXh7ytKEoauWE5iDlmREp7AFniakiI+3NfwfHA/2KKJ11eWFCRnvS/0wvqRWjMZgVUtGigl3Mu2U7p/+6RkW+n23ctgIkYRa4KxlGTZ4d6a6KMzoJE/Os1IRl1WKE+LswsawaxzfOD7VHpA7Gq1FkbAvhGwlZ0uda0rJazt6n0Exo0AXkUrSgGygVpAo81WwMPzX2griqLPLKI5eR/k2DCWkbKQ4etnCVvRdLIpezNgZKXazuhx9Df1hvd7Y58DtCqsi41oJdwtl7e/gVh3e1GrH6LU0EqUE/VW4rMjU4eyUm9i0yyxl94nO75cYSk8is6oH6OCYlZVs1Y7UcsWHkoMpTaYzXJc6jEfXtYdC2kak5hCwghncEN7EIyEhfWWcEIppNxOJeuN9n/W1cPtON1ZRPLsoEQ5JwU9l6JxbLn1abkxjfUGLAdBntqfnOmxJCapXw+Jez2hgeUxSdKwXJEQnvqHut1heU/8xQnycxQc3J7nDgvLCq/io+pUJdZI+KhJDN8eJqCvUkk/jEOlcpLENtrziCK8cB6k/ekmiqindk77WLsT8SwmWTRH/IvWplRNPzSQ3/Zqh6gqnAfGfWZx9dXZBT8U5iQ2YwVJ6Zzgv9ed8FU9JJ6nJJ41MhT3EuDEjwSc1gQrVRSziiL3DaYH53KphFGihV/hH2mM2Cqc2ni7rvV+tKJcWtGOpDBOouQDKYsRKTQmNJ4khXlIcdofSFmMSJkWXwhjJPZbVSq9FR32Lh8XLtR56RZjLqZDPUpMqg+MkPoAxjx1LxlO/QMZizEZ0/LLfhJBrde4lL6qGlfPvQT9WmMD6bQZhz52kCMFUWpTFOgXHLse1muKgthDgdMO9YsZ4rdqI43EhQwR79f0Tr3h251QLeDgKtn4qHChQ91iRuiLVITUHRUz1C+1CycebBcz1L/opt1jBDNwcUwdyHYnGl2L+a2C5zmhRahV8CwlLJ+EJPkIyaAdahVzxGVnRIvbLwQeG6SssRvatig9bAwRQx1jRsRLbATVBzbmqfvgGNSDHWOGPO5+Or3GvbTdLsoW+RhtSgPdAn9PsuDugvOM5NO7C+4BwWkHu8UMcd25ncVOmlafjOYdABcp2BymI13YSgTFh/pPi1+sv1MPN4dp+ZXWNVTu7GVPMHK9x2zZA9T6v/3u7DwSQ352HGE0tQcmXL2KIQ6P2Ml/Nyc3n+HpbnXDIsZv7Bno5v7Pr3ZrCfA/wEpUBLJPfbBrOtpu/gQ6TbVCCmVuZHN0cmVhbQplbmRvYmoKMTcgMCBvYmoKPDwKL0NvbnRlbnRzIDE4IDAgUgovUGFyZW50IDEgMCBSCi9SZXNvdXJjZXMgMzUgMCBSCi9UeXBlIC9QYWdlCj4+CmVuZG9iagoxOCAwIG9iago8PAovRmlsdGVyIC9GbGF0ZURlY29kZQovTGVuZ3RoIDE0NzkKPj4Kc3RyZWFtCniclVhNc9s2EL37V+zRmY5gAiRIqjc7sZM0dqNYajuTyQUiIQYJRSogZded/vgu+CFRLAUy45Eleeh9u/v27S7A4LcLh/AAni8ccIiHL38ewuPbCwrmRycXNyu4uqMwJ44Dqw3cri5+AP7NpYSGEDqMuB6sYvxHd85Y700ncPk2zdcihYXOI1kUcJslKpNSqyyB+zJ+BatvaBM+XVDiMXSDhcTlEMx9wj3YAvd9Mnfb7yksW3cbt6g36FfgzUnIKr/QF1aFZpwJCSxSkUEs4XW+3WcqEpHKM1kc/WgccNGAcYAxnwRB+904UCEzoM4wMg1IQOuMUO7Pe2/ohIOGOKye4XIpQW13qdzKrBRawD6DXeNddOIdyKLU+6jcaxHnsDPPJvgrK9U/QkMq8PFcxyqrHge5kVGpngSgWS1BpiB/7NUuR7vpMc6uz8giZTafL6McbYlSFaWAl1OTEKUKkSQ52u4mfbCA6iT7YWhYoiwg3IcZrVKMHt8Y1wKPUBf8wCfMMa61BQmXjxJTk2fdUCjnZE5bgyEnjte3R9GgHwwavNMy2sssUqJrk3kOmXsHJz1KArdvlIUu4XzQ6ELoUkVqhyx1y+sHuCEjfniwG3qE8b5dj/skdAbtflx/k8hu3lHOiVTZYKb9kKCuD5kOiecasOWxCHweEMe3FsEHFX2f5ZsNPEh0IUuGGKiBWgZOcCgPSeBNAfrDlP4QF00YLRcn5pnnkmBSHKs8zgcpacy3lJxmCWPidIr56xQ7XC1FhYEo7H5GJjudv6AwO8RhTL4Twukb8nhgjTumuv7H2k2HNTckvmd1p5GL6SrYhBMti3yIuBqrT9xNl7hxrKXcikykQ9Q1sfSpu+lSNw6weIBfIJUiHuSvwejzd9Plb0oQyV5tTU8z/Q3Ek8giiV1PRP1ZcVDegTGXma5l1RnD3mgdEF3G3qgCewgWlBjirEazim0c7dNeYXxnWGvisQpuHOLeEIbEYc+QmZJ6WH0NllV9U5L3pAqTvVJGpo1gFkuRpiIWPyE8ipE5duE5mJK51RPcMFQpaxZxwkRnZlaNZRXeONaDzIr9MIVNLFbhjQMcQgCxXYvCLCFn5lqDZxXhBDwZVTQ2y48oZYJk2rTH55ww+4zjOK5de/M+lA/S9qhkkZzWakNag2VT3gQsm/LaaGzKmwBR9ctP1wM8tQA2uU0AuMatVKS4h1a1oZElZKvqm7qfvTHVcdx2Qvu4475nkmMvnEIlGRge5fMQdTWKTW8TUMyMyOCrKk/LoyWvicSmuQkg5/aU1rxNYhPMH0p9k+tttaTUJ4ZErFPrlOO8QrQqzfONFzb4d9efPy5giYdC9GFQZDXMsMiwep35FBgGhSx6c/tIVBOJVWXjGA/7tFTxYVTrIc4aJKvcxpFui3Ifq66+zMdddbj+ic2Se9Xp1So1fNIZGXA4ynU14O5EIYcYrGGsWhuHuU5hg1k1TUYPcdjEYhXbOMpZsTXmrWIbN38vm+0RxE7LLFYxDtEXiKoUHmHbaw06eLngYdX7To3DDq/6YoPCOzQlqr1VFP0bDoR6nadinWtxuoecu83gLgl98AKXMPvNAMAMFrku6wbSHnLgWa4hMttCZCoTebgK6ouL44VB7y6iQcST78iGZxCXOGbwrGEgE9wPqoGdR/vqJiWFLziWMNd/Q17dUzyJ1OB9eTWM6M6bQ7YV8U8VyxytbqSurgrqaHS9qiOtWm5zk/gvlw9LWEmxLeAKPuf59hwsY1Ng32emO8smt9XpDRtadcrCxSjSOIEQ8i8pv6cv7fmuwOm3Q0rOITucUHu1dpG39WoJ8puM9ubmoeL1w+J9ceZY24Fyw9DU7RjUG1F8XedCxybM4vT41RlJ+BlKJbe7HLPd3ZqqIsZJ0athRn1zr8WwF/HaB+6wk9/1GNz8Co93ixlzGJ/d3d6+mb39/X7mOBTgX4CFSAiEVxXYJaVH0P8AEiwtWQplbmRzdHJlYW0KZW5kb2JqCjE5IDAgb2JqCjw8Ci9Db250ZW50cyAyMCAwIFIKL1BhcmVudCAxIDAgUgovUmVzb3VyY2VzIDM2IDAgUgovVHlwZSAvUGFnZQo+PgplbmRvYmoKMjAgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxNjM3Cj4+CnN0cmVhbQp4nJ1ZXXPaOBR9z6+4TzvpzEaxJH/uGwnQZDfZsiTTne70RTEOVcfY1DZtM7M/fq8sAyYosthpUwOh5xwfHa7uFQx+P/NIEMGPMw884uNPmMQwf4+vJqEXw+GlWp5dPcLllEJCPA8en2HyePYN8DVOCY0h9hjhPjwu8D/whLFXl2oJ5+/z8knkMKvKNKtrmBRLWWRZJYsl3DWLd/D4FTHhrzNKfIaqWEx4AFESksCHFQRhSBK+fZ7Dw1Z9J4v6Rl2Rn5CYtbpQC2vvVIlJCNzJuhEwzhqR52IhYJGhpqbKluIpz+q9nk4IRyAlhLGQRNH2uRLSKmBAPbMCGpGIamdoECavLigGnUOLHn/A+QjSsmhksRGpLAuoM1hXWZ0VqDPHv63gtFytcxSt9GZ7vfg0x3eXL1nalDCdTMa/QpqLWj7LVCzKGtZlBQtZp3Kdy0LAi6La32RfMC4lZTbB57JYIGqrUdE+l9VKIOteEdkjb9eHGt0JI19dWjK2+9ErROG2WGaFxIy0d6uTU+6h+0tqjKdeujDkhFO8LxJHcEHbdasyuFIq/JgwVBGo9CsVtP2j+K/LhVyWfYeShDC6ReN4QzF9DcfwruLQiLfPVh/TV76wLSgNApIcgfqoPDGLnGrnex+e7lfbUJrs8Dnxw50dMfG5onroLQpegsCagNn8wvOowR0NvnPnAJ1isrzABX6c1XJZwBXmt4b7bFVWolhsVibnNOHOuQNCn/J2OYYJ/y6rxeVsPO2F640yuLORBcTzj2y86tmI7JQP28gMNmrwIxuv+jYOwz/I1Sbffk63nx/4fL4q8WNbws2nh08Pn9+ZXNX8R65e9V0d5h9V6Rf5vQTypU4NGd1Z6YUkpLZEBolPIm/YSm6wUoNbE+kAP5ZiWYmVUIUWpvnma3lo6Ww6rs1Wan5rQB34R5umvB6NT8toEMeEJraMBlGoCuCgsf6xsR24NaMO8FciF0XabmBwL2q1M02KrFpKYTCz47Tm0oFz8jPN8kMrj0KJ7yWRtUwGQURihzIZGLzT4PZQOsD/cjuuMXwH4XzcPKkds4YM98+6qTYr1UCoImDMZyfFns9hKQ8rUTUzXMrmxIgGVDWOtohip+U7lNHQYLMGt0d0GP6m/KqtHeNe2z6YfNvItX541JXsndXs9rAOszuFlTPFYQsr0w3YkIuRwUUNbg/rMPxU5mVdPute7hr73KrMBwzUxPZoDhOfvrcHOE349rqJtx041M3YYKcGt4dyGP62UG13phy8Gf3zYWbyTzPZAzjMdOzfUf58HMs8a7H0Y2z0HYplcmxYB27NnwP8pG42C1nCw+0dXMLdh9nIYFnHZY2cA9fpkfOjiITWOuiHAYmG6yD1DA5qcHPkGM4eOO85wG8dxMiNcvkdH73AR9xcMtUAjWa36sNo3GM6fmsQHfhdghi0N2wLoh8RPlwIqWG46cDtQRyG72xsd48buajEJsdpWj27k0UmapOBmtkeSwfm463EPp77WEFiah7PWX88v89SUai7eNn1HyfP6b7HSeLb5nSe4I7K3Ob0Ds06p5vwrHN6B2qd002g/2dO51hmvONNqBdlHrHd4ckbK34/Mc/pHbg1yg7wk3qdpe0Rk+ovt018o9Zfn0ntu1EckeRaHfZd56KuM/Ow1Mmy5txB1unll2P1CSNb+eUBV33yoNmGab4Dt+74DvCqu9ZVY15uGmXlob9/ZC+g3vOGtVqEuQYHHs77TvfIx3CvTg8G6jDHYsSOt7N+eHlAuL3et34aRvoO3B7eYfhRIXKpDpjaiT77KZ9kLhdisa/EcF3JBsNtKsmdCHtUh0Vci6wWFdzenphXvMTMmlcaKmGD/hom+w7cntdheFNx2A5O87IRjfxeGp3V9NZuwYHeoVvgVH0/YUspS/BFhxJrmPE7cGtKHeBNLs7xlbVUnVcNAgeorJaHh/lbJ7UEa0YdJJxeThnugYm1nLLYU432oLGGqb4DN8eTY8eCraYLvD4ExYKGjuaiLZ2N6dCp43ujcqovniIXvtHHyccRTPjYEkgWcfX1li2QISWhQ9k0zPEduD2Qw/C9KQCneHXAlDbb0mlyT7PaMzjMepzBtnPiEL9qXBlWBhxnGNJ1MxqOuAf/Krh59vwbzKezC+ax4EJ9XXbx/s871SsB/AswE0sCyWVLdt4fBf4DigK7GgplbmRzdHJlYW0KZW5kb2JqCjIxIDAgb2JqCjw8Ci9Db250ZW50cyAyMiAwIFIKL1BhcmVudCAxIDAgUgovUmVzb3VyY2VzIDM3IDAgUgovVHlwZSAvUGFnZQo+PgplbmRvYmoKMjIgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMzQ2Cj4+CnN0cmVhbQp4nJ1YXW/qRhR851fsU5UrNRt7P/zRNwJOmiqqaKC3fciLAxvkXGMntultq/74nrUXMGFz1kQRQURh5ng8njM2I7+MPCpD8n3kEY8KeAVxRB5uRz7RP9V6dL0gVzc+iannkcUzSRajNwJ/4z71IxJ5jHJBFiv4Io8Ze/dWrcnFbV4+pTmZVeVS1TVJinVWKFVlxZrcN6svZPECmOS3kU8FgzFYRLkkYRxQKciGyCCgMd99zsl8N64Zy/etc4Uh/FvQzcX2Lz1OTDm5K+qm2m5U0aTLrCzIP2RSFk1V5odpPPMl8ZEEZk4Zg2AE2KKQXPoxjeALilzrSUREGUwiQuq1k+wUJReTcpWtywPZG4ljyvwdGoeDivz3cAyOLAqseAkMr9bpU676mEJrw3agvpQ0PgEVMHlsH/KmrDZp05vy2BHMKgdv0XdyRFRwTTXvnRgW6vPZnhhfwlzHb5r4bnLpeb5FnQ58r84Rug9G9OQQ+HH1ts0atWy2VUpWCiyV1Y3apGQ6mdvk61j38h2xCp+358TN+jWrs/JqNr3pWYzGgReR4zeQdy8may+J92Je98T0Yio9t5jMImYHfiLmdV9MN/yHYs7vrGJ2rCdiXvfFdLNaxNybc68eHEMcY1YMYpgpcqvHLep14KgVB8Dfg1hatl4glbVNto4O9eAAuuTvpcrP82AQCR23iAeDkNFAulUUpyoacNSDA+B/Ll/SWqs4hbiqB8hpeFEXDuCdb9KqmeVp0TisGMAO89FUDKSgbEAqSouIHThuRTf8fbnOlq0XzSokjxeTdFsr8gNJnp/hCn/8YpOyY8ed6Wb/jDNhZYVoOgZc0mhAOgYWUTtw3Jlu+KR+VcvsGYRtawaIOy7SPPs3XZWVsjqz48Wd6eb9o6xWx2ribSnwOOW+vS0JuJrWqsigsaUkycEIFRzP2UVJxowKgRUlGcIf2bCiZNDQomTDQ4uSAUWLkg30M0VJ6njxsEiQga7iuL3u7UXJgKORMAS+brarrGwzIa3WkLH702/zrmFFo2AI62I8Oy8JJOSLj+4oKRhlgVtLS08y4GgSDICfZum6Sjeg4e8FBEKe2q9/w4Ze/wPYxtumnIynjrUkIUhCiXqQcX0NOHWzNCQDjnvQDT/J0/o4QCsFIj5ejBfJn9aNZIhxG7qJrRI6neiHlKM7SXqSCt+tqKUtGXDciQPge1d1WTXlMquWUOHL9iYY9kZW7LWGW3ao9vqT3azdQLhZBwx0csGfOFXEEY3RtBRRoBuyU1dLgTLgqFOHwB/tetX20ARujl7LQ25a26jhRw07gP/cnS8gana3We93vuzv/En2V5aDOxLdqdsbvfMfkwjBacCw7S94N+aQ7W/Q0O1vw0O3vwFFt78N9DPbX0D+hBHqZ31sIR6NX+3b34DjfnbDz/KyIfruhtyqQh2d9INmHRVuXTfVp7JWQLLw0+3Vy1oec93nnBpatr4BR7N2APw0q1XRRW22f9p4HA2zKiuW2WuaWyPWzIFG7IA55ouxsw3wqHvQ+rEneSj1TE49LW3AgKOeHAB/0HOWvSrykC6/2VQzbKgtB7At1Lc8Pc+UPIh0qGKmlAGVeJK3IloKgAHHTemGP4iYrPS+ykrdp+Zp3r/7/5HMt0+q7hxr7VlmGtya7mmGVVUuPf1wCzMnj3RzdupqKQAGHDenG/5BrdqHUJUq0hfr1WyIcF+6iayStcuGk+jdrmeACuWCAaN5mCU9dvS7G/35J/JwM7tkHpOXN0kyvbz9tb25JOQ/QmbpmoIQVy3bhd/bOf8DEM747wplbmRzdHJlYW0KZW5kb2JqCjIzIDAgb2JqCjw8Ci9Db250ZW50cyAyNCAwIFIKL1BhcmVudCAxIDAgUgovUmVzb3VyY2VzIDM4IDAgUgovVHlwZSAvUGFnZQo+PgplbmRvYmoKMjQgMCBvYmoKPDwKL0ZpbHRlciAvRmxhdGVEZWNvZGUKL0xlbmd0aCAxMTA2Cj4+CnN0cmVhbQp4nJVW227bOBB991fMywIJUDMSde8+ZVvnss222dgLbBd5YSRaYSGLDiUl9aIf30PKjhNDcVIYsSxiOHPOXM6E058jj0UJPYw88liIvzhL6ep05JP9mHL0x4yOTnzKmOfRbE6T2eiOcBb4zE8p9TgLQpoVuBhknO88TEkHp5W+ERVdGp3LpqFJXapaSqPqki7a4pBm3+CT/h75LOSAwVMWRJRkMYtCWlAUxywLNu8VTTdw17D8cBBXEmYs5Q4XsHBHzYLxPQYEc33XSTqbTkjWVAk6EY2kk8nk4xbNGkYANxYG5zFLks27heHic4LDwfh+whK/z4sfxdnOA1A8lsYweHgtQaTqVpZGGEGVbmiJ81wtFX4WkhpZdkYVwlrdSiNhaim1uhANiFmbXDVK19KZF6qRtWY0lVuiT0GjmD7fBxrFTmIH2khRqf+BqiYj75/EyHXdtKbLW3WjKgdtRQsBYPXjwdKSEQ67MGRLIas1NpqLHFag0dXi0VcO77QaxBynaIxgH+YDvZRGOBd9yIbteIoC1ILi2GfJXvYHRGO6WrN9Kf3XB+fr3zQVc9mu3A35cH1oKzO3nQZauVy2naiGgYThW4CcHf/35ZLm2izQPHBp09oq9EbPtUBO80qtMS1UrRaaOCBvSxUh6aK5PhxGwV/rYIdi0rRdoTRNzy/oiC6+XB5bLBaVJEHnkw8U+5HvD4fA8CTem0PY5kJPq7nKNxRJoA8b8DueTf49+jz58AKZKAuga78Saa4MvNcFlW6KWomG1lYsVrprh2Mk8VtiHNcYnEZt5hG9uekmREJdVmQEyuIIttIsQHY4XJSxOP2ldpVNLpaSDBi4QMuubnsdMbKrYTQcKOQsTl4N9BGNVfZiIB+sz7W85qIQdKtavZGup12/X8RDVI2nAyLuQ8S/Y4TyvpVXNvh9nzPZ7Gp4mAYs8Lcavn5/XcNDCIK/n/gr0r00EqLWCifFSE/nxtFmfAsXGUMT5MiPNaOrk0uaybxG2d8PCl4YRizaX/cxBB6x9RL+Lbaj83O36LoScovKHCNgTWdfp1+nvRYjbqMWXfU4VktHSGOw5F2n7kXlZARPK3b6+nBXQdfQeMay/RMwpgt0HLwZWYqbCvShh3KhWmU3CVAhdTj93WWsxST04g87pBmJErWu7BWsidZuD1xaaoMTy6PQL+BCf4X7deZZyrqaFhr66YQAIG7ENywmXVX6YdzeynEDAyu4GkqkamH50D+f3kE+gE+gHf8SVqfEMJogS1m6X1ihRFbStSngvgA/O0vYoAVqZfdiIYutBlYUer+hUvN+/yBPEd4NCodGfLlYAcaA798yLinye151K7ei5ROthySKqgK4dyiZs6gLjcI0GmlDPz1XansDw1Ap7CFh2I4ABJTuDCD3A5Z5xCOWRT3EyOPPvi2+Kzl/bwdmzD0eje3/b+PTzxdjz/OJfhBdipKR7x+5aAdPd9BPGCkO9QplbmRzdHJlYW0KZW5kb2JqCjI1IDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQKL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcKL1N1YnR5cGUgL1R5cGUxCi9UeXBlIC9Gb250Cj4+CmVuZG9iagoyNiAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYQovRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZwovU3VidHlwZSAvVHlwZTEKL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjI3IDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLU9ibGlxdWUKL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcKL1N1YnR5cGUgL1R5cGUxCi9UeXBlIC9Gb250Cj4+CmVuZG9iagoyOCAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagoyOSAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozMCAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozMSAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozMiAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozMyAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozNCAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozNSAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozNiAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozNyAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozOCAwIG9iago8PAovRm9udCA8PC9GMSAyNSAwIFIKL0YyIDI2IDAgUgovRjMgMjcgMCBSPj4KL1Byb2NTZXQgWy9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUldCj4+CmVuZG9iagozOSAwIG9iago8PAovQ3JlYXRpb25EYXRlIChEOjIwMjYwMjEwMjE0MjIxWikKPj4KZW5kb2JqCnhyZWYKMCA0MAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDE2NCAwMDAwMCBuIAowMDAwMDAwMjY3IDAwMDAwIG4gCjAwMDAwMDAzNDggMDAwMDAgbiAKMDAwMDAwMDkzOCAwMDAwMCBuIAowMDAwMDAxMDE5IDAwMDAwIG4gCjAwMDAwMDIxNzMgMDAwMDAgbiAKMDAwMDAwMjI1NCAwMDAwMCBuIAowMDAwMDAzNDM1IDAwMDAwIG4gCjAwMDAwMDM1MTcgMDAwMDAgbiAKMDAwMDAwNDU2MCAwMDAwMCBuIAowMDAwMDA0NjQzIDAwMDAwIG4gCjAwMDAwMDU2MDIgMDAwMDAgbiAKMDAwMDAwNTY4NSAwMDAwMCBuIAowMDAwMDA3NTY5IDAwMDAwIG4gCjAwMDAwMDc2NTIgMDAwMDAgbiAKMDAwMDAwODgxNyAwMDAwMCBuIAowMDAwMDA4OTAwIDAwMDAwIG4gCjAwMDAwMTA0NTMgMDAwMDAgbiAKMDAwMDAxMDUzNiAwMDAwMCBuIAowMDAwMDEyMjQ3IDAwMDAwIG4gCjAwMDAwMTIzMzAgMDAwMDAgbiAKMDAwMDAxMzc1MCAwMDAwMCBuIAowMDAwMDEzODMzIDAwMDAwIG4gCjAwMDAwMTUwMTMgMDAwMDAgbiAKMDAwMDAxNTExNiAwMDAwMCBuIAowMDAwMDE1MjE0IDAwMDAwIG4gCjAwMDAwMTUzMjAgMDAwMDAgbiAKMDAwMDAxNTQzMSAwMDAwMCBuIAowMDAwMDE1NTQyIDAwMDAwIG4gCjAwMDAwMTU2NTMgMDAwMDAgbiAKMDAwMDAxNTc2NCAwMDAwMCBuIAowMDAwMDE1ODc1IDAwMDAwIG4gCjAwMDAwMTU5ODYgMDAwMDAgbiAKMDAwMDAxNjA5NyAwMDAwMCBuIAowMDAwMDE2MjA4IDAwMDAwIG4gCjAwMDAwMTYzMTkgMDAwMDAgbiAKMDAwMDAxNjQzMCAwMDAwMCBuIAowMDAwMDE2NTQxIDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNDAKL1Jvb3QgMiAwIFIKL0luZm8gMzkgMCBSCi9JRCBbPEZEMEFBOEIyRUM0QUU2ODI4Q0E0Q0ZCNkRFOUY2NjM4PjxGRDBBQThCMkVDNEFFNjgyOENBNENGQjZERTlGNjYzOD5dCj4+CnN0YXJ0eHJlZgoxNjU5NwolJUVPRgo=",
+                    "project_id": "cfbb3a8d-6262-47b0-bda4-6d5c6475d4d6",
+                    "metadata": {
+                        "uploadedAt": "2026-02-11T15:06:03.673Z",
+                        "fileName": "Oferta_Tecnica.pdf",
+                        "fileSize": 17552,
+                        "fileId": "rfq-1770822363670-tr6npw211",
+                        "project_id": "cfbb3a8d-6262-47b0-bda4-6d5c6475d4d6",
+                        "proyecto": "Renovación Centro de Datos - Madrid",
+                        "proveedor": "GLOBAL PROCESS ENGINEERING LTD",
+                        "tipoEvaluacion": [
+                            "Technical Evaluation"
+                        ]
+                    }
+                },
+                "webhookUrl": "https://n8n.beaienergy.com/webhook/ofertas-desarrollo",
+                "executionMode": "production"
+            }
+        ]
+    },
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

@@ -220,12 +220,21 @@ export const useScoringStore = create<ScoringState>()(
                         return s > 10 ? s / 10 : s;
                     };
 
-                    // Check if dynamic JSONB data is available
-                    const hasDynamicData = data.some((row: any) =>
-                        row.individual_scores_json &&
-                        typeof row.individual_scores_json === 'object' &&
-                        Object.keys(row.individual_scores_json).length > 0
-                    );
+                    // Helper to safely parse JSONB fields that might be stored as strings
+                    const parseJsonField = (val: any): Record<string, any> => {
+                        if (!val) return {};
+                        if (typeof val === 'string') {
+                            try { return JSON.parse(val); } catch { return {}; }
+                        }
+                        if (typeof val === 'object') return val;
+                        return {};
+                    };
+
+                    // Check if dynamic JSONB data is available (handle both string and object)
+                    const hasDynamicData = data.some((row: any) => {
+                        const parsed = parseJsonField(row.individual_scores_json);
+                        return Object.keys(parsed).length > 0;
+                    });
 
                     // Transform data to expected format
                     const ranking: ProviderScore[] = (data || []).map((row: any, index: number) => {
@@ -233,15 +242,19 @@ export const useScoringStore = create<ScoringState>()(
                         let individualScores: Record<string, number>;
                         let categoryScores: Record<string, number>;
 
-                        if (hasDynamicData && row.individual_scores_json && Object.keys(row.individual_scores_json).length > 0) {
+                        const individualJson = parseJsonField(row.individual_scores_json);
+                        const categoryJson = parseJsonField(row.category_scores_json);
+                        const evalDetails = parseJsonField(row.evaluation_details);
+
+                        if (hasDynamicData && Object.keys(individualJson).length > 0) {
                             // Dynamic mode: read from JSONB columns
                             individualScores = {};
-                            for (const [key, val] of Object.entries(row.individual_scores_json)) {
+                            for (const [key, val] of Object.entries(individualJson)) {
                                 individualScores[key] = normalizeScore(val as number);
                             }
                             categoryScores = {};
-                            if (row.category_scores_json && typeof row.category_scores_json === 'object') {
-                                for (const [key, val] of Object.entries(row.category_scores_json)) {
+                            if (Object.keys(categoryJson).length > 0) {
+                                for (const [key, val] of Object.entries(categoryJson)) {
                                     categoryScores[key.toLowerCase()] = normalizeScore(val as number);
                                 }
                             }
@@ -276,6 +289,8 @@ export const useScoringStore = create<ScoringState>()(
                             compliance_percentage: row.compliance_percentage || 0,
                             scores: categoryScores,
                             individual_scores: individualScores,
+                            strengths: evalDetails.strengths || [],
+                            weaknesses: evalDetails.weaknesses || [],
                         };
                     });
 

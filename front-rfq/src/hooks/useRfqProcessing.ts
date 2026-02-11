@@ -62,9 +62,17 @@ export function useRfqProcessing() {
       const trackers = useRfqStore.getState().fileTrackers;
 
       // Process each file individually with its own AbortController
+      // Stagger requests by 1.5s to avoid overwhelming n8n webhooks with simultaneous calls
+      const STAGGER_DELAY_MS = 1500;
+
       const filePromises = selectedFiles.map(async ({ file, metadata }, index) => {
         const tracker = trackers[index];
         if (!tracker) return { fileName: file.name, success: false, error: 'No tracker' };
+
+        // Stagger: wait index * delay before starting each upload
+        if (index > 0) {
+          await new Promise(resolve => setTimeout(resolve, index * STAGGER_DELAY_MS));
+        }
 
         try {
           const result = await uploadRfqFile(file, {

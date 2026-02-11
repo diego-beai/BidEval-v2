@@ -1,0 +1,529 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "qa-send-to-supplier-desarrollo",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -4608,
+                7408
+            ],
+            "id": "c477a525-6c28-464b-aca5-b177bd6fa320",
+            "name": "Webhook Receive",
+            "webhookId": "qa-send-to-supplier-webhook"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "check-email",
+                            "leftValue": "={{ $json.email_to }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.1,
+            "position": [
+                -2816,
+                7408
+            ],
+            "id": "11de72c8-54a7-42da-a751-0b22357e1d87",
+            "name": "Email Provided?"
+        },
+        {
+            "parameters": {
+                "sendTo": "={{ $json.email_to }}",
+                "subject": "={{ $json.email_subject }}",
+                "message": "={{ $json.email_html }}",
+                "options": {
+                    "senderName": "BidEval Team"
+                }
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                -2592,
+                7344
+            ],
+            "id": "9a6fd727-628a-4f5f-b303-7929fd753bcd",
+            "name": "Send Email via Gmail",
+            "webhookId": "9be31203-685f-4b78-a56d-e950bca3a806",
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "jsCode": "// Generate a random token without crypto module\nfunction generateToken(length = 64) {\n  const chars = 'abcdef0123456789';\n  let token = '';\n  for (let i = 0; i < length; i++) {\n    token += chars.charAt(Math.floor(Math.random() * chars.length));\n  }\n  // Add timestamp for uniqueness\n  const timestamp = Date.now().toString(16);\n  return (timestamp + token).slice(0, 64);\n}\n\nconst token = generateToken();\n\n// Calculate expiration date\nconst expiresDays = $input.first().json.expires_days || 7;\nconst expiresAt = new Date();\nexpiresAt.setDate(expiresAt.getDate() + expiresDays);\n\nreturn {\n  json: {\n    ...$input.first().json,\n    token: token,\n    expires_at: expiresAt.toISOString()\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -4160,
+                7408
+            ],
+            "id": "6359c599-55dc-493e-92a0-542991a5243b",
+            "name": "Generate Token"
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "tableId": "qa_response_tokens",
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "project_id",
+                            "fieldValue": "={{ $json.project_id }}"
+                        },
+                        {
+                            "fieldId": "token",
+                            "fieldValue": "={{ $json.token }}"
+                        },
+                        {
+                            "fieldId": "provider_name",
+                            "fieldValue": "={{ $json.provider_name }}"
+                        },
+                        {
+                            "fieldId": "question_ids",
+                            "fieldValue": "={{ $json.question_ids }}"
+                        },
+                        {
+                            "fieldId": "expires_at",
+                            "fieldValue": "={{ $json.expires_at }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -3936,
+                7408
+            ],
+            "id": "226f878d-3d34-4bdc-8648-c2f4a5a2fb2b",
+            "name": "Save Token to DB",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Split question_ids array into individual items\nconst questionIds = $(\"Set Input Params2\").first().json.question_ids || [];\n\n// Return each ID as a separate item\nreturn questionIds.map(id => ({\n  json: {\n    question_id: id\n  }\n}));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3712,
+                7312
+            ],
+            "id": "1633369d-bc4b-4a7f-81cd-f012c98deb8b",
+            "name": "Split Question IDs"
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "getAll",
+                "tableId": "qa_audit",
+                "limit": 1,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.question_id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -3488,
+                7312
+            ],
+            "id": "253b10a8-78b7-44b0-b0ea-58b5dbb9dad7",
+            "name": "Fetch Questions",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "getAll",
+                "tableId": "projects",
+                "limit": 1,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "condition": "eq",
+                            "keyValue": "={{ $(\"Set Input Params2\").first().json.project_id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -3488,
+                7504
+            ],
+            "id": "7d7e7a87-8207-46fc-93ca-34b4aa70a627",
+            "name": "Fetch Project Name",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineAll",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                -3264,
+                7408
+            ],
+            "id": "c5919d65-3458-43b5-afec-2a3814e2b52b",
+            "name": "Merge Data"
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nconst inputParams = $(\"Generate Token\").first().json;\nconst projectData = items.find(i => i.json.display_name)?.json || {};\nconst questions = items.filter(i => i.json.question);\n\n// Build the response link - UPDATE THIS URL TO YOUR FRONTEND\nconst frontendUrl = 'http://portalia.ignisenergia.es:9102';\nconst responseLink = `${frontendUrl}/respond/${inputParams.token}`;\n\n// Build questions HTML for email\nconst questionsHtml = questions.map((q, idx) => `\n  <tr>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e2e8f0;\">${idx + 1}</td>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e2e8f0;\">${q.json.discipline || 'General'}</td>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e2e8f0;\">${q.json.question}</td>\n    <td style=\"padding: 12px; border-bottom: 1px solid #e2e8f0;\">\n      <span style=\"padding: 4px 8px; border-radius: 4px; font-size: 12px; background: ${q.json.importance === 'High' ? '#fee2e2' : q.json.importance === 'Medium' ? '#fef3c7' : '#dcfce7'}; color: ${q.json.importance === 'High' ? '#991b1b' : q.json.importance === 'Medium' ? '#92400e' : '#166534'};\">\n        ${q.json.importance || 'Medium'}\n      </span>\n    </td>\n  </tr>\n`).join('');\n\n// Build email HTML\nconst emailHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n</head>\n<body style=\"margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;\">\n  <div style=\"max-width: 600px; margin: 0 auto; padding: 40px 20px;\">\n    <!-- Header -->\n    <div style=\"text-align: center; margin-bottom: 32px;\">\n      <h1 style=\"margin: 0; font-size: 28px;\">\n        <span style=\"color: #1e293b;\">Bid</span><span style=\"color: #12b5b0;\">Eval</span>\n      </h1>\n      <p style=\"margin: 8px 0 0; color: #64748b;\">Technical Evaluation Platform</p>\n    </div>\n    \n    <!-- Main Card -->\n    <div style=\"background: white; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.08);\">\n      <h2 style=\"margin: 0 0 8px; color: #1e293b; font-size: 20px;\">Technical Questionnaire Request</h2>\n      <p style=\"margin: 0 0 24px; color: #64748b;\">Project: <strong>${projectData.display_name || 'N/A'}</strong></p>\n      \n      <p style=\"color: #475569; line-height: 1.6;\">\n        Dear <strong>${inputParams.provider_name}</strong> team,\n      </p>\n      <p style=\"color: #475569; line-height: 1.6;\">\n        As part of the technical evaluation process, we have prepared a questionnaire with <strong>${questions.length}</strong> questions that require your response.\n      </p>\n      \n      <!-- Questions Table -->\n      <div style=\"margin: 24px 0; overflow-x: auto;\">\n        <table style=\"width: 100%; border-collapse: collapse; font-size: 14px;\">\n          <thead>\n            <tr style=\"background: #f1f5f9;\">\n              <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #475569;\">#</th>\n              <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #475569;\">Discipline</th>\n              <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #475569;\">Question</th>\n              <th style=\"padding: 12px; text-align: left; font-weight: 600; color: #475569;\">Priority</th>\n            </tr>\n          </thead>\n          <tbody>\n            ${questionsHtml}\n          </tbody>\n        </table>\n      </div>\n      \n      <!-- CTA Button -->\n      <div style=\"text-align: center; margin: 32px 0;\">\n        <a href=\"${responseLink}\" style=\"display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #12b5b0 0%, #0d9488 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px;\">Respond to Questionnaire</a>\n      </div>\n      \n      <p style=\"color: #64748b; font-size: 14px;\">\n        This link will expire on <strong>${new Date(inputParams.expires_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>.\n      </p>\n      \n      <hr style=\"border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;\">\n      \n      <p style=\"color: #94a3b8; font-size: 12px; margin: 0;\">\n        If you have any questions, please contact the evaluation team.\n      </p>\n    </div>\n    \n    <!-- Footer -->\n    <div style=\"text-align: center; margin-top: 32px; color: #94a3b8; font-size: 12px;\">\n      <p style=\"margin: 0;\">Powered by BidEval - Technical Evaluation Platform</p>\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn {\n  json: {\n    success: true,\n    token: inputParams.token,\n    response_link: responseLink,\n    expires_at: inputParams.expires_at,\n    project_name: projectData.display_name,\n    provider_name: inputParams.provider_name,\n    question_count: questions.length,\n    email_to: inputParams.email_to,\n    email_subject: `Technical Questionnaire - ${projectData.display_name || 'BidEval'}`,\n    email_html: emailHtml\n  }\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -3040,
+                7408
+            ],
+            "id": "14e564ea-6559-4b59-9f87-f23e35142a6d",
+            "name": "Build Email Content"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Split question_ids for update\nconst questionIds = $(\"Set Input Params2\").first().json.question_ids || [];\nreturn questionIds.map(id => ({ json: { question_id: id } }));"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -2368,
+                7408
+            ],
+            "id": "966b88da-77d8-4ee3-be73-fae8c74358e4",
+            "name": "Split for Update"
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "update",
+                "tableId": "qa_audit",
+                "matchType": "allFilters",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.question_id }}"
+                        }
+                    ]
+                },
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldId": "status",
+                            "fieldValue": "Sent"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -2144,
+                7408
+            ],
+            "id": "34a7cb20-7539-4222-9bc4-487672718153",
+            "name": "Update Question Status",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "project_id",
+                            "name": "project_id",
+                            "value": "={{ $json.body?.project_id || $json.project_id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "provider_name",
+                            "name": "provider_name",
+                            "value": "={{ $json.body?.provider_name || $json.provider_name }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "question_ids",
+                            "name": "question_ids",
+                            "value": "={{ $json.body?.question_ids || $json.question_ids }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "email_to",
+                            "name": "email_to",
+                            "value": "={{ $json.body?.email_to || $json.email_to || '' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "expires_days",
+                            "name": "expires_days",
+                            "value": "={{ $json.body?.expires_days || $json.expires_days || 7 }}",
+                            "type": "number"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -4384,
+                7408
+            ],
+            "id": "f21e93d0-8033-44db-8017-947827c53bdb",
+            "name": "Set Input Params2"
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $(\"Build Email Content\").first().json }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -1920,
+                7408
+            ],
+            "id": "2a4f631d-c773-4856-ade9-745763a87410",
+            "name": "Respond to Webhook2"
+        },
+        {
+            "parameters": {
+                "content": "## QA Send to Supplier Workflow\n\n**Purpose:** Generate a unique token, send email via Gmail, and create response link for suppliers.\n\n**Input (POST body):**\n```json\n{\n  \"project_id\": \"uuid\",\n  \"provider_name\": \"IDOM\",\n  \"question_ids\": [\"uuid1\", \"uuid2\"],\n  \"email_to\": \"supplier@example.com\",\n  \"expires_days\": 7\n}\n```\n\n**Flow:**\n1. Generate 64-char token\n2. Save to `qa_response_tokens`\n3. Build HTML email\n4. If email_to provided → Send via Gmail\n5. Update questions status to 'Sent'\n6. Return response link\n\n**Gmail Setup:**\nConfigure Gmail OAuth2 credentials in n8n.",
+                "height": 688,
+                "width": 3328,
+                "color": 2
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -4976,
+                7024
+            ],
+            "id": "16775f3a-341c-4f64-9d0c-29dfd5596bcd",
+            "name": "Sticky Note3"
+        }
+    ],
+    "connections": {
+        "Webhook Receive": {
+            "main": [
+                [
+                    {
+                        "node": "Set Input Params2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Email Provided?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Email via Gmail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Split for Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Email via Gmail": {
+            "main": [
+                [
+                    {
+                        "node": "Split for Update",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Token": {
+            "main": [
+                [
+                    {
+                        "node": "Save Token to DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save Token to DB": {
+            "main": [
+                [
+                    {
+                        "node": "Split Question IDs",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Fetch Project Name",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Question IDs": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Questions",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Questions": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Project Name": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Data",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge Data": {
+            "main": [
+                [
+                    {
+                        "node": "Build Email Content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Email Content": {
+            "main": [
+                [
+                    {
+                        "node": "Email Provided?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split for Update": {
+            "main": [
+                [
+                    {
+                        "node": "Update Question Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Question Status": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Input Params2": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

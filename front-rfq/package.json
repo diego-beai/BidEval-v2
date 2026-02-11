@@ -13,6 +13,7 @@
     "check-n8n": "node check-n8n.js"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.3.2",
     "@supabase/supabase-js": "^2.90.1",
     "@tanstack/react-table": "^8.11.0",
     "clsx": "^2.1.0",

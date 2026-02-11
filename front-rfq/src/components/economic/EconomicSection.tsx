@@ -5,18 +5,33 @@ import { useProjectStore } from '../../stores/useProjectStore';
 import { getProviderDisplayName } from '../../types/provider.types';
 import './EconomicSection.css';
 
-function formatCurrency(value: number | null | undefined, currency: string = 'EUR'): string {
+function formatCurrency(value: number | string | null | undefined, currency: string = 'EUR'): string {
     if (value == null) return '—';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(num)) return '—';
     return new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(value);
+    }).format(num);
 }
 
 function formatPercent(value: number): string {
     return `${value.toFixed(1)}%`;
+}
+
+/** Capitalize raw breakdown keys: "engineering_costs" → "Engineering costs" */
+function formatBreakdownKey(key: string): string {
+    const text = key.replace(/_/g, ' ').trim();
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Filter numeric entries from a breakdown record */
+function numericEntries(obj: Record<string, unknown>): [string, number][] {
+    return Object.entries(obj)
+        .map(([k, v]) => [k, typeof v === 'string' ? parseFloat(v as string) : v] as [string, unknown])
+        .filter(([, v]) => typeof v === 'number' && !isNaN(v as number)) as [string, number][];
 }
 
 type SortColumn = 'total_price' | 'discount' | 'net_price' | 'tco';
@@ -412,7 +427,12 @@ export const EconomicSection: React.FC = () => {
                                     </tr>
 
                                     {/* Expanded detail row */}
-                                    {isExpanded && offer && (
+                                    {isExpanded && offer && (() => {
+                                        const priceEntries = offer.price_breakdown ? numericEntries(offer.price_breakdown) : [];
+                                        const tcoEntries = offer.tco_breakdown ? numericEntries(offer.tco_breakdown) : [];
+                                        const hasLongText = !!(offer.guarantees || offer.price_escalation || offer.discount_conditions);
+
+                                        return (
                                         <tr className="econ-detail-row">
                                             <td colSpan={8}>
                                                 <div className="econ-detail-content">
@@ -423,127 +443,144 @@ export const EconomicSection: React.FC = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Price breakdown */}
-                                                    {offer.price_breakdown && Object.keys(offer.price_breakdown).length > 0 && (
-                                                        <div className="econ-detail-group">
-                                                            <span className="econ-detail-group-title">
-                                                                {t('econ.detail.price_breakdown')}
-                                                            </span>
-                                                            {Object.entries(offer.price_breakdown).map(([key, val]) => (
-                                                                <div key={key} className="econ-detail-item">
-                                                                    <span className="label">{key.replace(/_/g, ' ')}</span>
-                                                                    <span className="value">{formatCurrency(val, currency)}</span>
+                                                    {/* 3-column grid */}
+                                                    <div className="econ-detail-grid">
+                                                        {/* Col 1: Price breakdown */}
+                                                        <div className="econ-detail-col">
+                                                            {priceEntries.length > 0 && (
+                                                                <div className="econ-detail-group">
+                                                                    <span className="econ-detail-group-title">
+                                                                        {t('econ.detail.price_breakdown')}
+                                                                    </span>
+                                                                    {priceEntries.map(([key, val]) => (
+                                                                        <div key={key} className="econ-detail-item">
+                                                                            <span className="label">{formatBreakdownKey(key)}</span>
+                                                                            <span className="value">{formatCurrency(val, currency)}</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-                                                            ))}
+                                                            )}
                                                         </div>
-                                                    )}
 
-                                                    {/* TCO breakdown */}
-                                                    {offer.tco_breakdown && Object.keys(offer.tco_breakdown).length > 0 && (
-                                                        <div className="econ-detail-group">
-                                                            <span className="econ-detail-group-title">TCO</span>
-                                                            {Object.entries(offer.tco_breakdown).map(([key, val]) => (
-                                                                <div key={key} className="econ-detail-item">
-                                                                    <span className="label">{key.replace(/_/g, ' ')}</span>
-                                                                    <span className="value">{formatCurrency(val, currency)}</span>
+                                                        {/* Col 2: Conditions + TCO */}
+                                                        <div className="econ-detail-col">
+                                                            <div className="econ-detail-group">
+                                                                <span className="econ-detail-group-title">
+                                                                    {t('econ.detail.conditions')}
+                                                                </span>
+                                                                <div className="econ-detail-item">
+                                                                    <span className="label">{t('econ.detail.validity')}</span>
+                                                                    <span className="value">{offer.validity_days} {t('econ.detail.days')}</span>
                                                                 </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                                <div className="econ-detail-item">
+                                                                    <span className="label">{t('econ.detail.taxes')}</span>
+                                                                    <span className="value">
+                                                                        <span className={`econ-tag ${offer.taxes_included ? 'green' : 'amber'}`}>
+                                                                            {offer.taxes_included ? t('econ.detail.yes') : 'No'}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="econ-detail-item">
+                                                                    <span className="label">{t('econ.detail.insurance')}</span>
+                                                                    <span className="value">
+                                                                        <span className={`econ-tag ${offer.insurance_included ? 'green' : 'amber'}`}>
+                                                                            {offer.insurance_included ? t('econ.detail.yes') : 'No'}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
 
-                                                    {/* Conditions & terms */}
-                                                    <div className="econ-detail-group">
-                                                        <span className="econ-detail-group-title">
-                                                            {t('econ.detail.conditions')}
-                                                        </span>
-                                                        <div className="econ-detail-item">
-                                                            <span className="label">{t('econ.detail.validity')}</span>
-                                                            <span className="value">{offer.validity_days} {t('econ.detail.days')}</span>
+                                                            {tcoEntries.length > 0 && (
+                                                                <div className="econ-detail-group">
+                                                                    <span className="econ-detail-group-title">TCO</span>
+                                                                    {tcoEntries.map(([key, val]) => (
+                                                                        <div key={key} className="econ-detail-item">
+                                                                            <span className="label">{formatBreakdownKey(key)}</span>
+                                                                            <span className="value">{formatCurrency(val, currency)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="econ-detail-item">
-                                                            <span className="label">{t('econ.detail.taxes')}</span>
-                                                            <span className="value">
-                                                                <span className={`econ-tag ${offer.taxes_included ? 'green' : 'amber'}`}>
-                                                                    {offer.taxes_included ? t('econ.detail.yes') : 'No'}
-                                                                </span>
-                                                            </span>
+
+                                                        {/* Col 3: Alternatives + Optional items + Payment schedule */}
+                                                        <div className="econ-detail-col">
+                                                            {offer.alternative_offers && offer.alternative_offers.length > 0 && (
+                                                                <div className="econ-detail-group">
+                                                                    <span className="econ-detail-group-title">
+                                                                        {t('econ.detail.alternative_offers')}
+                                                                    </span>
+                                                                    {offer.alternative_offers.map((alt, idx) => (
+                                                                        <div key={idx} className="econ-detail-item">
+                                                                            <span className="label">{alt.description}</span>
+                                                                            <span className="value">{formatCurrency(alt.total_price, currency)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {offer.optional_items && offer.optional_items.length > 0 && (
+                                                                <div className="econ-detail-group">
+                                                                    <span className="econ-detail-group-title">
+                                                                        {t('econ.detail.optional_items')}
+                                                                    </span>
+                                                                    {offer.optional_items.map((item, idx) => (
+                                                                        <div key={idx} className="econ-detail-item">
+                                                                            <span className="label">{item.description}</span>
+                                                                            <span className="value">{formatCurrency(item.price, currency)}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
                                                         </div>
-                                                        <div className="econ-detail-item">
-                                                            <span className="label">{t('econ.detail.insurance')}</span>
-                                                            <span className="value">
-                                                                <span className={`econ-tag ${offer.insurance_included ? 'green' : 'amber'}`}>
-                                                                    {offer.insurance_included ? t('econ.detail.yes') : 'No'}
-                                                                </span>
-                                                            </span>
-                                                        </div>
-                                                        {offer.guarantees && (
-                                                            <div className="econ-detail-item">
-                                                                <span className="label">{t('econ.detail.guarantees')}</span>
-                                                                <span className="value" style={{ maxWidth: 200, textAlign: 'right' }}>{offer.guarantees}</span>
-                                                            </div>
-                                                        )}
-                                                        {offer.price_escalation && (
-                                                            <div className="econ-detail-item">
-                                                                <span className="label">{t('econ.detail.escalation')}</span>
-                                                                <span className="value">{offer.price_escalation}</span>
-                                                            </div>
-                                                        )}
-                                                        {offer.discount_conditions && (
-                                                            <div className="econ-detail-item">
-                                                                <span className="label">{t('econ.detail.discount_cond')}</span>
-                                                                <span className="value" style={{ maxWidth: 200, textAlign: 'right' }}>{offer.discount_conditions}</span>
-                                                            </div>
-                                                        )}
                                                     </div>
 
-                                                    {/* Optional items */}
-                                                    {offer.optional_items && offer.optional_items.length > 0 && (
-                                                        <div className="econ-detail-group">
-                                                            <span className="econ-detail-group-title">
-                                                                {t('econ.detail.optional_items')}
-                                                            </span>
-                                                            {offer.optional_items.map((item, idx) => (
-                                                                <div key={idx} className="econ-detail-item">
-                                                                    <span className="label">{item.description}</span>
-                                                                    <span className="value">{formatCurrency(item.price, currency)}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Alternative offers */}
-                                                    {offer.alternative_offers && offer.alternative_offers.length > 0 && (
-                                                        <div className="econ-detail-group">
-                                                            <span className="econ-detail-group-title">
-                                                                {t('econ.detail.alternative_offers')}
-                                                            </span>
-                                                            {offer.alternative_offers.map((alt, idx) => (
-                                                                <div key={idx} className="econ-detail-item">
-                                                                    <span className="label">{alt.description}</span>
-                                                                    <span className="value">{formatCurrency(alt.total_price, currency)}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-
-                                                    {/* Payment schedule */}
+                                                    {/* Payment schedule — horizontal compact row */}
                                                     {offer.payment_schedule && offer.payment_schedule.length > 0 && (
-                                                        <div className="econ-detail-group">
+                                                        <div className="econ-schedule-section">
                                                             <span className="econ-detail-group-title">
                                                                 {t('econ.detail.payment_schedule')}
                                                             </span>
-                                                            {offer.payment_schedule.map((ps, idx) => (
-                                                                <div key={idx} className="econ-detail-item">
-                                                                    <span className="label">{ps.milestone}</span>
-                                                                    <span className="value">{ps.event}</span>
+                                                            <div className="econ-schedule-row">
+                                                                {offer.payment_schedule.map((ps, idx) => (
+                                                                    <div key={idx} className="econ-schedule-chip">
+                                                                        <span className="econ-schedule-pct">{ps.milestone}%</span>
+                                                                        <span className="econ-schedule-event">{ps.event}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Long text conditions — full width below grid */}
+                                                    {hasLongText && (
+                                                        <div className="econ-detail-longtext">
+                                                            {offer.guarantees && (
+                                                                <div className="econ-longtext-card">
+                                                                    <span className="econ-longtext-label">{t('econ.detail.guarantees')}</span>
+                                                                    <p className="econ-longtext-value">{offer.guarantees}</p>
                                                                 </div>
-                                                            ))}
+                                                            )}
+                                                            {offer.price_escalation && (
+                                                                <div className="econ-longtext-card">
+                                                                    <span className="econ-longtext-label">{t('econ.detail.escalation')}</span>
+                                                                    <p className="econ-longtext-value">{offer.price_escalation}</p>
+                                                                </div>
+                                                            )}
+                                                            {offer.discount_conditions && (
+                                                                <div className="econ-longtext-card">
+                                                                    <span className="econ-longtext-label">{t('econ.detail.discount_cond')}</span>
+                                                                    <p className="econ-longtext-value">{offer.discount_conditions}</p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
                                             </td>
                                         </tr>
-                                    )}
+                                        );
+                                    })()}
                                 </React.Fragment>
                             );
                         })}

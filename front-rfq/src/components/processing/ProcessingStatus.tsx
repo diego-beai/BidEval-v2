@@ -153,7 +153,10 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
             </p>
           )}
 
-          {isComplete && results && results.length > 0 && (
+          {isComplete && results && results.length > 0 && (() => {
+            // Count unique requirements (deduplicate across providers)
+            const uniqueRequirements = new Set(results.map(r => r.id)).size || results.length;
+            return (
             <div style={{
               marginTop: '16px',
               display: 'flex',
@@ -255,11 +258,12 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('processing.requirements')}</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{t('processing.evaluated', { count: String(results.length) })}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{t('processing.evaluated', { count: String(uniqueRequirements) })}</div>
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {isComplete && onViewResults && (
             <button
@@ -430,41 +434,6 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
               </div>
             )}
 
-            {/* Cancel all button */}
-            {onCancel && (
-              <button
-                onClick={onCancel}
-                style={{
-                  marginTop: '12px',
-                  padding: '10px 24px',
-                  background: 'transparent',
-                  border: '2px solid var(--color-error)',
-                  borderRadius: '8px',
-                  color: 'var(--color-error)',
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-                {t('processing.cancel')}
-              </button>
-            )}
-
             {/* Warning banner for long operations */}
             <div style={{
               marginTop: '16px',
@@ -558,6 +527,42 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
                 );
               })}
             </div>
+
+            {/* Cancel all button - centered below phase boxes */}
+            {onCancel && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+                <button
+                  onClick={onCancel}
+                  style={{
+                    padding: '10px 24px',
+                    background: 'transparent',
+                    border: '2px solid var(--color-error)',
+                    borderRadius: '8px',
+                    color: 'var(--color-error)',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  {t('processing.cancel')}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,0 +1,336 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "6d3a985e-7c5e-4c74-8b5e-407e4d8c83a9",
+                            "name": "project_name",
+                            "value": "={{ $json.body.project_name }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "project-id-uuid-field",
+                            "name": "project_id",
+                            "value": "={{ $json.body.project_id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "2d3a985e-7c5e-4c74-8b5e-407e4d8c83a1",
+                            "name": "provider_name",
+                            "value": "={{ $json.body.provider_key }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "3d3a985e-7c5e-4c74-8b5e-407e4d8c83a2",
+                            "name": "tone",
+                            "value": "={{ $json.body.tone }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "4d3a985e-7c5e-4c74-8b5e-407e4d8c83a3",
+                            "name": "qa_items",
+                            "value": "={{ $json.body.qa_items }}",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -6608,
+                5152
+            ],
+            "id": "fb4a8a20-c95f-4a75-8c1d-ff50512e73f7",
+            "name": "Edit Fields"
+        },
+        {
+            "parameters": {
+                "jsCode": "// 1. Obtenemos TODOS los datos de Supabase y de Edit Fields\nconst allOffers = $('Get Offers').all();\nconst editFields = $('Edit Fields').first().json;\nconst targetProvider = editFields.provider_name;\nconst qaItems = $('Edit Fields').first().json.qa_items || [];\n\nlet issuesFound = [];\n\n// 2. Iteramos por todos los registros\nfor (const item of allOffers) {\n  const row = item.json;\n  \n  // Solo procesamos si el proveedor coincide\n  if (row.provider_name === targetProvider) {\n    const status = (row.evaluation_value || '').trim();\n    \n    // CRITERIO: Si es distinto de \"INCLUIDO\" (ignorando mayúsculas/minúsculas), es un ISSUE\n    if (status.toUpperCase() !== 'INCLUIDO') {\n      // Usar descripción legible en lugar de UUID\n      const description = row.requirement_text || row.item_description || row.comment || 'Item requires clarification';\n      issuesFound.push({\n        description: description,\n        status: status || 'NOT PROVIDED',\n        provider_comment: row.comment || ''\n      });\n    }\n  }\n}\n\n// 3. Preparar Q&A questions si existen\nconst qaQuestions = qaItems.map(q => ({\n  question: q.question || q.pregunta_texto,\n  discipline: q.discipline || q.disciplina,\n  importance: q.importance || q.importancia\n}));\n\n// 4. Devolvemos un solo objeto con toda la info para el LLM\nreturn {\n  issues: issuesFound,\n  total_issues: issuesFound.length,\n  qa_questions: qaQuestions,\n  total_qa_questions: qaQuestions.length,\n  project_id: editFields.project_id,\n  project_name: editFields.project_name,\n  provider_name: targetProvider,\n  tone: editFields.tone\n};"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -6160,
+                5152
+            ],
+            "id": "ab6c3879-c335-4a6c-8277-206de12937fd",
+            "name": "Filter and Aggregate Issues"
+        },
+        {
+            "parameters": {
+                "content": "## Email en base datos faltantes\n",
+                "height": 864,
+                "width": 2016,
+                "color": 6
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -7120,
+                4864
+            ],
+            "id": "0ef3060a-e015-482a-ac4b-80adb699e9fe",
+            "name": "Sticky Note2"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "mail-desarrollo",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -6832,
+                5152
+            ],
+            "id": "c326cb18-734a-4560-ba7e-3c4a1aef7f11",
+            "name": "Webhook3",
+            "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716"
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "getAll",
+                "tableId": "provider_responses",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "provider_name",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.provider_name }}"
+                        },
+                        {
+                            "keyName": "project_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.project_id }}"
+                        }
+                    ]
+                }
+            },
+            "id": "ac6d2676-9610-4348-8b4a-e0e38a51284a",
+            "name": "Get Offers",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -6384,
+                5360
+            ],
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "qwen3:8b",
+                "options": {
+                    "temperature": 0.2,
+                    "numCtx": 4096,
+                    "numPredict": 1024
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+            "typeVersion": 1,
+            "position": [
+                -5568,
+                5376
+            ],
+            "id": "52e15aaa-6b16-45fe-b7c0-1a26ba344b7d",
+            "name": "Ollama Chat Model",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=### INPUT\n\n## PROJECT: {{ $('Edit Fields').first().json.project_name }}\n\n## PROVIDER: {{ $('Edit Fields').first().json.provider_name }}\n\n## REQUIRED TONE: {{ $('Edit Fields').first().json.tone }}\n\n## ISSUES ({{ $json.total_issues }} items): {{ JSON.stringify($json.issues, null, 2) }}\n\n## TECHNICAL QUESTIONS ({{ $json.total_qa_questions }} items): {{ JSON.stringify($json.qa_questions, null, 2) }}\n\n\\n## PROJECT CONTEXT: {{ $('Fetch Project Context Email').first().json.ai_context }}\\n\\n### FINAL INSTRUCTIONS\nReturn ONLY the JSON object. Do NOT think out loud. Do NOT include any text before or after the JSON.\n",
+                "messages": {
+                    "messageValues": [
+                        {
+                            "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues and technical questions that need to be addressed.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project name.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing.\n   - **For ISSUES**: Group them intelligently (e.g., by category or type). For each issue, describe what is missing using the 'description' field. NEVER show any IDs, UUIDs, or internal references.\n   - **For TECHNICAL QUESTIONS**: If there are any qa_questions, add a section titled 'Technical Questions' and list them. Include the discipline and importance level for each.\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use Markdown formatting (bold, bullet points) for readability.\n5. **IMPORTANT**: NEVER include any UUIDs, internal IDs, requirement_id, or database references. Use only human-readable descriptions.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any UUIDs or internal database IDs anywhere in the output.\n- **DO NOT** include any conversational text, explanations, reasoning, thoughts, or technical notes.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n\n### SCHEMA\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here with **bold** and - bullet points\"\n}"
+                        }
+                    ]
+                },
+                "batching": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.8,
+            "position": [
+                -5936,
+                5152
+            ],
+            "id": "c731e067-9853-4296-a31d-7118dd8950fe",
+            "name": "Basic LLM Chain"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.5,
+            "position": [
+                -5584,
+                5152
+            ],
+            "id": "7aa42772-45f7-4e61-adea-f9521bbeeeac",
+            "name": "Respond to Webhook3"
+        },
+        {
+            "parameters": {
+                "model": "mistral-large-latest",
+                "options": {
+                    "temperature": 0.1
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "typeVersion": 1,
+            "position": [
+                -6016,
+                5360
+            ],
+            "id": "57be7024-9df7-48d0-9dcc-1e7987b29797",
+            "name": "Mistral Cloud Chat Model1",
+            "credentials": {
+                "mistralCloudApi": {
+                    "id": "tDjuOnF6lpADMmd5",
+                    "name": "Mistral Cloud account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "schema": "desarrollo",
+                "operation": "get",
+                "tableId": "projects",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "keyValue": "={{ $('Edit Fields').first().json.project_id }}"
+                        }
+                    ]
+                }
+            },
+            "id": "6d63c0fe-9871-4841-b471-e11096449e0e",
+            "name": "Fetch Project Context Email",
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -6352,
+                5152
+            ],
+            "credentials": {
+                "supabaseApi": {
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Edit Fields": {
+            "main": [
+                [
+                    {
+                        "node": "Get Offers",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Fetch Project Context Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter and Aggregate Issues": {
+            "main": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook3": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Offers": {
+            "main": [
+                [
+                    {
+                        "node": "Filter and Aggregate Issues",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Basic LLM Chain": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mistral Cloud Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Basic LLM Chain",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Project Context Email": {
+            "main": [
+                [
+                    {
+                        "node": "Filter and Aggregate Issues",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
+    }
+}

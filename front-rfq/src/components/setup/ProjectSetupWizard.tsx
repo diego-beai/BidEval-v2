@@ -240,8 +240,15 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   };
 
   const saveProvidersAndCriteria = async (projectId: string) => {
+    if (!projectId) {
+      console.error('[SetupWizard] No projectId received from RPC - cannot save providers/criteria');
+      addToast('Error: no se recibió ID del proyecto', 'error');
+      return;
+    }
+
     try {
       // 2. Save invited providers
+      console.log('[SetupWizard] Saving', formData.providers.length, 'providers for project', projectId);
       if (formData.providers.length > 0) {
         const providerRows = formData.providers.map(p => ({
           project_id: projectId,
@@ -250,12 +257,37 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           provider_contact: p.contact || null,
         }));
 
+        // Try upsert first, fallback to insert if it fails
         const { error: provError } = await (supabase! as any)
           .from('project_providers')
           .upsert(providerRows, { onConflict: 'project_id,provider_name' });
 
         if (provError) {
-          console.warn('[SetupWizard] Error saving providers (table may not exist):', provError);
+          console.error('[SetupWizard] Upsert failed, trying insert:', provError.message);
+          // Fallback: delete existing + insert fresh
+          await (supabase! as any)
+            .from('project_providers')
+            .delete()
+            .eq('project_id', projectId);
+
+          const { error: insertError } = await (supabase! as any)
+            .from('project_providers')
+            .insert(providerRows);
+
+          if (insertError) {
+            console.error('[SetupWizard] Insert also failed:', insertError.message, insertError);
+          }
+        }
+
+        // Always sync invited_suppliers array on projects table
+        const supplierNames = formData.providers.map(p => p.name);
+        const { error: suppError } = await (supabase! as any)
+          .from('projects')
+          .update({ invited_suppliers: supplierNames })
+          .eq('id', projectId);
+
+        if (suppError) {
+          console.error('[SetupWizard] Error syncing invited_suppliers:', suppError.message);
         }
       }
 

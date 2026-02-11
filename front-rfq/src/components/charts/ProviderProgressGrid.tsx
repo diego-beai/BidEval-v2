@@ -27,7 +27,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
   onProviderClick,
   onProviderDataChange
 }) => {
-  const { results, tableData, proposalEvaluations, fetchAllTableData, fetchProposalEvaluations } = useRfqStore();
+  const { results, pivotTableData, proposalEvaluations, fetchPivotTableData, fetchProposalEvaluations } = useRfqStore();
   const { activeProjectId } = useProjectStore();
   const { projectProviders } = useProviderStore();
   const { t } = useLanguageStore();
@@ -35,10 +35,10 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
   // Reload data when project changes
   useEffect(() => {
     if (activeProjectId) {
-      fetchAllTableData();
+      fetchPivotTableData();
       fetchProposalEvaluations();
     }
-  }, [activeProjectId, fetchAllTableData, fetchProposalEvaluations]);
+  }, [activeProjectId, fetchPivotTableData, fetchProposalEvaluations]);
 
 
   // Calculate progress for each dynamic provider
@@ -64,15 +64,22 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
         return et.trim();
       };
 
-      // Count from RFQ data (tableData)
-      if (tableData && tableData.length > 0) {
-        tableData.forEach((item: any) => {
-          const itemProvider = item.Provider || item.provider;
-          if (!itemProvider) return;
-          const itemNorm = normalizeProvider(String(itemProvider));
-          if (!(itemNorm === normalized ||
-                (itemNorm === 'TECNICASREUNIDAS' && normalized === 'TR') ||
-                (itemNorm === 'TR' && normalized === 'TECNICASREUNIDAS'))) return;
+      // Count from pivot table data (rfq_items_master + provider_responses combined)
+      if (pivotTableData && pivotTableData.length > 0) {
+        const knownCols = new Set([
+          'id', 'rfq_project_id', 'project_name', 'evaluation', 'fase',
+          'requisito_rfq', 'createdAt', 'updatedAt', 'created_at', 'updated_at',
+          'evaluation_type', 'phase', 'requirement_text', 'Provider', 'provider',
+          'project_id', 'file_id'
+        ]);
+        pivotTableData.forEach((item: any) => {
+          // Check if this provider has a dynamic column in this row
+          const hasData = Object.keys(item).some(key => {
+            if (knownCols.has(key)) return false;
+            const keyNorm = normalizeProvider(key);
+            return keyNorm === normalized && item[key] && typeof item[key] === 'string' && item[key].trim() !== '';
+          });
+          if (!hasData) return;
 
           const evalType = item.evaluation_type || item.evaluation;
           if (evalType) {
@@ -133,7 +140,7 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
     });
 
     return progress;
-  }, [results, tableData, proposalEvaluations, projectProviders]);
+  }, [results, pivotTableData, proposalEvaluations, projectProviders]);
 
   // Notify parent when selected provider data changes
   React.useEffect(() => {

@@ -5,18 +5,19 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 8px 20px;
+    padding: 8px 16px;
     background: var(--bg-surface-alt);
     border-radius: 16px;
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s ease;
     height: 52px;
-    flex: 1;
-    max-width: 740px;
-    min-width: 480px;
+    flex: 0 1 auto;
+    max-width: 600px;
+    min-width: 0;
     justify-content: center;
     margin-left: 16px;
+    overflow: visible;
 }
 
 .progress-stepper:hover {
@@ -35,7 +36,7 @@
     position: relative;
     z-index: 1;
     flex-shrink: 0;
-    width: 50px;
+    width: 48px;
 }
 
 /* Circle */
@@ -107,7 +108,7 @@
 /* Connector lines */
 .stepper-line {
     height: 2px;
-    width: 22px;
+    width: 18px;
     flex-shrink: 0;
     border-radius: 1px;
     transition: background 0.3s ease;

@@ -71,10 +71,11 @@
 }
 
 .econ-card-value {
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 2vw, 1.5rem);
     font-weight: 700;
     color: var(--text-primary);
-    line-height: 1;
+    line-height: 1.1;
+    word-break: break-word;
 }
 
 .econ-card-detail {
@@ -87,7 +88,7 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-color);
     border-radius: 14px;
-    overflow: hidden;
+    overflow-x: auto;
     box-shadow: var(--shadow-sm);
 }
 
@@ -110,6 +111,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    min-width: 800px;
 }
 
 .econ-table thead {
@@ -250,7 +252,9 @@
     font-weight: 500;
     background: var(--bg-surface-alt);
     color: var(--text-secondary);
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 240px;
+    line-height: 1.4;
 }
 
 .econ-tag.green {
@@ -292,16 +296,16 @@
 }
 
 .econ-detail-content {
-    padding: 16px 20px 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .econ-detail-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .econ-detail-group-title {
@@ -317,7 +321,7 @@
     justify-content: space-between;
     align-items: center;
     font-size: 0.85rem;
-    padding: 4px 0;
+    padding: 3px 0;
 }
 
 .econ-detail-item .label {
@@ -327,6 +331,96 @@
 .econ-detail-item .value {
     font-weight: 600;
     color: var(--text-primary);
+}
+
+/* 3-column detail grid */
+.econ-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px 24px;
+}
+
+.econ-detail-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+/* Long text section - full width horizontal cards */
+.econ-detail-longtext {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.econ-longtext-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.econ-longtext-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.econ-longtext-value {
+    margin: 4px 0 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.45;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+/* Payment schedule — horizontal compact row */
+.econ-schedule-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.econ-schedule-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.econ-schedule-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.econ-schedule-pct {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(18, 181, 176, 0.12);
+    color: #12b5b0;
+    flex-shrink: 0;
+}
+
+.econ-schedule-event {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
 }
 
 /* Loading & Empty */
@@ -425,11 +519,9 @@
 
 /* Confidence badges */
 .econ-detail-confidence {
-    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 4px;
 }
 
 .econ-confidence-badge {
@@ -483,15 +575,7 @@
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .econ-table-wrapper {
-        overflow-x: auto;
-    }
-
-    .econ-table {
-        min-width: 700px;
-    }
-
-    .econ-detail-content {
+    .econ-detail-grid {
         grid-template-columns: 1fr;
     }
 }

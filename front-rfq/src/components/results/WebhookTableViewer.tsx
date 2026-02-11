@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { getProviderDisplayName } from '../../types/provider.types';
 import { useProviderStore } from '../../stores/useProviderStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import { RfqResult, RfqItem } from '../../types/rfq.types';
 import { API_CONFIG } from '../../config/constants';
 import { fetchWithTimeout } from '../../services/api.service';
@@ -95,8 +96,12 @@ export function WebhookTableViewer() {
     setError(null);
 
     try {
+      const projectId = useProjectStore.getState().activeProjectId;
+      const tablaUrl = projectId
+        ? `${API_CONFIG.N8N_TABLA_URL}?project_id=${projectId}`
+        : API_CONFIG.N8N_TABLA_URL;
       const response = await fetchWithTimeout(
-        API_CONFIG.N8N_TABLA_URL,
+        tablaUrl,
         {
           method: 'GET',
           headers: {
