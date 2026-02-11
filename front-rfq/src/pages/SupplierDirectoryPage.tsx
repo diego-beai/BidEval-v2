@@ -46,6 +46,14 @@ export const SupplierDirectoryPage = () => {
     return Array.from(cats).sort();
   }, [suppliers]);
 
+  const categoryLabel = (cat: string) => {
+    const labels: Record<string, Record<string, string>> = {
+      es: { construction: 'Construcción', engineering: 'Ingeniería', epc: 'EPC' },
+      en: { construction: 'Construction', engineering: 'Engineering', epc: 'EPC' },
+    };
+    return labels[language]?.[cat.toLowerCase()] ?? cat.charAt(0).toUpperCase() + cat.slice(1);
+  };
+
   const detail = useMemo(() => {
     if (!selectedSupplier) return null;
     return suppliers.find(s => s.supplier_name === selectedSupplier) || null;
@@ -144,7 +152,7 @@ export const SupplierDirectoryPage = () => {
                 className={`supplier-category-btn ${categoryFilter === cat ? 'active' : ''}`}
                 onClick={() => setCategoryFilter(cat)}
               >
-                {cat}
+                {categoryLabel(cat)}
               </button>
             ))}
           </div>
@@ -184,7 +192,7 @@ export const SupplierDirectoryPage = () => {
                       <div>
                         <div className="supplier-name-text">{supplier.display_name || supplier.supplier_name}</div>
                         {supplier.category && (
-                          <div className="supplier-name-sub">{supplier.category}</div>
+                          <div className="supplier-name-sub">{categoryLabel(supplier.category)}</div>
                         )}
                       </div>
                     </div>

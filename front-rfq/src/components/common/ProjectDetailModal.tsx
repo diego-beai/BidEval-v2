@@ -146,7 +146,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                     <div className="pdm-phase-content">
                         <div className="pdm-info-grid">
                             <div className="pdm-info-card highlight">
-                                <span className="pdm-info-label">{t('detail.rfq_docs') || 'RFQ Documents'}</span>
+                                <span className="pdm-info-label">{t('detail.rfq_docs', { type: project.project_type || 'RFP' }) || 'Documents'}</span>
                                 <span className="pdm-info-value big">{project.rfq_count}</span>
                             </div>
                             <div className="pdm-info-card">

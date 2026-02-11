@@ -25,6 +25,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const activeProjectId = useProjectStore(state => state.activeProjectId);
     const projects = useProjectStore(state => state.projects);
     const currentProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
+    const projectType = currentProject?.project_type || 'RFP';
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -95,18 +96,18 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         return activeSessions.some(s => s.module === module && s.hasUnreadContent);
     };
 
-    const NavItem = ({ view, labelKey, icon, disabled }: { view: string, labelKey: string, icon: React.ReactNode, disabled?: boolean }) => {
+    const NavItem = ({ view, labelKey, icon, disabled, labelParams }: { view: string, labelKey: string, icon: React.ReactNode, disabled?: boolean, labelParams?: Record<string, string> }) => {
         const hasSession = hasActiveSession(view);
 
         return (
             <button
                 className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''} ${disabled ? 'disabled' : ''}`}
                 onClick={() => !disabled && onNavigate(view)}
-                title={!isExpanded ? t(labelKey) : disabled ? (language === 'es' ? 'Selecciona un proyecto primero' : 'Select a project first') : ''}
+                title={!isExpanded ? t(labelKey, labelParams) : disabled ? (language === 'es' ? 'Selecciona un proyecto primero' : 'Select a project first') : ''}
                 data-tour={`nav-${view}`}
             >
                 <div className="nav-icon">{icon}</div>
-                <span className="nav-label">{t(labelKey)}</span>
+                <span className="nav-label">{t(labelKey, labelParams)}</span>
                 {hasSession && <div className="session-indicator" title="Active session"></div>}
             </button>
         );
@@ -163,6 +164,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     <NavItem
                         view="upload"
                         labelKey="nav.upload"
+                        labelParams={{ type: projectType }}
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
                     />

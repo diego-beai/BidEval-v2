@@ -41,10 +41,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2720,
-        -784
+        -3328,
+        -112
       ],
-      "id": "17fc1691-b00c-471d-940c-e577b09aa01a",
+      "id": "9c48c632-d4ec-4357-80a4-3807d5f30313",
       "name": "Edit Fields"
     },
     {
@@ -54,10 +54,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2272,
-        -784
+        -2880,
+        -112
       ],
-      "id": "645127fb-d184-424b-9a56-ceef64fe79cd",
+      "id": "274c19f7-0d3d-49b7-91e0-ba5f43f18e8f",
       "name": "Filter and Aggregate Issues"
     },
     {
@@ -70,62 +70,48 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3232,
-        -1072
+        -3840,
+        -400
       ],
-      "id": "be3af833-ea23-467f-b7eb-86edd2888f1d",
+      "id": "08f38ce6-45a3-4e72-89cc-d84e22f00d7c",
       "name": "Sticky Note2"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "mail",
+        "path": "mail-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2944,
-        -784
+        -3552,
+        -112
       ],
-      "id": "22c6017f-9ca0-4442-aa6e-fadc7989eaad",
+      "id": "fc99cd64-3238-4d7e-b9f1-936cc9f7f95d",
       "name": "Webhook3",
       "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "provider_responses",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $json.provider_name }}"
-            },
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.provider_responses WHERE provider_name = '={{ $json.provider_name }}' AND project_id = '={{ $json.project_id }}'",
+        "options": {}
       },
-      "id": "f11e336c-4546-4c97-90eb-fef38ea34366",
+      "id": "79460f8d-7a12-467b-acdd-bb455d3f0bc8",
       "name": "Get Offers",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -2496,
-        -784
+        -3104,
+        -112
       ],
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -141,10 +127,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -1680,
-        -560
+        -2288,
+        112
       ],
-      "id": "f9a3de66-2742-4cfe-9c44-0b8d6b6d0152",
+      "id": "e9ae9670-7957-4faf-9dc4-9b0f689dd726",
       "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
@@ -169,10 +155,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2048,
-        -784
+        -2656,
+        -112
       ],
-      "id": "95df2c86-bd76-44a6-9c50-f2328302343a",
+      "id": "c6220f22-cd4a-49f7-a451-337e49bf6c88",
       "name": "Basic LLM Chain"
     },
     {
@@ -183,10 +169,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1696,
-        -784
+        -2304,
+        -112
       ],
-      "id": "1e45d1af-253f-4403-8b9a-93d68493ad57",
+      "id": "79069bed-516d-47f3-8ecd-45e35d65705f",
       "name": "Respond to Webhook3"
     },
     {
@@ -199,10 +185,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2128,
-        -576
+        -2736,
+        96
       ],
-      "id": "41c2b11c-3a24-4e70-ae51-1892d38bf979",
+      "id": "56893586-ef16-4356-829a-ab8b46f2de5f",
       "name": "Mistral Cloud Chat Model1",
       "credentials": {
         "mistralCloudApi": {
@@ -258,10 +244,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2704,
-        288
+        -3312,
+        976
       ],
-      "id": "562cd215-3cc3-4322-bf0e-315158868bbe",
+      "id": "4c7d060b-effa-4275-ad96-fca787530e8d",
       "name": "Extract Fields"
     },
     {
@@ -309,10 +295,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2480,
-        288
+        -3088,
+        976
       ],
-      "id": "c1a8be10-c84a-4da4-8447-d3bacd20f18c",
+      "id": "9480e86c-3d8b-47de-975f-bf09824d4710",
       "name": "Validate Data"
     },
     {
@@ -322,10 +308,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2256,
-        176
+        -2864,
+        864
       ],
-      "id": "476461eb-ea47-4f6a-bde2-0667e8bba7b6",
+      "id": "5d8c0ab9-a835-4dc9-9046-7fb6b3434d7d",
       "name": "Convert Markdown to HTML"
     },
     {
@@ -340,10 +326,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        -2048,
-        176
+        -2656,
+        864
       ],
-      "id": "e101ded1-61b6-4ce1-8807-460ef639976a",
+      "id": "89260dba-7e9e-4ca9-b0e1-346375eb1634",
       "name": "Gmail Send",
       "webhookId": "f32bcbf1-73d7-463b-b209-b7e114249ee9",
       "disabled": true
@@ -359,10 +345,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2256,
-        384
+        -2864,
+        1072
       ],
-      "id": "18f71245-553d-4249-8438-6125cbc40089",
+      "id": "045d3fad-037e-437f-9846-4461d0b23575",
       "name": "Respond Error"
     },
     {
@@ -375,26 +361,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3232,
-        -160
+        -3840,
+        512
       ],
-      "id": "d1b307b5-f1e8-40a7-9de6-debe7703c0ea",
+      "id": "3c295b90-d5c9-4ece-8a88-e811c882c65a",
       "name": "Instructions"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-send-email",
+        "path": "qa-send-email-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -2928,
-        288
+        -3536,
+        976
       ],
-      "id": "537e05da-273d-4acc-ae88-3200fcdd48b5",
+      "id": "b5956b03-d0a2-4691-9d79-94544459d506",
       "name": "Webhook2",
       "webhookId": "qa-send-email-webhook"
     },
@@ -409,26 +395,26 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1824,
-        176
+        -2432,
+        864
       ],
-      "id": "fe3dc493-0082-4d92-972a-a4d52e5c87bf",
+      "id": "1458b5b9-0f73-474f-b858-ffef4334dcbd",
       "name": "Respond Success2"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-send-to-supplier",
+        "path": "qa-send-to-supplier-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -720,
-        1456
+        -1328,
+        2144
       ],
-      "id": "6c600a41-37ea-414b-b30a-3a65b5f04386",
+      "id": "9524345b-8380-4367-af82-f53e8e956bf9",
       "name": "Webhook Receive",
       "webhookId": "qa-send-to-supplier-webhook"
     },
@@ -458,10 +444,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.1,
       "position": [
-        1072,
-        1456
+        464,
+        2144
       ],
-      "id": "02be58eb-7490-4fea-90f5-46ff06f6bbcb",
+      "id": "d2a32dbe-ccae-4642-afdd-57149826535a",
       "name": "Email Provided?"
     },
     {
@@ -476,10 +462,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        1296,
-        1392
+        688,
+        2080
       ],
-      "id": "ad49f8dd-e732-47ce-86b6-e6bd7daaaa9c",
+      "id": "2caa2aad-9b6e-4623-93e4-39f0828f973f",
       "name": "Send Email via Gmail",
       "webhookId": "9be31203-685f-4b78-a56d-e950bca3a806",
       "disabled": true
@@ -491,52 +477,30 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -272,
-        1456
+        -880,
+        2144
       ],
-      "id": "07fc4e8a-126b-493b-9b3a-05a52c7f0f29",
+      "id": "24f77bbf-27a8-4a26-b357-b080b029d045",
       "name": "Generate Token"
     },
     {
       "parameters": {
-        "tableId": "qa_response_tokens",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $json.project_id }}"
-            },
-            {
-              "fieldId": "token",
-              "fieldValue": "={{ $json.token }}"
-            },
-            {
-              "fieldId": "provider_name",
-              "fieldValue": "={{ $json.provider_name }}"
-            },
-            {
-              "fieldId": "question_ids",
-              "fieldValue": "={{ $json.question_ids }}"
-            },
-            {
-              "fieldId": "expires_at",
-              "fieldValue": "={{ $json.expires_at }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.qa_response_tokens (project_id, token, provider_name, question_ids, expires_at) VALUES ('={{ $json.project_id }}', '={{ $json.token }}', '={{ $json.provider_name }}', '={{ $json.question_ids }}', '={{ $json.expires_at }}') RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -48,
-        1456
+        -656,
+        2144
       ],
-      "id": "6ba490f0-c213-4e16-9767-d2ebf86b84d8",
+      "id": "2ae2b344-c633-4902-b62f-656665ff9ff0",
       "name": "Save Token to DB",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -547,69 +511,51 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        176,
-        1360
+        -432,
+        2048
       ],
-      "id": "49caee51-02c6-4ed8-bb81-bc6680172b4f",
+      "id": "d6e412ca-a6c0-49a4-9514-71162d9ec3c2",
       "name": "Split Question IDs"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "qa_audit",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.question_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.qa_audit WHERE id = '={{ $json.question_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        400,
-        1360
+        -208,
+        2048
       ],
-      "id": "51abb8c7-1dd4-4c58-8e62-65b9799e96c3",
+      "id": "d17122ab-46fc-4ac2-821e-23aa0cb616cb",
       "name": "Fetch Questions",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "projects",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $(\"Set Input Params2\").first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.projects WHERE id = '={{ $(\"Set Input Params2\").first().json.project_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        400,
-        1552
+        -208,
+        2240
       ],
-      "id": "728d1b1c-c94e-4dd8-9f58-42f76ae118de",
+      "id": "c6091a1a-cf4e-4e72-b67c-97e92d08cb1e",
       "name": "Fetch Project Name",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -622,10 +568,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        624,
-        1456
+        16,
+        2144
       ],
-      "id": "56fc2297-d777-4144-a556-34f986472adf",
+      "id": "2e5068b2-03fc-4dda-b95d-54002f32b1d8",
       "name": "Merge Data"
     },
     {
@@ -635,10 +581,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        848,
-        1456
+        240,
+        2144
       ],
-      "id": "6de57abd-b035-4b63-b34e-0b84a9a3ecf3",
+      "id": "5c544fad-8c5a-4188-9a56-7b4f98cd88ca",
       "name": "Build Email Content"
     },
     {
@@ -648,47 +594,30 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1520,
-        1456
+        912,
+        2144
       ],
-      "id": "d4787d2c-7a74-49c7-a9d3-f3827ceefaa3",
+      "id": "749c0d59-ce4e-44d3-8160-62b85fc14524",
       "name": "Split for Update"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "qa_audit",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.question_id }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "status",
-              "fieldValue": "Sent"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.qa_audit SET status = 'Sent' WHERE id = '={{ $json.question_id }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        1744,
-        1456
+        1136,
+        2144
       ],
-      "id": "507b8ee9-e4b7-485d-94c6-b08a8faab3cb",
+      "id": "b78ec1d6-c0bc-4678-b607-9a88ca43f7f6",
       "name": "Update Question Status",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -733,10 +662,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -496,
-        1456
+        -1104,
+        2144
       ],
-      "id": "d4695b61-cd28-43be-91ab-84fef06ec15b",
+      "id": "ec46e95a-af93-41dd-8a6d-c642ac7940d4",
       "name": "Set Input Params2"
     },
     {
@@ -748,10 +677,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        1968,
-        1456
+        1360,
+        2144
       ],
-      "id": "4b8c7f69-137f-432f-ab2d-9a7b45eecf85",
+      "id": "6d1e3931-fb15-4c61-8e34-b14f0ccb9e4c",
       "name": "Respond to Webhook2"
     },
     {
@@ -764,39 +693,30 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1088,
-        1072
+        -1696,
+        1760
       ],
-      "id": "e916e255-ae40-49e6-81bc-8a0e3f81c0d9",
+      "id": "cef58b53-ae1e-48dd-bead-3c45d518643c",
       "name": "Sticky Note3"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "qa_response_tokens",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "token",
-              "condition": "eq",
-              "keyValue": "={{ $json.token }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.qa_response_tokens WHERE token = '={{ $json.token }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -4880,
-        1232
+        -5488,
+        1920
       ],
-      "id": "5e6ead20-ec60-46b4-9d5d-40dca30b23e3",
+      "id": "7088920d-c1f1-4fac-8d6d-e6969ee3f553",
       "name": "Validate Token",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -835,10 +755,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4656,
-        1232
+        -5264,
+        1920
       ],
-      "id": "edbc1f4c-6c06-4107-86b2-c6b8e8405d3a",
+      "id": "6322b5f0-ed96-4d35-b434-995efa2eb3c5",
       "name": "Token Valid?"
     },
     {
@@ -852,10 +772,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4432,
-        1408
+        -5040,
+        2096
       ],
-      "id": "07ccb6d8-e161-445e-854c-8f511c3b6f20",
+      "id": "675b4542-2844-47d7-bf49-9b11185125c0",
       "name": "Respond Invalid"
     },
     {
@@ -865,10 +785,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4432,
-        1232
+        -5040,
+        1920
       ],
-      "id": "48d07bd0-ff94-4e9f-8dbc-9b412b397acc",
+      "id": "cd563430-09d3-4855-a06d-9a2a8c3e60c4",
       "name": "Split Responses"
     },
     {
@@ -878,90 +798,52 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -4208,
-        1232
+        -4816,
+        1920
       ],
-      "id": "06010b24-ae87-4f37-a8f8-d77630f23933",
+      "id": "75750f72-218c-457c-8319-edfd2e03554a",
       "name": "Loop Over Items"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "qa_audit",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.question_id }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "response",
-              "fieldValue": "={{ $json.response_text }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "Answered"
-            },
-            {
-              "fieldId": "responded_at",
-              "fieldValue": "={{ new Date().toISOString() }}"
-            },
-            {
-              "fieldId": "response_source",
-              "fieldValue": "portal"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.qa_audit SET response = '={{ $json.response_text }}', status = 'Answered', responded_at = '={{ new Date().toISOString() }}', response_source = 'portal' WHERE id = '={{ $json.question_id }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3984,
-        1232
+        -4592,
+        1920
       ],
-      "id": "08c62d50-d537-4e83-9eb3-d38210485f03",
+      "id": "326b084f-cf6a-4270-afd8-bb9d62e9f0f1",
       "name": "Save Response to QA Audit",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "qa_audit",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Loop Over Items').item.json.question_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.qa_audit WHERE id = '={{ $('Loop Over Items').item.json.question_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3760,
-        1232
+        -4368,
+        1920
       ],
-      "id": "508def41-cf34-4c97-8028-9d5861d4b622",
+      "id": "e6c80040-25cf-4eb9-8ba8-5a7f8bf0d680",
       "name": "Fetch Question Details",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -992,77 +874,53 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3536,
-        1232
+        -4144,
+        1920
       ],
-      "id": "c86b585f-f3a9-4025-a8b6-9419254712b7",
+      "id": "24c1f0df-ab40-47f4-beb0-eca235c6061d",
       "name": "Has Requirement?"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "rfq_items_master",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Fetch Question Details').first().json.requirement_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.rfq_items_master WHERE id = '={{ $('Fetch Question Details').first().json.requirement_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3312,
-        1120
+        -3920,
+        1808
       ],
-      "id": "3decfffe-cd8a-47d6-9d29-07a01dbbe029",
+      "id": "a55d5ec8-51cf-473c-a8c5-b1c2bde8f9c6",
       "name": "Fetch Requirement",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "provider_responses",
-        "returnAll": true,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "requirement_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Fetch Question Details').first().json.requirement_id }}"
-            },
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $('Loop Over Items').item.json.provider_name }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.provider_responses WHERE requirement_id = '={{ $('Fetch Question Details').first().json.requirement_id }}' AND provider_name = '={{ $('Loop Over Items').item.json.provider_name }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3088,
-        1120
+        -3696,
+        1808
       ],
-      "id": "bdd2b223-e13f-4deb-b272-5e645eea5ecd",
+      "id": "07d7f9c5-b762-4590-a939-5eed11171b88",
       "name": "Fetch Current Evaluation",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1076,10 +934,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -2864,
-        1120
+        -3472,
+        1808
       ],
-      "id": "73ea1537-3738-4993-9cc3-e65f9c3a6e1a",
+      "id": "ed7c5129-84bf-4d4b-9c7b-c2f4b5d58bed",
       "name": "LLM Re-evaluate"
     },
     {
@@ -1117,60 +975,30 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2640,
-        1120
+        -3248,
+        1808
       ],
-      "id": "e7100e68-2df8-473c-8dd0-ff09db84f613",
+      "id": "6240382f-4aed-4e22-83ed-e1027a503a5d",
       "name": "Should Update?"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "provider_responses",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "requirement_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Fetch Question Details').first().json.requirement_id }}"
-            },
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $('Loop Over Items').item.json.provider_name }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "evaluation_value",
-              "fieldValue": "={{ $json.output.new_evaluation_value }}"
-            },
-            {
-              "fieldId": "score",
-              "fieldValue": "={{ $json.output.new_score }}"
-            },
-            {
-              "fieldId": "comment",
-              "fieldValue": "={{ $json.output.new_comment + ' [Updated after supplier response]' }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.provider_responses SET evaluation_value = '={{ $json.output.new_evaluation_value }}', score = '={{ $json.output.new_score }}', comment = '={{ $json.output.new_comment + ' [Updated after supplier response]' }}' WHERE requirement_id = '={{ $('Fetch Question Details').first().json.requirement_id }}' AND provider_name = '={{ $('Loop Over Items').item.json.provider_name }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -2416,
-        1040
+        -3024,
+        1728
       ],
-      "id": "bd2010ce-ceea-4605-a0c0-a0d235ca8205",
+      "id": "5b04bb5e-622f-4e4e-aa15-21433e716f9e",
       "name": "Update Provider Response",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1179,10 +1007,10 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        -2416,
-        1200
+        -3024,
+        1888
       ],
-      "id": "39551565-4148-4bc0-9910-8d62d3c47cfe",
+      "id": "38287dd0-9319-4ba5-bc5b-a0e112e5b0d6",
       "name": "Skip Update"
     },
     {
@@ -1190,10 +1018,10 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        -3312,
-        1344
+        -3920,
+        2032
       ],
-      "id": "9f856c33-2542-44b6-a13c-3e4eca505b53",
+      "id": "72a3b8d2-6801-4cbc-86a1-696fb4246abf",
       "name": "No Requirement"
     },
     {
@@ -1201,98 +1029,51 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -2192,
-        1232
+        -2800,
+        1920
       ],
-      "id": "c19c20ce-ce61-4aae-b94b-3f00d34d9d99",
+      "id": "fc70a2ea-9a38-42f9-8d07-13cfa7579fe0",
       "name": "Merge Results"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "qa_response_tokens",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "token",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params3').first().json.token }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "status",
-              "fieldValue": "responded"
-            },
-            {
-              "fieldId": "responded_at",
-              "fieldValue": "={{ new Date().toISOString() }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.qa_response_tokens SET status = 'responded', responded_at = '={{ new Date().toISOString() }}' WHERE token = '={{ $('Set Input Params3').first().json.token }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -1968,
-        1232
+        -2576,
+        1920
       ],
-      "id": "7503367f-91f5-46e9-9862-33af8abc614d",
+      "id": "0baaa8dc-f85f-49cc-8a6a-b78b16ac180b",
       "name": "Mark Token Responded",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "tableId": "qa_notifications",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $('Validate Token').first().json.project_id }}"
-            },
-            {
-              "fieldId": "provider_name",
-              "fieldValue": "={{ $('Validate Token').first().json.provider_name }}"
-            },
-            {
-              "fieldId": "notification_type",
-              "fieldValue": "supplier_responded"
-            },
-            {
-              "fieldId": "title",
-              "fieldValue": "=Supplier {{ $('Validate Token').first().json.provider_name }} has responded"
-            },
-            {
-              "fieldId": "message",
-              "fieldValue": "={{ $('Set Input Params3').first().json.responses.length || 0 }} question(s) answered via the supplier portal"
-            },
-            {
-              "fieldId": "metadata",
-              "fieldValue": "={{ JSON.stringify({ response_count: $('Set Input Params3').first().json.responses.length || 0, token: $('Set Input Params3').first().json.token }) }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.qa_notifications (project_id, provider_name, notification_type, title, message, metadata) VALUES ('={{ $('Validate Token').first().json.project_id }}', '={{ $('Validate Token').first().json.provider_name }}', 'supplier_responded', '=Supplier {{ $('Validate Token').first().json.provider_name }} has responded', '={{ $('Set Input Params3').first().json.responses.length || 0 }} question(s) answered via the supplier portal', '={{ JSON.stringify({ response_count: $('Set Input Params3').first().json.responses.length || 0, token: $('Set Input Params3').first().json.token }) }}') RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -1744,
-        1232
+        -2352,
+        1920
       ],
-      "id": "1ec2ebcb-2722-4346-b9f0-ed46ad9c25ee",
+      "id": "4673b087-c7be-45e2-9e68-3e8c2e4afed2",
       "name": "Create Notification",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1305,26 +1086,26 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1520,
-        1232
+        -2128,
+        1920
       ],
-      "id": "9bacb9a1-e3d0-41b9-8a52-cef14b8716c9",
+      "id": "62e51184-ba08-42e7-9dbb-0b25975d79d6",
       "name": "Respond Success"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-process-responses",
+        "path": "qa-process-responses-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -5312,
-        1232
+        -5920,
+        1920
       ],
-      "id": "9be6dc4b-726d-493f-9c66-1940474a9b0b",
+      "id": "3eb18943-aed7-4969-bc25-8d5e91277f35",
       "name": "Webhook Receive1",
       "webhookId": "qa-process-responses-webhook"
     },
@@ -1351,10 +1132,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5088,
-        1232
+        -5696,
+        1920
       ],
-      "id": "11361bb3-b3b1-4054-a99d-151bae04116b",
+      "id": "46cc117e-328a-4377-a501-28e38732b2c9",
       "name": "Set Input Params3"
     },
     {
@@ -1365,10 +1146,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -2864,
-        1360
+        -3472,
+        2048
       ],
-      "id": "ea184b89-cb96-4a12-b80c-fa228cfe2c90",
+      "id": "737dd088-7a2f-46f2-9d5a-c09f3f3fcbd7",
       "name": "JSON Output Parser2"
     },
     {
@@ -1381,10 +1162,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2864,
-        1488
+        -3472,
+        2176
       ],
-      "id": "c6d25f34-baf8-4ab8-a52f-e8c777b95b39",
+      "id": "273694d6-6782-41f8-9ec7-35a61f626724",
       "name": "Mistral Cloud Chat Model4",
       "credentials": {
         "mistralCloudApi": {
@@ -1403,26 +1184,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -5664,
-        640
+        -6272,
+        1328
       ],
-      "id": "a9eaba74-937e-4fb4-90f3-86453d631cc9",
+      "id": "26290500-6440-43dd-96da-73291446f603",
       "name": "Sticky Note6"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-audit-generator",
+        "path": "qa-audit-generator-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -5440,
-        -1328
+        -6048,
+        -656
       ],
-      "id": "4548c869-0508-43b0-8dbc-ab232f16a490",
+      "id": "aa7dfa8d-e39a-473a-85c8-1cadc901f67e",
       "name": "Webhook Inbound",
       "webhookId": "0496e481-bb76-42f1-b3d5-734935b4b631"
     },
@@ -1449,45 +1230,30 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5216,
-        -1328
+        -5824,
+        -656
       ],
-      "id": "9d4f8dcf-5d42-4b9b-b980-1bfcbbeaee28",
+      "id": "ba9d1700-73e4-462a-8284-86194600634b",
       "name": "Set Input Params"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "provider_responses",
-        "returnAll": true,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $json.provider }}"
-            },
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.provider_responses WHERE provider_name = '={{ $json.provider }}' AND project_id = '={{ $json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -5008,
-        -1328
+        -5616,
+        -656
       ],
-      "id": "a24d013b-8100-4603-a4b4-573f3953307d",
+      "id": "ba474d3b-a4f3-4d01-9166-4edb44dc1170",
       "name": "Fetch All Provider Responses",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1498,39 +1264,30 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4800,
-        -1328
+        -5408,
+        -656
       ],
-      "id": "45fef984-6248-4e04-aa0b-c0052c9a9404",
+      "id": "89a11a41-a372-4cd7-81d7-65a2c785f94c",
       "name": "Filter Deficiencies Only"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "rfq_items_master",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.requirement_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.rfq_items_master WHERE id = '={{ $json.requirement_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -4608,
-        -1328
+        -5216,
+        -656
       ],
-      "id": "2fe9742f-0d14-4d72-af5e-1825198e0cfd",
+      "id": "8593aee8-3541-46ea-ac6c-5024615dcf6c",
       "name": "Fetch Requirement Specs",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1543,10 +1300,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -4400,
-        -1328
+        -5008,
+        -656
       ],
-      "id": "59b3f659-0ce9-4c88-9170-8f5358c346b2",
+      "id": "d29148e3-9ed2-4be6-b729-b710ddebd38f",
       "name": "Consolidate Deficiencies"
     },
     {
@@ -1559,10 +1316,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4208,
-        -1328
+        -4816,
+        -656
       ],
-      "id": "29a2f3fd-61d9-48c6-9e38-e01a51f10e7d",
+      "id": "ea6a834e-784b-4c8e-a0e6-ddd19533ace5",
       "name": "QA Generation Chain"
     },
     {
@@ -1573,10 +1330,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -3984,
-        -1120
+        -4592,
+        -448
       ],
-      "id": "30bf5828-5e32-4ae4-91c1-cffca4bb8d42",
+      "id": "80fd8eb1-f345-4948-bfe2-9252412ce005",
       "name": "JSON Output Parser"
     },
     {
@@ -1588,60 +1345,30 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3.1,
       "position": [
-        -3888,
-        -1328
+        -4496,
+        -656
       ],
-      "id": "f0ee129a-854b-4914-aed2-a7eb81dbd1cc",
+      "id": "f20b5ccb-82cc-4953-a86a-717ededabcc1",
       "name": "Split Questions List"
     },
     {
       "parameters": {
-        "tableId": "qa_audit",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "question",
-              "fieldValue": "={{ $json['output.questions'].question }}"
-            },
-            {
-              "fieldId": "importance",
-              "fieldValue": "={{ $json['output.questions'].importance }}"
-            },
-            {
-              "fieldId": "discipline",
-              "fieldValue": "={{ $json['output.questions'].discipline }}"
-            },
-            {
-              "fieldId": "provider_name",
-              "fieldValue": "={{ $(\"Set Input Params\").first().json.provider }}"
-            },
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $(\"Set Input Params\").first().json.project_id }}"
-            },
-            {
-              "fieldId": "requirement_id",
-              "fieldValue": "={{ $json['output.questions'].requirement_id }}"
-            },
-            {
-              "fieldId": "status",
-              "fieldValue": "Pending"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.qa_audit (question, importance, discipline, provider_name, project_id, requirement_id, status) VALUES ('={{ $json['output.questions'].question }}', '={{ $json['output.questions'].importance }}', '={{ $json['output.questions'].discipline }}', '={{ $(\"Set Input Params\").first().json.provider }}', '={{ $(\"Set Input Params\").first().json.project_id }}', '={{ $json['output.questions'].requirement_id }}', 'Pending') RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3728,
-        -1328
+        -4336,
+        -656
       ],
-      "id": "36a7a3cb-9876-4bd6-b194-8b4eea4eda96",
+      "id": "e8177b02-e8b3-4a58-b33f-513d853315c9",
       "name": "Supabase Insert",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1652,44 +1379,30 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3360,
-        -1328
+        -3968,
+        -656
       ],
-      "id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+      "id": "1347a8e2-243e-43bd-9dcb-18f5126ef82d",
       "name": "Extract Disciplines"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "projects",
-        "matchingColumns": [
-          "id"
-        ],
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "id",
-              "fieldValue": "={{ $json.project_id }}"
-            },
-            {
-              "fieldId": "disciplines",
-              "fieldValue": "={{ $json.disciplines }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.projects SET disciplines = '{{ $json.disciplines }}' WHERE id = '{{ $json.project_id }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3168,
-        -1328
+        -3776,
+        -656
       ],
-      "id": "c2d3e4f5-a6b7-8901-bcde-f12345678901",
+      "id": "6e53bd3d-1b1a-4cfb-84bb-c71a6b47c51b",
       "name": "Save Project Disciplines",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1701,10 +1414,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2976,
-        -1328
+        -3584,
+        -656
       ],
-      "id": "41ed20b5-34fc-4bcb-bb61-12b3f69e828a",
+      "id": "2f2547cc-74e9-42f1-9f3a-8e805ca15031",
       "name": "Respond to Webhook1"
     },
     {
@@ -1717,10 +1430,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -5536,
-        -1552
+        -6144,
+        -880
       ],
-      "id": "36504139-48f9-4854-a110-f2a6813eb7b3",
+      "id": "f5197b2f-c46a-4296-95ef-18e22655cfd8",
       "name": "Sticky Note1"
     },
     {
@@ -1735,10 +1448,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -4304,
-        -1072
+        -4912,
+        -400
       ],
-      "id": "8141405c-0bc9-45f2-8190-1f3d257b5adc",
+      "id": "0a2d3cad-607c-4850-aa63-9b82348e00c6",
       "name": "Ollama Model2",
       "credentials": {
         "ollamaApi": {
@@ -1757,10 +1470,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -4128,
-        -1024
+        -4736,
+        -352
       ],
-      "id": "906847fb-99ce-4af7-bc82-c8dfd3dcc829",
+      "id": "d24e964d-3546-4e91-a919-69d657bd9d23",
       "name": "Mistral Cloud Chat Model",
       "credentials": {
         "mistralCloudApi": {
@@ -1771,93 +1484,65 @@
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "rfq_items_master",
-        "returnAll": true,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.rfq_items_master WHERE project_id = '={{ $('Set Input Params1').first().json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -5616,
-        -256
+        -6224,
+        416
       ],
-      "id": "34d0309f-0962-4b14-ac13-5f79e901ae6d",
+      "id": "6faca4fe-4a6e-4e9f-b2ed-b3a2f793c9fe",
       "name": "Fetch Requirements",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "provider_responses",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.provider_responses WHERE project_id = '={{ $('Set Input Params1').first().json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -5616,
-        -32
+        -6224,
+        656
       ],
-      "id": "5259e76e-d267-4229-a20c-c97842901ce3",
+      "id": "80dbd82a-958d-44a8-9da3-bdc342c13b4f",
       "name": "Fetch Provider Responses",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "scoring_configuration_summary",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.scoring_configuration_summary WHERE project_id = '={{ $('Set Input Params1').first().json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -5616,
-        192
+        -6224,
+        880
       ],
-      "id": "73c01ee0-4855-43d1-8a3b-550ee14d167b",
+      "id": "10adbe63-254b-4d78-b93d-564fd4277473",
       "name": "Fetch Scoring Configuration",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1868,10 +1553,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -5392,
-        -160
+        -6000,
+        512
       ],
-      "id": "b1837336-61ae-4222-8755-4a9de2d5b0b9",
+      "id": "50453b58-1d43-44b1-a5fd-7a1dc9b8ef64",
       "name": "Merge Requirements & Responses"
     },
     {
@@ -1881,10 +1566,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5168,
-        -160
+        -5776,
+        512
       ],
-      "id": "6234f8da-d9c0-4cda-9083-d539d087c3c6",
+      "id": "39347b72-94c5-465b-9ed1-feec2b3f162e",
       "name": "Prepare Scoring Data"
     },
     {
@@ -1896,10 +1581,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -4944,
-        -208
+        -5552,
+        464
       ],
-      "id": "efe07ab6-d6e7-4b42-91f9-fc6ad71dc0ef",
+      "id": "b79e4726-e514-4c33-9564-c2eb528b4948",
       "name": "Loop Over Providers"
     },
     {
@@ -1912,10 +1597,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4672,
-        -192
+        -5280,
+        480
       ],
-      "id": "be360bd1-d88c-4b8d-a42f-d576f752e057",
+      "id": "cd27045b-f379-4f2a-bd90-df4f8e585da3",
       "name": "Scoring LLM Chain"
     },
     {
@@ -1925,45 +1610,31 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4288,
-        -192
+        -4896,
+        480
       ],
-      "id": "a5899033-a153-4827-9e41-b3da0e6efdf2",
+      "id": "4a6f36f1-57a8-4a1b-b2be-feb13645aa8a",
       "name": "Calculate Weighted Scores"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "ranking_proveedores",
-        "limit": 1,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
-            },
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.ranking_proveedores WHERE provider_name = '={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}' AND project_id = '={{ $('Set Input Params1').first().json.project_id }}' LIMIT 1",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -4048,
-        -192
+        -4656,
+        480
       ],
-      "id": "848a1ad5-a223-4f90-8457-6481f43f30cb",
+      "id": "1e23aa15-143f-41d1-987e-e9dc45206640",
       "name": "Check Provider Exists",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -1994,134 +1665,32 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3808,
-        -192
+        -4416,
+        480
       ],
-      "id": "b07a5284-528f-4a4d-b2bd-da76ee0f231e",
+      "id": "8e3ed288-3bc6-44a2-96a0-66b8f5867657",
       "name": "Provider Exists?",
       "disabled": true
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "ranking_proveedores",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
-            },
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            },
-            {
-              "fieldId": "technical_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}"
-            },
-            {
-              "fieldId": "economic_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}"
-            },
-            {
-              "fieldId": "execution_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}"
-            },
-            {
-              "fieldId": "hse_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}"
-            },
-            {
-              "fieldId": "scope_facilities_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}"
-            },
-            {
-              "fieldId": "scope_work_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}"
-            },
-            {
-              "fieldId": "deliverables_quality_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}"
-            },
-            {
-              "fieldId": "total_price_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}"
-            },
-            {
-              "fieldId": "price_breakdown_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}"
-            },
-            {
-              "fieldId": "optionals_included_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}"
-            },
-            {
-              "fieldId": "capex_opex_methodology_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}"
-            },
-            {
-              "fieldId": "schedule_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}"
-            },
-            {
-              "fieldId": "resources_allocation_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}"
-            },
-            {
-              "fieldId": "exceptions_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}"
-            },
-            {
-              "fieldId": "safety_studies_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}"
-            },
-            {
-              "fieldId": "regulatory_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}"
-            },
-            {
-              "fieldId": "overall_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}"
-            },
-            {
-              "fieldId": "compliance_percentage",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}"
-            },
-            {
-              "fieldId": "evaluation_count",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}"
-            },
-            {
-              "fieldId": "last_updated",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=UPDATE desarrollo.ranking_proveedores SET project_id = '={{ $('Set Input Params1').first().json.project_id }}', technical_score = '={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}', economic_score = '={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}', execution_score = '={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}', hse_compliance_score = '={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}', scope_facilities_score = '={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}', scope_work_score = '={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}', deliverables_quality_score = '={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}', total_price_score = '={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}', price_breakdown_score = '={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}', optionals_included_score = '={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}', capex_opex_methodology_score = '={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}', schedule_score = '={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}', resources_allocation_score = '={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}', exceptions_score = '={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}', safety_studies_score = '={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}', regulatory_compliance_score = '={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}', overall_score = '={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}', compliance_percentage = '={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}', evaluation_count = '={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}', last_updated = '={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}' WHERE provider_name = '={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}' AND project_id = '={{ $('Set Input Params1').first().json.project_id }}' RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3568,
-        -288
+        -4176,
+        384
       ],
-      "id": "25e80a6e-f25e-408d-a3b8-899bb14877f0",
+      "id": "2f03cb4d-69ec-4548-b8e7-ca4ca3b92d00",
       "name": "Update Ranking",
       "alwaysOutputData": false,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       },
       "disabled": true,
@@ -2129,125 +1698,23 @@
     },
     {
       "parameters": {
-        "tableId": "ranking_proveedores",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "provider_name",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}"
-            },
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            },
-            {
-              "fieldId": "technical_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}"
-            },
-            {
-              "fieldId": "economic_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}"
-            },
-            {
-              "fieldId": "execution_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}"
-            },
-            {
-              "fieldId": "hse_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}"
-            },
-            {
-              "fieldId": "scope_facilities_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}"
-            },
-            {
-              "fieldId": "scope_work_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}"
-            },
-            {
-              "fieldId": "deliverables_quality_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}"
-            },
-            {
-              "fieldId": "total_price_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}"
-            },
-            {
-              "fieldId": "price_breakdown_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}"
-            },
-            {
-              "fieldId": "optionals_included_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}"
-            },
-            {
-              "fieldId": "capex_opex_methodology_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}"
-            },
-            {
-              "fieldId": "schedule_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}"
-            },
-            {
-              "fieldId": "resources_allocation_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}"
-            },
-            {
-              "fieldId": "exceptions_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}"
-            },
-            {
-              "fieldId": "safety_studies_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}"
-            },
-            {
-              "fieldId": "regulatory_compliance_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}"
-            },
-            {
-              "fieldId": "overall_score",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}"
-            },
-            {
-              "fieldId": "compliance_percentage",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}"
-            },
-            {
-              "fieldId": "evaluation_count",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}"
-            },
-            {
-              "fieldId": "last_updated",
-              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}"
-            },
-            {
-              "fieldId": "category_scores_json",
-              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.category_scores_json || {}) }}"
-            },
-            {
-              "fieldId": "individual_scores_json",
-              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.individual_scores_json || {}) }}"
-            },
-            {
-              "fieldId": "evaluation_details",
-              "fieldValue": "={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.evaluation_details || {}) }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.ranking_proveedores (provider_name, project_id, technical_score, economic_score, execution_score, hse_compliance_score, scope_facilities_score, scope_work_score, deliverables_quality_score, total_price_score, price_breakdown_score, optionals_included_score, capex_opex_methodology_score, schedule_score, resources_allocation_score, exceptions_score, safety_studies_score, regulatory_compliance_score, overall_score, compliance_percentage, evaluation_count, last_updated, category_scores_json, individual_scores_json, evaluation_details) VALUES ('={{ $('Calculate Weighted Scores').first().json.ranking.provider_name }}', '={{ $('Set Input Params1').first().json.project_id }}', '={{ $('Calculate Weighted Scores').first().json.ranking.technical_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.economic_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.execution_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.hse_compliance_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.scope_facilities_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.scope_work_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.deliverables_quality_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.total_price_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.price_breakdown_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.optionals_included_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.capex_opex_methodology_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.schedule_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.resources_allocation_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.exceptions_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.safety_studies_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.regulatory_compliance_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.overall_score || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.compliance_percentage || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_count || 0 }}', '={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}', '={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.category_scores_json || {}) }}', '={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.individual_scores_json || {}) }}', '={{ JSON.stringify($('Calculate Weighted Scores').first().json.ranking.evaluation_details || {}) }}') RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -3568,
-        -80
+        -4176,
+        608
       ],
-      "id": "eb991069-d7d9-4290-864d-072535c2902d",
+      "id": "7c02d44c-e3e3-4fc9-a5b9-5ad4fac74b68",
       "name": "Insert Ranking",
       "alwaysOutputData": false,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       },
       "continueOnFail": true
@@ -2261,10 +1728,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -4672,
-        -368
+        -5280,
+        304
       ],
-      "id": "390ebc28-6b19-4ca4-a5e3-1cdd83b33d4a",
+      "id": "4852e325-53bc-4707-99c5-0e903aa0f9b8",
       "name": "Aggregate All Rankings"
     },
     {
@@ -2274,10 +1741,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4384,
-        -368
+        -4992,
+        304
       ],
-      "id": "72ee8920-b641-4ca8-8f0d-cbef2ad84ca0",
+      "id": "1bc3278b-0725-4933-89f3-344c5c0020f8",
       "name": "Generate Final Ranking"
     },
     {
@@ -2298,10 +1765,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4160,
-        -368
+        -4768,
+        304
       ],
-      "id": "370210fe-7c6f-4ab8-aed4-eb5a344f5277",
+      "id": "35bc2cc6-8428-42c2-89f5-57e61f21f2e2",
       "name": "Respond with Ranking"
     },
     {
@@ -2313,10 +1780,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -6624,
-        -768
+        -7232,
+        -96
       ],
-      "id": "53c0174a-6c23-46d1-9b08-8958e0c43160",
+      "id": "13565459-d846-464d-b7ba-4c4076260af2",
       "name": "Workflow Info"
     },
     {
@@ -2329,10 +1796,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -4768,
-        -608
+        -5376,
+        64
       ],
-      "id": "cf41d1ac-650e-4fb7-9e8d-917586ffbc02",
+      "id": "0763c93d-0afb-4d09-bcca-22b1c9504cac",
       "name": "LLM Scoring Info"
     },
     {
@@ -2364,10 +1831,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -5840,
-        -160
+        -6448,
+        512
       ],
-      "id": "481b738a-1787-46c1-b969-1693734fc88f",
+      "id": "3963dc0a-b43d-45b1-a514-b40ce63e3cd9",
       "name": "Set Input Params1"
     },
     {
@@ -2378,10 +1845,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4528,
-        32
+        -5136,
+        720
       ],
-      "id": "88c096c8-c709-48f5-bd9a-cd391dfbef57",
+      "id": "ae294d2f-2220-4a7b-9542-9ae0329d888b",
       "name": "JSON Output Parser1"
     },
     {
@@ -2396,10 +1863,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -4784,
-        16
+        -5392,
+        704
       ],
-      "id": "e845cec7-0745-4628-b7dd-79f1a966c491",
+      "id": "f48650f4-5c93-45ed-a1e7-f874049384e3",
       "name": "Ollama Scoring Model",
       "credentials": {
         "ollamaApi": {
@@ -2410,31 +1877,23 @@
     },
     {
       "parameters": {
-        "operation": "delete",
-        "tableId": "ranking_proveedores",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Webhook Scoring').first().json.body.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=DELETE FROM desarrollo.ranking_proveedores WHERE project_id = '={{ $('Webhook Scoring').first().json.body.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -6064,
-        -160
+        -6672,
+        512
       ],
-      "id": "20ba584d-411a-4607-afb9-c31bae68bdad",
+      "id": "1f043289-52d8-44d1-9506-84cb27cd9e6c",
       "name": "Delete a row",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -2445,10 +1904,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -4688,
-        112
+        -5296,
+        800
       ],
-      "id": "6eb0d903-ce27-4002-9c70-d64f7ba47488",
+      "id": "91a819b9-b132-49ce-b78d-a5a309bece8e",
       "name": "OpenRouter Chat Model1",
       "credentials": {
         "openRouterApi": {
@@ -2460,17 +1919,17 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "scoring-evaluation",
+        "path": "scoring-evaluation-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6368,
-        -160
+        -6976,
+        512
       ],
-      "id": "0b24cf11-dc8b-4e65-b363-a3e92b2b4446",
+      "id": "201c610f-d067-426a-af6a-edec41ebd738",
       "name": "Webhook Scoring",
       "webhookId": "scoring-eval-webhook-001"
     },
@@ -2484,10 +1943,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -3232,
-        -1984
+        -3840,
+        -1312
       ],
-      "id": "13275f0b-7430-43ac-96c6-b04975afa06e",
+      "id": "5123fd30-9647-4b93-881c-a2ee384994e7",
       "name": "Sticky Note4"
     },
     {
@@ -2497,10 +1956,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1472,
-        -1792
+        -2080,
+        -1120
       ],
-      "id": "bf4c6738-9fb5-4696-b6f1-d26d9084bcaa",
+      "id": "59648d30-31d6-433f-912a-d6e0421a99bb",
       "name": "Respond to Webhook5"
     },
     {
@@ -2515,10 +1974,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -2944,
-        -1424
+        -3552,
+        -752
       ],
-      "id": "abec4eb7-aa3f-4d68-8e7e-90ce512cfaf3",
+      "id": "0b15b392-aa8b-4f49-9863-efdce8242d34",
       "name": "Ollama Chat Model3",
       "credentials": {
         "ollamaApi": {
@@ -2530,17 +1989,17 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "chat-rfq",
+        "path": "chat-rfq-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -3120,
-        -1792
+        -3728,
+        -1120
       ],
-      "id": "13eb6580-9874-4cf0-942c-4a698d7b375d",
+      "id": "7983e997-68bc-4dca-a255-f9470c126c3e",
       "name": "Webhook1",
       "webhookId": "chat-rfq"
     },
@@ -2549,13 +2008,13 @@
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.body.sessionId }}"
       },
-      "id": "f216749e-bf10-4508-a655-2bfb7069add7",
+      "id": "c3e2012a-0b72-436f-abe0-755f0e9fa704",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        -2768,
-        -1568
+        -3376,
+        -896
       ],
       "notesInFlow": false,
       "credentials": {
@@ -2572,10 +2031,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2272,
-        -1360
+        -2880,
+        -688
       ],
-      "id": "f9d5ead3-2f14-43ef-bd0d-8c6fcd56be90",
+      "id": "d8e8ad1c-330d-4bd8-a72a-a20f4f3cd229",
       "name": "Embeddings Ollama",
       "credentials": {
         "ollamaApi": {
@@ -2589,16 +2048,16 @@
         "promptType": "define",
         "text": "={{ $json.body.chatInput }}",
         "options": {
-          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH or SPANISH, it depends on the previous message from the user.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
+          "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in ENGLISH or SPANISH, it depends on the previous message from the user.\n2. NEVER use emojis or emoticons in your responses.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Others), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: English only, no emojis."
         }
       },
-      "id": "548da18a-33a5-4ffc-9661-dda596d74692",
+      "id": "dfe7b417-bd18-426a-be7b-ebf822b7c63a",
       "name": "Chat AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -2240,
-        -1792
+        -2848,
+        -1120
       ]
     },
     {
@@ -2620,17 +2079,18 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -2640,
-        -1568
+        -3248,
+        -896
       ],
-      "id": "2d56985f-6cda-4d84-b1f3-2d3d20b25d68",
+      "id": "e4d75c92-5362-466d-ab73-9ada740f8784",
       "name": "Revisar-ofertas",
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2651,17 +2111,18 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -2352,
-        -1568
+        -2960,
+        -896
       ],
-      "id": "d2eb3466-e695-4d6d-892f-d567b7872ddf",
+      "id": "541e52cb-0239-473d-aa37-71cc78ba096a",
       "name": "Revisar RFQs",
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -2670,10 +2131,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -2560,
-        -1360
+        -3168,
+        -688
       ],
-      "id": "78024ccc-f3e6-4daa-b140-a8c72f48aeae",
+      "id": "d5c49b44-3209-4ff0-a3dd-60ae8cc1c80f",
       "name": "Embeddings Ollama5",
       "credentials": {
         "ollamaApi": {
@@ -2685,7 +2146,7 @@
     {
       "parameters": {
         "descriptionType": "manual",
-        "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, and provider evaluations. Provide a search_term to filter requirements.",
+        "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Others), phase, and provider evaluations. Provide a search_term to filter requirements.",
         "operation": "executeQuery",
         "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE (rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%') AND ($2 = '' OR rim.project_id::text = $2) ORDER BY rim.id LIMIT 30;",
         "options": {
@@ -2695,10 +2156,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -2064,
-        -1568
+        -2672,
+        -896
       ],
-      "id": "f5b563de-d730-4e1d-bde2-c3891a96f3a4",
+      "id": "7975fe52-e4af-497b-b647-383d6db5d829",
       "name": "query_requirements",
       "credentials": {
         "postgres": {
@@ -2720,10 +2181,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1936,
-        -1568
+        -2544,
+        -896
       ],
-      "id": "f636ffb1-23e8-4c23-aee4-e89f01bad19f",
+      "id": "fc5430e4-d1ae-49ab-aa12-8b7bbc2134d0",
       "name": "query_provider_responses",
       "credentials": {
         "postgres": {
@@ -2745,10 +2206,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1808,
-        -1568
+        -2416,
+        -896
       ],
-      "id": "4f756cd9-930d-4b6d-b1c1-3b89b66c53b9",
+      "id": "a32e4ec3-e76a-4040-b251-aefb74d42b94",
       "name": "query_ranking",
       "credentials": {
         "postgres": {
@@ -2770,10 +2231,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -1680,
-        -1568
+        -2288,
+        -896
       ],
-      "id": "8ff6e0f5-0ed5-4e56-88b7-89fe46032e73",
+      "id": "e93a2a0c-9ac9-404c-96eb-7720ee61a4fb",
       "name": "query_qa_audit",
       "credentials": {
         "postgres": {
@@ -2790,10 +2251,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -2144,
-        -1344
+        -2752,
+        -672
       ],
-      "id": "3fde1b5b-93f6-4cbb-af6c-f4179ea1d5ef",
+      "id": "b3645d33-7d60-42c5-8c9d-e8b3598b1aca",
       "name": "Mistral Cloud Chat Model2",
       "credentials": {
         "mistralCloudApi": {
@@ -2811,10 +2272,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -2048,
-        -1248
+        -2656,
+        -576
       ],
-      "id": "8073a783-ce4a-4f03-91bd-b15f1c2fc855",
+      "id": "1a4d4db9-f966-4e45-a4c4-b84f75f558eb",
       "name": "OpenRouter Chat Model",
       "credentials": {
         "openRouterApi": {
@@ -2833,26 +2294,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1104,
-        -304
+        -1712,
+        368
       ],
-      "id": "5f059e2b-680e-4c4a-8cbe-dbd240d3bc0e",
+      "id": "2b4547ee-b3d4-4bce-a3d1-b794492d73f6",
       "name": "Sticky Note"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "ingesta-rfq",
+        "path": "ingesta-rfq-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -992,
-        -96
+        -1600,
+        592
       ],
-      "id": "d4ec5a23-8123-419b-a2c0-fcf7d8abe145",
+      "id": "af74fd58-efa8-40ad-8339-51f48d6bdc13",
       "name": "Webhook RFQ",
       "webhookId": "86850b01-70b4-4c99-a63a-6ccad35c0be2"
     },
@@ -2863,10 +2324,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        128,
-        -96
+        -480,
+        592
       ],
-      "id": "6c761f99-6815-4564-b334-7ae6780fe5cf",
+      "id": "a00ee5b0-3641-4a34-9cf2-569cf91e8a6a",
       "name": "Preparar Texto1"
     },
     {
@@ -2877,7 +2338,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "=## TAREA: CLASIFICAR TIPOS DE EVALUACIÓN EN DOCUMENTO RFQ Y NOMBRE DEL PROYECTO\n\nEres un auditor experto en documentación de ingeniería EPC del sector energético.\nAnaliza el documento RFQ y determina qué tipos de evaluación contiene y el nombre del proyecto.\n\n### IMPORTANTE\n\nUn documento puede contener 1, 2, 3 o 4 tipos de evaluación.\n**No asumas que están todos.**\nDetecta **SOLO** los que realmente están presentes.\n\n### REGLA DE TÍTULO (CRÍTICA)\n**Si el nombre del archivo o el título del documento es \"RFQ\" o \"Request for quotation\", clasifica automáticamente como \"Technical Evaluation\" Y \"Economical Evaluation\"**, ya que por definición una licitación completa implica evaluar ambos alcances.\n\n### TIPOS POSIBLES\n\n1. **Technical Evaluation**\n\n   **Evidencia requerida:**\n   - Secciones de **Scope of Work**, **Scope of Facilities**, **Technical Requirements**\n   - Requisitos técnicos generales (metodología, normativas, estándares)\n   - Descripción de alcance por fases (PRE-FEED, FEED, EPC, Conceptual, Basic Engineering, Detailed Engineering)\n   - Especificaciones de ingeniería, criterios de diseño\n\n2. **Economical Evaluation**\n\n   **Evidencia requerida:**\n   - Tablas de **precios** o **tarifas**\n   - **Hours per discipline**, **EUR/hora**, **USD/hour**, tarifas horarias\n   - Formato de **cotización económica**, **pricing schedule**\n   - **Desglose de costos por fase** o por disciplina\n   - Secciones **Commercial**, **Pricing**, **Budget**, **Cost Breakdown**\n\n3. **Pre-FEED Deliverables** (o equivalentes: Conceptual Design Deliverables, Feasibility Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase preliminar/conceptual\n   - Organizada por **disciplinas** (Process, Mechanical, Electrical, Civil, I&C, etc.)\n   - Documentos conceptuales: **Basis of Design**, **PFDs**, **P&IDs preliminares**, **Block diagrams**\n   - Estudios: **HAZID**, **Risk Analysis**, **Site Assessment**\n   - **CAPEX Class 3–5 (AACEI)**, estimaciones preliminares (+/- 30%)\n\n4. **FEED Deliverables** (o equivalentes: Basic Engineering Deliverables)\n\n   **Evidencia requerida:**\n   - Lista o tabla de documentos a entregar en fase FEED/Basic Engineering\n   - Documentos más detallados que en Pre-FEED\n   - **Especificaciones de compra**, **datasheets**, **equipment lists**\n   - **MTO** (Material Take-Off), **cable schedules**, **instrument lists**\n   - **CAPEX Class 2–3 (AACEI)**, estimaciones más precisas (+/- 15%)\n   - **HAZOP**, **SIL studies**, **3D Model review**\n\n### NOMENCLATURA ALTERNATIVA\n\nEl documento puede usar nombres diferentes para las mismas fases. Aquí tienes equivalencias:\n\n| Nombre en RFQ | Clasificar como |\n|---------------|-----------------|\n| Pre-FEED, Conceptual Design, Feasibility Study, Phase 1 | Pre-FEED Deliverables |\n| FEED, Basic Engineering, Basic Design, Phase 2 | FEED Deliverables |\n| Technical Proposal, Technical Offer, Scope of Work | Technical Evaluation |\n| Commercial Proposal, Pricing, Cost Estimate, Quotation | Economical Evaluation |\n\n### CÓMO DIFERENCIAR\n\n| Si ves... | Es probablemente... |\n| --- | --- |\n| **Scope of Work** general, **metodología**, requisitos técnicos | **Technical Evaluation** |\n| Tablas de precios, horas, **EUR/h**, tarifas | **Economical Evaluation** |\n| Lista de docs por disciplina + fase preliminar/conceptual | **Pre-FEED Deliverables** |\n| Lista de docs por disciplina + fase FEED/Basic Engineering | **FEED Deliverables** |\n\n### TAREA OBLIGATORIA: IDENTIFICAR NOMBRE DEL PROYECTO\n\nEsta tarea es **obligatoria** y **NO** puede omitirse.\n**Deberás devolver SIEMPRE** un valor para `nombre_proyecto`.\n\n### ORDEN DE PRIORIDAD (estricto)\n\n1. **Nombre explícito del proyecto**\n   - Busca en la **portada** o el **título principal**.\n   - Encabezados repetidos que contengan el nombre del proyecto.\n   - Frases como **Project**, **Project Name**, **Project Title**, **RFQ for...**\n\n2. **Nombre implícito pero oficial**\n   Si no encuentras un título literal, genera el nombre combinando los siguientes elementos:\n   - Tipo de instalación energética (**Hydrogen Plant**, **PV Plant**, **Solar Plant**, **Wind Farm**, **Battery Storage**, **Power Plant**, **Electrolyzer**, **Substation**, etc.)\n   - Ubicación (ciudad, región o país)\n   - Cliente o **site** si está claramente indicado\n   - Capacidad si se menciona (ej: 100 MW, 50 MWp, 20 MW electrolyzer)\n   - Ejemplo: **100 MW Solar PV Plant – Andalucía, Spain**\n\n3. **Fallback obligatorio**\n   Si el documento no declara claramente un nombre:\n   - **NO dejes el campo vacío**.\n   - **NO uses valores genéricos**.\n   - Genera un nombre técnico-descriptivo utilizando:\n     - **Formato obligatorio**: `<Tipo de Proyecto Energético> – <Ubicación o Cliente> (RFQ)`\n   - Ejemplo: **Green Hydrogen Production Facility – Northern Spain (RFQ)**\n\n### REGLAS DURAS\n\n- **No usar**: Unknown, N/A, Not specified\n- **No inventar nombres comerciales**\n- El nombre debe ser válido para un entorno EPC / PMO del sector energético\n- Prioriza claridad, trazabilidad y profesionalidad\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n**ATENCIÓN: REGLAS DE ESTRUCTURA**\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`. El nivel raíz debe tener directamente las claves `tipos_detectados` y `nombre_proyecto`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n\n**FORMATO DE SALIDA CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Pre-FEED Deliverables\"],\n  \"razonamiento\": \"El documento incluye un Scope of Work técnico y una lista de documentos para la fase Pre-FEED...\"\n}"
+              "message": "=## TAREA: CLASIFICAR TIPOS DE EVALUACIÓN EN DOCUMENTO RFQ Y NOMBRE DEL PROYECTO\n\nEres un auditor experto en documentación de ingeniería EPC del sector energético.\nAnaliza el documento RFQ y determina qué tipos de evaluación contiene y el nombre del proyecto.\n\n### IMPORTANTE\n\nUn documento puede contener 1, 2, 3 o 4 tipos de evaluación.\n**No asumas que están todos.**\nDetecta **SOLO** los que realmente están presentes.\n\n### REGLA DE CONSERVADURISMO (CRÍTICA)\n**Clasifica SOLO el tipo que realmente está presente en el contenido del documento.**\n- Cada documento PDF individual suele contener UN SOLO tipo de evaluación.\n- Solo clasifica múltiples tipos si el documento tiene secciones CLARAMENTE DIFERENCIADAS para cada tipo.\n- NO asumas tipos basándote en el nombre del archivo o título. Basa tu clasificación EXCLUSIVAMENTE en el contenido real.\n- En caso de duda, clasifica con MENOS tipos, no más.\n\n### TIPOS POSIBLES (SOLO 3)\n\n1. **Technical Evaluation**\n\n   **Evidencia requerida:**\n   - Secciones de **Scope of Work**, **Scope of Facilities**, **Technical Requirements**\n   - Requisitos técnicos generales (metodología, normativas, estándares)\n   - Descripción de alcance por fases (PRE-FEED, FEED, EPC, Conceptual, Basic Engineering, Detailed Engineering)\n   - Especificaciones de ingeniería, criterios de diseño\n   - Listas de deliverables técnicos por disciplina\n\n2. **Economical Evaluation**\n\n   **Evidencia requerida:**\n   - Tablas de **precios** o **tarifas**\n   - **Hours per discipline**, **EUR/hora**, **USD/hour**, tarifas horarias\n   - Formato de **cotización económica**, **pricing schedule**\n   - **Desglose de costos por fase** o por disciplina\n   - Secciones **Commercial**, **Pricing**, **Budget**, **Cost Breakdown**\n\n3. **Others**\n\n   **Usar cuando el documento NO encaja claramente en Technical ni Economical.**\n   Ejemplos: listas de deliverables sin requisitos técnicos, documentos HSE, compliance, schedules, términos y condiciones, información general del proyecto, etc.\n\n### NOMENCLATURA ALTERNATIVA\n\n| Nombre en documento | Clasificar como |\n|---------------------|-----------------|\n| Technical Proposal, Technical Offer, Scope of Work, Technical Requirements | Technical Evaluation |\n| Commercial Proposal, Pricing, Cost Estimate, Quotation, Rate Schedule | Economical Evaluation |\n| Cualquier otro contenido (deliverables, HSE, compliance, general, etc.) | Others |\n\n### CÓMO DIFERENCIAR\n\n| Si ves... | Es... |\n| --- | --- |\n| **Scope of Work**, **metodología**, requisitos técnicos, especificaciones | **Technical Evaluation** |\n| Tablas de precios, horas, **EUR/h**, tarifas, presupuestos | **Economical Evaluation** |\n| Cualquier otro contenido que no encaje arriba | **Others** |\n\n### TAREA OBLIGATORIA: IDENTIFICAR NOMBRE DEL PROYECTO\n\nEsta tarea es **obligatoria** y **NO** puede omitirse.\n**Deberás devolver SIEMPRE** un valor para `nombre_proyecto`.\n\n### ORDEN DE PRIORIDAD (estricto)\n\n1. **Nombre explícito del proyecto**\n   - Busca en la **portada** o el **título principal**.\n   - Encabezados repetidos que contengan el nombre del proyecto.\n   - Frases como **Project**, **Project Name**, **Project Title**, **RFQ for...**\n\n2. **Nombre implícito pero oficial**\n   Si no encuentras un título literal, genera el nombre combinando los siguientes elementos:\n   - Tipo de instalación energética (**Hydrogen Plant**, **PV Plant**, **Solar Plant**, **Wind Farm**, **Battery Storage**, **Power Plant**, **Electrolyzer**, **Substation**, etc.)\n   - Ubicación (ciudad, región o país)\n   - Cliente o **site** si está claramente indicado\n   - Capacidad si se menciona (ej: 100 MW, 50 MWp, 20 MW electrolyzer)\n   - Ejemplo: **100 MW Solar PV Plant – Andalucía, Spain**\n\n3. **Fallback obligatorio**\n   Si el documento no declara claramente un nombre:\n   - **NO dejes el campo vacío**.\n   - **NO uses valores genéricos**.\n   - Genera un nombre técnico-descriptivo utilizando:\n     - **Formato obligatorio**: `<Tipo de Proyecto Energético> – <Ubicación o Cliente> (RFQ)`\n   - Ejemplo: **Green Hydrogen Production Facility – Northern Spain (RFQ)**\n\n### REGLAS DURAS\n\n- **No usar**: Unknown, N/A, Not specified\n- **No inventar nombres comerciales**\n- El nombre debe ser válido para un entorno EPC / PMO del sector energético\n- Prioriza claridad, trazabilidad y profesionalidad\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n**ATENCIÓN: REGLAS DE ESTRUCTURA**\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`. El nivel raíz debe tener directamente las claves `tipos_detectados` y `nombre_proyecto`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n\n**FORMATO DE SALIDA CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\"],\n  \"razonamiento\": \"El documento incluye un Scope of Work con requisitos técnicos y especificaciones de ingeniería.\"\n}"
             }
           ]
         },
@@ -2886,10 +2347,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -176,
-        144
+        -784,
+        832
       ],
-      "id": "fa5c52cf-b3bd-4521-8b47-1fad87bd2cbf",
+      "id": "2b2c42c1-dde1-4da3-9eff-50e4fbfb51c0",
       "name": "Clasificador de Tipos1"
     },
     {
@@ -2902,10 +2363,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -224,
-        368
+        -832,
+        1056
       ],
-      "id": "91a461a6-d19c-49bc-83a6-7ff679655a20",
+      "id": "06aeab00-7ecd-4778-8153-90e828a55095",
       "name": "Ollama Clasificador1",
       "credentials": {
         "ollamaApi": {
@@ -2917,28 +2378,28 @@
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"]\n      }\n    },\n\"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"tipos_detectados\", \"nombre_proyecto\"]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Others\"]\n      }\n    },\n\"razonamiento\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\"tipos_detectados\", \"nombre_proyecto\"]\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        16,
-        368
+        -592,
+        1056
       ],
-      "id": "29d3f181-ad16-415c-ae8b-d7d22ecb4e31",
+      "id": "cfe5816f-6ef8-41fa-b4a2-142ab6a1ecc5",
       "name": "Output Parser1"
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO)\n// =============================================\n\n// 1. Recuperar metadatos de nodos anteriores\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. Obtener los tipos DIRECTAMENTE del Clasificador (no del input actual)\nlet tipos = [];\nlet nombreProyecto = \"\";\n\ntry {\n    const clasificadorData = $('Clasificador de Tipos1').first().json;\n    \n    // El clasificador puede devolver el output de diferentes formas\n    let output = clasificadorData.output || clasificadorData;\n    \n    // Intentar parsear si es string\n    if (typeof output === 'string') {\n        try {\n            const clean = output.replace(/```json/gi, '').replace(/```/g, '').trim();\n            const start = clean.indexOf('{');\n            const end = clean.lastIndexOf('}');\n            if (start !== -1 && end !== -1) {\n                output = JSON.parse(clean.substring(start, end + 1));\n            } else {\n                output = JSON.parse(clean);\n            }\n        } catch(e) {\n            console.log(\"⚠️ Error parseando output del clasificador\");\n        }\n    }\n    \n    // Extraer tipos y nombre del proyecto\n    tipos = output.tipos_detectados || [];\n    nombreProyecto = output.nombre_proyecto || \"\";\n    \n    console.log(`✅ Tipos detectados por IA: ${JSON.stringify(tipos)}`);\n} catch(e) {\n    console.log(\"⚠️ Error recuperando datos del Clasificador de Tipos1\");\n}\n\n// 3. Validación y fallback SOLO si NO hay tipos\nif (!Array.isArray(tipos)) tipos = [];\n\nif (tipos.length === 0) {\n    // Fallback: si el clasificador falló completamente\n    const titleLower = (fileTitle || \"\").toLowerCase();\n    const isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n    \n    if (isRFQ) {\n        tipos = [\"Technical Evaluation\", \"Economical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando tipos por defecto para RFQ\");\n    } else {\n        tipos = [\"Technical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando Technical Evaluation por defecto\");\n    }\n}\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\n// 4. Nombre del Proyecto\nlet finalProjectName = nombreProyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\" || finalProjectName.includes(\"La Zaida\")) {\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\nconsole.log(`📋 Expandiendo ${tipos.length} tipos: ${tipos.join(', ')}`);\n\n// 5. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText,\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
+        "jsCode": "// =============================================\n// NODO: Expandir por Tipo (CORREGIDO)\n// =============================================\n\n// 1. Recuperar metadatos de nodos anteriores\nlet projectId = \"unknown\";\nlet documentId = \"unknown\";\nlet fileTitle = \"unknown\";\nlet fullText = \"\";\nlet metadataProjectName = \"\";\n\ntry {\n    const textNode = $('Preparar Texto1').first().json;\n    projectId = textNode.rfq_project_id || \"unknown\";\n    documentId = textNode.rfq_document_id || \"unknown\";\n    fileTitle = textNode.file_title || \"unknown\";\n    fullText = textNode.text || \"\";\n    metadataProjectName = textNode.project_name || \"\"; \n} catch(e) {\n    console.log(\"⚠️ No se pudieron leer metadatos de Preparar Texto1\");\n}\n\n// 2. Obtener los tipos DIRECTAMENTE del Clasificador (no del input actual)\nlet tipos = [];\nlet nombreProyecto = \"\";\n\ntry {\n    const clasificadorData = $('Clasificador de Tipos1').first().json;\n    \n    // El clasificador puede devolver el output de diferentes formas\n    let output = clasificadorData.output || clasificadorData;\n    \n    // Intentar parsear si es string\n    if (typeof output === 'string') {\n        try {\n            const clean = output.replace(/```json/gi, '').replace(/```/g, '').trim();\n            const start = clean.indexOf('{');\n            const end = clean.lastIndexOf('}');\n            if (start !== -1 && end !== -1) {\n                output = JSON.parse(clean.substring(start, end + 1));\n            } else {\n                output = JSON.parse(clean);\n            }\n        } catch(e) {\n            console.log(\"⚠️ Error parseando output del clasificador\");\n        }\n    }\n    \n    // Extraer tipos y nombre del proyecto\n    tipos = output.tipos_detectados || [];\n    nombreProyecto = output.nombre_proyecto || \"\";\n    \n    console.log(`✅ Tipos detectados por IA: ${JSON.stringify(tipos)}`);\n} catch(e) {\n    console.log(\"⚠️ Error recuperando datos del Clasificador de Tipos1\");\n}\n\n// 3. Validación y fallback SOLO si NO hay tipos\nif (!Array.isArray(tipos)) tipos = [];\n\nif (tipos.length === 0) {\n    // Fallback: si el clasificador falló completamente\n    const titleLower = (fileTitle || \"\").toLowerCase();\n    const isRFQ = titleLower.includes(\"rfq\") || titleLower.includes(\"request for quotation\");\n    \n    if (isRFQ) {\n        tipos = [\"Technical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando Technical Evaluation por defecto para RFQ\");\n    } else {\n        tipos = [\"Technical Evaluation\"];\n        console.log(\"⚠️ Fallback: Usando Technical Evaluation por defecto\");\n    }\n}\n\n// Eliminar duplicados\ntipos = [...new Set(tipos)];\n\n// 4. Nombre del Proyecto\nlet finalProjectName = nombreProyecto || metadataProjectName;\n\nif (!finalProjectName || finalProjectName === \"Sin Nombre\" || finalProjectName.includes(\"La Zaida\")) {\n    finalProjectName = fileTitle.replace(/\\.pdf$/i, '') + \" (Project)\";\n}\n\nconsole.log(`📋 Expandiendo ${tipos.length} tipos: ${tipos.join(', ')}`);\n\n// 5. Generar Salida (Expandir items)\nreturn tipos.map((tipo, idx) => ({\n    json: {\n        tipo_evaluacion: tipo,\n        rfq_project_id: projectId,\n        rfq_document_id: documentId,\n        nombre_proyecto: finalProjectName,\n        file_title: fileTitle,\n        texto_rfq: fullText,\n        indice: idx + 1,\n        total_tipos: tipos.length\n    }\n}));"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        144
+        176,
+        832
       ],
-      "id": "ad6b85b7-a0d9-4557-9b7f-b848b7aa77d2",
+      "id": "682cac3d-f960-4df4-b944-4f2cfffbfc43",
       "name": "Expandir por Tipo1"
     },
     {
@@ -2948,10 +2409,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        992,
-        144
+        384,
+        832
       ],
-      "id": "5d2175ea-782c-469a-b1b1-7de7a5af4f08",
+      "id": "1ae340cc-1dc4-4a45-a8fe-569979d35189",
       "name": "Loop por Tipo1"
     },
     {
@@ -2961,10 +2422,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2560,
-        80
+        1952,
+        768
       ],
-      "id": "4cb64d23-2abd-492c-832a-5e5969a82090",
+      "id": "298d462e-60e6-420c-b544-8beafdafbd6d",
       "name": "Parsear Items1"
     },
     {
@@ -2974,10 +2435,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3088,
-        272
+        2480,
+        960
       ],
-      "id": "7793edef-4b17-49e5-9ff8-c55953b2fc88",
+      "id": "af8996ec-d01f-47ab-b969-e3a055b85db1",
       "name": "Agregar Resultados1"
     },
     {
@@ -2987,10 +2448,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2288,
-        -240
+        1680,
+        432
       ],
-      "id": "0c10217f-3a31-43e5-ae60-8d9779b19481",
+      "id": "c5c9c227-8c1a-444a-b3e1-7e46ad7467fe",
       "name": "Resumen Final1"
     },
     {
@@ -3002,10 +2463,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        2576,
-        -240
+        1968,
+        432
       ],
-      "id": "e5f3b80d-f38d-4807-b86b-9de7a50e6c2f",
+      "id": "c34912a5-e26e-424f-8a10-1097faa2930d",
       "name": "Respond Success1"
     },
     {
@@ -3015,10 +2476,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -320,
-        -96
+        -928,
+        592
       ],
-      "id": "c39ecb04-16c4-4c68-9ebb-797798e3e168",
+      "id": "38e9180a-d822-46d6-84b3-1bbaae7a5308",
       "name": "Base64 a Binary3"
     },
     {
@@ -3029,10 +2490,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -96,
-        -96
+        -704,
+        592
       ],
-      "id": "338fd57d-6e9d-47e3-9690-eb77638404d8",
+      "id": "1b5239ca-0081-4606-ae9a-cb8740e70cec",
       "name": "Extract from File3"
     },
     {
@@ -3042,10 +2503,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -768,
-        -96
+        -1376,
+        592
       ],
-      "id": "3a3ac4a1-1b8e-40ce-8807-fb4fadaf6c7a",
+      "id": "e5690535-4a28-49b9-9b9b-d49e189df882",
       "name": "Generate IDs1"
     },
     {
@@ -3103,10 +2564,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        1888,
-        272
+        1280,
+        960
       ],
-      "id": "e67e5a66-58cf-45a3-8c1c-119d9fff075a",
+      "id": "3652133c-900c-41c2-b259-571f0049c468",
       "name": "Switch1"
     },
     {
@@ -3121,10 +2582,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2144,
-        720
+        1536,
+        1408
       ],
-      "id": "54fceb4f-3f8c-4f7c-b7d3-c133a80a90a3",
+      "id": "ca2cbf35-16ac-4b40-a2b5-8a92d521bcd6",
       "name": "Ollama Extractor2",
       "credentials": {
         "ollamaApi": {
@@ -3136,7 +2597,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### TAREA: EXTRACCIÓN MASIVA DE ENTREGABLES (DELIVERABLES)\n\n**OBJETIVO:** Extraer **TODOS** los documentos, planos y entregables listados. **EXHAUSTIVIDAD TOTAL**.\n\n### INSTRUCCIONES CRÍTICAS (NO RESUMIR):\n1. **TABLAS:** Si encuentras una tabla, extrae **CADA FILA**. Si hay 140 filas, devuelve 140 ítems.\n2. **NO AGRUPES:** Mantén la granularidad.\n3. **FASES:** Infiere la fase/disciplina. Si no, usa 'General'.\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\nProyecto: {{ $json.nombre_proyecto }}\nEvaluación: {{ $('Loop por Tipo1').item.json.tipo_evaluacion }}\nArchivo: {{ $('Generate IDs1').first().json.file_title }}\n\n### TEXTO DEL PDF:\n{{ $json.texto_chunk }}\n\n### FORMATO DE SALIDA:\n```json\n[\n  { \"fase\": \"Process\", \"requisito_rfq\": \"PFD\" },\n  { \"fase\": \"Civil\", \"requisito_rfq\": \"Foundation Layout\" }\n]\n```\n\n**RESPUESTA (JSON PURO):**",
+        "text": "=### TAREA: EXTRACCIÓN MASIVA DE ENTREGABLES (DELIVERABLES)\n\n**OBJETIVO:** Extraer **TODOS** los documentos, planos y entregables listados. **EXHAUSTIVIDAD TOTAL**.\n\n### INSTRUCCIONES CRÍTICAS (NO RESUMIR):\n1. **TABLAS:** Si encuentras una tabla, extrae **CADA FILA**. Si hay 140 filas, devuelve 140 ítems.\n2. **NO AGRUPES:** Mantén la granularidad.\n3. **FASES:** Infiere la fase/disciplina. Si no, usa 'General'.\n\n### IDIOMA:\n- Los campos `fase` y `requisito_rfq` deben estar en el MISMO IDIOMA que el texto del documento.\n- NO traduzcas: mantén el idioma original.\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\n### EXTRACCIÓN DE LISTA DE ENTREGABLES (TEXTO DESORDENADO)\n\nProyecto: {{ $json.nombre_proyecto }}\nEvaluación: {{ $('Loop por Tipo1').item.json.tipo_evaluacion }}\nArchivo: {{ $('Generate IDs1').first().json.file_title }}\n\n### TEXTO DEL PDF:\n{{ $json.texto_chunk }}\n\n### FORMATO DE SALIDA:\n```json\n[\n  { \"fase\": \"Process\", \"requisito_rfq\": \"PFD\" },\n  { \"fase\": \"Civil\", \"requisito_rfq\": \"Foundation Layout\" }\n]\n```\n\n**RESPUESTA (JSON PURO):**",
         "messages": {
           "messageValues": [
             {
@@ -3149,10 +2610,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2208,
-        496
+        1600,
+        1184
       ],
-      "id": "8e475b5c-889a-4d7f-a159-36c57cbfd701",
+      "id": "04d53319-66cf-4300-9b23-2e8540113ff0",
       "name": "LLM Extractor - Deliverables"
     },
     {
@@ -3162,10 +2623,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2560,
-        496
+        1952,
+        1184
       ],
-      "id": "b14e3d8a-6275-401d-8035-1fd9c69e2537",
+      "id": "da2dfc11-d55d-4b24-8614-f7b5a63f75a5",
       "name": "Parsear deliverables"
     },
     {
@@ -3180,10 +2641,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2144,
-        272
+        1536,
+        960
       ],
-      "id": "6c28044b-ee4f-414e-b39b-363d2e74325f",
+      "id": "13d22b05-0482-43dc-9f5b-7054d2d498b9",
       "name": "Ollama Extractor1",
       "credentials": {
         "ollamaApi": {
@@ -3200,10 +2661,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2448,
-        704
+        1840,
+        1392
       ],
-      "id": "6780397b-4c3c-4925-9a5f-fa7f613782d6",
+      "id": "a1988522-f2d3-44da-987e-2e903173882c",
       "name": "Structured Output Parser1"
     },
     {
@@ -3214,10 +2675,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2384,
-        272
+        1776,
+        960
       ],
-      "id": "59ca723e-093d-4beb-913c-82ea74a83a31",
+      "id": "90843b10-82c3-4f1a-83d7-275e646d9d62",
       "name": "Structured Output Parser2"
     },
     {
@@ -3227,10 +2688,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1280,
-        256
+        672,
+        944
       ],
-      "id": "5acdc448-2763-4e4e-a76e-e9441b48ddc9",
+      "id": "fdba9fc5-67c6-42c9-b3a0-569f73dc0518",
       "name": "Dividir en Trozos1"
     },
     {
@@ -3242,10 +2703,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1632,
-        256
+        1024,
+        944
       ],
-      "id": "0509a6d9-b898-41c6-9750-3422dcea9e0c",
+      "id": "34ebfeac-3d17-461b-9a00-86739dd5a8bc",
       "name": "Loop por Trozo1"
     },
     {
@@ -3255,10 +2716,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
-        256
+        848,
+        944
       ],
-      "id": "2f42a9cc-00e9-4841-ba0d-dcaecb27cb45",
+      "id": "973341ad-a0a9-4f00-a245-03b2c138c06e",
       "name": "Reset Items1"
     },
     {
@@ -3268,10 +2729,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        352,
-        368
+        -256,
+        1056
       ],
-      "id": "04e23877-9287-4f98-9eba-42f10b0b4276",
+      "id": "0193f94e-6827-48bf-bbb0-abce2b95bf32",
       "name": "Embeddings Ollama1",
       "credentials": {
         "ollamaApi": {
@@ -3293,20 +2754,21 @@
           "queryName": "match_rfq"
         }
       },
-      "id": "24f781e5-7f36-4eb6-a912-4cdf899450da",
+      "id": "f8f80034-49aa-4234-bb57-c42686796131",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        432,
-        144
+        -176,
+        832
       ],
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -3317,10 +2779,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        608,
-        576
+        0,
+        1264
       ],
-      "id": "b275f7b1-89eb-4420-8ace-207a63020170",
+      "id": "f2bb05b3-a0f2-4c37-8d39-1d8091b898fd",
       "name": "Recursive Character Text Splitter1"
     },
     {
@@ -3350,78 +2812,55 @@
           }
         }
       },
-      "id": "6ac95531-9fb5-4025-a3a9-094269172ffe",
+      "id": "aa587949-6e25-49a7-a905-8f0c37eafd17",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        528,
-        368
+        -80,
+        1056
       ]
     },
     {
       "parameters": {
-        "tableId": "rfq_items_master",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "project_name",
-              "fieldValue": "={{ $('Webhook RFQ').first().json.body.project_name }}"
-            },
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $('Generate IDs1').first().json.project_id }}"
-            },
-            {
-              "fieldId": "evaluation_type",
-              "fieldValue": "={{ $json.evaluation }}"
-            },
-            {
-              "fieldId": "phase",
-              "fieldValue": "={{ $json.fase }}"
-            },
-            {
-              "fieldId": "requirement_text",
-              "fieldValue": "={{ $json.requisito_rfq }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.rfq_items_master (project_id, evaluation_type, phase, requirement_text) VALUES ('{{ $('Generate IDs1').first().json.project_id }}', '{{ $json.evaluation }}', '{{ $json.fase }}', '{{ $json.requisito_rfq }}') RETURNING *",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        2880,
-        272
+        2272,
+        960
       ],
-      "id": "842ca79e-1c84-4066-875d-b981b39f51b6",
+      "id": "96e434c2-06ef-4b29-8f0d-0a22992339c7",
       "name": "Create a row",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "delete",
-        "tableId": "rfq",
-        "filterType": "string",
-        "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
+        "operation": "executeQuery",
+        "query": "=DELETE FROM desarrollo.rfq WHERE metadata->>'file_id' LIKE '%{{ $json.file_id }}%'",
+        "options": {}
       },
-      "id": "80ae5ad5-9e58-4a29-842b-1a537f060b2a",
+      "id": "355cc512-d678-43bd-bf49-0ab76a8755dd",
       "name": "Delete Old Doc Rows1",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -544,
-        -96
+        -1152,
+        592
       ],
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -3431,7 +2870,7 @@
         "schema": {
           "__rl": true,
           "mode": "list",
-          "value": "public"
+          "value": "desarrollo"
         },
         "table": {
           "__rl": true,
@@ -3444,10 +2883,10 @@
           "value": {
             "id": "={{ $('Generate IDs1').first().json.rfq_document_id }}",
             "title": "={{ $('Generate IDs1').first().json.file_title }}",
-            "project_name": "={{ $('Webhook RFQ').item.json.body.project_name }}",
             "document_type": "=RFQ",
             "evaluation_types": "={{ $json.output.tipos_detectados }}",
-            "provider": "IGNIS"
+            "provider": "IGNIS",
+            "project_id": "={{ $('Webhook RFQ').first().json.body.project_id }}"
           },
           "matchingColumns": [
             "id"
@@ -3472,8 +2911,8 @@
               "canBeUsedToMatch": false
             },
             {
-              "id": "project_name",
-              "displayName": "project_name",
+              "id": "project_id",
+              "displayName": "project_id",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -3530,10 +2969,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        208,
-        144
+        -1056,
+        2416
       ],
-      "id": "60ebe18b-6df1-4f71-86ac-d288c475525d",
+      "id": "957cb6ef-cfdd-41e6-8acb-d36c992f3df1",
       "name": "Insert Document Metadata2",
       "executeOnce": true,
       "credentials": {
@@ -3546,7 +2985,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### EXTRACCIÓN DE REQUISITOS RFQ - SOLO ÍTEMS EXPLÍCITOS\n\nProyecto: {{ $json.nombre_proyecto }}\nTipo: {{ $json.tipo_evaluacion }}\nArchivo: {{ $json.file_title }}\n\n### TEXTO:\n{{ $json.texto_chunk }}\n\n---\n### INSTRUCCIONES:\n\n**SOLO EXTRAER ÍTEMS QUE APARECEN CLARAMENTE EN LISTAS, TABLAS O COMO REQUISITOS EXPLÍCITOS**\n\n#### Para Technical Evaluation:\n- Buscar: \"The vendor shall provide/submit/deliver...\"\n- Buscar: Listas de documentos, entregables o planos\n- NO extraer: Descripciones generales, introducciones, alcance\n\n#### Para Economical Evaluation:  \n- Buscar: \"Item\", \"Line item\", tablas de precios, BOQ\n- Buscar: Partidas específicas a cotizar\n- NO extraer: Textos descriptivos sin ítems concretos\n\n### REGLAS ESTRICTAS:\n1. **MÍNIMO**: Extraer solo lo que es claramente un requisito/lista\n2. **CONCRETO**: Un ítem por cada línea de lista/tabla\n3. **ESPECÍFICO**: Si hay duda, NO extraer\n\n### FORMATO:\n```json\n[\n  { \"fase\": \"Disciplina\", \"requisito_rfq\": \"Ítem exacto del texto\" }\n]\n```\n\n**RESPUESTA:**",
+        "text": "=### EXTRACCIÓN DE REQUISITOS RFQ - SOLO ÍTEMS EXPLÍCITOS\n\nProyecto: {{ $json.nombre_proyecto }}\nTipo: {{ $json.tipo_evaluacion }}\nArchivo: {{ $json.file_title }}\n\n### TEXTO:\n{{ $json.texto_chunk }}\n\n---\n### INSTRUCCIONES:\n\n**SOLO EXTRAER ÍTEMS QUE APARECEN CLARAMENTE EN LISTAS, TABLAS O COMO REQUISITOS EXPLÍCITOS**\n\n#### Para Technical Evaluation:\n- Buscar: \"The vendor shall provide/submit/deliver...\"\n- Buscar: Listas de documentos, entregables o planos\n- NO extraer: Descripciones generales, introducciones, alcance\n\n#### Para Economical Evaluation:  \n- Buscar: \"Item\", \"Line item\", tablas de precios, BOQ\n- Buscar: Partidas específicas a cotizar\n- NO extraer: Textos descriptivos sin ítems concretos\n\n### REGLAS ESTRICTAS:\n1. **MÍNIMO**: Extraer solo lo que es claramente un requisito/lista\n2. **CONCRETO**: Un ítem por cada línea de lista/tabla\n3. **ESPECÍFICO**: Si hay duda, NO extraer\n\n### IDIOMA DE SALIDA:\n- **IMPORTANTE:** Los campos `fase` y `requisito_rfq` deben estar en el MISMO IDIOMA que el documento original.\n- Si el documento está en español, usa \"Ingeniería de Procesos\", \"Ingeniería Civil\", etc.\n- Si el documento está en inglés, usa \"Process Engineering\", \"Civil Engineering\", etc.\n- Mantén consistencia de idioma en TODOS los campos de salida.\n\n### FORMATO:\n```json\n[\n  { \"fase\": \"Disciplina\", \"requisito_rfq\": \"Ítem exacto del texto\" }\n]\n```\n\n**RESPUESTA:**",
         "messages": {
           "messageValues": [
             {
@@ -3559,10 +2998,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2192,
-        80
+        1584,
+        768
       ],
-      "id": "5db356f3-c8cb-4ff0-9bae-0f65cdcaf895",
+      "id": "dd33209a-f4ba-4a92-8ae9-dbffc0651c5c",
       "name": "LLM Extractor Tech-Econ"
     },
     {
@@ -3573,10 +3012,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2256,
-        256
+        1648,
+        944
       ],
-      "id": "01e931b2-f10d-435d-bd47-5939686492a2",
+      "id": "89657f1e-163a-43bf-80ff-6a218a0fcd15",
       "name": "Mistral Cloud Chat Model7",
       "credentials": {
         "mistralCloudApi": {
@@ -3593,10 +3032,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2272,
-        704
+        1664,
+        1392
       ],
-      "id": "7e0c8a64-5ec2-43b6-9a3b-a0ef1813882d",
+      "id": "6740b69c-2552-4a28-9ed0-c711d364ebcc",
       "name": "Mistral Cloud Chat Model8",
       "credentials": {
         "mistralCloudApi": {
@@ -3612,10 +3051,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        -144,
-        496
+        -752,
+        1184
       ],
-      "id": "e0eb37ab-5755-480c-988f-f799d73780e7",
+      "id": "9739137c-3abe-422d-b8f5-aa48ac5fb528",
       "name": "Mistral Cloud Chat Model9",
       "credentials": {
         "mistralCloudApi": {
@@ -3626,37 +3065,22 @@
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "rfq_items_master",
-        "returnAll": true,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "evaluation_type",
-              "condition": "eq",
-              "keyValue": "={{ $json.tipo_evaluacion_actual }}"
-            },
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set File ID').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.rfq_items_master WHERE evaluation_type = '={{ $json.tipo_evaluacion_actual }}' AND project_id = '={{ $('Set File ID').first().json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -128,
-        -1840
+        -736,
+        -1168
       ],
-      "id": "be0cda9b-603b-4b95-963a-1b73b4f16cba",
+      "id": "0f752205-732e-46f3-84b5-2c111ee9502b",
       "name": "Get many rows1",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -3667,10 +3091,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        2912,
-        -736
+        2304,
+        -64
       ],
-      "id": "b2106f46-9b6d-4a18-bc91-54bcede19795",
+      "id": "b24356fb-c718-4e9c-a7fa-30469d8fc2dc",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -3682,7 +3106,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### DOCUMENT AUDIT: CROSS-VALIDATION\n\n**[1. USER MANUAL SELECTION]**\n- Project: \"{{ $('Set File ID').item.json.proyect_name }}\"\n- Provider: \"{{ $('Set File ID').item.json.proveedor }}\"\n- Evaluation Type: \"{{ $('Set File ID').item.json.evaluation }}\"\n- File Name: \"{{ $('Set File ID').item.json.file_title }}\"\n\n---\n**[2. ACTUAL PDF EVIDENCE (Extracted text)]**\n{{ $json.texto_muestra }}\n\n---\n### MAPPING AND VALIDATION INSTRUCTIONS:\n\n#### RULE 1: SYNONYMS AND CANONICAL TYPES\nYou can only use these 4 exact names. Map the evidence as follows:\n- **\"Commercial Proposal\" / \"Oferta Económica\" / \"Price Schedule\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\" / \"Metodología\"** → MUST BE `Technical Evaluation`.\n- **\"Technical & Economical Proposal\"** → MUST INCLUDE BOTH: `Technical Evaluation` AND `Economical Evaluation`.\n- **Drawing lists** → `Pre-FEED Deliverables` or `FEED Deliverables`.\n\n#### RULE 2: TITLE AND FILE NAME ARE DECISIVE\n- Analyze the **File Name** and **Title** of the document. If they say \"Oferta Técnica\" or \"Technical Proposal\", the type is `Technical Evaluation`.\n- **IMPORTANT:** DO NOT add other types for minor mentions. Example: If a technical document mentions \"estimated prices\", DO NOT add `Economical Evaluation`. Only add it if you see a complete PRICE TABLE.\n- Be conservative: when in doubt, follow the File Name.\n\n#### RULE 3: INTENTION BALANCING\n- If the PDF is mixed but the user has selected one of the valid types present, mark `tipos_validados: true`.\n\n### OUTPUT FORMAT (SINGLE JSON):\n{\n  \"modo_usado\": \"VALIDADOR\",\n  \"proyecto_detectado\": \"Actual Name\",\n  \"proyecto_valido\": true | false,\n  \"proyecto_nota\": \"Summary\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"proveedor_valido\": true | false,\n  \"proveedor_nota\": \"Explanation\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Pre-FEED Deliverables\", \"FEED Deliverables\"],\n  \"tipos_validados\": true | false,\n  \"tipos_nota\": \"Explain why you validated or rejected the types.\",\n  \"razonamiento\": \"Mention the File Name and Title found.\"\n}",
+        "text": "=### DOCUMENT AUDIT: CROSS-VALIDATION\n\n**[1. USER MANUAL SELECTION]**\n- Project: \"{{ $('Set File ID').item.json.proyect_name }}\"\n- Provider: \"{{ $('Set File ID').item.json.proveedor }}\"\n- Evaluation Type: \"{{ $('Set File ID').item.json.evaluation }}\"\n- File Name: \"{{ $('Set File ID').item.json.file_title }}\"\n\n---\n**[2. ACTUAL PDF EVIDENCE (Extracted text)]**\n{{ $json.texto_muestra }}\n\n---\n### MAPPING AND VALIDATION INSTRUCTIONS:\n\n#### RULE 1: SYNONYMS AND CANONICAL TYPES\nYou can only use these 3 exact names. Map the evidence as follows:\n- **\"Commercial Proposal\" / \"Oferta Económica\" / \"Price Schedule\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\" / \"Metodología\"** → MUST BE `Technical Evaluation`.\n- **\"Technical & Economical Proposal\"** → MUST INCLUDE BOTH: `Technical Evaluation` AND `Economical Evaluation`.\n- **Anything else** (drawing lists, HSE, compliance, schedules, etc.) → `Others`.\n\n#### RULE 2: TITLE AND FILE NAME ARE DECISIVE\n- Analyze the **File Name** and **Title** of the document. If they say \"Oferta Técnica\" or \"Technical Proposal\", the type is `Technical Evaluation`.\n- **IMPORTANT:** DO NOT add other types for minor mentions. Example: If a technical document mentions \"estimated prices\", DO NOT add `Economical Evaluation`. Only add it if you see a complete PRICE TABLE.\n- Be conservative: when in doubt, follow the File Name.\n\n#### RULE 3: INTENTION BALANCING\n- If the PDF is mixed but the user has selected one of the valid types present, mark `tipos_validados: true`.\n\n### OUTPUT FORMAT (SINGLE JSON):\n{\n  \"modo_usado\": \"VALIDADOR\",\n  \"proyecto_detectado\": \"Actual Name\",\n  \"proyecto_valido\": true | false,\n  \"proyecto_nota\": \"Summary\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"proveedor_valido\": true | false,\n  \"proveedor_nota\": \"Explanation\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\", \"Others\"],\n  \"tipos_validados\": true | false,\n  \"tipos_nota\": \"Explain why you validated or rejected the types.\",\n  \"razonamiento\": \"Mention the File Name and Title found.\"\n}",
         "hasOutputParser": true,
         "messages": {
           "messageValues": [
@@ -3696,10 +3120,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2416,
-        -1200
+        1808,
+        -528
       ],
-      "id": "a2fd5945-17e1-49dc-9a73-5deaf3cfbb5a",
+      "id": "7e0300b5-d041-4911-9db7-378826b30fad",
       "name": "Validador de Ofertas"
     },
     {
@@ -3714,10 +3138,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        2368,
-        -1008
+        1760,
+        -336
       ],
-      "id": "630de646-25a8-4a35-8ce5-8eb1772431f4",
+      "id": "b497662c-b1bf-4c43-97cb-44968d001712",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -3734,16 +3158,16 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2608,
-        -1008
+        2000,
+        -336
       ],
-      "id": "8141f40d-279a-4a05-af1b-1ff2f99b1fa3",
+      "id": "97c91397-0456-4a18-a0d8-8506c1958e09",
       "name": "Structured Output Parser4"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### TECHNICAL AND COMMERCIAL CLASSIFICATION (RFQ)\n\n### DOCUMENT SAMPLE (First 2 pages):\n{{ $json.texto_muestra }}\n\n---\n### CLASSIFICATION TASK:\nIdentify project, provider and evaluation types.\n\n**GOLDEN RULE FOR NOMENCLATURE:**\nYou must translate document titles to these exact names:\n- **\"Commercial Proposal\" / \"Oferta Económica\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\"** → MUST BE `Technical Evaluation`.\n- **Document lists** → `Pre-FEED Deliverables` or `FEED Deliverables` (depending on context).\n\n#### REQUIREMENTS:\n1. **PROVIDER**: Must be one of: IDOM, SENER, TRESCA, SACYR, TECNICASREUNIDAS, EA, WORLEY.\n2. **TYPES**: The `tipos_detectados` array can only contain the canonical names mentioned above.\n\n---\n### OUTPUT FORMAT (JSON):\n{\n  \"modo_usado\": \"CLASIFICADOR\",\n  \"proyecto_detectado\": \"Name\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"tipos_detectados\": [\"Technical Evaluation\", \"Economical Evaluation\"],\n  \"razonamiento\": \"Justification: 'Commercial Proposal' detected -> Economical Evaluation mapped.\"\n}",
+        "text": "=### TECHNICAL AND COMMERCIAL CLASSIFICATION (RFQ)\n\n### DOCUMENT SAMPLE (First 2 pages):\n{{ $json.texto_muestra }}\n\n---\n### CLASSIFICATION TASK:\nIdentify project, provider and evaluation types.\n\n**GOLDEN RULE FOR NOMENCLATURE:**\nYou must translate document titles to these exact names:\n- **\"Commercial Proposal\" / \"Oferta Económica\"** → MUST BE `Economical Evaluation`.\n- **\"Technical Proposal\" / \"Scope of Work\"** → MUST BE `Technical Evaluation`.\n- **Anything else** (document lists, HSE, compliance, schedules, etc.) → `Others`.\n\n#### REQUIREMENTS:\n1. **PROVIDER**: Must be one of: IDOM, SENER, TRESCA, SACYR, TECNICASREUNIDAS, EA, WORLEY.\n2. **TYPES**: The `tipos_detectados` array can only contain: `Technical Evaluation`, `Economical Evaluation`, `Others`.\n\n---\n### OUTPUT FORMAT (JSON):\n{\n  \"modo_usado\": \"CLASIFICADOR\",\n  \"proyecto_detectado\": \"Name\",\n  \"proveedor_detectado\": \"IDOM | SENER | TRESCA | SACYR | TECNICASREUNIDAS | EA | WORLEY\",\n  \"tipos_detectados\": [\"Technical Evaluation\"],\n  \"razonamiento\": \"Justification: 'Commercial Proposal' detected -> Economical Evaluation mapped.\"\n}",
         "hasOutputParser": true,
         "messages": {
           "messageValues": [
@@ -3757,10 +3181,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2416,
-        -768
+        1808,
+        -96
       ],
-      "id": "7dc33434-9e05-4552-a7e8-328da61d29f5",
+      "id": "8eafd001-d11d-4564-9246-78ae29ca61a5",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor"
     },
     {
@@ -3811,10 +3235,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        2144,
-        -1008
+        1536,
+        -336
       ],
-      "id": "8e92b825-201a-4c26-af2f-2233e40d2730",
+      "id": "18135ab9-aa66-466d-9cd3-8076b6e67eb4",
       "name": "If"
     },
     {
@@ -3829,10 +3253,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2128,
-        -1568
+        1520,
+        -896
       ],
-      "id": "8cfee3ec-5bd2-409a-9365-7f010068653c",
+      "id": "4772dee9-7534-490d-a8c5-d456047f1fcd",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -3853,10 +3277,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        2368,
-        -560
+        1760,
+        112
       ],
-      "id": "52be19fc-5d8b-46a9-92a1-b4761d71eac9",
+      "id": "fd950da4-60c2-4270-9e9e-0897cbe33036",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -3875,10 +3299,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1104,
-        -2160
+        -1712,
+        -1488
       ],
-      "id": "4c687294-2f07-4ba1-a3d8-ca76419635e4",
+      "id": "0927e240-5391-46f5-b472-570ffdd8e107",
       "name": "Sticky Note5"
     },
     {
@@ -3891,23 +3315,23 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        704,
-        -1776
+        96,
+        -1104
       ],
-      "id": "ef0b72cb-a2b5-496a-825a-0c9210f7d24f",
+      "id": "49cd6a38-8075-42db-a906-9ea348c63b5e",
       "name": "Loop Over Phases"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (SIN quoted_value)\n// =============================================\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente`);\n\nreturn resultados;"
       },
-      "id": "e6f8719b-7cfe-4ad5-bc49-9a170d5fcbed",
+      "id": "882313c3-59a3-4d49-b5d4-6e72c8b3d4aa",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2656,
-        -1792
+        2048,
+        -1120
       ]
     },
     {
@@ -3926,122 +3350,25 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        2208,
-        -1920
+        1600,
+        -1248
       ],
-      "id": "6a763060-be88-418d-9f09-8f1ef2fc3df0",
+      "id": "c8201ae4-9b95-4ced-8123-4c35447f553f",
       "name": "LLM Chain"
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "value": "document_metadata",
-          "mode": "list",
-          "cachedResultName": "document_metadata"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "id": "={{ $('Set File ID').item.json.file_id }}",
-            "title": "={{ $('Set File ID').item.json.file_title }}",
-            "project_name": "={{ $('Set File ID').item.json.proyect_name }}\n",
-            "project_id": "={{ $('Set File ID').item.json.project_id }}",
-            "evaluation_types": "={{ $('Set File ID').item.json.evaluation }}",
-            "document_type": "PROPOSAL",
-            "provider": "={{ $('Set File ID').item.json.proveedor }}"
-          },
-          "matchingColumns": [
-            "id"
-          ],
-          "schema": [
-            {
-              "id": "id",
-              "displayName": "id",
-              "required": true,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "title",
-              "displayName": "title",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "project_name",
-              "displayName": "project_name",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false,
-              "removed": false
-            },
-            {
-              "id": "document_type",
-              "displayName": "document_type",
-              "required": true,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false,
-              "removed": false
-            },
-            {
-              "id": "provider",
-              "displayName": "provider",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false,
-              "removed": false
-            },
-            {
-              "id": "evaluation_types",
-              "displayName": "evaluation_types",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "array",
-              "canBeUsedToMatch": false,
-              "removed": false
-            },
-            {
-              "id": "created_at",
-              "displayName": "created_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "canBeUsedToMatch": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.document_metadata (id, title, project_id, evaluation_types, document_type, provider)\nVALUES (\n  '{{ $('Set File ID').item.json.file_id }}',\n  '{{ $('Set File ID').item.json.file_title }}',\n  '{{ $('Set File ID').item.json.project_id }}',\n  '{{ $('Set File ID').item.json.evaluation }}',\n  'PROPOSAL',\n  '{{ $('Set File ID').item.json.proveedor }}'\n)\nON CONFLICT (id) DO UPDATE SET\n  title = EXCLUDED.title,\n  project_id = EXCLUDED.project_id,\n  evaluation_types = EXCLUDED.evaluation_types,\n  document_type = EXCLUDED.document_type,\n  provider = EXCLUDED.provider\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -96,
-        -1008
+        -704,
+        -336
       ],
-      "id": "5b494052-1e34-453e-9c7e-7a48ceff39ba",
+      "id": "0131db24-fbec-47ad-8796-4be5464a29c0",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -4053,24 +3380,23 @@
     },
     {
       "parameters": {
-        "operation": "delete",
-        "tableId": "proposals",
-        "filterType": "string",
-        "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
+        "operation": "executeQuery",
+        "query": "=DELETE FROM desarrollo.proposals WHERE metadata->>'file_id' LIKE '%{{ $json.file_id }}%'",
+        "options": {}
       },
-      "id": "2c9e8821-9ade-4595-a455-f2be72bef697",
+      "id": "fa5e8e32-8aac-479c-a3dd-3d113ac604b7",
       "name": "Delete Old Doc Rows",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -304,
-        -1008
+        -912,
+        -336
       ],
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -4136,13 +3462,13 @@
         },
         "options": {}
       },
-      "id": "7fa5e994-9723-4716-932d-d1b0c9c50afa",
+      "id": "3a5e62ef-87cb-4617-a58e-53054c227297",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -496,
-        -1008
+        -1104,
+        -336
       ]
     },
     {
@@ -4180,13 +3506,13 @@
           }
         }
       },
-      "id": "eb46a716-c16d-413c-9f39-495ad27fa350",
+      "id": "f6959037-1a5b-4fa1-8f70-7ccfdf013ac3",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        3120,
-        -704
+        2512,
+        -32
       ]
     },
     {
@@ -4198,10 +3524,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        3024,
-        -528
+        2416,
+        144
       ],
-      "id": "12ebc4cc-8cd8-4002-82e2-79b70522b72e",
+      "id": "183e332b-4a03-4623-b151-b2b97c9d3f22",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -4217,20 +3543,21 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "1196c9d1-0418-4f09-8813-bbe6b45d385e",
+      "id": "aeb2dd72-76c8-4c4d-914a-a449f8be9691",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        2992,
-        -1024
+        2384,
+        -352
       ],
       "credentials": {
         "supabaseApi": {
           "id": "pI4CpdYLTiEEBmnz",
           "name": "Supabase account"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -4239,10 +3566,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        576,
-        -1008
+        -32,
+        -336
       ],
-      "id": "f8bbdc61-6490-44d7-aa11-5d694446836f",
+      "id": "de850188-4780-47a4-8600-a1a6ce39bd75",
       "name": "Validar Contenido PDF"
     },
     {
@@ -4253,10 +3580,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        304,
-        -1008
+        -304,
+        -336
       ],
-      "id": "5ca1dbea-9630-444a-987d-b7ec75daa334",
+      "id": "eb9bb904-f2a0-4d2a-9f07-e66413de9c46",
       "name": "Extract from File"
     },
     {
@@ -4287,10 +3614,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        864,
-        -1008
+        256,
+        -336
       ],
-      "id": "adc0c757-8064-4a32-baa9-53f9d1a5c14f",
+      "id": "c239e9a9-2346-4419-8c97-a2e712d36f42",
       "name": "¿Necesita OCR?"
     },
     {
@@ -4300,23 +3627,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1504,
-        -1120
+        896,
+        -448
       ],
-      "id": "e69ee27d-aca6-40a3-a291-bb2506b45953",
+      "id": "eb4f4533-e34a-4e43-b968-91c018b8473b",
       "name": "Aggregate OCR Pages"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "223cff62-8b91-4a33-bbd0-a0b75b61792e",
+      "id": "529e243f-05e8-4a67-9344-66e323e62315",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1952,
-        -1008
+        1344,
+        -336
       ]
     },
     {
@@ -4326,10 +3653,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2816,
-        -1024
+        2208,
+        -352
       ],
-      "id": "f58b4f7c-f515-4736-b0f6-1ae7d222cefd",
+      "id": "55afcab0-b2e1-4f2f-b266-6abe6cda008d",
       "name": "Format for Vectorstore"
     },
     {
@@ -4339,10 +3666,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        -1712
+        -1456,
+        -1040
       ],
-      "id": "b4fb53f7-54d7-416c-a9c6-9e9155a0d09d",
+      "id": "c76df1d9-23e5-431b-98e9-ab20002f86f2",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
@@ -4352,10 +3679,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -544,
-        -1792
+        -1152,
+        -1120
       ],
-      "id": "03bb4027-0c8b-47bf-893f-7a22537ffe71",
+      "id": "382a30fa-79a7-40a2-9aff-11339e724193",
       "name": "Loop Over Items1"
     },
     {
@@ -4377,28 +3704,28 @@
           "timeout": 300000
         }
       },
-      "id": "cb6326b5-5338-43a1-ae86-847bc28cef8b",
+      "id": "a5b17895-71c4-4a41-b435-03e527a377bd",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        1296,
-        -1216
+        688,
+        -544
       ],
       "retryOnFail": true
     },
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"proveedor_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa proveedora (Ej: SACYR, IDOM, etc.)\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"Technical Evaluation\",\n          \"Economical Evaluation\",\n          \"Pre-FEED Deliverables\",\n          \"FEED Deliverables\"\n        ]\n      },\n      \"description\": \"Lista de tipos de oferta detectados en el documento.\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\",\n      \"description\": \"Breve explicación de por qué se eligieron esos tipos.\"\n    }\n  },\n  \"required\": [\n    \"proveedor_detectado\",\n    \"tipos_detectados\"\n  ]\n}"
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"proveedor_detectado\": {\n      \"type\": \"string\",\n      \"description\": \"Nombre de la empresa proveedora (Ej: SACYR, IDOM, etc.)\"\n    },\n    \"tipos_detectados\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"enum\": [\n          \"Technical Evaluation\",\n          \"Economical Evaluation\",\n          \"Others\"\n        ]\n      },\n      \"description\": \"Lista de tipos de oferta detectados en el documento.\"\n    },\n    \"razonamiento\": {\n      \"type\": \"string\",\n      \"description\": \"Breve explicación de por qué se eligieron esos tipos.\"\n    }\n  },\n  \"required\": [\n    \"proveedor_detectado\",\n    \"tipos_detectados\"\n  ]\n}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        2608,
-        -560
+        2000,
+        112
       ],
-      "id": "a60abe4a-2e13-4dc8-b6c6-fc2186fe38d7",
+      "id": "bf5714af-1139-44f1-997c-d0ecaa96db34",
       "name": "Structured Output Parser"
     },
     {
@@ -4406,10 +3733,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1760,
-        -1008
+        1152,
+        -336
       ],
-      "id": "ce92d2aa-1158-4f9e-ac1c-db66115c504d",
+      "id": "691359f8-c4bc-4b94-bfe5-842cb7236e6f",
       "name": "Merge1"
     },
     {
@@ -4419,10 +3746,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        464,
-        -1840
+        -144,
+        -1168
       ],
-      "id": "5f97adc6-0cbe-4977-b85b-6ae664858a26",
+      "id": "97dae99b-85e2-4e7f-b771-77c9fe737595",
       "name": "Reset Items"
     },
     {
@@ -4433,26 +3760,26 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -96,
-        -2064
+        -704,
+        -1392
       ],
-      "id": "bb736710-0359-4faa-8dc9-ff2f20fe92a1",
+      "id": "bffc0b79-749b-4689-88d8-1c232d8c7728",
       "name": "Respond to Webhook"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "ofertas",
+        "path": "ofertas-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -928,
-        -1008
+        -1536,
+        -336
       ],
-      "id": "69033fee-5c93-47cf-8cdf-f12646590c72",
+      "id": "e0033552-d5c7-4cd2-a588-ca63551d98fa",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -4463,10 +3790,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        -1008
+        -528,
+        -336
       ],
-      "id": "a2146faf-496e-4fb7-b75e-5fbca991089b",
+      "id": "edb1d7c3-22ab-42fd-8a5e-976a459b2aa1",
       "name": "Base64 a Binary"
     },
     {
@@ -4476,10 +3803,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1088,
-        -1120
+        480,
+        -448
       ],
-      "id": "a88cb109-2595-4416-bfa3-9f4230f16761",
+      "id": "71f40834-834f-4ae4-ad62-acf2a829a31d",
       "name": "Base64 a Binary1"
     },
     {
@@ -4489,130 +3816,25 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -688,
-        -1008
+        -1296,
+        -336
       ],
-      "id": "9ef06aab-7a7e-489c-aa34-0007acf75dfc",
+      "id": "d2467eb6-a053-4b36-8233-7bf53a7d36be",
       "name": "Code in JavaScript1"
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "schema": {
-          "__rl": true,
-          "mode": "list",
-          "value": "public"
-        },
-        "table": {
-          "__rl": true,
-          "value": "provider_responses",
-          "mode": "list",
-          "cachedResultName": "provider_responses"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "provider_name": "={{ $json.provider_name }}",
-            "evaluation_value": "={{ $json.evaluation_value }}",
-            "comment": "={{ $json.comment }}",
-            "requirement_id": "={{ $json.requirement_id }}",
-            "file_id": "={{ $('Set File ID').first().json.file_id }}",
-            "project_id": "={{ $('Set File ID').first().json.project_id }}",
-            "updated_at": "={{ $now }}"
-          },
-          "matchingColumns": [
-            "requirement_id",
-            "provider_name",
-            "file_id"
-          ],
-          "schema": [
-            {
-              "id": "id",
-              "displayName": "id",
-              "required": false,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": true
-            },
-            {
-              "id": "requirement_id",
-              "displayName": "requirement_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "provider_name",
-              "displayName": "provider_name",
-              "required": true,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "evaluation_value",
-              "displayName": "evaluation_value",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "comment",
-              "displayName": "comment",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "file_id",
-              "displayName": "file_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "updated_at",
-              "displayName": "updated_at",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "dateTime",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "project_id",
-              "displayName": "project_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.provider_responses (provider_name, evaluation_value, comment, requirement_id, file_id, project_id, updated_at)\nVALUES (\n  '{{ $json.provider_name }}',\n  '{{ $json.evaluation_value }}',\n  '{{ $json.comment }}',\n  '{{ $json.requirement_id }}',\n  '{{ $('Set File ID').first().json.file_id }}',\n  '{{ $('Set File ID').first().json.project_id }}',\n  '{{ $now }}'\n)\nON CONFLICT (requirement_id, provider_name, file_id) DO UPDATE SET\n  evaluation_value = EXCLUDED.evaluation_value,\n  comment = EXCLUDED.comment,\n  project_id = EXCLUDED.project_id,\n  updated_at = EXCLUDED.updated_at\nRETURNING *",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
+      "typeVersion": 2.5,
       "position": [
-        3168,
-        -1568
+        2560,
+        -896
       ],
-      "id": "522b7687-8f00-4a12-8fd4-91dc4141a8e5",
+      "id": "3053655c-02f4-4ccd-bf3d-574d8b4b4bdb",
       "name": "Insert or update rows in a table",
       "credentials": {
         "postgres": {
@@ -4628,10 +3850,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1216,
-        -1920
+        608,
+        -1248
       ],
-      "id": "720e0800-6da0-43b2-9840-fc6d1a06fb37",
+      "id": "bdde0f15-bae6-4e13-bc2a-79042e51ba1c",
       "name": "Preparar Todo para LLM1"
     },
     {
@@ -4642,10 +3864,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2144,
-        -1712
+        1536,
+        -1040
       ],
-      "id": "256b2931-de5d-4e5d-9e6b-adeeda778bd9",
+      "id": "bfe8b33f-e57a-4022-baef-089246ffb7bb",
       "name": "Mistral Cloud Chat Model3",
       "credentials": {
         "mistralCloudApi": {
@@ -4662,10 +3884,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2400,
-        -896
+        1792,
+        -224
       ],
-      "id": "1e17af9b-af34-4e90-8f81-7bb1b3b59f75",
+      "id": "1fc9ba61-b2c3-40ea-80f0-f331d6cc1d85",
       "name": "Mistral Cloud Chat Model5",
       "credentials": {
         "mistralCloudApi": {
@@ -4682,10 +3904,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2480,
-        -560
+        1872,
+        112
       ],
-      "id": "bc02ed0b-67e3-4a4b-b76b-2b5f6e56f0ae",
+      "id": "f64267e1-05fb-4e20-94cb-7cfde69968cd",
       "name": "Mistral Cloud Chat Model6",
       "credentials": {
         "mistralCloudApi": {
@@ -4696,88 +3918,64 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "projects",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Edit Fields').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.projects WHERE id = '={{ $('Edit Fields').first().json.project_id }}' LIMIT 1",
+        "options": {}
       },
-      "id": "704e2346-7c6e-4dbf-a6a9-b397fab99a6b",
+      "id": "50dc003e-f1cc-4a9d-8f92-6e192b494b6b",
       "name": "Fetch Project Context Email",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -2470,
-        -784
+        -3072,
+        -112
       ],
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "projects",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.projects WHERE id = '={{ $('Set Input Params').first().json.project_id }}' LIMIT 1",
+        "options": {}
       },
-      "id": "24086484-c0f0-41b7-b7e5-96cb5d830287",
+      "id": "31f0ea77-5fc6-4eea-8248-1d15ee8ff575",
       "name": "Fetch Project Context QA",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -4966,
-        -1328
+        -5568,
+        -656
       ],
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "get",
-        "tableId": "projects",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Set Input Params1').first().json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.projects WHERE id = '={{ $('Set Input Params1').first().json.project_id }}' LIMIT 1",
+        "options": {}
       },
-      "id": "8ddbb2fd-4906-4d03-b134-691cd3bb480c",
+      "id": "4e637b4a-b297-466d-a596-5937216cbdbf",
       "name": "Fetch Project Context Scoring",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        -5590,
-        -160
+        -6192,
+        512
       ],
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -4791,26 +3989,25 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3488,
-        1792
+        2880,
+        2480
       ],
-      "id": "sticky-tabla-001",
+      "id": "3fd4d27b-7dda-4a8f-b93e-c95622db17f9",
       "name": "Sticky Note Tabla"
     },
     {
       "parameters": {
-        "httpMethod": "GET",
-        "path": "tabla",
+        "path": "tabla-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3568,
-        1952
+        2960,
+        2640
       ],
-      "id": "8ce87aec-cfd7-4ab4-9ef1-e35c17920543",
+      "id": "4dbfb8d7-4e9d-4bf4-9d56-36f1192b4971",
       "name": "Webhook Tabla",
       "webhookId": "tabla-webhook-001"
     },
@@ -4831,40 +4028,31 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3768,
-        1952
+        3168,
+        2640
       ],
-      "id": "set-fields-tabla-001",
+      "id": "463a7500-1a41-4ac4-80ea-8321403b0e6e",
       "name": "Set Tabla Params"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "provider_responses",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.project_id }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.provider_responses WHERE project_id = '={{ $json.project_id }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        3968,
-        1952
+        3360,
+        2640
       ],
-      "id": "b3977266-e595-44d0-89ce-ec855f02a888",
+      "id": "4d705f89-21e3-4568-9dfd-d749ae99a685",
       "name": "Supabase Get Tabla",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -4876,10 +4064,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        4168,
-        1952
+        3568,
+        2640
       ],
-      "id": "02216a47-2a59-4875-bf39-9deb877362fd",
+      "id": "423d463c-7720-441c-ba68-20d3403b2b8c",
       "name": "Respond Tabla"
     },
     {
@@ -4892,26 +4080,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3488,
-        2092
+        2880,
+        2784
       ],
-      "id": "sticky-qa-email-001",
+      "id": "5b2f7fe4-ce58-4bd6-a627-d71286dfb70f",
       "name": "Sticky Note QA Email"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "qa-process-email-response",
+        "path": "qa-process-email-response-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3568,
-        2352
+        2960,
+        3040
       ],
-      "id": "6fb59920-0f81-4d86-aa60-a6d44861d500",
+      "id": "d7a8ba69-03ed-4ba6-90b6-900ff061a03e",
       "name": "Webhook QA Email Response",
       "webhookId": "qa-email-response-webhook-001"
     },
@@ -4944,46 +4132,31 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3768,
-        2352
+        3168,
+        3040
       ],
-      "id": "set-fields-qa-email-001",
+      "id": "2e0d5f7d-963c-4ce9-a0d3-2e0a91d8f07b",
       "name": "Set QA Email Params"
     },
     {
       "parameters": {
-        "operation": "getAll",
-        "tableId": "qa_audit",
-        "returnAll": true,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.project_id }}"
-            },
-            {
-              "keyName": "provider_name",
-              "condition": "eq",
-              "keyValue": "={{ $json.provider_name }}"
-            }
-          ]
-        }
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM desarrollo.qa_audit WHERE project_id = '={{ $json.project_id }}' AND provider_name = '={{ $json.provider_name }}'",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        3968,
-        2352
+        3360,
+        3040
       ],
-      "id": "fetch-qa-questions-email-001",
+      "id": "abf2f031-97f2-4412-8a41-0405ab9cd59f",
       "name": "Fetch QA Questions",
       "alwaysOutputData": true,
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     },
@@ -4994,10 +4167,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4168,
-        2352
+        3568,
+        3040
       ],
-      "id": "build-qa-context-001",
+      "id": "784e84ef-f3ee-40c8-b979-b314bf6856f2",
       "name": "Build AI Context"
     },
     {
@@ -5016,10 +4189,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        4368,
-        2352
+        3760,
+        3040
       ],
-      "id": "qa-email-llm-chain-001",
+      "id": "2ff19e31-e45d-4ec1-928b-74ab59318b97",
       "name": "QA Email Mapping Chain"
     },
     {
@@ -5032,10 +4205,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        4368,
-        2560
+        3760,
+        3248
       ],
-      "id": "qa-email-mistral-001",
+      "id": "0a1ca948-c1b8-4b27-aa3e-a7a95b3bc7a4",
       "name": "Mistral QA Email Model",
       "credentials": {
         "mistralCloudApi": {
@@ -5051,10 +4224,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4568,
-        2352
+        3968,
+        3040
       ],
-      "id": "parse-qa-output-001",
+      "id": "c06cf20d-9bca-40df-836b-ee9f0da8870c",
       "name": "Parse QA Email Output"
     },
     {
@@ -5065,10 +4238,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        4768,
-        2352
+        4160,
+        3040
       ],
-      "id": "550ce09c-a74a-49d2-8e09-9d7926dedd34",
+      "id": "4c05118a-a0fc-4ebc-9f88-ad68bf4ec7d5",
       "name": "Respond QA Email Response"
     },
     {
@@ -5081,26 +4254,26 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        3488,
-        2692
+        2880,
+        3376
       ],
-      "id": "sticky-rfp-gen-001",
+      "id": "7950684b-457e-4f89-af51-f10906096b75",
       "name": "Sticky Note RFP Generate"
     },
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "rfp-generate",
+        "path": "rfp-generate-desarrollo",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        3568,
-        2852
+        2960,
+        3536
       ],
-      "id": "7bfed942-15f7-411f-a253-ecb8632fc56e",
+      "id": "953d6eab-602e-469a-9143-face2d905ec0",
       "name": "Webhook RFP Generate",
       "webhookId": "rfp-generate-webhook-001"
     },
@@ -5175,10 +4348,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3768,
-        2852
+        3168,
+        3536
       ],
-      "id": "set-fields-rfp-001",
+      "id": "d1e14817-bac2-4b26-a807-cfd462598e1f",
       "name": "Set RFP Params"
     },
     {
@@ -5197,10 +4370,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        3968,
-        2852
+        3360,
+        3536
       ],
-      "id": "rfp-llm-chain-001",
+      "id": "6fb8b2fd-c70c-4d40-8a77-fca4b9e17088",
       "name": "RFP Generation Chain"
     },
     {
@@ -5213,10 +4386,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        3968,
-        3060
+        3360,
+        3744
       ],
-      "id": "rfp-mistral-001",
+      "id": "77400334-41f2-4ed8-9896-1227fb48d3ce",
       "name": "Mistral RFP Model",
       "credentials": {
         "mistralCloudApi": {
@@ -5232,10 +4405,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4168,
-        2852
+        3568,
+        3536
       ],
-      "id": "parse-rfp-output-001",
+      "id": "c74a01dd-1fdb-4d6f-8351-2c0628bbaf42",
       "name": "Parse RFP Output"
     },
     {
@@ -5246,26 +4419,57 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        4368,
-        2852
+        3760,
+        3536
       ],
-      "id": "1c02f19c-967e-4cb9-90bd-e6c8dfa54773",
+      "id": "3b65b858-f473-415d-ad19-09ec97e3caf4",
       "name": "Respond RFP Generate"
     },
     {
       "parameters": {
-        "content": "## Economic Data Extraction (T8)\n\nExtracts structured economic/financial data from supplier proposals.\nTriggered in parallel with the main evaluation pipeline when an offer is ingested.\n\n**Flow**: Merge1 (full text) -> Check If Economic -> Extract Economic Data (LLM) -> Parse Economic JSON -> Save Economic Offer (Supabase UPSERT)\n\n**Target table**: economic_offers (project_id, provider_name unique constraint)",
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "check-has-economic-type",
+              "leftValue": "={{ ($('Set File ID').first().json.evaluation || []).join(',').toLowerCase() }}",
+              "rightValue": "econom",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        -1488
+      ],
+      "id": "cb784dd4-7310-45a7-9d70-1debd2260c44",
+      "name": "Has Economic Evaluation?"
+    },
+    {
+      "parameters": {
+        "content": "## Economic Data Extraction (T8)\n\nExtracts structured economic/financial data from supplier proposals.\nOnly triggered when the offer includes Economical Evaluation type.\n\n**Flow**: Merge1 -> IF (Has Economic?) -> Check If Economic -> Extract Economic Data (LLM) -> Parse Economic JSON -> Save Economic Offer (Supabase UPSERT)\n\n**Target table**: economic_offers (project_id, provider_name unique constraint)",
         "height": 520,
-        "width": 2200,
+        "width": 2500,
         "color": 5
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        1680,
-        -2480
+        832,
+        -1808
       ],
-      "id": "ec0n0m1c-st1cky-n0te-0001-000000000001",
+      "id": "cdfcfc7a-c148-41e5-af60-c6830fb9a8d4",
       "name": "Sticky Note Economic"
     },
     {
@@ -5275,10 +4479,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1760,
-        -2160
+        1152,
+        -1488
       ],
-      "id": "ec0n0m1c-check-n0de-0002-000000000002",
+      "id": "52842c6e-db4b-418b-ae71-fa99e6c8cf32",
       "name": "Check If Economic Offer"
     },
     {
@@ -5297,10 +4501,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        2080,
-        -2160
+        1472,
+        -1488
       ],
-      "id": "ec0n0m1c-llm-cha1n-0003-000000000003",
+      "id": "9f926c47-834f-4aa3-855d-d9df8cfb0dce",
       "name": "Extract Economic Data"
     },
     {
@@ -5313,10 +4517,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
       "typeVersion": 1,
       "position": [
-        2080,
-        -1952
+        1472,
+        -1280
       ],
-      "id": "ec0n0m1c-m1stral-0004-000000000004",
+      "id": "bf1bb0d1-474b-484f-a21e-bd999b6ad2e5",
       "name": "Mistral Economic Model",
       "credentials": {
         "mistralCloudApi": {
@@ -5332,122 +4536,30 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2400,
-        -2160
+        1792,
+        -1488
       ],
-      "id": "ec0n0m1c-parse-n0de-0005-000000000005",
+      "id": "14163cc5-7513-4fe2-a805-2e6d2b98c6d1",
       "name": "Parse Economic JSON"
     },
     {
       "parameters": {
-        "operation": "upsert",
-        "tableId": "economic_offers",
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "project_id",
-              "fieldValue": "={{ $json.project_id }}"
-            },
-            {
-              "fieldId": "provider_name",
-              "fieldValue": "={{ $json.provider_name }}"
-            },
-            {
-              "fieldId": "total_price",
-              "fieldValue": "={{ $json.total_price }}"
-            },
-            {
-              "fieldId": "currency",
-              "fieldValue": "={{ $json.currency }}"
-            },
-            {
-              "fieldId": "price_breakdown",
-              "fieldValue": "={{ $json.price_breakdown }}"
-            },
-            {
-              "fieldId": "payment_terms",
-              "fieldValue": "={{ $json.payment_terms }}"
-            },
-            {
-              "fieldId": "payment_schedule",
-              "fieldValue": "={{ $json.payment_schedule }}"
-            },
-            {
-              "fieldId": "discount_percentage",
-              "fieldValue": "={{ $json.discount_percentage }}"
-            },
-            {
-              "fieldId": "discount_conditions",
-              "fieldValue": "={{ $json.discount_conditions }}"
-            },
-            {
-              "fieldId": "tco_value",
-              "fieldValue": "={{ $json.tco_value }}"
-            },
-            {
-              "fieldId": "tco_period_years",
-              "fieldValue": "={{ $json.tco_period_years }}"
-            },
-            {
-              "fieldId": "tco_breakdown",
-              "fieldValue": "={{ $json.tco_breakdown }}"
-            },
-            {
-              "fieldId": "validity_days",
-              "fieldValue": "={{ $json.validity_days }}"
-            },
-            {
-              "fieldId": "price_escalation",
-              "fieldValue": "={{ $json.price_escalation }}"
-            },
-            {
-              "fieldId": "guarantees",
-              "fieldValue": "={{ $json.guarantees }}"
-            },
-            {
-              "fieldId": "insurance_included",
-              "fieldValue": "={{ $json.insurance_included }}"
-            },
-            {
-              "fieldId": "taxes_included",
-              "fieldValue": "={{ $json.taxes_included }}"
-            },
-            {
-              "fieldId": "optional_items",
-              "fieldValue": "={{ $json.optional_items }}"
-            },
-            {
-              "fieldId": "alternative_offers",
-              "fieldValue": "={{ $json.alternative_offers }}"
-            },
-            {
-              "fieldId": "extraction_confidence",
-              "fieldValue": "={{ $json.extraction_confidence }}"
-            },
-            {
-              "fieldId": "raw_notes",
-              "fieldValue": "={{ $json.raw_notes }}"
-            }
-          ]
-        },
-        "matchingColumns": [
-          "project_id",
-          "provider_name"
-        ],
+        "operation": "executeQuery",
+        "query": "=INSERT INTO desarrollo.economic_offers (project_id, provider_name, economic_data, total_amount, currency, updated_at)\nVALUES (\n  '{{ $json.project_id }}',\n  '{{ $json.provider_name }}',\n  '{{ JSON.stringify($json.economic_data || $json) }}',\n  {{ $json.total_amount || 0 }},\n  '{{ $json.currency || \"EUR\" }}',\n  NOW()\n)\nON CONFLICT (project_id, provider_name)\nDO UPDATE SET\n  economic_data = EXCLUDED.economic_data,\n  total_amount = EXCLUDED.total_amount,\n  currency = EXCLUDED.currency,\n  updated_at = NOW()\nRETURNING *",
         "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        2720,
-        -2160
+        2112,
+        -1488
       ],
-      "id": "ec0n0m1c-upsert-n0de-0006-000000000006",
+      "id": "c9062b91-9a28-48c5-aa97-127c4d70acdd",
       "name": "Save Economic Offer",
       "credentials": {
-        "supabaseApi": {
-          "id": "pI4CpdYLTiEEBmnz",
-          "name": "Supabase account"
+        "postgres": {
+          "id": "V0REAPph5JBLqze3",
+          "name": "Postgres account"
         }
       }
     }
@@ -7145,12 +6257,7 @@
       "main": [
         [
           {
-            "node": "Preparar Texto de Muestra",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Check If Economic Offer",
+            "node": "Has Economic Evaluation?",
             "type": "main",
             "index": 0
           }
@@ -7398,23 +6505,23 @@
         ]
       ]
     },
-    "Parse QA Email Output": {
-      "main": [
-        [
-          {
-            "node": "Respond QA Email Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Mistral QA Email Model": {
       "ai_languageModel": [
         [
           {
             "node": "QA Email Mapping Chain",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse QA Email Output": {
+      "main": [
+        [
+          {
+            "node": "Respond QA Email Response",
+            "type": "main",
             "index": 0
           }
         ]
@@ -7453,6 +6560,17 @@
         ]
       ]
     },
+    "Mistral RFP Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "RFP Generation Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Parse RFP Output": {
       "main": [
         [
@@ -7464,12 +6582,24 @@
         ]
       ]
     },
-    "Mistral RFP Model": {
-      "ai_languageModel": [
+    "Has Economic Evaluation?": {
+      "main": [
         [
           {
-            "node": "RFP Generation Chain",
-            "type": "ai_languageModel",
+            "node": "Check If Economic Offer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preparar Texto de Muestra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Texto de Muestra",
+            "type": "main",
             "index": 0
           }
         ]

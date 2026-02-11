@@ -94,7 +94,7 @@ export async function uploadRfqFile(
         body: JSON.stringify(payload)
       },
       API_CONFIG.REQUEST_TIMEOUT,
-      {},
+      { maxRetries: 0 },
       abortSignal
     );
 
@@ -289,7 +289,8 @@ export interface RfqIngestaResponse {
 export async function uploadRfqBase(
   file: File,
   projectId?: string,
-  projectName?: string
+  projectName?: string,
+  abortSignal?: AbortSignal
 ): Promise<RfqIngestaResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
@@ -330,7 +331,9 @@ export async function uploadRfqBase(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      { maxRetries: 0 },
+      abortSignal
     );
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -473,7 +476,8 @@ export async function sendQAToSupplier(
         },
         body: JSON.stringify(payload)
       },
-      30000 // 30 seconds timeout
+      30000, // 30 seconds timeout
+      { maxRetries: 0 }
     );
 
     const data = await response.json();
@@ -562,7 +566,8 @@ export async function triggerScoringEvaluation(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      { maxRetries: 0 }
     );
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -614,7 +619,8 @@ export async function generateTechnicalAudit(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      { maxRetries: 0 }
     );
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -752,7 +758,8 @@ export async function sendQAEmail(
         },
         body: JSON.stringify(payload)
       },
-      60000 // 60 seconds timeout for email sending
+      60000, // 60 seconds timeout for email sending
+      { maxRetries: 0 }
     );
 
     const data = await response.json();
@@ -836,7 +843,8 @@ export async function processEmailResponse(
         },
         body: JSON.stringify(payload)
       },
-      120000 // 2 minutes timeout for AI processing
+      120000, // 2 minutes timeout for AI processing
+      { maxRetries: 0 }
     );
 
     const data = await response.json();
@@ -913,7 +921,8 @@ export async function saveMappedResponses(
           action: 'save_responses'
         })
       },
-      30000 // 30 seconds timeout
+      30000, // 30 seconds timeout
+      { maxRetries: 0 }
     );
 
     const data = await response.json();
@@ -1008,7 +1017,8 @@ export async function generateRfpDocument(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      { maxRetries: 0 }
     );
 
     const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);

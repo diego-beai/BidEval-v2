@@ -145,7 +145,7 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
               color: 'var(--text-secondary)',
               margin: 0
             }}>
-              Estamos procesando tu RFQ base...
+              Processing your reference document...
             </p>
           )}
 
@@ -160,7 +160,7 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
               color: 'var(--text-primary)'
             }}>
               <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-cyan)' }}>
-                📋 RFQ Base Summary
+                📋 Document Summary
               </div>
               <div style={{ lineHeight: '1.4' }}>
                 • File: {rfqBase.fileName}<br/>

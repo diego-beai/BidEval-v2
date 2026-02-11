@@ -68,7 +68,9 @@ export default function App() {
   }, [activeView]);
 
   const { loadDashboardData } = useDashboardStore();
-  const { loadProjects, getActiveProject, activeProjectId } = useProjectStore();
+  const { loadProjects, getActiveProject, activeProjectId, projects } = useProjectStore();
+  const projectType = projects.find(p => p.id === activeProjectId)?.project_type || 'RFP';
+  const tp = { type: projectType };
   const { fetchProjectProviders, projectProviders } = useProviderStore();
 
   // Load projects on app mount
@@ -170,7 +172,7 @@ export default function App() {
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            {t('app.upload.tab.rfq')}
+            {t('app.upload.tab.rfq', tp)}
           </button>
           <button
             className={`tab-btn ${uploadTab === 'propuestas' ? 'active' : ''}`}

@@ -2,7 +2,6 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useEconomicStore, EconomicOffer } from '../../stores/useEconomicStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useProjectStore } from '../../stores/useProjectStore';
-import { supabase } from '../../lib/supabase';
 import { getProviderDisplayName } from '../../types/provider.types';
 import './EconomicSection.css';
 
@@ -30,138 +29,9 @@ export const EconomicSection: React.FC = () => {
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortColumn, setSortColumn] = useState<SortColumn>('net_price');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
-    const [loadingDemo, setLoadingDemo] = useState(false);
-
     useEffect(() => {
         loadOffers();
     }, [loadOffers, activeProjectId]);
-
-    const handleLoadDemoData = useCallback(async () => {
-        if (!activeProjectId || !supabase) return;
-        setLoadingDemo(true);
-        try {
-            const demoOffers = [
-                {
-                    project_id: activeProjectId,
-                    provider_name: 'Siemens Energy',
-                    total_price: 875000,
-                    currency: 'EUR',
-                    discount_percentage: 8,
-                    payment_terms: '30/40/30',
-                    validity_days: 90,
-                    taxes_included: false,
-                    insurance_included: true,
-                    extraction_confidence: 0.94,
-                    price_breakdown: { engineering: 250000, procurement: 425000, installation: 150000, commissioning: 50000 },
-                    tco_value: 2100000,
-                    tco_period_years: 10,
-                    tco_breakdown: { capex: 805000, opex_annual: 95000, maintenance_annual: 35000 },
-                    payment_schedule: [
-                        { milestone: '30%', event: 'Kick-off' },
-                        { milestone: '40%', event: 'Equipment delivery' },
-                        { milestone: '30%', event: 'Commissioning' },
-                    ],
-                    guarantees: '2 year warranty, performance guarantee 98%',
-                },
-                {
-                    project_id: activeProjectId,
-                    provider_name: 'ABB Solutions',
-                    total_price: 1120000,
-                    currency: 'EUR',
-                    discount_percentage: 12,
-                    payment_terms: 'Net 60',
-                    validity_days: 120,
-                    taxes_included: true,
-                    insurance_included: true,
-                    extraction_confidence: 0.87,
-                    price_breakdown: { engineering: 320000, equipment: 580000, services: 220000 },
-                    tco_value: 2800000,
-                    tco_period_years: 10,
-                    tco_breakdown: { capex: 985600, opex_annual: 125000, maintenance_annual: 55000 },
-                    optional_items: [
-                        { description: 'Remote monitoring', price: 45000 },
-                        { description: 'Extended warranty 5y', price: 32000 },
-                    ],
-                    alternative_offers: [
-                        { description: 'Option B - Modular', total_price: 980000, details: 'Phased delivery' },
-                    ],
-                },
-                {
-                    project_id: activeProjectId,
-                    provider_name: 'Schneider Electric',
-                    total_price: 1350000,
-                    currency: 'EUR',
-                    discount_percentage: 3,
-                    payment_terms: '50% advance, 50% delivery',
-                    validity_days: 60,
-                    taxes_included: false,
-                    insurance_included: false,
-                    extraction_confidence: 0.72,
-                    price_breakdown: { design: 280000, manufacturing: 650000, logistics: 120000, installation: 200000, testing: 100000 },
-                    guarantees: '5 year comprehensive warranty',
-                    price_escalation: 'CPI-linked annual adjustment',
-                },
-                {
-                    project_id: activeProjectId,
-                    provider_name: 'Eaton Corporation',
-                    total_price: 920000,
-                    currency: 'EUR',
-                    discount_percentage: 5,
-                    payment_terms: 'Net 90',
-                    validity_days: 90,
-                    taxes_included: false,
-                    insurance_included: false,
-                    extraction_confidence: 0.58,
-                    price_breakdown: { equipment: 620000, installation: 200000, training: 100000 },
-                    tco_value: 2400000,
-                    tco_period_years: 10,
-                    tco_breakdown: { capex: 874000, opex_annual: 110000, maintenance_annual: 42000 },
-                    optional_items: [
-                        { description: 'Spare parts kit', price: 18000 },
-                    ],
-                    discount_conditions: 'Valid for orders placed before Q2 2025',
-                },
-                {
-                    project_id: activeProjectId,
-                    provider_name: 'GE Vernova',
-                    total_price: 1180000,
-                    currency: 'EUR',
-                    discount_percentage: 15,
-                    payment_terms: '20/30/30/20',
-                    validity_days: 90,
-                    taxes_included: true,
-                    insurance_included: true,
-                    extraction_confidence: 0.91,
-                    price_breakdown: { engineering: 350000, equipment: 520000, installation: 180000, commissioning: 80000, documentation: 50000 },
-                    tco_value: 2300000,
-                    tco_period_years: 10,
-                    tco_breakdown: { capex: 1003000, opex_annual: 88000, maintenance_annual: 40000 },
-                    payment_schedule: [
-                        { milestone: '20%', event: 'Contract signing' },
-                        { milestone: '30%', event: 'Design approval' },
-                        { milestone: '30%', event: 'Delivery' },
-                        { milestone: '20%', event: 'Final acceptance' },
-                    ],
-                    alternative_offers: [
-                        { description: 'Green Energy Package', total_price: 1250000, details: 'Carbon offset program' },
-                    ],
-                    guarantees: '3 year full warranty + 2 year parts',
-                },
-            ];
-
-            const { error: upsertError } = await supabase
-                .from('economic_offers')
-                .upsert(demoOffers as any, { onConflict: 'project_id,provider_name' });
-
-            if (upsertError) throw upsertError;
-
-            await loadOffers();
-        } catch (err) {
-            console.error('[EconomicSection] Error loading demo data:', err);
-        } finally {
-            setLoadingDemo(false);
-        }
-    }, [activeProjectId, loadOffers]);
 
     const toggleRow = (id: string) => {
         setExpandedRows(prev => {
@@ -371,27 +241,6 @@ export const EconomicSection: React.FC = () => {
                     </svg>
                     <p>{t('econ.empty')}</p>
                     <span>{t('econ.empty_hint')}</span>
-                    <button
-                        className="econ-demo-btn"
-                        onClick={handleLoadDemoData}
-                        disabled={loadingDemo || !activeProjectId}
-                    >
-                        {loadingDemo ? (
-                            <>
-                                <div className="econ-spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
-                                {t('econ.loading_demo')}
-                            </>
-                        ) : (
-                            <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
-                                {t('econ.load_demo')}
-                            </>
-                        )}
-                    </button>
                 </div>
             </div>
         );

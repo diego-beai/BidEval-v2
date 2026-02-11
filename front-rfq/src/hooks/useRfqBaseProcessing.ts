@@ -11,6 +11,7 @@ import { ProcessingStage } from '../types/rfq.types';
  * - Upload de archivos RFQ en paralelo
  * - Simulación de progreso durante el procesamiento
  * - Actualización del estado
+ * - Cancelación via AbortController
  */
 export function useRfqBaseProcessing() {
   const {
@@ -20,9 +21,11 @@ export function useRfqBaseProcessing() {
     setRfqBaseError
   } = useRfqStore();
 
-  const { activeProjectId, getActiveProject } = useProjectStore();
+  const { activeProjectId, getActiveProject, loadProjects } = useProjectStore();
 
   const processingTimerRef = useRef<number>();
+  const isUploadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   /**
    * Simula el progreso durante el procesamiento de forma más realista
@@ -86,11 +89,26 @@ export function useRfqBaseProcessing() {
       return;
     }
 
+    // Guard against concurrent uploads (prevents double-click / StrictMode re-fires)
+    if (isUploadingRef.current) {
+      console.warn('⚠️ Upload already in progress, ignoring duplicate call');
+      return false;
+    }
+    isUploadingRef.current = true;
+
     // Validar que hay un proyecto activo seleccionado
     if (!activeProjectId) {
       setRfqBaseError('No project selected. Please select a project from the sidebar first.');
+      isUploadingRef.current = false;
       return false;
     }
+
+    // Abort any previous in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     // Obtener el nombre del proyecto para enviarlo a N8N
     const activeProject = getActiveProject();
@@ -104,7 +122,7 @@ export function useRfqBaseProcessing() {
 
       // Procesar todos los archivos en paralelo con el project_id y project_name
       const uploadPromises = files.map(file =>
-        uploadRfqBase(file, activeProjectId, projectName)
+        uploadRfqBase(file, activeProjectId, projectName, abortController.signal)
       );
       const responses = await Promise.all(uploadPromises);
 
@@ -124,21 +142,43 @@ export function useRfqBaseProcessing() {
         uploadedAt: new Date()
       }, lastResponse.message);
 
+      // Refresh project data so the progress stepper updates
+      loadProjects();
+
+      isUploadingRef.current = false;
+      abortControllerRef.current = null;
       return true;
     } catch (error) {
       clearProgressTimer();
 
-      // No mostrar notificación de error - solo limpiar el estado de procesamiento
-      setRfqBaseError(null);
+      // Don't show error if the request was intentionally cancelled
+      const isCancelled = error instanceof Error &&
+        (error.message === 'Operation cancelled by user' || error.name === 'AbortError');
 
+      if (isCancelled) {
+        setRfqBaseError(null);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Error processing RFQ files';
+        console.error('❌ RFQ Base upload error:', errorMessage);
+        setRfqBaseError(errorMessage);
+      }
+
+      isUploadingRef.current = false;
+      abortControllerRef.current = null;
       return false;
     }
-  }, [activeProjectId, startProcessingRfqBase, simulateProgress, clearProgressTimer, setRfqBase, setRfqBaseError]);
+  }, [activeProjectId, startProcessingRfqBase, simulateProgress, clearProgressTimer, setRfqBase, setRfqBaseError, getActiveProject, loadProjects]);
 
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
       clearProgressTimer();
+      // Abort any in-flight requests when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      isUploadingRef.current = false;
     };
   }, [clearProgressTimer]);
 

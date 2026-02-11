@@ -63,7 +63,8 @@ export async function sendChatMessage(
         },
         body: JSON.stringify(payload)
       },
-      API_CONFIG.REQUEST_TIMEOUT
+      API_CONFIG.REQUEST_TIMEOUT,
+      { maxRetries: 0 }
     );
 
     const data = await response.json();

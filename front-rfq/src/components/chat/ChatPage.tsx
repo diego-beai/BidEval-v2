@@ -4,20 +4,6 @@ import remarkGfm from 'remark-gfm';
 import './ChatPage.css';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useChatStore } from '../../stores/useChatStore';
-import { useProjectStore } from '../../stores/useProjectStore';
-import { supabase } from '../../lib/supabase';
-
-/**
- * Document metadata from Supabase
- */
-interface ProjectDocument {
-    id: string;
-    file_name: string;
-    document_type: 'RFQ' | 'PROPOSAL';
-    provider: string | null;
-    evaluation_types: string[] | null;
-    created_at: string;
-}
 
 /**
  * Error Boundary para capturar errores de renderizado de Markdown
@@ -236,176 +222,15 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
     );
 };
 
-/**
- * Document Context Panel - sidebar showing project documents
- */
-const DocumentPanel: React.FC<{
-    documents: ProjectDocument[];
-    selectedIds: string[];
-    onToggle: (id: string) => void;
-    onSelectAll: () => void;
-    onDeselectAll: () => void;
-    isLoading: boolean;
-}> = ({ documents, selectedIds, onToggle, onSelectAll, onDeselectAll, isLoading }) => {
-    const { t } = useLanguageStore();
-    const [filter, setFilter] = useState<'all' | 'RFQ' | 'PROPOSAL'>('all');
-
-    const filtered = useMemo(() => {
-        if (filter === 'all') return documents;
-        return documents.filter(d => d.document_type === filter);
-    }, [documents, filter]);
-
-    const rfqCount = documents.filter(d => d.document_type === 'RFQ').length;
-    const proposalCount = documents.filter(d => d.document_type === 'PROPOSAL').length;
-
-    return (
-        <div className="chat-docs-panel">
-            <div className="chat-docs-header">
-                <div className="chat-docs-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                    </svg>
-                    <span>{t('chat.docs_panel')}</span>
-                    {selectedIds.length > 0 && (
-                        <span className="chat-docs-badge">
-                            {selectedIds.length}
-                        </span>
-                    )}
-                </div>
-                <div className="chat-docs-actions">
-                    <button className="chat-docs-action-btn" onClick={onSelectAll} title={t('chat.docs_select_all')}>
-                        {t('chat.docs_select_all')}
-                    </button>
-                    <button className="chat-docs-action-btn" onClick={onDeselectAll} title={t('chat.docs_deselect_all')}>
-                        {t('chat.docs_deselect_all')}
-                    </button>
-                </div>
-            </div>
-
-            <div className="chat-docs-filters">
-                <button
-                    className={`chat-docs-filter ${filter === 'all' ? 'active' : ''}`}
-                    onClick={() => setFilter('all')}
-                >
-                    {t('chat.docs_all')} ({documents.length})
-                </button>
-                <button
-                    className={`chat-docs-filter ${filter === 'RFQ' ? 'active' : ''}`}
-                    onClick={() => setFilter('RFQ')}
-                >
-                    {t('chat.docs_rfq')} ({rfqCount})
-                </button>
-                <button
-                    className={`chat-docs-filter ${filter === 'PROPOSAL' ? 'active' : ''}`}
-                    onClick={() => setFilter('PROPOSAL')}
-                >
-                    {t('chat.docs_proposals')} ({proposalCount})
-                </button>
-            </div>
-
-            <div className="chat-docs-list">
-                {isLoading ? (
-                    <div className="chat-docs-loading">
-                        <div className="typing-indicator">
-                            <span className="typing-dot"></span>
-                            <span className="typing-dot"></span>
-                            <span className="typing-dot"></span>
-                        </div>
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="chat-docs-empty">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        <span>{t('chat.docs_none')}</span>
-                    </div>
-                ) : (
-                    filtered.map(doc => {
-                        const isSelected = selectedIds.includes(doc.id);
-                        return (
-                            <div
-                                key={doc.id}
-                                className={`chat-doc-item ${isSelected ? 'selected' : ''}`}
-                                onClick={() => onToggle(doc.id)}
-                            >
-                                <div className="chat-doc-checkbox">
-                                    {isSelected && (
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                                            <polyline points="20 6 9 17 4 12" />
-                                        </svg>
-                                    )}
-                                </div>
-                                <div className="chat-doc-info">
-                                    <span className="chat-doc-name" title={doc.file_name}>
-                                        {doc.file_name}
-                                    </span>
-                                    <div className="chat-doc-meta">
-                                        <span className={`chat-doc-type ${doc.document_type.toLowerCase()}`}>
-                                            {doc.document_type}
-                                        </span>
-                                        {doc.provider && (
-                                            <span className="chat-doc-provider">{doc.provider}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
-        </div>
-    );
-};
-
-
 export const ChatPage: React.FC = () => {
-    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded, selectedDocumentIds, setSelectedDocumentIds, toggleDocumentId } = useChatStore();
+    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded } = useChatStore();
     const { t } = useLanguageStore();
-    const { activeProjectId } = useProjectStore();
     const [input, setInput] = useState('');
-    const [documents, setDocuments] = useState<ProjectDocument[]>([]);
-    const [docsLoading, setDocsLoading] = useState(false);
-    const [docsPanelOpen, setDocsPanelOpen] = useState(true);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const isLoading = status === 'sending';
     const isLoadingHistory = status === 'connecting';
-
-    // Load project documents
-    useEffect(() => {
-        const loadDocuments = async () => {
-            if (!activeProjectId || !supabase) {
-                setDocuments([]);
-                return;
-            }
-
-            setDocsLoading(true);
-            try {
-                const { data, error } = await (supabase as any)
-                    .from('document_metadata')
-                    .select('id, file_name, document_type, provider, evaluation_types, created_at')
-                    .eq('project_id', activeProjectId)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('[ChatPage] Error loading documents:', error);
-                    setDocuments([]);
-                } else {
-                    setDocuments((data || []) as ProjectDocument[]);
-                }
-            } catch (err) {
-                console.error('[ChatPage] Error loading documents:', err);
-                setDocuments([]);
-            } finally {
-                setDocsLoading(false);
-            }
-        };
-
-        loadDocuments();
-    }, [activeProjectId]);
 
     // Load history
     useEffect(() => {
@@ -463,14 +288,6 @@ export const ChatPage: React.FC = () => {
         navigator.clipboard.writeText(text);
     };
 
-    const handleSelectAll = () => {
-        setSelectedDocumentIds(documents.map(d => d.id));
-    };
-
-    const handleDeselectAll = () => {
-        setSelectedDocumentIds([]);
-    };
-
     const validMessages = useMemo(() => {
         return messages.filter(msg => typeof msg.content === 'string' && msg.content.length > 0);
     }, [messages]);
@@ -484,50 +301,11 @@ export const ChatPage: React.FC = () => {
     ];
 
     return (
-        <div className={`chat-page ${docsPanelOpen ? 'with-panel' : ''}`}>
-            {/* Document Panel Toggle */}
-            <button
-                className="chat-panel-toggle"
-                onClick={() => setDocsPanelOpen(!docsPanelOpen)}
-                title={t('chat.docs_panel')}
-            >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    {docsPanelOpen ? (
-                        <><path d="M11 19l-7-7 7-7" /><path d="M18 19l-7-7 7-7" /></>
-                    ) : (
-                        <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></>
-                    )}
-                </svg>
-                {!docsPanelOpen && selectedDocumentIds.length > 0 && (
-                    <span className="chat-docs-badge">{selectedDocumentIds.length}</span>
-                )}
-            </button>
-
-            {/* Document Panel */}
-            {docsPanelOpen && (
-                <DocumentPanel
-                    documents={documents}
-                    selectedIds={selectedDocumentIds}
-                    onToggle={toggleDocumentId}
-                    onSelectAll={handleSelectAll}
-                    onDeselectAll={handleDeselectAll}
-                    isLoading={docsLoading}
-                />
-            )}
-
+        <div className="chat-page">
             {/* Main Chat Area */}
             <div className="chat-main">
                 {/* Header actions */}
                 <div className="chat-header-actions">
-                    {selectedDocumentIds.length > 0 && (
-                        <div className="chat-context-indicator">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                            </svg>
-                            {selectedDocumentIds.length} {t('chat.docs_selected')}
-                        </div>
-                    )}
                     <button
                         onClick={() => clearMessages()}
                         className="chat-clear-btn"

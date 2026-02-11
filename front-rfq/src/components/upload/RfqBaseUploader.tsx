@@ -30,6 +30,8 @@ export function RfqBaseUploader() {
   const [isRefreshingStats, setIsRefreshingStats] = useState(false);
   const [documentMetadata, setDocumentMetadata] = useState<any[]>([]);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
+  const projectType = useProjectStore((s) => s.projects.find(p => p.id === s.activeProjectId)?.project_type || 'RFP');
+  const tp = { type: projectType };
 
   // Normalize legacy eval types to new 3-type system
   const normalizeEvalType = (t: string): string => {
@@ -137,7 +139,7 @@ export function RfqBaseUploader() {
   };
 
   const handleClear = () => {
-    if (window.confirm(t('upload.confirm.delete'))) {
+    if (window.confirm(t('upload.confirm.delete', tp))) {
       clearRfqBase();
       clearSelectedRfqBaseFiles();
       setShowConfirm(false);
@@ -272,7 +274,7 @@ export function RfqBaseUploader() {
                     fontWeight: 700, 
                     color: 'var(--text-primary)'
                   }}>
-                    {t('upload.rfq_loaded')}
+                    {t('upload.rfq_loaded', tp)}
                   </h3>
                   <span style={{
                     fontSize: '0.85rem',
@@ -385,7 +387,7 @@ export function RfqBaseUploader() {
                     lineHeight: 1,
                     flexShrink: 0
                   }}
-                  title={t('upload.change_rfq')}
+                  title={t('upload.change_rfq', tp)}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
                     e.currentTarget.style.borderColor = 'var(--color-error)';
@@ -514,7 +516,7 @@ export function RfqBaseUploader() {
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
                 </div>
-                <span style={{ flex: 1 }}>{t('upload.rfq_hint')}</span>
+                <span style={{ flex: 1 }}>{t('upload.rfq_hint', tp)}</span>
               </div>
             </div>
           </div>
@@ -566,7 +568,7 @@ export function RfqBaseUploader() {
               )}
             </div>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              {dashboardStats ? t('upload.rfq_by_type') : 'Evaluation types found in uploaded RFQ'}
+              {dashboardStats ? t('upload.rfq_by_type') : t('upload.rfq_by_type')}
               {dashboardStats && (
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', display: 'block', marginTop: '4px' }}>
                   {t('upload.auto_updates')}
@@ -599,15 +601,15 @@ export function RfqBaseUploader() {
           textAlign: 'center'
         }}>
           <h4 style={{ margin: '0 0 12px', fontSize: '16px', fontWeight: 600 }}>
-            {t('upload.modal.replace_title')}
+            {t('upload.modal.replace_title', tp)}
           </h4>
           <p style={{ margin: '0 0 8px', fontSize: '14px', color: 'var(--muted)' }}>
-            {t('upload.modal.current')}: <strong>{rfqBase?.fileName}</strong>
+            {t('upload.modal.current', tp)}: <strong>{rfqBase?.fileName}</strong>
           </p>
           <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--muted)' }}>
             {t('upload.modal.replace_bg')}: <strong>
               {selectedRfqBaseFiles.length > 1
-                ? `${selectedRfqBaseFiles.length} ${t('upload.files')}`
+                ? `${selectedRfqBaseFiles.length} ${t('upload.files', tp)}`
                 : selectedRfqBaseFiles[0]?.name}
             </strong>?
           </p>
@@ -649,14 +651,14 @@ export function RfqBaseUploader() {
 
               <p className="dropzonePrompt">
                 {isProcessingRfqBase
-                  ? t('upload.status.processing')
+                  ? t('upload.status.processing', tp)
                   : selectedRfqBaseFiles.length > 0
                     ? selectedRfqBaseFiles.length > 1
                       ? `${selectedRfqBaseFiles.length} ${t('upload.files_selected')}`
                       : selectedRfqBaseFiles[0].name
                     : isDragActive
                       ? t('upload.drop_here')
-                      : t('upload.drag_drop')}
+                      : t('upload.drag_drop', tp)}
               </p>
 
               {selectedRfqBaseFiles.length > 0 && (
@@ -667,7 +669,7 @@ export function RfqBaseUploader() {
             </div>
 
             <p className="hint" style={{ marginTop: '12px', marginBottom: 0 }}>
-              {t('upload.rfq_hint')}
+              {t('upload.rfq_hint', tp)}
             </p>
           </div>
 
@@ -771,8 +773,8 @@ export function RfqBaseUploader() {
               {rfqBaseError
                 ? t('upload.status.error')
                 : isProcessingRfqBase
-                  ? `${t('upload.status.processing')} ${processingFileCount} ${t('upload.file')}${processingFileCount > 1 ? 's' : ''}...`
-                  : `${t('upload.btn.process')} ${selectedRfqBaseFiles.length || ''} RFQ${selectedRfqBaseFiles.length > 1 ? 's' : selectedRfqBaseFiles.length === 1 ? '' : 's'}`
+                  ? `${t('upload.status.processing', tp)} ${processingFileCount} ${t('upload.file')}${processingFileCount > 1 ? 's' : ''}...`
+                  : `${t('upload.btn.process')} ${selectedRfqBaseFiles.length || ''} ${projectType}${selectedRfqBaseFiles.length > 1 ? 's' : selectedRfqBaseFiles.length === 1 ? '' : 's'}`
               }
             </button>
 
@@ -926,7 +928,7 @@ export function RfqBaseUploader() {
           <div className="fileListModal">
             <div className="fileListModalHeader">
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
-                {t('upload.modal.files_title')} ({selectedRfqBaseFiles.length})
+                {t('upload.modal.files_title', tp)} ({selectedRfqBaseFiles.length})
               </h3>
               <button
                 onClick={() => setShowFileList(false)}

@@ -24,7 +24,7 @@ export function useRfqProcessing() {
     setError
   } = useRfqStore();
 
-  const { activeProjectId } = useProjectStore();
+  const { activeProjectId, loadProjects } = useProjectStore();
 
   /**
    * Maneja el upload y procesamiento de múltiples archivos en paralelo
@@ -133,6 +133,8 @@ export function useRfqProcessing() {
         if (cancelledResults.length > 0) parts.push(`${cancelledResults.length} cancelled`);
 
         setResults(combinedResults, parts.join(', '));
+        // Refresh project data so the progress stepper updates
+        loadProjects();
         return true;
       }
 
@@ -150,7 +152,7 @@ export function useRfqProcessing() {
       setError(errorMessage);
       return false;
     }
-  }, [selectedFiles, activeProjectId, isProcessing, startProcessing, updateFileTracker, setResults, setError]);
+  }, [selectedFiles, activeProjectId, isProcessing, startProcessing, updateFileTracker, setResults, setError, loadProjects]);
 
   const handleCancel = useCallback(async () => {
     cancelProcessing();
