@@ -64,7 +64,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     // Marcar como visto cuando el usuario entra a una sección
     useEffect(() => {
         // Solo marcar como visto si es una de las secciones con sesiones
-        if (['chat', 'mail', 'upload'].includes(activeView)) {
+        if (['chat', 'communications', 'upload'].includes(activeView)) {
             markAsViewed(activeView);
         }
     }, [activeView, markAsViewed]);
@@ -128,17 +128,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         }
                     />
 
-                    {/* Active project section - always visible, disabled when no project */}
+                    {/* Active project section */}
                     <div className="nav-section-divider" />
-                    <div className="nav-section-label">
-                        <span className="nav-section-dot" style={!currentProject ? { opacity: 0.3 } : undefined} />
-                        <span className="nav-section-text" style={!currentProject ? { opacity: 0.4 } : undefined}>
-                            {currentProject
-                                ? (currentProject.display_name || currentProject.name.replace(/_/g, ' '))
-                                : (language === 'es' ? 'Proyecto' : 'Project')
-                            }
-                        </span>
-                    </div>
                     <NavItem
                         view="upload"
                         labelKey="nav.upload"
@@ -175,17 +166,14 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         }
                     />
                     <NavItem
-                        view="mail"
-                        labelKey="nav.mail"
+                        view="communications"
+                        labelKey="nav.communications"
                         disabled={!currentProject}
-                        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                        icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>}
                     />
 
                     {/* Tools section */}
                     <div className="nav-section-divider" />
-                    <div className="nav-section-label">
-                        <span className="nav-section-text">{t('sidebar.tools')}</span>
-                    </div>
                     <NavItem
                         view="chat"
                         labelKey="nav.chat"
