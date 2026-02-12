@@ -4,16 +4,16 @@
 .progress-stepper {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px 16px;
+    gap: 8px;
+    padding: 8px 22px;
     background: var(--bg-surface-alt);
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 52px;
+    height: 58px;
     flex: 0 1 auto;
-    max-width: 600px;
+    max-width: 680px;
     min-width: 0;
     justify-content: center;
     margin-left: 16px;
@@ -36,18 +36,18 @@
     position: relative;
     z-index: 1;
     flex-shrink: 0;
-    width: 48px;
+    width: 58px;
 }
 
 /* Circle */
 .stepper-circle {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     font-weight: 700;
     transition: all 0.3s ease;
     flex-shrink: 0;
@@ -84,7 +84,7 @@
 
 /* Label below circle */
 .stepper-label {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 600;
     white-space: nowrap;
     text-align: center;
@@ -107,8 +107,8 @@
 
 /* Connector lines */
 .stepper-line {
-    height: 2px;
-    width: 18px;
+    height: 2.5px;
+    width: 24px;
     flex-shrink: 0;
     border-radius: 1px;
     transition: background 0.3s ease;
@@ -148,7 +148,7 @@
     }
 
     .progress-stepper {
-        height: 42px;
+        height: 48px;
         padding: 6px 16px;
         min-width: 240px;
     }

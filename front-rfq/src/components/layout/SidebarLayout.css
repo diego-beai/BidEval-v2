@@ -26,7 +26,7 @@
 
 /* Header Area */
 .sidebar-header {
-    height: 72px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -91,16 +91,22 @@
 /* Navigation Items */
 .sidebar-nav {
     flex: 1;
-    padding: 16px 12px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
-    height: 44px;
+    height: 42px;
     padding: 0;
     border-radius: var(--radius-md);
     color: var(--text-secondary);
@@ -112,6 +118,7 @@
     justify-content: center;
     overflow: hidden;
     position: relative;
+    flex-shrink: 0;
 }
 
 /* Session Indicator */
@@ -211,8 +218,9 @@
 .nav-section-divider {
     height: 1px;
     background: var(--border-color);
-    margin: 8px 4px;
+    margin: 4px 4px;
     opacity: 0.6;
+    flex-shrink: 0;
 }
 
 .nav-section-label {
@@ -258,19 +266,18 @@
 
 /* Sidebar Footer */
 .sidebar-footer {
-    padding: 12px;
+    padding: 8px;
     border-top: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    min-height: 70px;
+    gap: 6px;
 }
 
 .sidebar.expanded .sidebar-footer {
     align-items: flex-start;
-    padding-left: 20px;
+    padding-left: 16px;
 }
 
 .footer-content {
@@ -325,7 +332,7 @@
 }
 
 .content-wrapper {
-    padding: 32px;
+    padding: 20px 24px;
     flex: 1;
     overflow-y: auto;
     max-width: 1800px;
@@ -344,7 +351,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 72px;
+    height: 80px;
     position: sticky;
     top: 0;
     z-index: 99;
@@ -353,7 +360,7 @@
 .top-header-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex: 1;
     min-width: 0;
     overflow: visible;
