@@ -161,7 +161,6 @@ export const useSessionStore = create<SessionState>()(
           backgroundProcesses: [...state.backgroundProcesses, newProcess]
         }));
 
-        console.log('[SessionStore] Added background process:', id, process.type);
         return id;
       },
 
@@ -173,14 +172,12 @@ export const useSessionStore = create<SessionState>()(
               : p
           )
         }));
-        console.log('[SessionStore] Updated background process:', id, updates);
       },
 
       removeBackgroundProcess: (id) => {
         set((state) => ({
           backgroundProcesses: state.backgroundProcesses.filter((p) => p.id !== id)
         }));
-        console.log('[SessionStore] Removed background process:', id);
       },
 
       getBackgroundProcess: (id) => {
@@ -193,7 +190,6 @@ export const useSessionStore = create<SessionState>()(
             (p) => p.status !== ProcessStatus.COMPLETED && p.status !== ProcessStatus.ERROR
           )
         }));
-        console.log('[SessionStore] Cleared completed processes');
       },
 
       // Chat Conversation Actions
@@ -215,14 +211,12 @@ export const useSessionStore = create<SessionState>()(
           activeConversationId: id
         }));
 
-        console.log('[SessionStore] Created conversation:', id);
         return id;
       },
 
       addMessageToConversation: (conversationId, role, content) => {
         const conversation = get().chatConversations[conversationId];
         if (!conversation) {
-          console.error('[SessionStore] Conversation not found:', conversationId);
           return;
         }
 
@@ -245,13 +239,11 @@ export const useSessionStore = create<SessionState>()(
           }
         }));
 
-        console.log('[SessionStore] Added message to conversation:', conversationId, role);
       },
 
       updateConversation: (conversationId, updates) => {
         const conversation = get().chatConversations[conversationId];
         if (!conversation) {
-          console.error('[SessionStore] Conversation not found:', conversationId);
           return;
         }
 
@@ -266,7 +258,6 @@ export const useSessionStore = create<SessionState>()(
           }
         }));
 
-        console.log('[SessionStore] Updated conversation:', conversationId);
       },
 
       deleteConversation: (conversationId) => {
@@ -278,12 +269,10 @@ export const useSessionStore = create<SessionState>()(
             state.activeConversationId === conversationId ? null : state.activeConversationId
         }));
 
-        console.log('[SessionStore] Deleted conversation:', conversationId);
       },
 
       setActiveConversation: (conversationId) => {
         set({ activeConversationId: conversationId });
-        console.log('[SessionStore] Set active conversation:', conversationId);
       },
 
       getConversation: (conversationId) => {
@@ -305,14 +294,12 @@ export const useSessionStore = create<SessionState>()(
           }
         }));
 
-        console.log('[SessionStore] Added email process:', id);
         return id;
       },
 
       updateEmailProcess: (id, updates) => {
         const emailProcess = get().emailProcesses[id];
         if (!emailProcess) {
-          console.error('[SessionStore] Email process not found:', id);
           return;
         }
 
@@ -326,14 +313,12 @@ export const useSessionStore = create<SessionState>()(
           }
         }));
 
-        console.log('[SessionStore] Updated email process:', id);
       },
 
       deleteEmailProcess: (id) => {
         const { [id]: deleted, ...rest } = get().emailProcesses;
 
         set({ emailProcesses: rest });
-        console.log('[SessionStore] Deleted email process:', id);
       },
 
       getEmailProcess: (id) => {
@@ -354,7 +339,6 @@ export const useSessionStore = create<SessionState>()(
           }
         }));
 
-        console.log('[SessionStore] Changed view:', currentView, '→', view);
       },
 
       setPreviousView: (view) => {
@@ -396,7 +380,6 @@ export const useSessionStore = create<SessionState>()(
           sessionStartTime: Date.now(),
           lastActivityTime: Date.now()
         });
-        console.log('[SessionStore] Session cleared');
       }
     }),
     {

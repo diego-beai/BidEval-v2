@@ -568,7 +568,7 @@ const BoardReport: React.FC = () => {
             const projectName = project?.display_name || 'board-report';
             pdf.save(`${projectName.replace(/\s+/g, '-')}-board-report.pdf`);
         } catch (err) {
-            console.error('PDF generation failed:', err);
+            // ignored
         }
     }, [project]);
 

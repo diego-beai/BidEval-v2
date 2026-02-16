@@ -141,7 +141,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
         addToast(t('project.error_creating'), 'error');
       }
     } catch (err) {
-      console.error('Error creating project:', err);
       addToast(t('project.error_creating'), 'error');
     } finally {
       setIsSubmitting(false);
@@ -204,7 +203,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
         addToast(t('project.error_updating'), 'error');
       }
     } catch (err) {
-      console.error('Error updating project:', err);
       addToast(t('project.error_updating'), 'error');
     } finally {
       setIsSubmitting(false);
@@ -239,7 +237,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
         addToast(t('project.error_deleting'), 'error');
       }
     } catch (err) {
-      console.error('Error deleting project:', err);
       addToast(t('project.error_deleting'), 'error');
     } finally {
       setIsSubmitting(false);

@@ -8,7 +8,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const hasCredentials = supabaseUrl && supabaseAnonKey && supabaseUrl !== 'your-supabase-url';
 
 if (!hasCredentials) {
-  console.warn('⚠️ Supabase not configured. The QA module will work with mock data until you configure Supabase credentials in .env.local');
+  // Supabase not configured - QA module will work with mock data
 }
 
 // Schema: 'desarrollo' para local, 'public' para produccion

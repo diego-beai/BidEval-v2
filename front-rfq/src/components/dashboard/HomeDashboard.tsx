@@ -178,7 +178,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
 
                 const normalizedProvider = matchProvider(String(providerName));
                 if (!normalizedProvider) {
-                    console.warn('[HomeDashboard] Provider not found in map:', providerName);
                     return;
                 }
 
@@ -240,8 +239,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
 
             reorderEvaluationTypes(evaluations);
         } else {
-            console.warn('[HomeDashboard] No provider ranking data available. Using fallback logic.');
-
             // Fallback to old logic if no ranking data
             // Count RFQ evaluations from tableData (rfq_items_master)
             if (tableData && tableData.length > 0) {
@@ -522,10 +519,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                     } else {
                     }
                 } catch (err) {
-                    console.warn('Error fetching RFQ documents from metadata:', err);
+                    // ignored
                 }
             } else {
-                console.warn('Supabase client not available');
+                // ignored
             }
         };
 
@@ -558,7 +555,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                     } else {
                     }
                 } catch (err) {
-                    console.warn('Error fetching providers from proposals:', err);
+                    // ignored
                 }
             }
         };

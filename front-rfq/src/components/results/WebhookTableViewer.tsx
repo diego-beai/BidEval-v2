@@ -132,7 +132,6 @@ export function WebhookTableViewer() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar los datos';
       setError(errorMessage);
-      console.error('Error al cargar tabla desde webhook:', err);
     } finally {
       setIsLoading(false);
     }

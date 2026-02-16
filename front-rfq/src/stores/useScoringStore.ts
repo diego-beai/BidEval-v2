@@ -142,7 +142,6 @@ export const useScoringStore = create<ScoringState>()(
                     try {
                         data = JSON.parse(responseText);
                     } catch (parseErr) {
-                        console.error('[Scoring] Invalid JSON response:', responseText.substring(0, 200));
                         throw new Error('Invalid response from scoring service. The workflow may have encountered an error.');
                     }
 
@@ -157,18 +156,13 @@ export const useScoringStore = create<ScoringState>()(
                             `Scoring completed! ${data.ranking.length} providers evaluated. Top: ${data.statistics.top_performer}`,
                             'success'
                         );
-
-                        console.log('[Scoring] Results:', data);
                     } else {
                         throw new Error(data.message || 'Scoring calculation failed');
                     }
 
                 } catch (err: any) {
-                    console.error('[Scoring] Error:', err);
-
                     // Intentar obtener datos directamente de Supabase como fallback
                     try {
-                        console.log('[Scoring] Attempting fallback to Supabase...');
                         await get().refreshScoring();
                         addToast('Loaded existing scores from database', 'info');
                     } catch (fallbackErr) {
@@ -183,7 +177,6 @@ export const useScoringStore = create<ScoringState>()(
 
             refreshScoring: async (projectId?: string) => {
                 if (!supabase) {
-                    console.error('[Scoring] Supabase not configured');
                     set({ isCalculating: false });
                     return;
                 }
@@ -197,7 +190,6 @@ export const useScoringStore = create<ScoringState>()(
                         scoringResults: null,
                         isCalculating: false
                     });
-                    console.log('[Scoring] No active project, clearing scoring data');
                     return;
                 }
 
@@ -217,7 +209,6 @@ export const useScoringStore = create<ScoringState>()(
 
                     // If no data found for this project, show empty state (no fallback to other projects)
                     if (!data || data.length === 0) {
-                        console.log('[Scoring] No scoring data found for project:', activeProjectId);
                         set({
                             scoringResults: null,
                             isCalculating: false
@@ -328,10 +319,7 @@ export const useScoringStore = create<ScoringState>()(
                         isCalculating: false
                     });
 
-                    console.log('[Scoring] Loaded', ranking.length, 'providers for project', activeProjectId);
-
                 } catch (err: any) {
-                    console.error('[Scoring] Refresh error:', err);
                     set({
                         error: err.message || 'Error loading scores',
                         isCalculating: false,
@@ -411,7 +399,6 @@ export const useScoringStore = create<ScoringState>()(
 
                     addToast('Weight configuration saved', 'success');
                 } catch (err: any) {
-                    console.error('[Scoring] Error saving weights:', err);
                     addToast(`Failed to save weights: ${err.message}`, 'error');
                 } finally {
                     set({ isSavingWeights: false });
@@ -451,10 +438,9 @@ export const useScoringStore = create<ScoringState>()(
                             customWeights: mergedWeights,
                             savedWeightsId: data.id
                         });
-                        console.log('[Scoring] Loaded saved weights (merged with defaults):', mergedWeights);
                     }
                 } catch (err: any) {
-                    console.error('[Scoring] Error loading saved weights:', err);
+                    // ignored
                 }
             },
 
@@ -504,7 +490,6 @@ export const useScoringStore = create<ScoringState>()(
                     await get().refreshScoring();
 
                 } catch (err: any) {
-                    console.error('[Scoring] Error saving scores:', err);
                     addToast(`Failed to save scores: ${err.message}`, 'error');
                 } finally {
                     set({ isSavingWeights: false });

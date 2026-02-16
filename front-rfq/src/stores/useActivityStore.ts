@@ -135,7 +135,6 @@ export const useActivityStore = create<ActivityState>()(
           };
         });
 
-        console.log('[ActivityStore] Added activity:', id, activity.type, activity.title);
         return id;
       },
 
@@ -174,7 +173,6 @@ export const useActivityStore = create<ActivityState>()(
 
       clearActivities: () => {
         set({ activities: [], unreadCount: 0 });
-        console.log('[ActivityStore] Cleared all activities');
       },
 
       getRecentActivities: (limit = 10) => {
@@ -212,7 +210,6 @@ export const useActivityStore = create<ActivityState>()(
           metadata: process.metadata
         });
 
-        console.log('[ActivityStore] Started process:', id, process.type);
         return id;
       },
 
@@ -253,7 +250,6 @@ export const useActivityStore = create<ActivityState>()(
           }));
         }, 3000);
 
-        console.log('[ActivityStore] Completed process:', id);
       },
 
       failProcess: (id, error) => {
@@ -284,7 +280,6 @@ export const useActivityStore = create<ActivityState>()(
           }));
         }, 5000);
 
-        console.log('[ActivityStore] Process failed:', id, error);
       },
 
       cancelProcess: (id) => {
@@ -306,7 +301,6 @@ export const useActivityStore = create<ActivityState>()(
           metadata: process.metadata
         });
 
-        console.log('[ActivityStore] Cancelled process:', id);
       },
 
       getRunningProcesses: () => {

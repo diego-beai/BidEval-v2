@@ -248,15 +248,14 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
                     });
                 }
             }
-        } catch (err) {
-            console.error('Error fetching metrics:', err);
+        } catch {
+            // ignored
         }
     },
 
     fetchProposalsCount: async () => {
         try {
             if (!supabase) {
-                console.warn('Supabase not configured, using default count');
                 set({
                     totalProposals: 0,
                     proposalsThisWeek: 0,
@@ -295,16 +294,13 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
             ]);
 
             const { count: totalCount, error: totalError } = totalResult;
-            const { count: thisWeekCount, error: thisWeekError } = thisWeekResult;
-            const { count: lastWeekCount, error: lastWeekError } = lastWeekResult;
+            const { count: thisWeekCount } = thisWeekResult;
+            const { count: lastWeekCount } = lastWeekResult;
 
             if (totalError) {
-                console.error('Error fetching total proposals count:', totalError);
                 set({ totalProposals: 0, proposalsThisWeek: 0, proposalsGrowthPercentage: 0 });
                 return;
             }
-            if (thisWeekError) console.error('Error fetching this week proposals:', thisWeekError);
-            if (lastWeekError) console.error('Error fetching last week proposals:', lastWeekError);
 
             // Calcular porcentaje de crecimiento
             const thisWeek = thisWeekCount || 0;
@@ -322,8 +318,7 @@ export const useDashboardStore = create<DashboardState>((set, get) => ({
                 proposalsThisWeek: thisWeek,
                 proposalsGrowthPercentage: growthPercentage
             });
-        } catch (err) {
-            console.error('Error fetching proposals count:', err);
+        } catch {
             set({
                 totalProposals: 0,
                 proposalsThisWeek: 0,

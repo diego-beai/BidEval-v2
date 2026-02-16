@@ -27,8 +27,8 @@ class MarkdownErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryS
         return { hasError: true };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.warn('[MarkdownErrorBoundary] Error rendering markdown:', error.message, errorInfo);
+    componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
+        // ignored
     }
 
     render() {
@@ -249,7 +249,6 @@ export const ChatPage: React.FC = () => {
         });
 
         if (hasCorruptMessages) {
-            console.warn('[ChatPage] Detected corrupt messages, cleaning...');
             clearMessages();
         }
     }, []);

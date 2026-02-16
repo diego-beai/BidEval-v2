@@ -103,7 +103,7 @@ export const ScoringMatrix: React.FC = () => {
             resetScoringStore();
             await loadConfiguration(activeProjectId);
         } catch (err) {
-            console.error('[ScoringMatrix] Error deleting config:', err);
+            // ignored
         } finally {
             setShowDeleteConfirm(false);
         }
@@ -130,10 +130,8 @@ export const ScoringMatrix: React.FC = () => {
                 }
                 return acc;
             }, {} as Record<string, { weight: number; color: string; displayName?: string }>);
-            console.log('[ScoringMatrix] CATEGORY_INFO from DB:', Object.keys(result));
             return result;
         }
-        console.log('[ScoringMatrix] CATEGORY_INFO using defaults:', Object.keys(DEFAULT_CATEGORY_INFO));
         return DEFAULT_CATEGORY_INFO;
     }, [hasConfiguration, dynamicCategories]);
 
@@ -195,7 +193,6 @@ export const ScoringMatrix: React.FC = () => {
 
     // Reload scoring when active project changes
     useEffect(() => {
-        console.log('[ScoringMatrix] Active project changed:', activeProjectId);
         // Reset scoring data immediately when project changes to avoid showing stale data
         if (activeProjectId) {
             refreshScoring();

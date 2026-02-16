@@ -57,7 +57,6 @@ export const useCommunicationsStore = create<CommunicationsState>()(
             .order('sent_at', { ascending: false })) as { data: any[] | null; error: any };
 
           if (error) {
-            console.error('[CommStore] Error loading communications:', error);
             set({ isLoading: false });
             return;
           }
@@ -69,8 +68,7 @@ export const useCommunicationsStore = create<CommunicationsState>()(
           })) as Communication[];
 
           set({ communications: comms, isLoading: false });
-        } catch (err) {
-          console.error('[CommStore] Error:', err);
+        } catch {
           set({ isLoading: false });
         }
       },
@@ -89,14 +87,12 @@ export const useCommunicationsStore = create<CommunicationsState>()(
             .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
 
           if (error) {
-            console.error('[CommStore] Error loading QA items:', error);
             set({ qaItems: [] });
             return;
           }
 
           set({ qaItems: (data || []) as QATimelineItem[] });
-        } catch (err) {
-          console.error('[CommStore] Error loading QA:', err);
+        } catch {
           set({ qaItems: [] });
         }
       },
@@ -112,7 +108,6 @@ export const useCommunicationsStore = create<CommunicationsState>()(
             .single()) as { data: any; error: any };
 
           if (error) {
-            console.error('[CommStore] Error creating communication:', error);
             return;
           }
 
@@ -123,8 +118,8 @@ export const useCommunicationsStore = create<CommunicationsState>()(
               showEmailComposer: false,
             }));
           }
-        } catch (err) {
-          console.error('[CommStore] Error creating:', err);
+        } catch {
+          // ignored
         }
       },
 
@@ -141,7 +136,6 @@ export const useCommunicationsStore = create<CommunicationsState>()(
             .single() as { data: any; error: any };
 
           if (error) {
-            console.error('[CommStore] Error updating communication:', error);
             return;
           }
 
@@ -152,8 +146,8 @@ export const useCommunicationsStore = create<CommunicationsState>()(
               ),
             }));
           }
-        } catch (err) {
-          console.error('[CommStore] Error updating:', err);
+        } catch {
+          // ignored
         }
       },
 
@@ -166,15 +160,14 @@ export const useCommunicationsStore = create<CommunicationsState>()(
             .eq('id', id)) as { error: any };
 
           if (error) {
-            console.error('[CommStore] Error deleting:', error);
             return;
           }
 
           set(state => ({
             communications: state.communications.filter(c => c.id !== id),
           }));
-        } catch (err) {
-          console.error('[CommStore] Error deleting:', err);
+        } catch {
+          // ignored
         }
       },
 

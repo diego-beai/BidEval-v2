@@ -114,7 +114,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
 
       loadConfiguration: async (projectId: string) => {
         if (!supabase) {
-          console.error('[ScoringConfig] Supabase not configured');
           return;
         }
 
@@ -139,7 +138,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
                                    catError.message?.includes('404');
 
             if (isTableNotFound) {
-              console.log('[ScoringConfig] Scoring tables not yet created, using fallback mode');
               set({
                 categories: [],
                 criteria: [],
@@ -160,7 +158,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
               hasConfiguration: false,
               isLoading: false,
             });
-            console.log('[ScoringConfig] No configuration found for project:', projectId);
             return;
           }
 
@@ -179,7 +176,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
                                    critError.message?.includes('404');
 
             if (isTableNotFound) {
-              console.log('[ScoringConfig] Criteria table not yet created, using fallback mode');
               set({
                 categories: [],
                 criteria: [],
@@ -205,13 +201,7 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
             isLoading: false,
           });
 
-          console.log('[ScoringConfig] Loaded configuration:', {
-            categories: categoriesWithCriteria.length,
-            criteria: (criteriaData || []).length,
-          });
-
         } catch (err: any) {
-          console.error('[ScoringConfig] Error loading configuration:', err);
           // Reset to safe state - no configuration, no crash
           set({
             categories: [],
@@ -261,7 +251,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
           await get().loadConfiguration(projectId);
 
         } catch (err: any) {
-          console.error('[ScoringConfig] Error initializing default config:', err);
           set({
             error: err.message || 'Error initializing default configuration',
             isLoading: false,
@@ -360,7 +349,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
           return true;
 
         } catch (err: any) {
-          console.error('[ScoringConfig] Error saving configuration:', err);
           set({
             error: err.message || 'Error saving configuration',
             isLoading: false,
@@ -397,7 +385,6 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
           set({ isLoading: false });
 
         } catch (err: any) {
-          console.error('[ScoringConfig] Error deleting configuration:', err);
           set({
             error: err.message || 'Error deleting configuration',
             isLoading: false,

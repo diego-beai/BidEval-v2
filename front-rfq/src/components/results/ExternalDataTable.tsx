@@ -91,7 +91,6 @@ export const ExternalDataTable: React.FC = () => {
 
             // No aplicar filtros automáticos - dejar que el usuario elija
         } catch (err: any) {
-            console.error('Error loading pivot table data:', err);
             // Error will be handled by the store
         }
     };
@@ -173,7 +172,7 @@ export const ExternalDataTable: React.FC = () => {
                             try {
                                 await fetchPivotTableData();
                             } catch (err) {
-                                console.error('Error loading pivot table data:', err);
+                                // ignored
                             }
                         }}
                     >

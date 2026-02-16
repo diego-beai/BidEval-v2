@@ -45,7 +45,6 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
   useEffect(() => {
     if (activeProject?.display_name) {
       if (metadata.proyecto !== activeProject.display_name) {
-        console.log('[RfqMetadataForm] Syncing with active project:', activeProject.display_name);
         onChange({ ...metadata, proyecto: activeProject.display_name });
       }
     }

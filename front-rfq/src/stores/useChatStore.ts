@@ -267,8 +267,7 @@ export const useChatStore = create<ChatState>()(
                 sessionId: targetSessionId
               });
             }
-          } catch (error) {
-            console.error('[ChatStore] Error cargando historial:', error);
+          } catch {
             set({
               status: ChatStatus.ERROR,
               error: 'Error al cargar historial',
@@ -283,7 +282,6 @@ export const useChatStore = create<ChatState>()(
           const projectId = state.currentProjectId;
 
           if (projectId && state.messages.length > 0) {
-            console.log('[ChatStore] Guardando conversación para proyecto:', projectId, '- Mensajes:', state.messages.length);
             set({
               projectConversations: {
                 ...state.projectConversations,
@@ -302,7 +300,6 @@ export const useChatStore = create<ChatState>()(
           const state = get();
 
           if (!projectId) {
-            console.log('[ChatStore] No hay proyecto, limpiando chat');
             set({
               messages: [],
               sessionId: null,
@@ -319,7 +316,6 @@ export const useChatStore = create<ChatState>()(
           const savedConversation = state.projectConversations[projectId];
 
           if (savedConversation && savedConversation.messages.length > 0) {
-            console.log('[ChatStore] Cargando conversación guardada para proyecto:', projectId, '- Mensajes:', savedConversation.messages.length);
             set({
               messages: savedConversation.messages,
               sessionId: savedConversation.sessionId,
@@ -330,7 +326,6 @@ export const useChatStore = create<ChatState>()(
               unreadCount: 0
             });
           } else {
-            console.log('[ChatStore] No hay conversación guardada para proyecto:', projectId, '- Iniciando nueva');
             set({
               messages: [],
               sessionId: null,
@@ -361,8 +356,6 @@ export const useChatStore = create<ChatState>()(
 
           // Solo actuar si el proyecto cambió
           if (state.currentProjectId !== newProjectId) {
-            console.log('[ChatStore] Proyecto cambió de', state.currentProjectId, 'a', newProjectId);
-
             // 1. Guardar la conversación actual antes de cambiar
             if (state.currentProjectId && state.messages.length > 0) {
               state.saveCurrentConversation();
@@ -388,14 +381,8 @@ export const useChatStore = create<ChatState>()(
             // Verificar si el proyecto del chat coincide con el proyecto activo
             const activeProjectId = useProjectStore.getState().activeProjectId;
 
-            console.log('[ChatStore] Rehidratando - Proyecto del chat:', state.currentProjectId);
-            console.log('[ChatStore] Rehidratando - Proyecto activo:', activeProjectId);
-            console.log('[ChatStore] Rehidratando - Conversaciones guardadas:', Object.keys(state.projectConversations || {}));
-
             // Si el proyecto cambió, cargar la conversación correcta
             if (state.currentProjectId !== activeProjectId) {
-              console.log('[ChatStore] Proyecto no coincide, cargando conversación del proyecto activo');
-
               // Buscar si hay conversación guardada para el proyecto activo
               if (activeProjectId && state.projectConversations?.[activeProjectId]) {
                 const savedConv = state.projectConversations[activeProjectId];
@@ -422,7 +409,6 @@ export const useChatStore = create<ChatState>()(
                 }
               });
               if (validMessages.length !== state.messages.length) {
-                console.warn('Se limpiaron mensajes de chat inválidos');
                 state.messages = validMessages;
               }
             }
@@ -473,7 +459,6 @@ setTimeout(() => {
   const activeProjectId = useProjectStore.getState().activeProjectId;
 
   if (chatState.currentProjectId !== activeProjectId) {
-    console.log('[ChatStore] Verificación inicial: proyecto no coincide, cargando conversación correcta');
     useChatStore.getState().handleProjectChange(activeProjectId);
   }
 }, 100);

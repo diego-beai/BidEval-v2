@@ -88,14 +88,6 @@ export async function uploadRfqFile(
       }
     };
 
-    console.log('📤 [UPLOAD] Sending to:', API_CONFIG.N8N_WEBHOOK_URL);
-    console.log('📤 [UPLOAD] project_id:', payload.project_id);
-    console.log('📤 [UPLOAD] metadata.proveedor:', payload.metadata.proveedor);
-    console.log('📤 [UPLOAD] metadata.tipoEvaluacion:', payload.metadata.tipoEvaluacion);
-    console.log('📤 [UPLOAD] metadata.proyecto:', payload.metadata.proyecto);
-    console.log('📤 [UPLOAD] file_title:', payload.file_title);
-    console.log('📤 [UPLOAD] payload size:', JSON.stringify(payload).length, 'bytes');
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_WEBHOOK_URL,
       {
@@ -123,10 +115,6 @@ export async function uploadRfqFile(
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('❌ JSON parse error for file:', payload.file_title, {
-        responseLength: responseText.length,
-        responsePreview: responseText.substring(0, 300)
-      });
       throw new ApiError(
         `Respuesta inválida del servidor al procesar "${payload.file_title}". El workflow puede tener un error interno.`
       );
@@ -348,17 +336,6 @@ export async function uploadRfqBase(
       currency: currency || 'EUR'
     };
 
-    console.log('📤 Sending base RFQ to n8n:', {
-      fileName: fileTitle,
-      projectId: projectId || 'null',
-      projectName: projectName || 'using filename as fallback',
-      fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
-      timeout: `${API_CONFIG.REQUEST_TIMEOUT / 1000}s (up to 30 min for AI processing)`
-    });
-
-    const startTime = Date.now();
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_RFQ_INGESTA_URL,
       {
@@ -373,16 +350,7 @@ export async function uploadRfqBase(
       abortSignal
     );
 
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
-
     const data = await response.json();
-
-    console.log('📥 Complete response from n8n:', {
-      status: response.status,
-      statusText: response.statusText,
-      elapsedTime: `${elapsedTime}s`,
-      data: data
-    });
 
     // Si la respuesta HTTP fue exitosa (200-299), procesar los datos
     if (response.ok) {
@@ -395,12 +363,6 @@ export async function uploadRfqBase(
         tipos_procesados: data.tipos_procesados || data.types || data.tipos || []
       };
 
-      console.log('✅ Base RFQ processed successfully:', {
-        fileId: normalizedData.file_id,
-        tiposProcesados: normalizedData.tipos_procesados,
-        message: normalizedData.message
-      });
-
       return normalizedData;
     }
 
@@ -410,26 +372,6 @@ export async function uploadRfqBase(
     );
 
   } catch (error) {
-    // Log detallado del error
-    console.error('❌ Error al procesar RFQ base:', {
-      error,
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-      fileName: fileTitle,
-      endpoint: API_CONFIG.N8N_RFQ_INGESTA_URL,
-      projectId: projectId
-    });
-
-    if (import.meta.env.DEV) {
-      console.warn('🔍 DEBUG - Error details:', JSON.stringify({
-        hasMessage: error instanceof Error && !!error.message,
-        isApiError: error instanceof ApiError,
-        errorString: String(error),
-        errorKeys: error && typeof error === 'object' ? Object.keys(error) : []
-      }, null, 2));
-    }
-
     if (error instanceof ApiError) {
       throw error;
     }
@@ -497,13 +439,6 @@ export async function sendQAToSupplier(
   payload: SendToSupplierPayload
 ): Promise<SendToSupplierResponse> {
   try {
-    console.log('📧 Sending Q&A to supplier:', {
-      projectId: payload.project_id,
-      provider: payload.provider_name,
-      questionCount: payload.question_ids.length,
-      endpoint: API_CONFIG.N8N_QA_SEND_TO_SUPPLIER_URL
-    });
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_QA_SEND_TO_SUPPLIER_URL,
       {
@@ -520,19 +455,12 @@ export async function sendQAToSupplier(
     const data = await response.json();
 
     if (response.ok && data.success !== false) {
-      console.log('✅ Q&A sent to supplier:', {
-        token: data.token?.substring(0, 8) + '...',
-        responseLink: data.response_link,
-        questionCount: data.question_count
-      });
-
       return data as SendToSupplierResponse;
     }
 
     throw new ApiError(data.error || data.message || 'Error sending Q&A to supplier');
 
   } catch (error) {
-    console.error('❌ Error sending Q&A to supplier:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -588,14 +516,6 @@ export async function triggerScoringEvaluation(
   payload: ScoringEvaluationPayload
 ): Promise<ScoringEvaluationResponse> {
   try {
-    console.log('📊 Triggering scoring evaluation:', {
-      projectId: payload.project_id,
-      providerFilter: payload.provider_name || 'all',
-      endpoint: API_CONFIG.N8N_SCORING_URL
-    });
-
-    const startTime = Date.now();
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_SCORING_URL,
       {
@@ -609,15 +529,7 @@ export async function triggerScoringEvaluation(
       { maxRetries: 0 }
     );
 
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
-
     const data = await response.json();
-
-    console.log('📥 Scoring evaluation response:', {
-      status: response.status,
-      elapsedTime: `${elapsedTime}s`,
-      providersRanked: data.ranking?.length || 0
-    });
 
     if (response.ok && data.success !== false) {
       return data as ScoringEvaluationResponse;
@@ -626,7 +538,6 @@ export async function triggerScoringEvaluation(
     throw new ApiError(data.error || data.message || 'Error executing scoring evaluation');
 
   } catch (error) {
-    console.error('❌ Error in scoring evaluation:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -640,15 +551,6 @@ export async function generateTechnicalAudit(
   payload: GenerateAuditPayload
 ): Promise<GenerateAuditResponse> {
   try {
-    console.log('🔍 Generating technical audit:', {
-      projectId: payload.project_id,
-      projectName: payload.project_name,
-      provider: payload.provider,
-      endpoint: API_CONFIG.N8N_QA_AUDIT_URL
-    });
-
-    const startTime = Date.now();
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_QA_AUDIT_URL,
       {
@@ -662,19 +564,9 @@ export async function generateTechnicalAudit(
       { maxRetries: 0 }
     );
 
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
-
     // Verificar si la respuesta tiene contenido antes de parsear JSON
     const responseText = await response.text();
     
-    console.log('📥 Audit generation response:', {
-      status: response.status,
-      statusText: response.statusText,
-      elapsedTime: `${elapsedTime}s`,
-      responseLength: responseText.length,
-      responsePreview: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
-    });
-
     // Si la respuesta está vacía o no es JSON válido
     if (!responseText.trim()) {
       throw new ApiError('El servidor devolvió una respuesta vacía. El workflow puede estar teniendo problemas.');
@@ -684,10 +576,6 @@ export async function generateTechnicalAudit(
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('❌ JSON parse error:', {
-        parseError,
-        responseText: responseText.substring(0, 500)
-      });
       throw new ApiError('La respuesta del servidor no es JSON válido. El workflow puede tener un error interno.');
     }
 
@@ -700,11 +588,6 @@ export async function generateTechnicalAudit(
         data: Array.isArray(data) ? data : (data.results || data.data || [])
       };
 
-      console.log('✅ Technical audit generated:', {
-        questionsGenerated: auditResponse.preguntas_generadas,
-        message: auditResponse.message
-      });
-
       return auditResponse;
     }
 
@@ -713,16 +596,6 @@ export async function generateTechnicalAudit(
     throw new ApiError(errorMessage);
 
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('❌ Error generating technical audit:', {
-        error,
-        errorType: error instanceof Error ? error.constructor.name : typeof error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        payload,
-        endpoint: API_CONFIG.N8N_QA_AUDIT_URL,
-      });
-    }
-
     if (error instanceof ApiError) {
       // Mejorar mensajes de error según el código HTTP
       if (error.statusCode === 404) {
@@ -780,14 +653,6 @@ export async function sendQAEmail(
   payload: SendQAEmailPayload
 ): Promise<SendQAEmailResponse> {
   try {
-    console.log('📧 Sending Q&A email:', {
-      projectId: payload.project_id,
-      provider: payload.provider_name,
-      questionCount: payload.question_ids.length,
-      emailTo: payload.email_to,
-      endpoint: API_CONFIG.N8N_QA_SEND_EMAIL_URL
-    });
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_QA_SEND_EMAIL_URL,
       {
@@ -804,18 +669,12 @@ export async function sendQAEmail(
     const data = await response.json();
 
     if (response.ok && data.success !== false) {
-      console.log('✅ Q&A email sent successfully:', {
-        sentCount: data.sent_count,
-        emailTo: data.email_to
-      });
-
       return data as SendQAEmailResponse;
     }
 
     throw new ApiError(data.error || data.message || 'Error sending Q&A email');
 
   } catch (error) {
-    console.error('❌ Error sending Q&A email:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -866,13 +725,6 @@ export async function processEmailResponse(
   payload: ProcessEmailResponsePayload
 ): Promise<ProcessEmailResponseResult> {
   try {
-    console.log('🤖 Processing email response with AI:', {
-      projectId: payload.project_id,
-      provider: payload.provider_name,
-      contentLength: payload.email_content.length,
-      endpoint: API_CONFIG.N8N_QA_PROCESS_EMAIL_RESPONSE_URL
-    });
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_QA_PROCESS_EMAIL_RESPONSE_URL,
       {
@@ -889,18 +741,12 @@ export async function processEmailResponse(
     const data = await response.json();
 
     if (response.ok && data.success !== false) {
-      console.log('✅ Email response processed successfully:', {
-        processedCount: data.processed_count,
-        mappingsCount: data.mappings?.length || 0
-      });
-
       return data as ProcessEmailResponseResult;
     }
 
     throw new ApiError(data.error || data.message || 'Error processing email response');
 
   } catch (error) {
-    console.error('❌ Error processing email response:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -941,13 +787,6 @@ export async function saveMappedResponses(
   payload: SaveMappedResponsesPayload
 ): Promise<SaveMappedResponsesResult> {
   try {
-    console.log('💾 Saving mapped responses:', {
-      projectId: payload.project_id,
-      provider: payload.provider_name,
-      mappingsCount: payload.mappings.length,
-      endpoint: API_CONFIG.N8N_QA_PROCESS_RESPONSES_URL
-    });
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_QA_PROCESS_RESPONSES_URL,
       {
@@ -967,17 +806,12 @@ export async function saveMappedResponses(
     const data = await response.json();
 
     if (response.ok && data.success !== false) {
-      console.log('✅ Responses saved successfully:', {
-        savedCount: data.saved_count
-      });
-
       return data as SaveMappedResponsesResult;
     }
 
     throw new ApiError(data.error || data.message || 'Error saving responses');
 
   } catch (error) {
-    console.error('❌ Error saving responses:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -1038,16 +872,6 @@ export async function generateRfpDocument(
   payload: GenerateRfpPayload
 ): Promise<GenerateRfpResponse> {
   try {
-    console.log('📝 Generating RFP document:', {
-      projectId: payload.project_id,
-      projectName: payload.project_name,
-      projectType: payload.project_type,
-      requirementsLength: payload.requirements.length,
-      endpoint: API_CONFIG.N8N_RFP_GENERATE_URL
-    });
-
-    const startTime = Date.now();
-
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_RFP_GENERATE_URL,
       {
@@ -1060,8 +884,6 @@ export async function generateRfpDocument(
       API_CONFIG.REQUEST_TIMEOUT,
       { maxRetries: 0 }
     );
-
-    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
 
     const responseText = await response.text();
 
@@ -1077,13 +899,6 @@ export async function generateRfpDocument(
     } catch {
       throw new ApiError('La respuesta del servidor no es JSON válido.');
     }
-
-    console.log('📥 RFP generation response:', {
-      status: response.status,
-      elapsedTime: `${elapsedTime}s`,
-      hasDocument: !!data.document,
-      sectionsCount: data.sections?.length || 0
-    });
 
     if (response.ok) {
       const rfpResponse: GenerateRfpResponse = {
@@ -1101,7 +916,6 @@ export async function generateRfpDocument(
     throw new ApiError(data.error || data.message || `Server error (${response.status})`);
 
   } catch (error) {
-    console.error('❌ Error generating RFP:', error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -1121,7 +935,5 @@ export async function generateRfpDocument(
  * synchronous webhook workflows may stop, but async ones will continue.
  */
 export function cancelRunningN8nExecutions(): Promise<void> {
-  // No-op: n8n public API doesn't support stopping executions
-  console.log('ℹ️ HTTP requests aborted. n8n workflows may continue in the background.');
   return Promise.resolve();
 }

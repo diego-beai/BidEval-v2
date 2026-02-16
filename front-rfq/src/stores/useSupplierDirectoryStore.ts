@@ -68,7 +68,6 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
             .order('project_count', { ascending: false })) as { data: any[] | null; error: any };
 
           if (error) {
-            console.error('[SupplierDirectory] Error loading:', error);
             set({ error: error.message, isLoading: false });
             return;
           }
@@ -96,7 +95,6 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
             isLoading: false,
           });
         } catch (err) {
-          console.error('[SupplierDirectory] Error:', err);
           set({
             error: err instanceof Error ? err.message : 'Unknown error',
             isLoading: false,
@@ -129,14 +127,12 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
             )) as { error: any };
 
           if (error) {
-            console.error('[SupplierDirectory] Error upserting:', error);
             return false;
           }
 
           await get().loadSuppliers();
           return true;
-        } catch (err) {
-          console.error('[SupplierDirectory] Error upserting:', err);
+        } catch {
           return false;
         }
       },

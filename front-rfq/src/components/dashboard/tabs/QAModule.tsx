@@ -227,7 +227,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
 
   // Reload questions when activeProjectId changes (global project selector)
   useEffect(() => {
-    console.log('[QAModule] Active project changed:', activeProjectId);
     if (activeProjectId) {
       // loadQuestions will use the global store's activeProjectId
       loadQuestions();
@@ -284,7 +283,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
       XLSX.writeFile(wb, fileName);
       addToast('Technical audit exported successfully to Excel', 'success');
     } catch (err) {
-      console.error('Error exporting to Excel:', err);
       addToast('Error exporting to Excel', 'error');
     }
   };
@@ -339,7 +337,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
       XLSX.writeFile(wb, fileName);
       addToast(`${questions.length} questions exported successfully to Excel`, 'success');
     } catch (err) {
-      console.error('Error exporting to Excel:', err);
       addToast('Error exporting to Excel', 'error');
     }
   };
@@ -430,7 +427,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
       // Clear message after a longer delay
       setTimeout(() => setStatusMessage(null), 8000);
     } catch (err) {
-      console.error('Error generating audit:', err);
       setStatusMessage(null);
       addToast(err instanceof Error ? err.message : 'Error generating technical audit', 'error');
     } finally {
@@ -489,7 +485,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
       setAddingToDisciplina(null);
       addToast('Question added successfully', 'success');
     } catch (err) {
-      console.error('Error adding question:', err);
       addToast('Error adding question', 'error');
     }
   };
@@ -566,7 +561,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
       setFollowUpParentId(null);
       setFollowUpText('');
     } catch (error) {
-      console.error('Error creating follow-up:', error);
       addToast('Error creating follow-up question', 'error');
     } finally {
       setIsCreatingFollowUp(false);
@@ -641,7 +635,7 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
 
       setLoadedThreadHistory(prev => ({ ...prev, [questionId]: thread }));
     } catch (error) {
-      console.error('Error loading thread history:', error);
+      // ignored
     } finally {
       setLoadingThread(prev => ({ ...prev, [questionId]: false }));
     }
@@ -713,7 +707,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
 
       addToast(`${approvedQuestions.length} questions sent to ${sendToProvider}`, 'success');
     } catch (err) {
-      console.error('Error sending to supplier:', err);
       addToast(err instanceof Error ? err.message : 'Error sending questions to supplier', 'error');
     } finally {
       setIsSending(false);
@@ -756,7 +749,6 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
         setTimeout(() => setCopiedLink(false), 2000);
         addToast('Link copied to clipboard', 'success');
       } catch (err) {
-        console.error('Failed to copy:', err);
         addToast('Failed to copy link. Please copy manually.', 'error');
       }
     }

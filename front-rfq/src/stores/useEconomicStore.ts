@@ -95,7 +95,6 @@ export const useEconomicStore = create<EconomicState>((set) => ({
 
             set({ offers, comparison: withNet, isLoading: false });
         } catch (err: any) {
-            console.error('[EconomicStore] Error loading offers:', err);
             set({ error: err.message || 'Failed to load economic data', isLoading: false });
         }
     },

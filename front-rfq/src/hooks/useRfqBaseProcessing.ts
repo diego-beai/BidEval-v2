@@ -91,7 +91,6 @@ export function useRfqBaseProcessing() {
 
     // Guard against concurrent uploads (prevents double-click / StrictMode re-fires)
     if (isUploadingRef.current) {
-      console.warn('⚠️ Upload already in progress, ignoring duplicate call');
       return false;
     }
     isUploadingRef.current = true;
@@ -161,7 +160,6 @@ export function useRfqBaseProcessing() {
         setRfqBaseError(null);
       } else {
         const errorMessage = error instanceof Error ? error.message : 'Error processing RFQ files';
-        console.error('❌ RFQ Base upload error:', errorMessage);
         setRfqBaseError(errorMessage);
       }
 

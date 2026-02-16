@@ -94,7 +94,6 @@ export function SupplierUploadPage() {
 
       setPageState('valid');
     } catch (err) {
-      console.error('Error loading data:', err);
       setErrorMessage('An unexpected error occurred');
       setPageState('error');
     }
@@ -176,7 +175,6 @@ export function SupplierUploadPage() {
 
       setPageState('submitted');
     } catch (err) {
-      console.error('Upload error:', err);
       setErrorMessage(err instanceof Error ? err.message : 'Upload failed');
       setPageState('error');
     }

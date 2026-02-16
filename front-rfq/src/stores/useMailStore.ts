@@ -194,7 +194,6 @@ export const useMailStore = create<MailState>()(
                         .order('sent_at', { ascending: false })) as { data: any[] | null; error: any };
 
                     if (error) {
-                        console.error('[MailStore] Error loading sent messages:', error);
                         set({ isLoadingSent: false });
                         return;
                     }
@@ -203,8 +202,7 @@ export const useMailStore = create<MailState>()(
                         sentMessages: (data || []) as SentCommunication[],
                         isLoadingSent: false
                     });
-                } catch (err) {
-                    console.error('[MailStore] Error loading sent messages:', err);
+                } catch {
                     set({ isLoadingSent: false });
                 }
             },
@@ -221,7 +219,6 @@ export const useMailStore = create<MailState>()(
                         .single()) as { data: any; error: any };
 
                     if (error) {
-                        console.error('[MailStore] Error saving sent message:', error);
                         set({ error: `Failed to save message: ${error.message}` });
                         return;
                     }
@@ -232,7 +229,6 @@ export const useMailStore = create<MailState>()(
                         }));
                     }
                 } catch (err) {
-                    console.error('[MailStore] Error saving sent message:', err);
                     set({ error: err instanceof Error ? err.message : 'Failed to save message' });
                 }
             },
@@ -277,8 +273,7 @@ export const useMailStore = create<MailState>()(
                                 const parsedJson = JSON.parse(jsonMatch[0]);
                                 finalSubject = parsedJson.subject || '';
                                 finalBody = parsedJson.body || '';
-                            } catch (parseError) {
-                                console.warn('JSON parse failed:', parseError);
+                            } catch {
                                 // Try to extract subject and body manually with regex
                                 const subjectMatch = rawText.match(/"subject"\s*:\s*"([^"]+)"/);
                                 const bodyMatch = rawText.match(/"body"\s*:\s*"([\s\S]*?)"\s*\}/);
@@ -319,8 +314,7 @@ export const useMailStore = create<MailState>()(
                     // Notificar que hay contenido nuevo en mail
                     useSessionViewStore.getState().updateContent('mail');
 
-                } catch (error) {
-                    console.error('Error generating mail:', error);
+                } catch {
                     set({
                         error: 'Failed to generate draft. Please try again.',
                         isGenerating: false,

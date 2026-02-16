@@ -553,14 +553,12 @@ export const useRfqStore = create<RfqState>()(
         // If no project selected, clear data
         if (!activeProjectId) {
           set({ tableData: [], projects: [], isLoadingData: false });
-          console.log('[fetchAllTableData] No active project, clearing table data');
           return;
         }
 
         try {
           // Use Supabase directly with project filter (more efficient than n8n for filtered data)
           if (supabase) {
-            console.log('[fetchAllTableData] Fetching data for project:', activeProjectId);
             const { data, error } = await supabase
               .from('rfq_items_master')
               .select('*')
@@ -580,7 +578,6 @@ export const useRfqStore = create<RfqState>()(
               projects: projectList,
               error: null
             });
-            console.log('[fetchAllTableData] Loaded', data?.length, 'items for project', activeProjectId);
           } else {
             // Fallback to n8n if Supabase not configured
             const tablaUrl = activeProjectId
@@ -599,13 +596,11 @@ export const useRfqStore = create<RfqState>()(
               const projectNames = data.map((item: any) => item.project_name).filter((name: any) => Boolean(name) && typeof name === 'string') as string[];
               const projectList = [...new Set(projectNames)];
               set({ projects: projectList, tableData: data });
-              console.log('[fetchAllTableData] n8n: loaded', data.length, 'items for project (filtered from', allData.length, ')');
             } else {
               throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
           }
         } catch (err: any) {
-          console.error('[fetchAllTableData] Error:', err);
           set({ error: `Error loading table data: ${err.message}`, tableData: [], projects: [] });
         } finally {
           set({ isLoadingData: false });
@@ -621,7 +616,6 @@ export const useRfqStore = create<RfqState>()(
         // If no project selected, clear data
         if (!activeProjectId) {
           set({ proposalEvaluations: [], isLoadingData: false });
-          console.log('[fetchProposalEvaluations] No active project, clearing proposal evaluations');
           return;
         }
 
@@ -664,18 +658,15 @@ export const useRfqStore = create<RfqState>()(
               });
 
               set({ proposalEvaluations: transformedData });
-              console.log('[fetchProposalEvaluations] Loaded', transformedData.length, 'evaluation items from', documentsData?.length || 0, 'documents for project', activeProjectId);
               return;
             } catch (supabaseError: any) {
-              console.warn('[fetchProposalEvaluations] Supabase error:', supabaseError.message);
+              // ignored
             }
           }
 
           // Fallback: clear data if no connection
           set({ proposalEvaluations: [] });
-          console.log('[fetchProposalEvaluations] No Supabase connection, clearing proposal evaluations');
         } catch (err: any) {
-          console.error('[fetchProposalEvaluations] Error:', err);
           set({ error: err.message || 'Error loading proposal evaluations', proposalEvaluations: [] });
         } finally {
           set({ isLoadingData: false });
@@ -684,7 +675,6 @@ export const useRfqStore = create<RfqState>()(
 
       refreshProposalEvaluations: async () => {
         if (!supabase) {
-          console.error('[refreshProposalEvaluations] Supabase not configured');
           return;
         }
 
@@ -694,7 +684,6 @@ export const useRfqStore = create<RfqState>()(
         // If no project selected, clear data
         if (!activeProjectId) {
           set({ proposalEvaluations: [] });
-          console.log('[refreshProposalEvaluations] No active project, clearing');
           return;
         }
 
@@ -733,15 +722,13 @@ export const useRfqStore = create<RfqState>()(
           });
 
           set({ proposalEvaluations: transformedData });
-          console.log('[refreshProposalEvaluations] Refreshed', transformedData.length, 'evaluation items from', documentsData?.length || 0, 'documents');
         } catch (err: any) {
-          console.error('[refreshProposalEvaluations] Error:', err);
+          // ignored
         }
       },
 
       fetchPivotTableData: async () => {
         if (!supabase) {
-          console.error('[fetchPivotTableData] Supabase not configured');
           return;
         }
 
@@ -753,7 +740,6 @@ export const useRfqStore = create<RfqState>()(
         // If no project selected, clear data
         if (!activeProjectId) {
           set({ pivotTableData: [], projects: [], isLoadingData: false });
-          console.log('[fetchPivotTableData] No active project, clearing pivot table data');
           return;
         }
 
@@ -876,10 +862,8 @@ export const useRfqStore = create<RfqState>()(
           const projectList = [...new Set(projectNames)];
 
           set({ pivotTableData: pivotData, projects: projectList });
-          console.log('Pivot table data loaded:', pivotData.length, 'requirements with providers:', Array.from(allProviderKeys));
 
         } catch (err: any) {
-          console.error('Error fetching pivot table data:', err);
           set({ error: err.message || 'Error loading pivot table data' });
         } finally {
           set({ isLoadingData: false });
@@ -962,7 +946,6 @@ export const useRfqStore = create<RfqState>()(
 
       fetchProviderRanking: async (projectId?: string) => {
         if (!supabase) {
-          console.error('[fetchProviderRanking] Supabase not configured');
           return;
         }
 
@@ -972,7 +955,6 @@ export const useRfqStore = create<RfqState>()(
         // If no project selected, clear data
         if (!activeProjectId) {
           set({ providerRanking: [] });
-          console.log('[fetchProviderRanking] No active project, clearing provider ranking');
           return;
         }
 
@@ -999,12 +981,7 @@ export const useRfqStore = create<RfqState>()(
           }));
 
           set({ providerRanking: mapped });
-          console.log('[fetchProviderRanking] Loaded', mapped.length, 'records for project', activeProjectId);
-          if (mapped.length === 0) {
-            console.warn('[fetchProviderRanking] Provider ranking is empty for this project. Run the scoring workflow to populate data.');
-          }
         } catch (err: any) {
-          console.error('[fetchProviderRanking] Error:', err);
           set({ providerRanking: [] });
         }
       },

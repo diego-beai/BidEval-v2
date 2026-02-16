@@ -235,7 +235,6 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
 
       await saveProvidersAndCriteria(projectId);
     } catch (err: any) {
-      console.error('[SetupWizard] Error creating project:', err);
       addToast(err.message || t('setup.error.generic') || 'Error al crear proyecto', 'error');
     } finally {
       setIsSubmitting(false);
@@ -244,14 +243,12 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
 
   const saveProvidersAndCriteria = async (projectId: string) => {
     if (!projectId) {
-      console.error('[SetupWizard] No projectId received from RPC - cannot save providers/criteria');
       addToast('Error: no se recibió ID del proyecto', 'error');
       return;
     }
 
     try {
       // 2. Save invited providers
-      console.log('[SetupWizard] Saving', formData.providers.length, 'providers for project', projectId);
       if (formData.providers.length > 0) {
         const providerRows = formData.providers.map(p => ({
           project_id: projectId,
@@ -266,7 +263,6 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           .upsert(providerRows, { onConflict: 'project_id,provider_name' });
 
         if (provError) {
-          console.error('[SetupWizard] Upsert failed, trying insert:', provError.message);
           // Fallback: delete existing + insert fresh
           await (supabase! as any)
             .from('project_providers')
@@ -278,7 +274,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
             .insert(providerRows);
 
           if (insertError) {
-            console.error('[SetupWizard] Insert also failed:', insertError.message, insertError);
+            // ignored
           }
         }
 
@@ -290,7 +286,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           .eq('id', projectId);
 
         if (suppError) {
-          console.error('[SetupWizard] Error syncing invited_suppliers:', suppError.message);
+          // ignored
         }
       }
 
@@ -319,7 +315,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
         .eq('id', projectId);
 
       if (coreUpdateError) {
-        console.warn('[SetupWizard] Error updating core project fields:', coreUpdateError);
+        // ignored
       }
 
       // Then try to update extended fields (may not exist in all schemas)
@@ -333,7 +329,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           .eq('id', projectId);
 
         if (extUpdateError) {
-          console.warn('[SetupWizard] Extended fields not available (run migration 006):', extUpdateError.message);
+          // ignored
         }
       }
 
@@ -344,7 +340,6 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
       onCreated?.(projectId);
       onClose();
     } catch (err: any) {
-      console.error('[SetupWizard] Error saving project details:', err);
       addToast(err.message || t('setup.error.generic') || 'Error al guardar detalles', 'error');
     } finally {
       setIsSubmitting(false);

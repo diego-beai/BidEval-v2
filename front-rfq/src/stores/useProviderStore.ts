@@ -39,9 +39,7 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
           .select('provider_name')
           .eq('project_id', projectId);
 
-        if (invError) {
-          console.warn('[useProviderStore] project_providers query failed:', invError.message);
-        } else {
+        if (!invError) {
           (invited || []).forEach((row: any) => {
             const p = (row.provider_name || '').trim().toUpperCase();
             if (p) uniqueProviders.add(p);
@@ -90,14 +88,11 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
         }
 
         const sorted = Array.from(uniqueProviders).sort();
-        console.log('[useProviderStore] Loaded providers for project', projectId, ':', sorted);
         set({ projectProviders: sorted, isLoading: false });
       } else {
-        console.warn('[useProviderStore] Supabase not configured');
         set({ projectProviders: [], isLoading: false });
       }
-    } catch (err: any) {
-      console.error('[useProviderStore] Error:', err);
+    } catch {
       set({ projectProviders: [], isLoading: false });
     }
   },
@@ -118,13 +113,7 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
           { project_id: projectId, provider_name: normalized, status: 'invited' },
           { onConflict: 'project_id,provider_name' }
         )
-        .then(({ error }: any) => {
-          if (error) {
-            console.warn('[useProviderStore] Error persisting provider:', error.message);
-          } else {
-            console.log('[useProviderStore] Provider persisted:', normalized);
-          }
-        });
+        .then(() => {});
     }
   },
 
@@ -146,7 +135,6 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
         .single();
 
       if (error) {
-        console.error('[useProviderStore] Error generating upload link:', error);
         return null;
       }
 
@@ -157,8 +145,7 @@ export const useProviderStore = create<ProviderState>()((set, get) => ({
         url: `${baseUrl}/upload/${data.token}`,
         expires_at: data.expires_at,
       } as UploadLink;
-    } catch (err) {
-      console.error('[useProviderStore] Error generating upload link:', err);
+    } catch {
       return null;
     }
   },

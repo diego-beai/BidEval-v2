@@ -157,7 +157,6 @@ export const useQAStore = create<QAState>((set, get) => ({
 
     // Si Supabase no está configurado, usar datos mock
     if (!isSupabaseConfigured()) {
-      console.warn('📦 Supabase not configured. Using mock data.');
       set({
         questions: [],
         isLoading: false,
@@ -177,13 +176,6 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
 
     try {
-      console.log('[QAStore] Loading Q&A for project:', {
-        projectId: projectId,
-        projectDisplayName: projectDisplayName,
-        table: 'qa_audit',
-        hasCredentials: isSupabaseConfigured()
-      });
-
       // Query by project_id (UUID)
       let data: any[] | null = null;
       let error: any = null;
@@ -201,7 +193,6 @@ export const useQAStore = create<QAState>((set, get) => ({
 
       if (error) {
         // Only log, never show query errors to user — empty state handles it
-        console.warn('[QAStore] Query error (non-blocking):', error.message);
       }
 
       set({
@@ -210,7 +201,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         error: null
       });
     } catch (err: any) {
-      console.warn('[QAStore] Unexpected error:', err.message);
       set({
         error: null,
         isLoading: false,
@@ -259,7 +249,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      console.error('Error creating question:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
@@ -329,7 +318,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         isLoading: false
       });
     } catch (error) {
-      console.error('Error creating follow-up question:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
@@ -388,7 +376,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      console.error('Error updating question:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
@@ -418,7 +405,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      console.error('Error deleting question:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
@@ -457,7 +443,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         isLoading: false
       }));
     } catch (error) {
-      console.error('Error bulk updating questions:', error);
       set({
         error: error instanceof Error ? error.message : 'Unknown error',
         isLoading: false
@@ -502,7 +487,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         .single();
 
       if (error) {
-        console.error('Error loading requirement details:', error);
         clearLoading();
         return null;
       }
@@ -527,7 +511,6 @@ export const useQAStore = create<QAState>((set, get) => ({
 
       return requirement;
     } catch (error) {
-      console.error('Error loading requirement details:', error);
       clearLoading();
       return null;
     }
@@ -647,7 +630,6 @@ export const useQAStore = create<QAState>((set, get) => ({
   // Suscribirse a cambios en tiempo real
   subscribeToChanges: (projectIdParam?: string) => {
     if (!isSupabaseConfigured()) {
-      console.warn('⚠️ Supabase not configured. Realtime updates disabled.');
       return;
     }
 
@@ -656,7 +638,6 @@ export const useQAStore = create<QAState>((set, get) => ({
     const projectId = projectIdParam || activeProjectId;
 
     if (!projectId) {
-      console.warn('⚠️ No project ID available for realtime subscription.');
       return;
     }
 
@@ -721,7 +702,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         .limit(50);
 
       if (error) {
-        console.error('Error loading notifications:', error);
         set({ notificationsLoading: false });
         return;
       }
@@ -735,7 +715,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         notificationsLoading: false
       });
     } catch (error) {
-      console.error('Error loading notifications:', error);
       set({ notificationsLoading: false });
     }
   },
@@ -751,7 +730,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         .eq('id', notificationId);
 
       if (error) {
-        console.error('Error marking notification as read:', error);
         return;
       }
 
@@ -762,7 +740,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         unreadNotificationCount: Math.max(0, state.unreadNotificationCount - 1)
       }));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // ignored
     }
   },
 
@@ -781,7 +759,6 @@ export const useQAStore = create<QAState>((set, get) => ({
         .eq('is_read', false);
 
       if (error) {
-        console.error('Error marking all notifications as read:', error);
         return;
       }
 
@@ -790,7 +767,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         unreadNotificationCount: 0
       }));
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      // ignored
     }
   },
 
@@ -804,7 +781,6 @@ export const useQAStore = create<QAState>((set, get) => ({
           .eq('id', notificationId);
 
         if (error) {
-          console.error('Error deleting notification:', error);
           return;
         }
       }
@@ -820,7 +796,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         };
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // ignored
     }
   },
 
@@ -837,7 +813,6 @@ export const useQAStore = create<QAState>((set, get) => ({
           .eq('project_id', activeProjectId);
 
         if (error) {
-          console.error('Error clearing all notifications:', error);
           return;
         }
       }
@@ -847,7 +822,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         unreadNotificationCount: 0
       });
     } catch (error) {
-      console.error('Error clearing all notifications:', error);
+      // ignored
     }
   },
 
@@ -877,7 +852,6 @@ export const useQAStore = create<QAState>((set, get) => ({
           filter: `project_id=eq.${projectId}`
         },
         (payload) => {
-          console.log('🔔 New notification received:', payload);
           const newNotification = payload.new as QANotification;
           set(state => ({
             notifications: [newNotification, ...state.notifications],

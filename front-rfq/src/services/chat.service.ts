@@ -108,7 +108,6 @@ export async function sendChatMessage(
  */
 export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> {
   if (!supabase) {
-    console.warn('[chat.service] Supabase no configurado, no se puede cargar historial');
     return [];
   }
 
@@ -120,7 +119,6 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
       .order('id', { ascending: true }) as { data: N8nChatHistoryRow[] | null; error: unknown };
 
     if (error) {
-      console.error('[chat.service] Error cargando historial:', error);
       return [];
     }
 
@@ -139,7 +137,6 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
       };
     });
   } catch (error) {
-    console.error('[chat.service] Error cargando historial:', error);
     return [];
   }
 }
@@ -184,7 +181,6 @@ export async function getChatSessions(): Promise<{ sessionId: string; messageCou
       lastMessage: info.lastMessage
     }));
   } catch (error) {
-    console.error('[chat.service] Error cargando sesiones:', error);
     return [];
   }
 }
@@ -210,7 +206,6 @@ export async function getLastActiveSession(): Promise<string | null> {
 
     return data[0].session_id;
   } catch (error) {
-    console.error('[chat.service] Error obteniendo última sesión:', error);
     return null;
   }
 }

@@ -409,7 +409,7 @@ export const MailDashboard = () => {
             }
             alert(t('mail.alert.copy_success'));
         } catch (err) {
-            console.error('Failed to copy:', err);
+            // ignored
         }
     };
 
@@ -462,8 +462,6 @@ export const MailDashboard = () => {
             setEmailSent(true);
             alert(t('mail.alert.send_success'));
         } catch (error) {
-            console.error('Error sending email:', error);
-
             // Save failed attempt too
             if (activeProject?.id) {
                 await saveSentMessage({

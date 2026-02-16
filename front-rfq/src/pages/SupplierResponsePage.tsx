@@ -190,7 +190,6 @@ export function SupplierResponsePage() {
       setPageState('valid');
 
     } catch (err) {
-      console.error('Error loading data:', err);
       setErrorMessage('An unexpected error occurred');
       setPageState('error');
     }
@@ -251,7 +250,6 @@ export function SupplierResponsePage() {
       setPageState('submitted');
 
     } catch (err) {
-      console.error('Error submitting responses:', err);
       setErrorMessage(err instanceof Error ? err.message : 'Failed to submit responses');
       setPageState('error');
     } finally {

@@ -80,7 +80,7 @@ export function RfqBaseUploader() {
       if (error) throw error;
       setDocumentMetadata(data || []);
     } catch (err) {
-      console.error('Error fetching document_metadata:', err);
+      // ignored
     } finally {
       setIsRefreshingStats(false);
     }

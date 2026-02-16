@@ -141,8 +141,6 @@ export const EmailComposer = ({ providerName, onClose }: EmailComposerProps) => 
       setBody('');
       onClose();
     } catch (err) {
-      console.error('Error sending email:', err);
-
       if (activeProject?.id) {
         await createCommunication({
           project_id: activeProject.id,

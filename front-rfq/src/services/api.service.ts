@@ -85,11 +85,6 @@ export async function fetchWithTimeout(
     }
 
     try {
-      // Log retry attempts
-      if (attempt > 0) {
-        console.log(`🔄 Retry attempt ${attempt}/${config.maxRetries} for ${url}`);
-      }
-
       const response = await fetch(url, {
         ...options,
         signal: controller.signal
@@ -109,18 +104,12 @@ export async function fetchWithTimeout(
         // Check if we should retry this status code
         if (isRetryableError(error, config) && attempt < config.maxRetries) {
           const delay = calculateBackoff(attempt, config);
-          console.warn(`⚠️ Retryable error (${response.status}), waiting ${delay}ms before retry...`);
           await sleep(delay);
           lastError = error;
           continue;
         }
 
         throw error;
-      }
-
-      // Success - log if this was a retry
-      if (attempt > 0) {
-        console.log(`✅ Request succeeded after ${attempt} retries`);
       }
 
       return response;
@@ -135,11 +124,6 @@ export async function fetchWithTimeout(
 
       // Timeout error - don't retry for long-running operations
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('⏱️ Timeout reached:', {
-          url,
-          timeout: `${timeout / 1000}s`,
-          message: 'The n8n server did not respond within the limit. AI processes can take up to 30 minutes.'
-        });
         throw new ApiError(
           `Timeout: The server did not respond in ${timeout / 1000} seconds. ` +
           `AI-powered PDF processing can take up to 30 minutes. ` +
@@ -151,11 +135,6 @@ export async function fetchWithTimeout(
       // Check if error is retryable
       if (isRetryableError(error, config) && attempt < config.maxRetries) {
         const delay = calculateBackoff(attempt, config);
-        console.warn(`⚠️ Network error, waiting ${delay}ms before retry...`, {
-          error: error instanceof Error ? error.message : String(error),
-          attempt: attempt + 1,
-          maxRetries: config.maxRetries
-        });
         await sleep(delay);
         lastError = error instanceof Error ? error : new Error(String(error));
         continue;
@@ -167,11 +146,6 @@ export async function fetchWithTimeout(
         if (errorMsg.includes('failed to fetch') ||
           errorMsg.includes('network') ||
           errorMsg.includes('networkerror')) {
-          console.error('🌐 Connection error:', {
-            url,
-            error: error.message,
-            retriesAttempted: attempt
-          });
           const retryInfo = attempt > 0 ? ` (after ${attempt} retries)` : '';
           throw new ApiError(`Connection error${retryInfo}. Please check your internet connection or ensure n8n is accessible.`);
         }

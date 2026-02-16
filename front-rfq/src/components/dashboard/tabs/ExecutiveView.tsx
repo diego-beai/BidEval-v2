@@ -70,7 +70,6 @@ export const ExecutiveView: React.FC = () => {
 
     // Load scoring data and config on mount and when project changes
     useEffect(() => {
-        console.log('[ExecutiveView] Active project changed:', activeProjectId);
         refreshScoring();
         if (activeProjectId) {
             loadConfiguration(activeProjectId);

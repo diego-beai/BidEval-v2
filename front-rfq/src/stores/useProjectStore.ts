@@ -93,7 +93,6 @@ export const useProjectStore = create<ProjectState>()(
           // Load projects from v_projects_with_stats view
           loadProjects: async () => {
             if (!isSupabaseConfigured()) {
-              console.warn('Supabase not configured. Cannot load projects.');
               set({
                 projects: [],
                 isLoading: false,
@@ -113,7 +112,6 @@ export const useProjectStore = create<ProjectState>()(
                 .order('updated_at', { ascending: false });
 
               if (projectsError) {
-                console.error('[ProjectStore] Error loading projects:', projectsError);
                 set({
                   error: projectsError.message,
                   isLoading: false
@@ -259,7 +257,6 @@ export const useProjectStore = create<ProjectState>()(
                     providers_without_scoring: providersWithoutScoring,
                   } as Project;
                   } catch (projectErr) {
-                    console.error(`[ProjectStore] Error loading data for project ${p.id}:`, projectErr);
                     // Return project with safe defaults so it still appears in the list
                     return {
                       id: p.id,
@@ -315,7 +312,6 @@ export const useProjectStore = create<ProjectState>()(
 
 
             } catch (err) {
-              console.error('Error loading projects:', err);
               set({
                 error: err instanceof Error ? err.message : 'Unknown error',
                 isLoading: false
@@ -338,7 +334,6 @@ export const useProjectStore = create<ProjectState>()(
           // Create a new project
           createProject: async (displayName: string, description?: string) => {
             if (!isSupabaseConfigured()) {
-              console.warn('Supabase not configured. Cannot create project.');
               return null;
             }
 
@@ -353,7 +348,6 @@ export const useProjectStore = create<ProjectState>()(
                 });
 
               if (error) {
-                console.error('Error creating project:', error);
                 set({ error: error.message, isLoading: false });
                 return null;
               }
@@ -372,7 +366,6 @@ export const useProjectStore = create<ProjectState>()(
               return newProject || null;
 
             } catch (err) {
-              console.error('Error creating project:', err);
               set({
                 error: err instanceof Error ? err.message : 'Unknown error',
                 isLoading: false
@@ -399,7 +392,6 @@ export const useProjectStore = create<ProjectState>()(
           // Update project name
           updateProjectName: async (projectId: string, newDisplayName: string) => {
             if (!isSupabaseConfigured()) {
-              console.warn('Supabase not configured. Cannot update project.');
               return false;
             }
 
@@ -413,13 +405,11 @@ export const useProjectStore = create<ProjectState>()(
                 });
 
               if (error) {
-                console.error('Error updating project name:', error);
                 set({ error: error.message, isLoading: false });
                 return false;
               }
 
               if (!data?.success) {
-                console.error('Error updating project name:', data?.error);
                 set({ error: data?.error || 'Unknown error', isLoading: false });
                 return false;
               }
@@ -431,7 +421,6 @@ export const useProjectStore = create<ProjectState>()(
               return true;
 
             } catch (err) {
-              console.error('Error updating project name:', err);
               set({
                 error: err instanceof Error ? err.message : 'Unknown error',
                 isLoading: false
@@ -443,7 +432,6 @@ export const useProjectStore = create<ProjectState>()(
           // Soft delete project (mark as inactive)
           deleteProject: async (projectId: string) => {
             if (!isSupabaseConfigured()) {
-              console.warn('Supabase not configured. Cannot delete project.');
               return false;
             }
 
@@ -456,13 +444,11 @@ export const useProjectStore = create<ProjectState>()(
                 });
 
               if (error) {
-                console.error('Error deleting project:', error);
                 set({ error: error.message, isLoading: false });
                 return false;
               }
 
               if (!data?.success) {
-                console.error('Error deleting project:', data?.error);
                 set({ error: data?.error || 'Unknown error', isLoading: false });
                 return false;
               }
@@ -480,7 +466,6 @@ export const useProjectStore = create<ProjectState>()(
               return true;
 
             } catch (err) {
-              console.error('Error deleting project:', err);
               set({
                 error: err instanceof Error ? err.message : 'Unknown error',
                 isLoading: false
@@ -514,12 +499,3 @@ export const useProjectStore = create<ProjectState>()(
   )
 );
 
-// Subscribe to project changes for debugging
-if (import.meta.env.DEV) {
-  useProjectStore.subscribe(
-    (state) => state.activeProjectId,
-    (activeProjectId) => {
-      console.log('Active project changed:', activeProjectId);
-    }
-  );
-}
