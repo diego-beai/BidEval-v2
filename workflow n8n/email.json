@@ -33,6 +33,18 @@
                             "name": "qa_items",
                             "value": "={{ $json.body.qa_items }}",
                             "type": "array"
+                        },
+                        {
+                            "id": "language-field-email",
+                            "name": "language",
+                            "value": "={{ $json.body.language || 'es' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "currency-field-email",
+                            "name": "currency",
+                            "value": "={{ $json.body.currency || 'EUR' }}",
+                            "type": "string"
                         }
                     ]
                 },
@@ -162,7 +174,7 @@
                 "messages": {
                     "messageValues": [
                         {
-                            "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues and technical questions that need to be addressed.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project name.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing.\n   - **For ISSUES**: Group them intelligently (e.g., by category or type). For each issue, describe what is missing using the 'description' field. NEVER show any IDs, UUIDs, or internal references.\n   - **For TECHNICAL QUESTIONS**: If there are any qa_questions, add a section titled 'Technical Questions' and list them. Include the discipline and importance level for each.\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use Markdown formatting (bold, bullet points) for readability.\n5. **IMPORTANT**: NEVER include any UUIDs, internal IDs, requirement_id, or database references. Use only human-readable descriptions.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any UUIDs or internal database IDs anywhere in the output.\n- **DO NOT** include any conversational text, explanations, reasoning, thoughts, or technical notes.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n\n### SCHEMA\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here with **bold** and - bullet points\"\n}"
+                            "message": "=### ROLE\nYou are an expert Senior Project Engineer and Procurement Manager for large-scale industrial projects (P2X, Green Hydrogen). You are meticulous, diplomatic, and results-oriented.\n\n### TASK\nDraft a professional email to the Provider regarding their recent proposal for the Project. We have identified specific gaps/issues and technical questions that need to be addressed.\n\n### LANGUAGE & CURRENCY\n- Write the email in {{ $('Edit Fields').first().json.language === 'en' ? 'ENGLISH' : 'SPANISH' }}.\n- When referencing monetary values, use {{ $('Edit Fields').first().json.currency || 'EUR' }} as currency.\n\n### GUIDELINES\n1. **Subject Line**: Must be clear, professional, and reference the Project name.\n2. **Tone**: Strictly adhere to the requested 'TONE' input.\n3. **Body Content**:\n   - Briefly thank them for the proposal.\n   - State that during the review, the following points require clarification or are missing.\n   - **For ISSUES**: Group them intelligently (e.g., by category or type). For each issue, describe what is missing using the 'description' field. NEVER show any IDs, UUIDs, or internal references.\n   - **For TECHNICAL QUESTIONS**: If there are any qa_questions, add a section titled 'Technical Questions' and list them. Include the discipline and importance level for each.\n   - Ask for these specific items to be provided or clarified.\n4. **Formatting**: Use Markdown formatting (bold, bullet points) for readability.\n5. **IMPORTANT**: NEVER include any UUIDs, internal IDs, requirement_id, or database references. Use only human-readable descriptions.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any UUIDs or internal database IDs anywhere in the output.\n- **DO NOT** include any conversational text, explanations, reasoning, thoughts, or technical notes.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n\n### SCHEMA\n{\n  \"subject\": \"Email Subject Here\",\n  \"body\": \"Email Body Here with **bold** and - bullet points\"\n}"
                         }
                     ]
                 },

@@ -14,6 +14,11 @@ const CURRENCY_OPTIONS = [
   { value: 'CHF', label: 'CHF', symbol: 'Fr' },
 ];
 
+const LANGUAGE_OPTIONS = [
+  { value: 'es', label: 'Espanol' },
+  { value: 'en', label: 'English' },
+];
+
 const TYPE_OPTIONS = [
   {
     value: 'RFP' as const,
@@ -93,6 +98,18 @@ export const StepBasicInfo: React.FC<StepBasicInfoProps> = ({ data, onChange }) 
           >
             {CURRENCY_OPTIONS.map(c => (
               <option key={c.value} value={c.value}>{c.symbol} {c.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="setup-form-group" style={{ maxWidth: 140 }}>
+          <label>{t('setup.field.language') || 'Idioma IA'}</label>
+          <select
+            className="setup-input"
+            value={data.defaultLanguage}
+            onChange={(e) => onChange({ defaultLanguage: e.target.value as 'es' | 'en' })}
+          >
+            {LANGUAGE_OPTIONS.map(l => (
+              <option key={l.value} value={l.value}>{l.label}</option>
             ))}
           </select>
         </div>

@@ -46,6 +46,7 @@ export interface Project {
   date_questions_response?: string | null;
   date_evaluation?: string | null;
   date_award?: string | null;
+  default_language?: 'es' | 'en';
   // Status detail fields
   rfq_types_covered: string[];
   rfq_types_missing: string[];
@@ -61,6 +62,7 @@ interface ProjectState {
   activeProjectId: string | null;
   isLoading: boolean;
   error: string | null;
+  resultsApprovedMap: Record<string, boolean>;
 
   // Actions
   loadProjects: () => Promise<void>;
@@ -69,6 +71,7 @@ interface ProjectState {
   createProject: (displayName: string, description?: string) => Promise<Project | null>;
   updateProjectName: (projectId: string, newDisplayName: string) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
+  approveResults: (projectId: string) => void;
 
   // Helpers
   getProjectById: (id: string) => Project | null;
@@ -85,6 +88,7 @@ export const useProjectStore = create<ProjectState>()(
           activeProjectId: null,
           isLoading: false,
           error: null,
+          resultsApprovedMap: {},
 
           // Load projects from v_projects_with_stats view
           loadProjects: async () => {
@@ -143,8 +147,11 @@ export const useProjectStore = create<ProjectState>()(
                   (rfqDocs || []).forEach((doc: any) => {
                     (doc.evaluation_types || []).forEach((t: string) => rfqTypeSet.add(t));
                   });
-                  const rfqTypesCovered = REQUIRED_EVAL_TYPES.filter(t => rfqTypeSet.has(t));
-                  const rfqTypesMissing = REQUIRED_EVAL_TYPES.filter(t => !rfqTypeSet.has(t));
+                  // Visual coverage in UI should include all known types (including Others)
+                  const rfqTypesCovered = ALL_EVAL_TYPES.filter(t => rfqTypeSet.has(t));
+                  const rfqTypesMissing = ALL_EVAL_TYPES.filter(t => !rfqTypeSet.has(t));
+                  // Status gating keeps using required types only
+                  const requiredRfqTypesMissing = REQUIRED_EVAL_TYPES.filter(t => !rfqTypeSet.has(t));
 
                   // --- Compute provider coverage ---
                   const providerMap = new Map<string, Set<string>>();
@@ -154,13 +161,25 @@ export const useProjectStore = create<ProjectState>()(
                     (doc.evaluation_types || []).forEach((t: string) => providerMap.get(doc.provider)!.add(t));
                   });
 
+                  // Ensure providers already scored are visible in Proposals coverage even if
+                  // their proposal docs are incomplete/missing metadata.
+                  (scoringData || []).forEach((s: any) => {
+                    const providerName = (s.provider_name || '').trim();
+                    if (!providerName) return;
+                    if (!providerMap.has(providerName)) providerMap.set(providerName, new Set());
+                  });
+
                   const providerCoverage: ProviderCoverage[] = Array.from(providerMap.entries()).map(([name, types]) => ({
                     name,
-                    types_covered: REQUIRED_EVAL_TYPES.filter(t => types.has(t)),
-                    types_missing: REQUIRED_EVAL_TYPES.filter(t => !types.has(t)),
+                    // Visual coverage includes Others
+                    types_covered: ALL_EVAL_TYPES.filter(t => types.has(t)),
+                    types_missing: ALL_EVAL_TYPES.filter(t => !types.has(t)),
                   }));
 
-                  const qualifyingProviders = providerCoverage.filter(pc => pc.types_missing.length === 0).length;
+                  // Qualification keeps using required types only
+                  const qualifyingProviders = Array.from(providerMap.values())
+                    .filter(types => REQUIRED_EVAL_TYPES.every(t => types.has(t)))
+                    .length;
 
                   // --- Scoring info ---
                   const scoredMap = new Map<string, number>();
@@ -183,14 +202,16 @@ export const useProjectStore = create<ProjectState>()(
 
                   // --- Status calculation (check from completed → setup) ---
                   const hasScoring = scoredMap.size > 0;
-                  const hasOpenQA = (qaOpenCount || 0) > 0;
-                  const allRfqTypes = rfqTypesMissing.length === 0;
+                  const allRfqTypes = requiredRfqTypesMissing.length === 0;
                   const typeCheckFails = !allRfqTypes;
                   let status = 'setup';
 
-                  if (hasScoring && providersWithoutScoring.length === 0 && !hasOpenQA) {
+                  // Manual approval required to reach "completed" (Results)
+                  const isApproved = get().resultsApprovedMap[p.id] === true;
+
+                  if (isApproved && hasScoring) {
                     status = 'completed';
-                  } else if (qualifyingProviders >= 2) {
+                  } else if (qualifyingProviders >= 2 || (hasScoring && providersWithoutScoring.length === 0)) {
                     status = 'evaluation';
                   } else if (requirementCount > 0 && !typeCheckFails) {
                     // Has requirements AND (all types OK or no type data)
@@ -221,6 +242,7 @@ export const useProjectStore = create<ProjectState>()(
                     date_questions_response: p.date_questions_response,
                     date_evaluation: p.date_evaluation,
                     date_award: p.date_award,
+                    default_language: p.default_language || 'es',
                     document_count: docCount,
                     rfq_count: rfqCount,
                     proposal_count: proposalCount,
@@ -257,6 +279,7 @@ export const useProjectStore = create<ProjectState>()(
                       date_questions_response: p.date_questions_response,
                       date_evaluation: p.date_evaluation,
                       date_award: p.date_award,
+                      default_language: p.default_language || 'es',
                       document_count: 0,
                       rfq_count: 0,
                       proposal_count: 0,
@@ -465,12 +488,24 @@ export const useProjectStore = create<ProjectState>()(
               return false;
             }
           },
+
+          // Approve results: move project from Scoring → Results
+          approveResults: (projectId: string) => {
+            set(state => ({
+              resultsApprovedMap: { ...state.resultsApprovedMap, [projectId]: true },
+              // Also update the project's status in the local list immediately
+              projects: state.projects.map(p =>
+                p.id === projectId ? { ...p, status: 'completed' } : p
+              ),
+            }));
+          },
         }),
         {
           name: 'bideval-project-store',
-          // Only persist activeProjectId, not the full projects list
+          // Persist activeProjectId and results approvals
           partialize: (state) => ({
-            activeProjectId: state.activeProjectId
+            activeProjectId: state.activeProjectId,
+            resultsApprovedMap: state.resultsApprovedMap,
           }),
         }
       )

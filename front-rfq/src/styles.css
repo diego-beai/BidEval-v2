@@ -54,11 +54,11 @@ body {
 .top-header {
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border-color);
-    padding: 16px 32px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 72px;
+    height: 56px;
     position: sticky;
     top: 0;
     z-index: 100;

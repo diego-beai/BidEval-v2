@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
 import { useProjectStore } from './useProjectStore';
 import type { ScoringWeights } from '../types/database.types';
+import type { ESGCertification } from '../types/esg.types';
 
 // Default weights for scoring criteria (legacy 12-criteria configuration)
 export const DEFAULT_WEIGHTS: ScoringWeights = {
@@ -36,6 +37,9 @@ export interface ProviderScore {
     individual_scores: Record<string, number>;
     strengths?: string[];
     weaknesses?: string[];
+    summary?: string;
+    recommendations?: string[];
+    esg_certifications?: ESGCertification[];
 }
 
 export interface ScoringResult {
@@ -64,7 +68,7 @@ interface ScoringState {
 
     // Acciones
     calculateScoring: (projectId?: string, providerName?: string) => Promise<void>;
-    refreshScoring: () => Promise<void>;
+    refreshScoring: (projectId?: string) => Promise<void>;
     clearError: () => void;
     reset: () => void;
 
@@ -105,6 +109,11 @@ export const useScoringStore = create<ScoringState>()(
                 addToast('Calculating provider scores with AI...', 'info');
 
                 try {
+                    // Get project language and currency for LLM output
+                    const activeProject = useProjectStore.getState().getActiveProject();
+                    const projectLanguage = activeProject?.default_language || 'es';
+                    const projectCurrency = activeProject?.currency || 'EUR';
+
                     const response = await fetch(API_CONFIG.N8N_SCORING_URL, {
                         method: 'POST',
                         headers: {
@@ -113,7 +122,9 @@ export const useScoringStore = create<ScoringState>()(
                         body: JSON.stringify({
                             project_id: effectiveProjectId,
                             provider_name: providerName || '',
-                            recalculate_all: !providerName
+                            recalculate_all: !providerName,
+                            language: projectLanguage,
+                            currency: projectCurrency
                         })
                     });
 
@@ -170,7 +181,7 @@ export const useScoringStore = create<ScoringState>()(
                 }
             },
 
-            refreshScoring: async () => {
+            refreshScoring: async (projectId?: string) => {
                 if (!supabase) {
                     console.error('[Scoring] Supabase not configured');
                     set({ isCalculating: false });
@@ -178,7 +189,7 @@ export const useScoringStore = create<ScoringState>()(
                 }
 
                 // Get active project ID for filtering
-                const activeProjectId = useProjectStore.getState().activeProjectId;
+                const activeProjectId = projectId || useProjectStore.getState().activeProjectId;
 
                 // If no project selected, clear scoring data
                 if (!activeProjectId) {
@@ -291,6 +302,9 @@ export const useScoringStore = create<ScoringState>()(
                             individual_scores: individualScores,
                             strengths: evalDetails.strengths || [],
                             weaknesses: evalDetails.weaknesses || [],
+                            summary: evalDetails.summary || '',
+                            recommendations: evalDetails.recommendations || [],
+                            esg_certifications: evalDetails.esg_certifications || [],
                         };
                     });
 
@@ -472,86 +486,19 @@ export const useScoringStore = create<ScoringState>()(
                     // First save the weights config
                     await get().saveWeights();
 
-                    // Dynamically import scoring config to get category→criteria mapping
-                    const { useScoringConfigStore } = await import('./useScoringConfigStore');
-                    const { categories: dynamicCategories, hasConfiguration } = useScoringConfigStore.getState();
+                    // Recalculate scores server-side via secure RPC (prevents score manipulation)
+                    const { data: rpcResult, error: rpcError } = await (supabase as any)
+                        .rpc('recalculate_scores_with_weights', {
+                            p_project_id: activeProjectId,
+                            p_weights: customWeights,
+                        });
 
-                    // Calculate new scores with custom weights (fully dynamic)
-                    const updatedRankings = scoringResults.ranking.map(provider => {
-                        const scores = provider.individual_scores;
-
-                        // Calculate new overall score
-                        const newOverall = Object.entries(customWeights).reduce((total, [key, weight]) => {
-                            const score = scores[key] || 0;
-                            return total + (score * weight / 100);
-                        }, 0);
-
-                        // Calculate category scores dynamically
-                        const categoryScores: Record<string, number> = {};
-                        const safeCategories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
-
-                        if (hasConfiguration && safeCategories.length > 0) {
-                            // Dynamic: use categories from config store
-                            for (const cat of safeCategories) {
-                                if (!cat || !cat.name) continue;
-                                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
-                                const catWeight = catCriteria.reduce((sum: number, crit: any) => {
-                                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
-                                    return sum + actualWeight;
-                                }, 0);
-                                const weightedSum = catCriteria.reduce((sum: number, crit: any) => {
-                                    const critName = typeof crit.name === 'string' ? crit.name : String(crit.name || '');
-                                    const actualWeight = ((crit.weight || 0) * (cat.weight || 0)) / 100;
-                                    return sum + ((scores[critName] || 0) * actualWeight);
-                                }, 0);
-                                categoryScores[cat.name] = catWeight > 0 ? parseFloat((weightedSum / catWeight).toFixed(2)) : 0;
-                            }
-                        } else {
-                            // Legacy: hardcoded 4 categories
-                            const technicalWeight = (customWeights.scope_facilities || 0) + (customWeights.scope_work || 0) + (customWeights.deliverables_quality || 0);
-                            const economicWeight = (customWeights.total_price || 0) + (customWeights.price_breakdown || 0) + (customWeights.optionals_included || 0) + (customWeights.capex_opex_methodology || 0);
-                            const executionWeight = (customWeights.schedule || 0) + (customWeights.resources_allocation || 0) + (customWeights.exceptions || 0);
-                            const hseWeight = (customWeights.safety_studies || 0) + (customWeights.regulatory_compliance || 0);
-
-                            categoryScores.technical = technicalWeight > 0 ? parseFloat(((((scores.scope_facilities || 0) * (customWeights.scope_facilities || 0)) + ((scores.scope_work || 0) * (customWeights.scope_work || 0)) + ((scores.deliverables_quality || 0) * (customWeights.deliverables_quality || 0))) / technicalWeight).toFixed(2)) : 0;
-                            categoryScores.economic = economicWeight > 0 ? parseFloat(((((scores.total_price || 0) * (customWeights.total_price || 0)) + ((scores.price_breakdown || 0) * (customWeights.price_breakdown || 0)) + ((scores.optionals_included || 0) * (customWeights.optionals_included || 0)) + ((scores.capex_opex_methodology || 0) * (customWeights.capex_opex_methodology || 0))) / economicWeight).toFixed(2)) : 0;
-                            categoryScores.execution = executionWeight > 0 ? parseFloat(((((scores.schedule || 0) * (customWeights.schedule || 0)) + ((scores.resources_allocation || 0) * (customWeights.resources_allocation || 0)) + ((scores.exceptions || 0) * (customWeights.exceptions || 0))) / executionWeight).toFixed(2)) : 0;
-                            categoryScores.hse_compliance = hseWeight > 0 ? parseFloat(((((scores.safety_studies || 0) * (customWeights.safety_studies || 0)) + ((scores.regulatory_compliance || 0) * (customWeights.regulatory_compliance || 0))) / hseWeight).toFixed(2)) : 0;
-                        }
-
-                        return {
-                            provider_name: provider.provider_name,
-                            overall_score: parseFloat(newOverall.toFixed(2)),
-                            category_scores: categoryScores,
-                        };
-                    });
-
-                    // Update each provider's scores in the database
-                    const client = supabase as any;
-                    for (const ranking of updatedRankings) {
-                        const updateData: Record<string, unknown> = {
-                            overall_score: ranking.overall_score,
-                            category_scores_json: ranking.category_scores,
-                            last_updated: new Date().toISOString(),
-                        };
-                        // Also update legacy columns if they exist in the category scores
-                        if (ranking.category_scores.technical !== undefined) updateData.technical_score = ranking.category_scores.technical;
-                        if (ranking.category_scores.economic !== undefined) updateData.economic_score = ranking.category_scores.economic;
-                        if (ranking.category_scores.execution !== undefined) updateData.execution_score = ranking.category_scores.execution;
-                        if (ranking.category_scores.hse_compliance !== undefined) updateData.hse_compliance_score = ranking.category_scores.hse_compliance;
-
-                        const { error } = await client
-                            .from('ranking_proveedores')
-                            .update(updateData)
-                            .eq('provider_name', ranking.provider_name)
-                            .eq('project_id', activeProjectId);
-
-                        if (error) {
-                            console.error('[Scoring] Error updating provider:', ranking.provider_name, error);
-                        }
+                    if (rpcError) {
+                        throw new Error(`RPC error: ${rpcError.message}`);
                     }
 
-                    addToast(`Saved scores for ${updatedRankings.length} providers`, 'success');
+                    const result = rpcResult || {};
+                    addToast(`Saved scores for ${result.providers_updated || 0} providers`, 'success');
 
                     // Refresh to get the updated data
                     await get().refreshScoring();

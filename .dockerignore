@@ -6,9 +6,8 @@
 front-rfq/node_modules
 node_modules
 
-# Build outputs (we rebuild in Docker)
-front-rfq/dist
-dist
+# Build outputs (keep front-rfq/dist, needed by Dockerfile)
+!front-rfq/dist
 
 # Development files
 *.log
@@ -25,11 +24,14 @@ dist
 .DS_Store
 Thumbs.db
 
-# Environment files (we use Docker env vars)
+# Environment files (we use Docker build args)
 .env
 .env.local
 .env.*.local
+front-rfq/.env
 front-rfq/.env.local
+front-rfq/.env.production
+front-rfq/.env.production.example
 
 # Test files
 coverage

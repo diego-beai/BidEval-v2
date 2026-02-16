@@ -113,6 +113,8 @@ export function useRfqBaseProcessing() {
     // Obtener el nombre del proyecto para enviarlo a N8N
     const activeProject = getActiveProject();
     const projectName = activeProject?.display_name || activeProject?.name || undefined;
+    const projectLanguage = activeProject?.default_language || 'es';
+    const projectCurrency = activeProject?.currency || 'EUR';
 
     const fileCount = files.length;
 
@@ -120,9 +122,9 @@ export function useRfqBaseProcessing() {
       startProcessingRfqBase(fileCount);
       simulateProgress();
 
-      // Procesar todos los archivos en paralelo con el project_id y project_name
+      // Procesar todos los archivos en paralelo con el project_id, project_name y language
       const uploadPromises = files.map(file =>
-        uploadRfqBase(file, activeProjectId, projectName, abortController.signal)
+        uploadRfqBase(file, activeProjectId, projectName, abortController.signal, projectLanguage, projectCurrency)
       );
       const responses = await Promise.all(uploadPromises);
 

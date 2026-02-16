@@ -34,7 +34,9 @@ export async function sendChatMessage(
   message: string,
   sessionId?: string,
   projectId?: string | null,
-  documentIds?: string[]
+  documentIds?: string[],
+  language?: string,
+  currency?: string
 ): Promise<{ response: string; sessionId: string }> {
   // Si no hay sessionId, generar uno nuevo que incluya el projectId
   const currentSessionId = sessionId || generateSessionId(projectId);
@@ -47,7 +49,9 @@ export async function sendChatMessage(
       action: 'sendMessage',
       sessionId: currentSessionId,
       chatInput: message,
-      project_id: projectId || ''
+      project_id: projectId || '',
+      language: language || 'es',
+      currency: currency || 'EUR'
     };
 
     if (documentIds && documentIds.length > 0) {

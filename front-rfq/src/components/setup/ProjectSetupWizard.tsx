@@ -18,6 +18,7 @@ export interface ProjectSetupData {
   referenceCode: string;
   owner: string;
   currency: string;
+  defaultLanguage: 'es' | 'en';
   // Step 2: Deadlines
   dateOpening: string;
   dateSubmissionDeadline: string;
@@ -68,6 +69,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
     referenceCode: '',
     owner: '',
     currency: 'EUR',
+    defaultLanguage: 'es',
     dateOpening: '',
     dateSubmissionDeadline: '',
     dateEvaluation: '',
@@ -206,6 +208,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
             .update({
               project_type: formData.projectType,
               currency: formData.currency,
+              default_language: formData.defaultLanguage,
               date_opening: formData.dateOpening || null,
               date_submission_deadline: formData.dateSubmissionDeadline || null,
               date_evaluation: formData.dateEvaluation || null,
@@ -300,13 +303,14 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
         await scoringStore.initializeDefaultConfig(projectId);
       }
 
-      // 4. Update the project fields (dates, reference code, owner)
+      // 4. Update the project fields (dates, reference code, owner, language)
       // First update core fields that always exist
       const { error: coreUpdateError } = await (supabase! as any)
         .from('projects')
         .update({
           project_type: formData.projectType,
           currency: formData.currency,
+          default_language: formData.defaultLanguage,
           date_opening: formData.dateOpening || null,
           date_submission_deadline: formData.dateSubmissionDeadline || null,
           date_evaluation: formData.dateEvaluation || null,

@@ -135,9 +135,9 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
             placement: 'right',
             disableBeacon: true,
         },
-        // 9. Mail
+        // 9. Communications
         {
-            target: '[data-tour="nav-mail"]',
+            target: '[data-tour="nav-communications"]',
             content: (
                 <div className="tour-content">
                     <h3>{t('tour.mail.title')}</h3>

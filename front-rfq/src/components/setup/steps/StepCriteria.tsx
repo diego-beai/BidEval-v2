@@ -8,6 +8,7 @@ import type { CategoryDraft, CriterionDraft } from '../../../types/scoring.types
 import {
   DEFAULT_CATEGORIES,
   DEFAULT_CRITERIA,
+  INDUSTRY_TEMPLATES,
 } from '../../../types/scoring.types';
 
 /**
@@ -49,11 +50,15 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
 
     if (projectType === 'RFQ') {
       // RFQ: Economic-heavy defaults
+      const rfqWeights: Record<string, number> = {
+        economic: 45,
+        technical: 25,
+        execution: 10,
+        hse_compliance: 10,
+        esg_sustainability: 10,
+      };
       categories = DEFAULT_CATEGORIES.map(cat => {
-        const weight = cat.name === 'economic' ? 50
-          : cat.name === 'technical' ? 25
-          : cat.name === 'execution' ? 15
-          : 10;
+        const weight = rfqWeights[cat.name] ?? 10;
         return {
           ...cat,
           weight,
@@ -229,6 +234,58 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
           </button>
         </div>
       )}
+
+      {/* Industry Template Selector */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '16px',
+        padding: '12px 14px',
+        background: 'var(--bg-surface-alt)',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border-color)',
+      }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" style={{ flexShrink: 0 }}>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+          {t('setup.criteria.industry_template') || 'Plantilla industria:'}
+        </span>
+        <select
+          onChange={(e) => {
+            const templateId = e.target.value;
+            if (!templateId) return;
+            const template = INDUSTRY_TEMPLATES.find(tmpl => tmpl.id === templateId);
+            if (template) {
+              setDraftCategories(template.categories);
+              setExpandedCategories(new Set([0]));
+            }
+            e.target.value = '';
+          }}
+          defaultValue=""
+          style={{
+            flex: 1,
+            padding: '6px 10px',
+            fontSize: '0.8rem',
+            border: '1px solid var(--border-color)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg-surface)',
+            color: 'var(--text-primary)',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="" disabled>
+            {t('setup.criteria.select_industry') || 'Seleccionar industria...'}
+          </option>
+          {INDUSTRY_TEMPLATES.map(tmpl => (
+            <option key={tmpl.id} value={tmpl.id}>
+              {language === 'es' ? tmpl.name_es : tmpl.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Weight Summary Bar */}
       <div className="setup-criteria-summary" style={{ display: draftCategories.length === 0 ? 'none' : undefined }}>

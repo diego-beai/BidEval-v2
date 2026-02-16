@@ -37,10 +37,8 @@ interface ProjectData {
 
 type PageState = 'loading' | 'valid' | 'expired' | 'used' | 'invalid' | 'submitted' | 'error';
 
-// Use proxy in development to avoid CORS issues
-const N8N_PROCESS_RESPONSES_URL = import.meta.env.DEV
-  ? '/api/n8n/qa-process-responses-desarrollo'
-  : (import.meta.env.VITE_N8N_QA_PROCESS_RESPONSES_URL || 'https://n8n.beaienergy.com/webhook/qa-process-responses-desarrollo');
+// Uses /api/n8n/ proxy in both dev (Vite proxy) and prod (nginx proxy)
+const N8N_PROCESS_RESPONSES_URL = import.meta.env.VITE_N8N_QA_PROCESS_RESPONSES_URL || '/api/n8n/qa-process-responses';
 
 export function SupplierResponsePage() {
   const { token } = useParams<{ token: string }>();

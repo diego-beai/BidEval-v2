@@ -111,6 +111,8 @@ export interface GenerateAuditPayload {
   project_id: string;      // UUID del proyecto
   project_name?: string;   // Nombre display del proyecto
   provider: string;
+  language?: string;
+  currency?: string;
 }
 
 // Response from the n8n webhook

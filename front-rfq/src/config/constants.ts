@@ -11,7 +11,7 @@ export { getProviderColor, getProviderDisplayName, getProviderFullDisplayName };
  */
 export const API_CONFIG = {
   // URL del webhook de ofertas de proveedores
-  // nginx añade "-desarrollo" automáticamente via rewrite rule
+  // nginx proxies /api/n8n/* to n8n.beaienergy.com/webhook/*
   N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || '/api/n8n/ofertas',
   // URL del webhook de ingesta de RFQ base del cliente
   N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || '/api/n8n/ingesta-rfq',

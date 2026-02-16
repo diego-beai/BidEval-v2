@@ -1,6 +1,6 @@
 /* ===== Chat Page Layout ===== */
 .chat-page {
-    height: calc(100vh - 72px);
+    height: calc(100vh - 56px);
     display: flex;
     flex-direction: row;
     background-color: var(--bg-body);
@@ -8,7 +8,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     position: relative;
     border-radius: 0;
-    margin: -32px;
+    margin: -20px -24px;
     padding-top: 0;
     animation: fadeInModule 0.4s ease-out;
 }
@@ -459,7 +459,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 80px 32px 24px;
+    padding: 80px 32px 48px;
     display: flex;
     justify-content: center;
     pointer-events: none;

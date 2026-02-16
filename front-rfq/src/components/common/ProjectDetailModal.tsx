@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguageStore } from '../../stores/useLanguageStore';
-import { Project, REQUIRED_EVAL_TYPES } from '../../stores/useProjectStore';
+import { ALL_EVAL_TYPES, Project, useProjectStore } from '../../stores/useProjectStore';
+import { useQAStore } from '../../stores/useQAStore';
+import { useScoringStore } from '../../stores/useScoringStore';
+import { useScoringConfigStore } from '../../stores/useScoringConfigStore';
+import { useRfqStore } from '../../stores/useRfqStore';
 import './ProjectDetailModal.css';
 
 interface ProjectDetailModalProps {
@@ -39,9 +43,8 @@ function getDeadlineUrgency(dateStr: string | null | undefined): { level: 'overd
 const STEPS = [
     { key: 'bid', labelKey: 'stepper.bid', fallback: 'BID', icon: 'folder' },
     { key: 'rfp', labelKey: 'stepper.rfp', fallback: 'RFP', icon: 'file' },
-    { key: 'qa', labelKey: 'stepper.qa', fallback: 'Q&A', icon: 'help' },
     { key: 'proposals', labelKey: 'stepper.proposals', fallback: 'Proposals', icon: 'upload' },
-    { key: 'audit', labelKey: 'stepper.audit', fallback: 'Audit', icon: 'search' },
+    { key: 'qa', labelKey: 'stepper.qa', fallback: 'Q&A', icon: 'help' },
     { key: 'scoring', labelKey: 'stepper.scoring', fallback: 'Scoring', icon: 'chart' },
     { key: 'results', labelKey: 'stepper.results', fallback: 'Results', icon: 'trophy' },
 ];
@@ -49,9 +52,9 @@ const STEPS = [
 function getActiveStepIndex(status: string): number {
     switch (status) {
         case 'extracting': return 1;
-        case 'waiting_proposals': return 3;
-        case 'evaluation': return 5;
-        case 'completed': return 7;
+        case 'waiting_proposals': return 2;
+        case 'evaluation': return 4;
+        case 'completed': return 6;
         default: return 0;
     }
 }
@@ -70,10 +73,155 @@ const StepIcon: React.FC<{ icon: string; size?: number }> = ({ icon, size = 18 }
     }
 };
 
-export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project, onClose }) => {
+// Terminal Q&A states (same as ProjectProgressStepper)
+const QA_TERMINAL_STATES = new Set(['Resolved', 'Discarded']);
+
+export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project: projectProp, onClose }) => {
     const { t } = useLanguageStore();
+    const safeT = (key: string, fallback: string) => {
+        const value = t(key);
+        return !value || value === key ? fallback : value;
+    };
+    const activeProjectId = useProjectStore(s => s.activeProjectId);
+    const questions = useQAStore(s => s.questions);
+    const loadQuestions = useQAStore(s => s.loadQuestions);
+    const loadProjects = useProjectStore(s => s.loadProjects);
+    const storeProjects = useProjectStore(s => s.projects);
+
+    // Scoring data - same source as dashboard
+    const { scoringResults, refreshScoring, customWeights } = useScoringStore();
+    const {
+        categories: dynamicCategories,
+        hasConfiguration,
+        loadConfiguration: loadScoringConfiguration
+    } = useScoringConfigStore();
+    const { proposalEvaluations, fetchProposalEvaluations, fetchProviderRanking } = useRfqStore();
+
+    // Use refreshed data from store if available, fallback to prop
+    const project = storeProjects.find(p => p.id === projectProp.id) || projectProp;
+
+    const scoringCriteria = useMemo(() => {
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            const criteria: Array<{ id: string; weight: number }> = [];
+            categories.forEach((cat) => {
+                if (!cat || !cat.name) return;
+                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                const criteriaSum = catCriteria.reduce((s, c) => s + (c.weight || 0), 0);
+                const isRelative = catCriteria.length > 0 && Math.abs(criteriaSum - 100) < 1;
+                catCriteria.forEach((crit) => {
+                    if (!crit || !crit.name) return;
+                    const actualWeight = isRelative
+                        ? ((crit.weight || 0) * (cat.weight || 0)) / 100
+                        : (crit.weight || 0);
+                    criteria.push({ id: String(crit.name), weight: parseFloat(actualWeight.toFixed(2)) });
+                });
+            });
+            return criteria;
+        }
+        return [
+            { id: 'scope_facilities', weight: 10 },
+            { id: 'scope_work', weight: 10 },
+            { id: 'deliverables_quality', weight: 10 },
+            { id: 'total_price', weight: 15 },
+            { id: 'price_breakdown', weight: 8 },
+            { id: 'optionals_included', weight: 7 },
+            { id: 'capex_opex_methodology', weight: 5 },
+            { id: 'schedule', weight: 8 },
+            { id: 'resources_allocation', weight: 6 },
+            { id: 'exceptions', weight: 6 },
+            { id: 'safety_studies', weight: 8 },
+            { id: 'regulatory_compliance', weight: 7 },
+        ];
+    }, [hasConfiguration, dynamicCategories]);
+
+    // Derive scoring data from the same recalculation logic used in ScoringMatrix
+    const scoringProviders = useMemo(() => {
+        if (!scoringResults?.ranking || scoringResults.ranking.length === 0) return null;
+        return scoringResults.ranking
+            .map((provider) => {
+                const individualScores = provider.individual_scores || {};
+                const recalculatedOverall = scoringCriteria.reduce((total, criterion) => {
+                    const score = individualScores[criterion.id] || 0;
+                    const weight = customWeights[criterion.id] ?? criterion.weight ?? 0;
+                    return total + (score * weight / 100);
+                }, 0);
+                const dbOverall = Number(provider.overall_score || 0);
+                const normalizedDbOverall = dbOverall > 10 ? dbOverall / 10 : dbOverall;
+                const finalScore = recalculatedOverall > 0 ? recalculatedOverall : normalizedDbOverall;
+                return {
+                    name: provider.provider_name,
+                    score: finalScore,
+                    compliance: provider.compliance_percentage
+                };
+            })
+            .sort((a, b) => b.score - a.score)
+            .map(r => ({ ...r, score: Number(r.score.toFixed(2)) }));
+    }, [scoringResults, customWeights, scoringCriteria]);
+
+    const proposalEvaluationsForProject = useMemo(() => {
+        if (!proposalEvaluations || proposalEvaluations.length === 0) return [];
+        return proposalEvaluations.filter((item: any) => item.project_id === project.id);
+    }, [proposalEvaluations, project.id]);
+
+    // Count proposals as unique documents (not expanded evaluation rows)
+    const liveProposalCount = useMemo(() => {
+        if (proposalEvaluationsForProject.length === 0) return null;
+        const uniqueDocIds = new Set<string>();
+        proposalEvaluationsForProject.forEach((item: any) => {
+            const key = item.file_id || item.id;
+            if (key) uniqueDocIds.add(String(key));
+        });
+        return uniqueDocIds.size;
+    }, [proposalEvaluationsForProject]);
+
+    // Count unique providers from proposalEvaluations (project-scoped)
+    const liveProviderNames = useMemo(() => {
+        if (proposalEvaluationsForProject.length === 0) return null;
+        const names = new Set<string>();
+        proposalEvaluationsForProject.forEach((item: any) => {
+            if (item.provider_name) names.add(item.provider_name);
+        });
+        return Array.from(names);
+    }, [proposalEvaluationsForProject]);
+
     const activeIdx = getActiveStepIndex(project.status || 'setup');
     const [selectedStep, setSelectedStep] = useState(Math.min(activeIdx, STEPS.length - 1));
+
+    // Update selected step when project status changes after refresh
+    useEffect(() => {
+        const newActiveIdx = getActiveStepIndex(project.status || 'setup');
+        setSelectedStep(Math.min(newActiveIdx, STEPS.length - 1));
+    }, [project.status]);
+
+    // Refresh all data sources when modal opens (same as dashboard)
+    useEffect(() => {
+        if (projectProp.id) {
+            loadProjects();
+            loadQuestions(projectProp.id);
+            loadScoringConfiguration(projectProp.id);
+            refreshScoring(projectProp.id);
+            fetchProposalEvaluations(projectProp.id);
+            fetchProviderRanking(projectProp.id);
+        }
+    }, [
+        projectProp.id,
+        loadProjects,
+        loadQuestions,
+        loadScoringConfiguration,
+        refreshScoring,
+        fetchProposalEvaluations,
+        fetchProviderRanking
+    ]);
+
+    // Q&A completion logic (mirrors ProjectProgressStepper)
+    const QA_STEP_INDEX = STEPS.findIndex(s => s.key === 'qa');
+    const projectQuestions = questions.filter(q =>
+        (q.project_id || q.project_name) === project.id
+    );
+    const qaCompleted = projectQuestions.length > 0
+        ? projectQuestions.every(q => QA_TERMINAL_STATES.has(q.status || q.estado || ''))
+        : activeIdx > QA_STEP_INDEX;
 
     const getStatusColor = (status: string) => {
         switch (status?.toLowerCase()) {
@@ -88,9 +236,14 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
 
     const renderPhaseContent = (stepIdx: number) => {
         const step = STEPS[stepIdx];
-        const isCompleted = stepIdx < activeIdx;
-        const isCurrent = stepIdx === activeIdx;
-        const isPending = stepIdx > activeIdx;
+        // Q&A-aware completion logic (same as stepper)
+        const isCompleted = step.key === 'qa'
+            ? qaCompleted
+            : stepIdx < activeIdx;
+        const isCurrent = step.key === 'qa'
+            ? (stepIdx <= activeIdx && !qaCompleted)
+            : stepIdx === activeIdx;
+        const isPending = !isCompleted && !isCurrent;
 
         if (isPending) {
             return (
@@ -155,7 +308,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                             </div>
                             <div className="pdm-info-card">
                                 <span className="pdm-info-label">{t('detail.types_covered') || 'Types Covered'}</span>
-                                <span className="pdm-info-value">{project.rfq_types_covered.length} / {REQUIRED_EVAL_TYPES.length}</span>
+                                <span className="pdm-info-value">{project.rfq_types_covered.length} / {ALL_EVAL_TYPES.length}</span>
                             </div>
                         </div>
                         {project.rfq_types_covered.length > 0 && (
@@ -207,17 +360,21 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                     </div>
                 );
 
-            case 'proposals':
+            case 'proposals': {
+                // Use live data from rfqStore if available, fallback to project store
+                const proposalCount = liveProposalCount ?? project.proposal_count;
+                const qualifyingCount = liveProviderNames ? liveProviderNames.length : project.qualifying_providers;
+
                 return (
                     <div className="pdm-phase-content">
                         <div className="pdm-info-grid">
                             <div className="pdm-info-card highlight">
                                 <span className="pdm-info-label">{t('detail.proposals_received') || 'Proposals Received'}</span>
-                                <span className="pdm-info-value big">{project.proposal_count}</span>
+                                <span className="pdm-info-value big">{proposalCount}</span>
                             </div>
                             <div className="pdm-info-card">
                                 <span className="pdm-info-label">{t('detail.providers_qualified') || 'Qualified Providers'}</span>
-                                <span className="pdm-info-value big">{project.qualifying_providers}</span>
+                                <span className="pdm-info-value big">{qualifyingCount}</span>
                             </div>
                         </div>
                         {project.provider_coverage.length > 0 && (
@@ -240,7 +397,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                         {isCurrent && (
                             <div className="pdm-next-action">
                                 <span className="pdm-next-label">{t('detail.next_step') || 'Next step'}:</span>
-                                <span>{project.qualifying_providers < 2
+                                <span>{qualifyingCount < 2
                                     ? t('detail.proposals_need_more') || 'Need at least 2 fully qualified providers to proceed.'
                                     : t('detail.proposals_ready') || 'Providers ready. Proceed to audit & scoring.'
                                 }</span>
@@ -248,6 +405,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                         )}
                     </div>
                 );
+            }
 
             case 'audit':
                 return (
@@ -271,24 +429,44 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                     </div>
                 );
 
-            case 'scoring':
+            case 'scoring': {
+                // Only trust live scoring when modal is showing the active project
+                const useLiveScoring = project.id === activeProjectId;
+                const liveScoring = useLiveScoring ? scoringProviders : null;
+                const scored = liveScoring ?? project.providers_with_scoring.map(p => ({ ...p, compliance: 0 }));
+                const pendingScoring = liveScoring
+                    ? project.providers_without_scoring.filter(name =>
+                        !liveScoring.some(sp => sp.name.toUpperCase() === name.toUpperCase()))
+                    : project.providers_without_scoring;
+                const avgCompliance = scored.length > 0
+                    ? scored.reduce((sum, p) => sum + (p.compliance || 0), 0) / scored.length
+                    : 0;
+
                 return (
                     <div className="pdm-phase-content">
                         <div className="pdm-info-grid">
                             <div className="pdm-info-card highlight">
                                 <span className="pdm-info-label">{t('detail.scored') || 'Scored Providers'}</span>
-                                <span className="pdm-info-value big" style={{ color: '#10b981' }}>{project.providers_with_scoring.length}</span>
+                                <span className="pdm-info-value big" style={{ color: '#10b981' }}>{scored.length}</span>
                             </div>
                             <div className="pdm-info-card">
                                 <span className="pdm-info-label">{t('detail.pending_scoring') || 'Pending Scoring'}</span>
-                                <span className="pdm-info-value big" style={{ color: project.providers_without_scoring.length > 0 ? '#f59e0b' : '#10b981' }}>
-                                    {project.providers_without_scoring.length}
+                                <span className="pdm-info-value big" style={{ color: pendingScoring.length > 0 ? '#f59e0b' : '#10b981' }}>
+                                    {pendingScoring.length}
                                 </span>
                             </div>
+                            {avgCompliance > 0 && (
+                                <div className="pdm-info-card">
+                                    <span className="pdm-info-label">{safeT('detail.compliance', 'Avg. Compliance')}</span>
+                                    <span className="pdm-info-value big" style={{ color: avgCompliance >= 70 ? '#10b981' : '#f59e0b' }}>
+                                        {avgCompliance.toFixed(0)}%
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                        {project.providers_with_scoring.length > 0 && (
+                        {scored.length > 0 && (
                             <div className="pdm-provider-list">
-                                {project.providers_with_scoring.map((prov, idx) => (
+                                {scored.map((prov, idx) => (
                                     <div key={prov.name} className="pdm-provider-row">
                                         <span className={`pdm-provider-rank ${idx === 0 ? 'top' : ''}`}>#{idx + 1}</span>
                                         <span className="pdm-provider-name">{prov.name}</span>
@@ -297,7 +475,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                                         </span>
                                     </div>
                                 ))}
-                                {project.providers_without_scoring.map(name => (
+                                {pendingScoring.map(name => (
                                     <div key={name} className="pdm-provider-row">
                                         <span className="pdm-provider-rank" style={{ opacity: 0.3 }}>—</span>
                                         <span className="pdm-provider-name">{name}</span>
@@ -309,22 +487,24 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                         {isCurrent && (
                             <div className="pdm-next-action">
                                 <span className="pdm-next-label">{t('detail.next_step') || 'Next step'}:</span>
-                                <span>{project.providers_without_scoring.length > 0
-                                    ? `${t('detail.scoring_pending') || 'Score remaining providers:'} ${project.providers_without_scoring.join(', ')}`
+                                <span>{pendingScoring.length > 0
+                                    ? `${t('detail.scoring_pending') || 'Score remaining providers:'} ${pendingScoring.join(', ')}`
                                     : t('detail.scoring_done') || 'All providers scored. Review final results.'
                                 }</span>
                             </div>
                         )}
                     </div>
                 );
+            }
 
-            case 'results':
+            case 'results': {
+                const resultsScoredCount = scoringProviders ? scoringProviders.length : project.providers_with_scoring.length;
                 return (
                     <div className="pdm-phase-content">
                         <div className="pdm-info-grid">
                             <div className="pdm-info-card highlight">
                                 <span className="pdm-info-label">{t('detail.total_providers') || 'Total Providers Evaluated'}</span>
-                                <span className="pdm-info-value big" style={{ color: '#10b981' }}>{project.providers_with_scoring.length}</span>
+                                <span className="pdm-info-value big" style={{ color: '#10b981' }}>{resultsScoredCount}</span>
                             </div>
                             <div className="pdm-info-card">
                                 <span className="pdm-info-label">{t('detail.total_docs') || 'Total Documents'}</span>
@@ -347,6 +527,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                         )}
                     </div>
                 );
+            }
 
             default:
                 return null;
@@ -492,9 +673,14 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ project,
                 {/* Stepper timeline */}
                 <div className="pdm-stepper">
                     {STEPS.map((step, idx) => {
-                        const isCompleted = idx < activeIdx;
-                        const isCurrent = idx === activeIdx;
-                        const isPending = idx > activeIdx;
+                        // Q&A step: completed only when all questions are resolved/discarded (mirrors header)
+                        const isCompleted = step.key === 'qa'
+                            ? qaCompleted
+                            : idx < activeIdx;
+                        const isCurrent = step.key === 'qa'
+                            ? (idx <= activeIdx && !qaCompleted)
+                            : idx === activeIdx;
+                        const isPending = !isCompleted && !isCurrent;
                         const isSelected = idx === selectedStep;
 
                         return (

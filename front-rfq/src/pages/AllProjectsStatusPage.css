@@ -2,14 +2,14 @@
    AllProjectsStatusPage styles
    ============================================ */
 .all-projects-page {
-    padding: 28px 32px;
+    padding: 12px 16px;
     height: 100%;
     overflow: auto;
 }
 
 /* Header */
 .all-projects-header {
-    margin-bottom: 24px;
+    margin-bottom: 14px;
 }
 
 .all-projects-title {
@@ -31,7 +31,7 @@
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 
 /* Search */

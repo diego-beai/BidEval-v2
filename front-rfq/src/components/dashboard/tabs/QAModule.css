@@ -1580,11 +1580,29 @@
 
 /* Generator Form */
 .generator-form {
-  padding: 24px;
+  padding: 16px 24px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+}
+
+.generator-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.generator-inline .form-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.generator-inline .qa-select {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
 }
 
 .form-grid {

@@ -42,7 +42,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
     const { activeProjectId } = useProjectStore();
 
     // Scoring data from workflow results
-    const { scoringResults, refreshScoring } = useScoringStore();
+    const { scoringResults, refreshScoring, customWeights } = useScoringStore();
 
     // Scoring configuration (dynamic criteria per project)
     const { categories: scoringCategories, criteria: scoringCriteria, loadConfiguration: loadScoringConfig } = useScoringConfigStore();
@@ -53,7 +53,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
     // Dynamic providers
     const { projectProviders } = useProviderStore();
 
-    // Load data on mount
+    // Load data on mount and when active project changes
     useEffect(() => {
         loadDashboardData();
         startRealtimeUpdates();
@@ -61,24 +61,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
         fetchProposalEvaluations();
         fetchPivotTableData();
         fetchProviderRanking();
-        // Always refresh scoring results from database to get latest data
-        refreshScoring();
-        // Load Q&A notifications for activity feed
-        loadNotifications();
-    }, [loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications]);
-
-    // Reload all data when active project changes
-    useEffect(() => {
-        // Reload all data filtered by the new project
-        loadDashboardData();
-        fetchAllTableData();
-        fetchProposalEvaluations();
-        fetchPivotTableData();
-        fetchProviderRanking();
         refreshScoring();
         loadNotifications();
         if (activeProjectId) loadScoringConfig(activeProjectId);
-    }, [activeProjectId, loadDashboardData, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications, loadScoringConfig]);
+    }, [activeProjectId, loadDashboardData, startRealtimeUpdates, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshScoring, loadNotifications, loadScoringConfig]);
 
     // Cleanup realtime updates on unmount
     React.useEffect(() => {
@@ -133,14 +119,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
             providerTypes[provider].add(evalType);
         };
 
-        // Initialize all dynamic providers with the 4 scoring categories
+        // Initialize all dynamic providers with scoring categories (dynamic from config)
+        const initCats: Record<string, number> = {};
+        if (scoringCategories && scoringCategories.length > 0) {
+            scoringCategories.forEach((cat: any) => {
+                if (cat?.display_name) initCats[cat.display_name] = 0;
+            });
+        } else {
+            initCats['Technical'] = 0;
+            initCats['Economic'] = 0;
+            initCats['Execution'] = 0;
+            initCats['HSE/ESG'] = 0;
+        }
         projectProviders.forEach(provider => {
-            evaluations[provider] = {
-                'Technical': 0,      // 40%
-                'Economic': 0,       // 30%
-                'Execution': 0,      // 20%
-                'HSE/ESG': 0         // 10%
-            };
+            evaluations[provider] = { ...initCats };
         });
 
         // Use provider ranking data if available
@@ -307,7 +299,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
         }
 
         return evaluations;
-    }, [tableData, proposalEvaluations, providerRanking, projectProviders]);
+    }, [tableData, proposalEvaluations, providerRanking, projectProviders, scoringCategories]);
 
     // Generate recent activity from both tableData and proposalEvaluations
     const recentActivity = useMemo(() => {
@@ -649,8 +641,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
         )
     };
 
-    // Calculate average score from scoring results
-    const avgScore = useMemo(() => {
+    // Calculate average score - placeholder, will be recalculated below
+    const avgScoreRaw = useMemo(() => {
         if (!scoringResults?.ranking || scoringResults.ranking.length === 0) return 0;
         const sum = scoringResults.ranking.reduce((acc, r) => acc + (r.overall_score || 0), 0);
         return sum / scoringResults.ranking.length;
@@ -662,29 +654,112 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
             { key: 'technical', label: t('home.scoring.technical'), weight: 30, color: '#12b5b0' },
             { key: 'economic', label: t('home.scoring.economic'), weight: 35, color: '#f59e0b' },
             { key: 'execution', label: t('home.scoring.execution'), weight: 20, color: '#3b82f6' },
-            { key: 'hse', label: t('home.scoring.hse'), weight: 15, color: '#8b5cf6' }
+            { key: 'hse_compliance', label: t('home.scoring.hse'), weight: 15, color: '#8b5cf6' }
         ];
         if (!scoringCategories || scoringCategories.length === 0) return defaults;
-
-        const scoreKeyMap: Record<string, string> = {
-            'technical': 'technical',
-            'economic': 'economic',
-            'execution': 'execution',
-            'hse': 'hse',
-            'hse_esg': 'hse',
-            'hse_compliance': 'hse'
-        };
 
         return scoringCategories
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((cat, i) => ({
-                key: scoreKeyMap[cat.name] || cat.name,
+                key: cat.name,
                 label: cat.display_name,
                 weight: cat.weight,
                 color: cat.color || defaults[i]?.color || '#64748b'
             }));
     }, [scoringCategories, t]);
 
+    // Build scoring criteria from dynamic config (mirrors ExecutiveView/ScoringMatrix logic)
+    const homeScoringCriteria = useMemo(() => {
+        const categories = Array.isArray(scoringCategories) ? scoringCategories : [];
+        if (categories.length > 0) {
+            const criteria: Array<{ id: string; category: string; weight: number }> = [];
+            categories.forEach((cat: any) => {
+                if (!cat || !cat.name) return;
+                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                const criteriaSum = catCriteria.reduce((s: number, c: any) => s + (c.weight || 0), 0);
+                const isRelative = catCriteria.length > 0 && Math.abs(criteriaSum - 100) < 1;
+                catCriteria.forEach((crit: any) => {
+                    if (!crit || !crit.name) return;
+                    const actualWeight = isRelative
+                        ? ((crit.weight || 0) * (cat.weight || 0)) / 100
+                        : (crit.weight || 0);
+                    criteria.push({
+                        id: typeof crit.name === 'string' ? crit.name : String(crit.name),
+                        category: String(cat.name || ''),
+                        weight: parseFloat(actualWeight.toFixed(2)),
+                    });
+                });
+            });
+            return criteria;
+        }
+        return [
+            { id: 'scope_facilities', category: 'technical', weight: 10 },
+            { id: 'scope_work', category: 'technical', weight: 10 },
+            { id: 'deliverables_quality', category: 'technical', weight: 10 },
+            { id: 'total_price', category: 'economic', weight: 15 },
+            { id: 'price_breakdown', category: 'economic', weight: 8 },
+            { id: 'optionals_included', category: 'economic', weight: 7 },
+            { id: 'capex_opex_methodology', category: 'economic', weight: 5 },
+            { id: 'schedule', category: 'execution', weight: 8 },
+            { id: 'resources_allocation', category: 'execution', weight: 6 },
+            { id: 'exceptions', category: 'execution', weight: 6 },
+            { id: 'safety_studies', category: 'hse_compliance', weight: 8 },
+            { id: 'regulatory_compliance', category: 'hse_compliance', weight: 7 },
+        ];
+    }, [scoringCategories]);
+
+    // Recalculate ranking with current weights (mirrors ExecutiveView logic)
+    const recalculatedRanking = useMemo(() => {
+        const providersList = scoringResults?.ranking || [];
+        if (providersList.length === 0) return [];
+
+        // Build category weights map
+        const catWeightsMap: Record<string, number> = {};
+        const categories = Array.isArray(scoringCategories) ? scoringCategories : [];
+        if (categories.length > 0) {
+            categories.forEach((cat: any) => {
+                if (cat && cat.name) catWeightsMap[String(cat.name)] = Number(cat.weight) || 0;
+            });
+        } else {
+            for (const crit of homeScoringCriteria) {
+                catWeightsMap[crit.category] = (catWeightsMap[crit.category] || 0) +
+                    (customWeights[crit.id] ?? crit.weight ?? 0);
+            }
+        }
+
+        return providersList.map(provider => {
+            const individualScores = provider.individual_scores || {};
+            const newOverall = homeScoringCriteria.reduce((total, criterion) => {
+                const score = individualScores[criterion.id] || 0;
+                const weight = customWeights[criterion.id] ?? criterion.weight ?? 0;
+                return total + (score * weight / 100);
+            }, 0);
+
+            const newScores: Record<string, number> = {};
+            for (const [catName, catWeight] of Object.entries(catWeightsMap)) {
+                const catCriteria = homeScoringCriteria.filter(c => c.category === catName);
+                if (catWeight > 0 && catCriteria.length > 0) {
+                    const weightedSum = catCriteria.reduce((sum, crit) => {
+                        const score = individualScores[crit.id] || 0;
+                        const weight = customWeights[crit.id] ?? crit.weight ?? 0;
+                        return sum + (score * weight);
+                    }, 0);
+                    newScores[catName] = weightedSum / catWeight;
+                } else {
+                    newScores[catName] = 0;
+                }
+            }
+
+            return { ...provider, overall_score: newOverall, scores: newScores };
+        });
+    }, [scoringResults, customWeights, homeScoringCriteria, scoringCategories]);
+
+    // Average score from recalculated ranking
+    const avgScore = useMemo(() => {
+        if (recalculatedRanking.length === 0) return avgScoreRaw;
+        const sum = recalculatedRanking.reduce((acc, r) => acc + (r.overall_score || 0), 0);
+        return sum / recalculatedRanking.length;
+    }, [recalculatedRanking, avgScoreRaw]);
 
     return (
         <div className="home-dashboard">
@@ -852,10 +927,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                 </div>
             </div>
 
-            {/* AI Scoring Results - from workflow */}
-            {scoringResults && scoringResults.ranking.length > 0 && (() => {
-                // Calculate top performer dynamically from current ranking
-                const sortedByScore = [...scoringResults.ranking].sort((a, b) => b.overall_score - a.overall_score);
+            {/* AI Scoring Results - recalculated with current weights */}
+            {recalculatedRanking.length > 0 && (() => {
+                // Calculate top performer dynamically from recalculated ranking
+                const sortedByScore = [...recalculatedRanking].sort((a, b) => b.overall_score - a.overall_score);
                 const topPerformer = sortedByScore[0];
 
                 return (
@@ -874,8 +949,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                             <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
                                 {t('home.scoring.top_performer')}
                             </div>
-                            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                                {topPerformer?.provider_name || 'N/A'}
+                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)', lineHeight: 1.2 }}>
+                                {topPerformer ? getProviderDisplayName(topPerformer.provider_name) : 'N/A'}
                             </div>
                         </div>
                         <div style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)' }}>
@@ -883,7 +958,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                                 {t('home.scoring.top_score')}
                             </div>
                             <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#3b82f6' }}>
-                                {topPerformer?.overall_score?.toFixed(1) || 'N/A'}/10
+                                {topPerformer?.overall_score?.toFixed(2) || 'N/A'}/10
                             </div>
                         </div>
                         <div style={{ textAlign: 'center', borderRight: '1px solid var(--border-color)' }}>
@@ -892,7 +967,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                             </div>
                             <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10b981' }}>
                                 {(() => {
-                                    const avgCompliance = scoringResults.ranking.reduce((sum, r) => sum + (r.compliance_percentage || 0), 0) / scoringResults.ranking.length;
+                                    const avgCompliance = recalculatedRanking.reduce((sum, r) => sum + (r.compliance_percentage || 0), 0) / recalculatedRanking.length;
                                     return `${avgCompliance.toFixed(0)}%`;
                                 })()}
                             </div>
@@ -955,33 +1030,23 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                         height: '240px',
                         paddingBottom: '16px',
                         borderBottom: '2px solid var(--border-color)',
-                        gap: `${Math.max(12, Math.min(50, 200 / (scoringResults?.ranking?.length || 1)))}px`,
+                        gap: `${Math.max(12, Math.min(50, 200 / (recalculatedRanking.length || 1)))}px`,
                         padding: '0 16px 16px 16px'
                     }}>
-                        {/* Use scoringResults from useScoringStore for accurate data - sorted by score */}
-                        {scoringResults?.ranking && scoringResults.ranking.length > 0 ? (
-                            [...scoringResults.ranking].sort((a, b) => {
-                                const sumA = (a.scores?.technical || 0) + (a.scores?.economic || 0) + (a.scores?.execution || 0) + (a.scores?.hse_compliance || 0);
-                                const sumB = (b.scores?.technical || 0) + (b.scores?.economic || 0) + (b.scores?.execution || 0) + (b.scores?.hse_compliance || 0);
-                                return sumB - sumA;
-                            }).map((provider) => {
+                        {/* Use recalculatedRanking for scores consistent with ExecutiveView/ScoringMatrix */}
+                        {recalculatedRanking.length > 0 ? (
+                            [...recalculatedRanking].sort((a, b) => b.overall_score - a.overall_score
+                            ).map((provider) => {
                                 const scores = provider.scores || {};
-                                const hasData = (scores.technical || 0) + (scores.economic || 0) + (scores.execution || 0) + (scores.hse_compliance || 0) > 0;
+                                const hasData = Object.values(scores).some(v => (v as number) > 0);
                                 if (!hasData) return null;
 
-                                const scoreMap: Record<string, number> = {
-                                    technical: scores.technical || 0,
-                                    economic: scores.economic || 0,
-                                    execution: scores.execution || 0,
-                                    hse: scores.hse_compliance || 0
-                                };
                                 const evaluations = categoryWeights.map(cw => ({
                                     type: `${cw.label} (${cw.weight}%)`,
-                                    score: scoreMap[cw.key] || 0,
+                                    score: (scores as any)[cw.key] || 0,
                                     color: cw.color
                                 }));
 
-                                // Get display name from provider name
                                 const displayName = getProviderDisplayName(provider.provider_name);
 
                                 return (
@@ -1332,14 +1397,14 @@ const StackedBar = ({ provider, evaluations }: {
                 maxWidth: '56px'
             }}
         >
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                 {/* Tooltip - solo muestra el tipo en hover */}
                 {hoveredEval && (
                     <div style={{
                         position: 'absolute',
-                        top: '-10px',
+                        bottom: `calc(${activeEvaluations.reduce((sum, ev) => sum + (ev.score / maxPossible) * 100, 0)}% + 12px)`,
                         left: '50%',
-                        transform: 'translate(-50%, -100%)',
+                        transform: 'translateX(-50%)',
                         backgroundColor: 'var(--bg-surface)',
                         border: `2px solid ${hoveredEval.color}`,
                         padding: '10px 14px',
@@ -1360,10 +1425,10 @@ const StackedBar = ({ provider, evaluations }: {
                     </div>
                 )}
 
-                {/* Barra apilada */}
+                {/* Barra apilada - height based on total score, not 100% */}
                 <div style={{
                     width: '100%',
-                    height: '100%',
+                    height: `${activeEvaluations.reduce((sum, ev) => sum + (ev.score / maxPossible) * 100, 0)}%`,
                     display: 'flex',
                     flexDirection: 'column-reverse',
                     justifyContent: 'flex-start',
@@ -1374,6 +1439,7 @@ const StackedBar = ({ provider, evaluations }: {
                     boxShadow: hoveredIdx !== null ? '0 8px 20px rgba(0,0,0,0.15)' : 'none'
                 }}>
                     {activeEvaluations.map((ev, i) => {
+                        const totalScore = activeEvaluations.reduce((sum, e) => sum + e.score, 0);
                         const isTop = i === activeEvaluations.length - 1;
                         const isHovered = hoveredIdx === i;
                         return (
@@ -1381,7 +1447,7 @@ const StackedBar = ({ provider, evaluations }: {
                                 key={i}
                                 onMouseEnter={() => setHoveredIdx(i)}
                                 style={{
-                                    height: `${(ev.score / maxPossible) * 100}%`,
+                                    height: `${(ev.score / totalScore) * 100}%`,
                                     background: `linear-gradient(180deg, ${ev.color} 0%, ${ev.color}dd 100%)`,
                                     transition: 'all 0.2s',
                                     borderTopLeftRadius: isTop ? '8px' : 0,

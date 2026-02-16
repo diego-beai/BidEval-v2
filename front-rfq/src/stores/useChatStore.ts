@@ -115,14 +115,17 @@ export const useChatStore = create<ChatState>()(
           try {
             // Obtener el proyecto activo para filtrar las respuestas del chat
             const activeProjectId = useProjectStore.getState().activeProjectId;
+            const activeProject = useProjectStore.getState().getActiveProject();
 
-            // Enviar mensaje a n8n con el project_id y document_ids
+            // Enviar mensaje a n8n con el project_id, document_ids, language y currency
             const selectedDocs = get().selectedDocumentIds;
             const { response, sessionId } = await sendChatMessage(
               trimmedContent,
               get().sessionId || undefined,
               activeProjectId,
-              selectedDocs.length > 0 ? selectedDocs : undefined
+              selectedDocs.length > 0 ? selectedDocs : undefined,
+              activeProject?.default_language || 'es',
+              activeProject?.currency || 'EUR'
             );
 
             // Agregar respuesta del asistente

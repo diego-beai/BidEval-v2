@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { Project } from '../../stores/useProjectStore';
+import { useQAStore } from '../../stores/useQAStore';
 import './ProjectProgressStepper.css';
 
 interface ProjectProgressStepperProps {
@@ -27,20 +28,14 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
             <line x1="16" y1="17" x2="8" y2="17" />
         </>
     ),
-    qa: ( // message-circle
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    ),
     proposals: ( // inbox
         <>
             <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
             <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
         </>
     ),
-    audit: ( // shield-check
-        <>
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            <polyline points="9 12 11 14 15 10" />
-        </>
+    qa: ( // message-circle — Q&A audit towards supplier proposals
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     ),
     scoring: ( // bar-chart-2
         <>
@@ -57,31 +52,30 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
     ),
 };
 
-// 7 visual phases matching the modal stepper
+// 6 visual phases
 const STEPS = [
     { key: 'bid', labelKey: 'stepper.bid', fallback: 'BID' },
     { key: 'rfp', labelKey: 'stepper.rfp', fallback: 'RFP' },
-    { key: 'qa', labelKey: 'stepper.qa', fallback: 'Q&A' },
     { key: 'proposals', labelKey: 'stepper.proposals', fallback: 'Proposals' },
-    { key: 'audit', labelKey: 'stepper.audit', fallback: 'Audit' },
+    { key: 'qa', labelKey: 'stepper.qa', fallback: 'Q&A' },
     { key: 'scoring', labelKey: 'stepper.scoring', fallback: 'Scoring' },
     { key: 'results', labelKey: 'stepper.results', fallback: 'Results' },
 ];
 
 /**
- * Maps 5 backend statuses to 7 visual step index.
+ * Maps backend statuses to visual step index (6 steps now).
  * setup             → 0  (BID)
  * extracting        → 1  (RFP)
- * waiting_proposals → 3  (Proposals)
- * evaluation        → 5  (Scoring)
- * completed         → 7  (all done)
+ * waiting_proposals → 2  (Proposals)
+ * evaluation        → 4  (Scoring)
+ * completed         → 6  (all done)
  */
 function getActiveStepIndex(status: string): number {
     switch (status) {
         case 'extracting': return 1;
-        case 'waiting_proposals': return 3;
-        case 'evaluation': return 5;
-        case 'completed': return 7;
+        case 'waiting_proposals': return 2;
+        case 'evaluation': return 4;
+        case 'completed': return 6;
         default: return 0;
     }
 }
@@ -98,14 +92,38 @@ function getStatusColor(status: string): string {
     return STATUS_COLORS[status?.toLowerCase()] || '#94a3b8';
 }
 
+// Terminal Q&A states — question is fully resolved
+const QA_TERMINAL_STATES = new Set(['Resolved', 'Discarded']);
+
 export const ProjectProgressStepper: React.FC<ProjectProgressStepperProps> = ({
     project,
     onClick,
     variant = 'full',
 }) => {
     const { t } = useLanguageStore();
+    const questions = useQAStore(s => s.questions);
+    const loadQuestions = useQAStore(s => s.loadQuestions);
     const status = project.status || 'setup';
     const activeIdx = getActiveStepIndex(status);
+
+    // Ensure Q&A questions are loaded for the current project
+    useEffect(() => {
+        if (project.id) {
+            loadQuestions(project.id);
+        }
+    }, [project.id, loadQuestions]);
+
+    // Q&A completion logic:
+    // - Has questions → completed only if ALL are Resolved/Discarded
+    // - No questions + project past Q&A phase → completed (skipped)
+    // - No questions + project at/before Q&A → not completed yet
+    const QA_STEP_INDEX = STEPS.findIndex(s => s.key === 'qa');
+    const projectQuestions = questions.filter(q =>
+        (q.project_id || q.project_name) === project.id
+    );
+    const qaCompleted = projectQuestions.length > 0
+        ? projectQuestions.every(q => QA_TERMINAL_STATES.has(q.status || q.estado || ''))
+        : activeIdx > QA_STEP_INDEX;
 
     // Compact variant: colored badge with dot + current step label
     if (variant === 'compact') {
@@ -132,8 +150,13 @@ export const ProjectProgressStepper: React.FC<ProjectProgressStepperProps> = ({
     return (
         <div className="progress-stepper" onClick={onClick} title={t('projects.progress')}>
             {STEPS.map((step, idx) => {
-                const isCompleted = idx < activeIdx;
-                const isCurrent = idx === activeIdx;
+                // Q&A step: completed only when all questions are resolved/discarded
+                const isCompleted = step.key === 'qa'
+                    ? qaCompleted
+                    : idx < activeIdx;
+                const isCurrent = step.key === 'qa'
+                    ? (idx <= activeIdx && !qaCompleted)
+                    : idx === activeIdx;
 
                 return (
                     <React.Fragment key={step.key}>
@@ -143,7 +166,7 @@ export const ProjectProgressStepper: React.FC<ProjectProgressStepperProps> = ({
 
                         <div className={`stepper-step ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${!isCompleted && !isCurrent ? 'pending' : ''}`}>
                             <div className="stepper-circle">
-                                <svg className="stepper-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg className="stepper-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     {STEP_ICONS[step.key]}
                                 </svg>
                             </div>

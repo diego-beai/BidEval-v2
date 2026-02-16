@@ -52,6 +52,8 @@ export async function uploadRfqFile(
     proyecto?: string;
     proveedor?: string;
     tipoEvaluacion?: string[];
+    language?: string;
+    currency?: string;
   },
   abortSignal?: AbortSignal
 ): Promise<RfqUploadResponse> {
@@ -70,6 +72,8 @@ export async function uploadRfqFile(
       file_url: "",
       file_binary: fileBase64,
       project_id: additionalMetadata?.project_id || null,
+      language: additionalMetadata?.language || 'es',
+      currency: additionalMetadata?.currency || 'EUR',
       metadata: {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
@@ -78,7 +82,9 @@ export async function uploadRfqFile(
         project_id: additionalMetadata?.project_id || null,
         proyecto: additionalMetadata?.proyecto || null,
         proveedor: additionalMetadata?.proveedor || null,
-        tipoEvaluacion: additionalMetadata?.tipoEvaluacion || []
+        tipoEvaluacion: additionalMetadata?.tipoEvaluacion || [],
+        language: additionalMetadata?.language || 'es',
+        currency: additionalMetadata?.currency || 'EUR'
       }
     };
 
@@ -315,7 +321,9 @@ export async function uploadRfqBase(
   file: File,
   projectId?: string,
   projectName?: string,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  language?: string,
+  currency?: string
 ): Promise<RfqIngestaResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
@@ -333,7 +341,11 @@ export async function uploadRfqBase(
       // Project ID for multi-project support
       project_id: projectId || null,
       // Project name for display purposes (fixes issue where file_title was used as project name)
-      project_name: projectName || fileTitle.replace(/\.pdf$/i, '')
+      project_name: projectName || fileTitle.replace(/\.pdf$/i, ''),
+      // Language for LLM output
+      language: language || 'es',
+      // Currency for economic analysis
+      currency: currency || 'EUR'
     };
 
     console.log('📤 Sending base RFQ to n8n:', {
@@ -537,6 +549,8 @@ export interface ScoringEvaluationPayload {
   project_id: string;
   provider_name?: string;
   recalculate_all?: boolean;
+  language?: string;
+  currency?: string;
 }
 
 /**
@@ -991,6 +1005,7 @@ export interface GenerateRfpPayload {
     award?: string;
   };
   language?: string;
+  currency?: string;
   sections?: string[];
 }
 
@@ -1056,7 +1071,9 @@ export async function generateRfpDocument(
 
     let data;
     try {
-      data = JSON.parse(responseText);
+      const parsed = JSON.parse(responseText);
+      // n8n returns an array — extract first element
+      data = Array.isArray(parsed) ? parsed[0] : parsed;
     } catch {
       throw new ApiError('La respuesta del servidor no es JSON válido.');
     }

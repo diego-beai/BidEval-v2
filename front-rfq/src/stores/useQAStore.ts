@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { sanitizeText } from '../utils/sanitize';
 import { useProjectStore } from './useProjectStore';
 import {
   type QAQuestion,
@@ -239,7 +240,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           project_id: question.project_id || currentProjectId,  // UUID del proyecto
           provider_name: question.provider_name || question.proveedor,
           discipline: question.discipline || question.disciplina,
-          question: question.question || question.pregunta_texto,
+          question: sanitizeText(question.question || question.pregunta_texto),
           status: question.status || question.estado || 'Draft',
           importance: question.importance || question.importancia || 'Medium',
           requirement_id: question.requirement_id || null, // Link to source requirement
@@ -293,7 +294,7 @@ export const useQAStore = create<QAState>((set, get) => ({
           project_id: parentQuestion.project_id || currentProjectId,
           provider_name: parentQuestion.provider_name || parentQuestion.proveedor,
           discipline: parentQuestion.discipline || parentQuestion.disciplina,
-          question: questionText,
+          question: sanitizeText(questionText),
           status: 'Draft', // Follow-up starts as Draft, needs approval before sending
           importance: parentQuestion.importance || parentQuestion.importancia || 'Medium',
           requirement_id: parentQuestion.requirement_id || null, // Inherit requirement from parent
@@ -356,7 +357,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         updateData.discipline = updates.discipline || updates.disciplina;
       }
       if (updates.question || updates.pregunta_texto) {
-        updateData.question = updates.question || updates.pregunta_texto;
+        updateData.question = sanitizeText(updates.question || updates.pregunta_texto);
       }
       if (updates.status || updates.estado) {
         updateData.status = updates.status || updates.estado;
@@ -365,7 +366,7 @@ export const useQAStore = create<QAState>((set, get) => ({
         updateData.importance = updates.importance || updates.importancia;
       }
       if (updates.response || updates.respuesta_proveedor) {
-        updateData.response = updates.response || updates.respuesta_proveedor;
+        updateData.response = sanitizeText(updates.response || updates.respuesta_proveedor);
       }
 
       const { data, error } = await (supabase!

@@ -1,8 +1,7 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { getProviderColor, getProviderDisplayName } from '../../types/provider.types';
 import { ProgressRing } from './ProgressRing';
 import { useRfqStore } from '../../stores/useRfqStore';
-import { useProjectStore } from '../../stores/useProjectStore';
 import { useProviderStore } from '../../stores/useProviderStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 
@@ -22,23 +21,14 @@ export interface ProviderEvaluationData {
 const normalizeProvider = (name: string) =>
   name.trim().toUpperCase().replace(/\s+/g, '');
 
-export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
+export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = React.memo(({
   selectedProvider,
   onProviderClick,
   onProviderDataChange
 }) => {
-  const { results, pivotTableData, proposalEvaluations, fetchPivotTableData, fetchProposalEvaluations } = useRfqStore();
-  const { activeProjectId } = useProjectStore();
+  const { results, pivotTableData, proposalEvaluations } = useRfqStore();
   const { projectProviders } = useProviderStore();
   const { t } = useLanguageStore();
-
-  // Reload data when project changes
-  useEffect(() => {
-    if (activeProjectId) {
-      fetchPivotTableData();
-      fetchProposalEvaluations();
-    }
-  }, [activeProjectId, fetchPivotTableData, fetchProposalEvaluations]);
 
 
   // Calculate progress for each dynamic provider
@@ -269,6 +259,8 @@ export const ProviderProgressGrid: React.FC<ProviderProgressGridProps> = ({
       `}</style>
     </div>
   );
-};
+});
+
+ProviderProgressGrid.displayName = 'ProviderProgressGrid';
 
 export default ProviderProgressGrid;

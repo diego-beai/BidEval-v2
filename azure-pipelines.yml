@@ -10,7 +10,7 @@ pool:
 
 stages:
   - stage: Deploy
-    displayName: 'Deploy BidEval'
+    displayName: 'Deploy BidEval v2'
     jobs:
       - job: DeployApp
         displayName: 'Deploy'
@@ -20,20 +20,28 @@ stages:
 
           - script: |
               set -e
-              
-              echo "Deploying BidEval..."
-              
+
+              echo "=== Building frontend ==="
+              cd front-rfq
+              npm ci --legacy-peer-deps
+              VITE_SUPABASE_URL="$(VITE_SUPABASE_URL)" \
+              VITE_SUPABASE_ANON_KEY="$(VITE_SUPABASE_ANON_KEY)" \
+              VITE_SUPABASE_SCHEMA="$(VITE_SUPABASE_SCHEMA)" \
+              npm run build
+              cd ..
+
+              echo "=== Deploying with Docker ==="
               docker stop bideval 2>/dev/null || true
               docker rm -f bideval 2>/dev/null || true
-              
+
               docker compose build bideval
               docker compose up -d bideval
-              
+
               echo "Deployment complete!"
-            displayName: 'Deploy with Docker Compose'
+            displayName: 'Build & Deploy'
             workingDirectory: $(Build.SourcesDirectory)
             timeoutInMinutes: 10
             env:
               VITE_SUPABASE_URL: $(VITE_SUPABASE_URL)
               VITE_SUPABASE_ANON_KEY: $(VITE_SUPABASE_ANON_KEY)
-              VITE_N8N_WEBHOOK_URL: $(VITE_N8N_WEBHOOK_URL)
+              VITE_SUPABASE_SCHEMA: $(VITE_SUPABASE_SCHEMA)

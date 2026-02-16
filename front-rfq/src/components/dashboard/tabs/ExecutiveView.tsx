@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
     PieChart, Pie
 } from 'recharts';
+import * as XLSX from 'xlsx';
 import { useScoringStore } from '../../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { getProviderColor, getProviderDisplayName as displayProviderName } from '../../../types/provider.types';
 import { useProviderStore } from '../../../stores/useProviderStore';
+import { EsgBadges } from '../../common/EsgBadges';
 
 // Function to get translated criteria labels (fallback when no dynamic config)
 const getDefaultCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
@@ -35,9 +37,15 @@ export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
     const { categories: dynamicCategories, hasConfiguration, loadConfiguration } = useScoringConfigStore();
     const { t } = useLanguageStore();
-    const { activeProjectId } = useProjectStore();
+    const { activeProjectId, approveResults, resultsApprovedMap, loadProjects } = useProjectStore();
     const { projectProviders } = useProviderStore();
     const [highlightedProvider, setHighlightedProvider] = useState<string | null>(null);
+
+    const getCompactProviderLabel = (providerName: string, max = 18) => {
+        const label = displayProviderName(providerName);
+        if (label.length <= max) return label;
+        return `${label.slice(0, max - 1)}…`;
+    };
 
     // Get criteria labels (from dynamic config or fallback to translations)
     const CRITERIA_LABELS = useMemo(() => {
@@ -110,10 +118,103 @@ export const ExecutiveView: React.FC = () => {
         };
     }, [hasConfiguration, dynamicCategories, customWeights]);
 
-    // Prepare radar chart data - MUST be before any conditional returns to respect hooks rules
-    // Uses scoringResults directly instead of providers to handle null case
-    const radarData = useMemo(() => {
+    // Build scoring criteria from dynamic config (mirrors ScoringMatrix logic)
+    const scoringCriteria = useMemo(() => {
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            const criteria: Array<{ id: string; category: string; weight: number }> = [];
+            categories.forEach((cat: any) => {
+                if (!cat || !cat.name) return;
+                const catCriteria = Array.isArray(cat.criteria) ? cat.criteria : [];
+                const criteriaSum = catCriteria.reduce((s: number, c: any) => s + (c.weight || 0), 0);
+                const isRelative = catCriteria.length > 0 && Math.abs(criteriaSum - 100) < 1;
+                catCriteria.forEach((crit: any) => {
+                    if (!crit || !crit.name) return;
+                    const actualWeight = isRelative
+                        ? ((crit.weight || 0) * (cat.weight || 0)) / 100
+                        : (crit.weight || 0);
+                    criteria.push({
+                        id: typeof crit.name === 'string' ? crit.name : String(crit.name),
+                        category: String(cat.name || ''),
+                        weight: parseFloat(actualWeight.toFixed(2)),
+                    });
+                });
+            });
+            return criteria;
+        }
+        return [
+            { id: 'scope_facilities', category: 'technical', weight: 10 },
+            { id: 'scope_work', category: 'technical', weight: 10 },
+            { id: 'deliverables_quality', category: 'technical', weight: 10 },
+            { id: 'total_price', category: 'economic', weight: 15 },
+            { id: 'price_breakdown', category: 'economic', weight: 8 },
+            { id: 'optionals_included', category: 'economic', weight: 7 },
+            { id: 'capex_opex_methodology', category: 'economic', weight: 5 },
+            { id: 'schedule', category: 'execution', weight: 8 },
+            { id: 'resources_allocation', category: 'execution', weight: 6 },
+            { id: 'exceptions', category: 'execution', weight: 6 },
+            { id: 'safety_studies', category: 'hse_compliance', weight: 8 },
+            { id: 'regulatory_compliance', category: 'hse_compliance', weight: 7 },
+        ];
+    }, [hasConfiguration, dynamicCategories]);
+
+    // Recalculate ranking with current weights (mirrors ScoringMatrix recalculatedProviders)
+    const recalculatedRanking = useMemo(() => {
         const providersList = scoringResults?.ranking || [];
+        if (providersList.length === 0) return [];
+
+        // Build category weights map (category name -> total weight)
+        const catWeightsMap: Record<string, number> = {};
+        const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
+        if (hasConfiguration && categories.length > 0) {
+            categories.forEach((cat: any) => {
+                if (cat && cat.name) {
+                    catWeightsMap[String(cat.name)] = Number(cat.weight) || 0;
+                }
+            });
+        } else {
+            for (const crit of scoringCriteria) {
+                catWeightsMap[crit.category] = (catWeightsMap[crit.category] || 0) +
+                    (customWeights[crit.id] ?? crit.weight ?? 0);
+            }
+        }
+
+        return providersList.map(provider => {
+            const individualScores = provider.individual_scores || {};
+
+            const newOverall = scoringCriteria.reduce((total, criterion) => {
+                const score = individualScores[criterion.id] || 0;
+                const weight = customWeights[criterion.id] ?? criterion.weight ?? 0;
+                return total + (score * weight / 100);
+            }, 0);
+
+            const newScores: Record<string, number> = {};
+            for (const [catName, catWeight] of Object.entries(catWeightsMap)) {
+                const categoryCriteria = scoringCriteria.filter(c => c.category === catName);
+                if (catWeight > 0 && categoryCriteria.length > 0) {
+                    const weightedSum = categoryCriteria.reduce((sum, crit) => {
+                        const score = individualScores[crit.id] || 0;
+                        const weight = customWeights[crit.id] ?? crit.weight ?? 0;
+                        return sum + (score * weight);
+                    }, 0);
+                    newScores[catName] = weightedSum / catWeight;
+                } else {
+                    newScores[catName] = 0;
+                }
+            }
+
+            return {
+                ...provider,
+                overall_score: newOverall,
+                scores: newScores,
+            };
+        });
+    }, [scoringResults, customWeights, scoringCriteria, hasConfiguration, dynamicCategories]);
+
+    // Prepare radar chart data - MUST be before any conditional returns to respect hooks rules
+    // Uses recalculatedRanking to ensure scores match ScoringMatrix
+    const radarData = useMemo(() => {
+        const providersList = recalculatedRanking;
         if (providersList.length === 0) return [];
 
         const categories = Array.isArray(dynamicCategories) ? dynamicCategories : [];
@@ -173,17 +274,71 @@ export const ExecutiveView: React.FC = () => {
                 }))
             }
         ];
-    }, [hasConfiguration, dynamicCategories, scoringResults, t]);
+    }, [hasConfiguration, dynamicCategories, recalculatedRanking, t]);
+
+    // Calculate dynamic radar domain to spread clustered values
+    const radarDomain = useMemo(() => {
+        if (radarData.length === 0) return [0, 10] as [number, number];
+        const providersList = recalculatedRanking;
+        const allValues: number[] = [];
+        radarData.forEach(row => {
+            providersList.forEach(p => {
+                const val = Number((row as any)[p.provider_name]);
+                if (!isNaN(val) && val > 0) allValues.push(val);
+            });
+        });
+        if (allValues.length === 0) return [0, 10] as [number, number];
+        const minVal = Math.min(...allValues);
+        const maxVal = Math.max(...allValues);
+        const range = maxVal - minVal;
+        // If values are clustered (range < 4), zoom in to spread them
+        if (range < 4 && minVal > 2) {
+            const floor = Math.max(0, Math.floor(minVal) - 2);
+            const ceil = Math.min(10, Math.ceil(maxVal) + 1);
+            return [floor, ceil] as [number, number];
+        }
+        return [0, 10] as [number, number];
+    }, [radarData, recalculatedRanking]);
 
     // Prepare bar chart data - MUST be before any conditional returns
     const barChartData = useMemo(() => {
-        const providersList = scoringResults?.ranking || [];
-        return providersList.map(p => {
+        return recalculatedRanking.map(p => {
             const rawName = typeof p.provider_name === 'string' ? p.provider_name : String(p.provider_name || '');
             const score = typeof p.overall_score === 'number' ? p.overall_score : Number(p.overall_score) || 0;
             return { name: displayProviderName(rawName), score, id: rawName };
         }).sort((a, b) => b.score - a.score);
-    }, [scoringResults]);
+    }, [recalculatedRanking]);
+
+    /* ---------- Excel export (must be before conditional returns) ---------- */
+    const handleExportExcel = useCallback(() => {
+        if (!recalculatedRanking.length) return;
+        const wb = XLSX.utils.book_new();
+
+        const sorted = [...recalculatedRanking].sort((a, b) => b.overall_score - a.overall_score);
+        const rankingData = sorted.map((p, i) => ({
+            '#': i + 1,
+            [t('board.econ_provider')]: displayProviderName(p.provider_name),
+            [t('board.overall_score')]: parseFloat(p.overall_score.toFixed(2)),
+        }));
+        const wsRanking = XLSX.utils.json_to_sheet(rankingData);
+        wsRanking['!cols'] = [{ wch: 4 }, { wch: 24 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking');
+
+        if (radarData.length > 0) {
+            const catData = radarData.map(row => {
+                const r: Record<string, string | number> = { [t('board.col_category')]: String(row.subject) };
+                sorted.forEach(p => {
+                    r[displayProviderName(p.provider_name)] = parseFloat((Number((row as any)[p.provider_name]) || 0).toFixed(2));
+                });
+                return r;
+            });
+            const wsCat = XLSX.utils.json_to_sheet(catData);
+            wsCat['!cols'] = [{ wch: 24 }, ...sorted.map(() => ({ wch: 18 }))];
+            XLSX.utils.book_append_sheet(wb, wsCat, t('executive.radar.title'));
+        }
+
+        XLSX.writeFile(wb, `executive-summary-${new Date().toISOString().split('T')[0]}.xlsx`);
+    }, [recalculatedRanking, radarData, t]);
 
     if (isCalculating) {
         return (
@@ -261,7 +416,7 @@ export const ExecutiveView: React.FC = () => {
         );
     }
 
-    const providers = scoringResults.ranking;
+    const providers = recalculatedRanking;
 
     // Get top 3 providers by score (sort a copy to get actual ranking)
     const sortedByScore = [...providers].sort((a, b) => b.overall_score - a.overall_score);
@@ -336,26 +491,25 @@ export const ExecutiveView: React.FC = () => {
         if (cx == null || cy == null) return null;
 
         const color = getColor(providerName, providerIdx);
-        const baseR = providerIdx === 0 ? 5 : 3.5;
-        const strokeW = providerIdx === 0 ? 2 : 0;
+        const baseR = providerIdx === 0 ? 6 : 4.5;
+        const strokeW = 2;
 
         // Check for overlapping values and spread dots in a circle pattern
         let offsetX = 0;
         let offsetY = 0;
         if (payload) {
             const currentValue = Number(payload[providerName]) || 0;
-            // Count how many providers have close values and find position in cluster
             const closeNeighbors: number[] = [];
             sortedByScore.forEach((p, idx) => {
                 const otherValue = Number(payload[p.provider_name]) || 0;
-                if (Math.abs(currentValue - otherValue) < 0.3) {
+                if (Math.abs(currentValue - otherValue) < 0.5) {
                     closeNeighbors.push(idx);
                 }
             });
             if (closeNeighbors.length > 1) {
                 const posInCluster = closeNeighbors.indexOf(providerIdx);
-                const angle = (2 * Math.PI * posInCluster) / closeNeighbors.length;
-                const mag = 3 + closeNeighbors.length;
+                const angle = (2 * Math.PI * posInCluster) / closeNeighbors.length - Math.PI / 2;
+                const mag = 5 + closeNeighbors.length * 2;
                 offsetX = Math.cos(angle) * mag;
                 offsetY = Math.sin(angle) * mag;
             }
@@ -387,9 +541,9 @@ export const ExecutiveView: React.FC = () => {
                 <div style={{
                     background: 'linear-gradient(135deg, var(--color-primary), var(--color-cyan))',
                     borderRadius: 'var(--radius-lg)',
-                    padding: '40px 32px',
+                    padding: '24px 24px',
                     color: 'white',
-                    boxShadow: '0 12px 28px rgba(18, 181, 176, 0.3)',
+                    boxShadow: '0 8px 20px rgba(18, 181, 176, 0.25)',
                     position: 'relative',
                     overflow: 'hidden',
                     animation: 'fadeInScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
@@ -399,21 +553,11 @@ export const ExecutiveView: React.FC = () => {
                         position: 'absolute',
                         top: '-80px',
                         right: '-80px',
-                        width: '250px',
-                        height: '250px',
-                        background: 'rgba(255, 255, 255, 0.15)',
-                        borderRadius: '50%',
-                        filter: 'blur(50px)'
-                    }}></div>
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '-60px',
-                        left: '-60px',
                         width: '200px',
                         height: '200px',
-                        background: 'rgba(255, 255, 255, 0.1)',
+                        background: 'rgba(255, 255, 255, 0.12)',
                         borderRadius: '50%',
-                        filter: 'blur(40px)'
+                        filter: 'blur(50px)'
                     }}></div>
 
                     <div style={{
@@ -425,24 +569,24 @@ export const ExecutiveView: React.FC = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            gap: '32px',
+                            gap: '20px',
                             flexWrap: 'wrap',
-                            marginBottom: '32px'
+                            marginBottom: '20px'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flex: 1, minWidth: '300px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
                                 {/* Award Icon */}
                                 <div style={{
-                                    width: '80px',
-                                    height: '80px',
+                                    width: '52px',
+                                    height: '52px',
                                     borderRadius: '50%',
-                                    background: 'rgba(255, 255, 255, 0.25)',
+                                    background: 'rgba(255, 255, 255, 0.2)',
                                     backdropFilter: 'blur(10px)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     flexShrink: 0
                                 }}>
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <circle cx="12" cy="8" r="7"></circle>
                                         <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
                                     </svg>
@@ -450,10 +594,10 @@ export const ExecutiveView: React.FC = () => {
 
                                 <div style={{ flex: 1 }}>
                                     <div style={{
-                                        fontSize: '0.9rem',
+                                        fontSize: '0.75rem',
                                         fontWeight: 500,
-                                        opacity: 0.95,
-                                        marginBottom: '8px',
+                                        opacity: 0.9,
+                                        marginBottom: '4px',
                                         textTransform: 'uppercase',
                                         letterSpacing: '1px'
                                     }}>
@@ -461,63 +605,157 @@ export const ExecutiveView: React.FC = () => {
                                     </div>
                                     <h2 style={{
                                         margin: 0,
-                                        fontSize: '2rem',
+                                        fontSize: '1.4rem',
                                         fontWeight: 700,
-                                        textShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                                        textShadow: '0 1px 4px rgba(0,0,0,0.15)'
                                     }}>
                                         {displayProviderName(winner.provider_name)}
                                     </h2>
                                     <div style={{
-                                        marginTop: '12px',
-                                        padding: '8px 16px',
+                                        marginTop: '8px',
+                                        padding: '5px 12px',
                                         background: 'rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '8px',
+                                        borderRadius: '6px',
                                         display: 'inline-block',
                                         backdropFilter: 'blur(10px)',
-                                        fontSize: '0.9rem',
+                                        fontSize: '0.8rem',
                                         fontWeight: 600
                                     }}>
-                                        {t('executive.score')}: <span style={{ fontSize: '1.3rem', marginLeft: '8px' }}>{winner.overall_score.toFixed(2)}</span>
+                                        {t('executive.score')}: <span style={{ fontSize: '1.1rem', marginLeft: '6px' }}>{winner.overall_score.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Export Excel Button */}
+                            <button
+                                onClick={handleExportExcel}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '8px 16px',
+                                    background: 'rgba(255, 255, 255, 0.2)',
+                                    color: 'white',
+                                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                                    borderRadius: '8px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    flexShrink: 0,
+                                    transition: 'all 0.2s ease',
+                                    backdropFilter: 'blur(10px)',
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                                }}
+                                title={t('board.export_excel')}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                </svg>
+                                Excel
+                            </button>
+
+                            {/* Award Contract Button */}
+                            {activeProjectId && (
+                                resultsApprovedMap[activeProjectId] ? (
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '10px 20px',
+                                        background: 'rgba(255, 255, 255, 0.2)',
+                                        borderRadius: '10px',
+                                        backdropFilter: 'blur(10px)',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 600,
+                                        flexShrink: 0
+                                    }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                        {t('executive.awarded_badge')}
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            approveResults(activeProjectId);
+                                            // Reload projects to recalculate status
+                                            loadProjects();
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '12px 24px',
+                                            background: 'rgba(255, 255, 255, 0.95)',
+                                            color: 'var(--color-primary)',
+                                            border: 'none',
+                                            borderRadius: '10px',
+                                            fontSize: '0.9rem',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            flexShrink: 0,
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                                        }}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                        {t('executive.award')}
+                                    </button>
+                                )
+                            )}
 
                         </div>
 
                         {/* Winner Analysis Grid */}
                         <div style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                            gap: '16px',
-                            marginTop: '24px'
+                            gridTemplateColumns: 'repeat(4, 1fr)',
+                            gap: '12px'
                         }}>
                             {/* Lead Margin */}
                             <div style={{
-                                background: 'rgba(255, 255, 255, 0.15)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                                background: 'rgba(255, 255, 255, 0.12)',
+                                borderRadius: '10px',
+                                padding: '12px',
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
                             }}>
                                 <div style={{
-                                    fontSize: '0.8rem',
-                                    opacity: 0.9,
-                                    marginBottom: '8px',
+                                    fontSize: '0.7rem',
+                                    opacity: 0.85,
+                                    marginBottom: '6px',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
+                                    letterSpacing: '0.3px'
                                 }}>
                                     {t('executive.lead_margin')} {runnerUp ? displayProviderName(runnerUp.provider_name) : 'N/A'}
                                 </div>
                                 <div style={{
-                                    fontSize: '1.5rem',
+                                    fontSize: '1.2rem',
                                     fontWeight: 700
                                 }}>
                                     {scoreGap >= 0 ? '+' : ''}{scoreGap.toFixed(2)} {t('executive.pts')}
                                 </div>
                                 <div style={{
-                                    fontSize: '0.75rem',
-                                    opacity: 0.8,
-                                    marginTop: '4px'
+                                    fontSize: '0.7rem',
+                                    opacity: 0.7,
+                                    marginTop: '2px'
                                 }}>
                                     {runnerUp && runnerUp.overall_score > 0 ? ((scoreGap / runnerUp.overall_score) * 100).toFixed(1) : '0.0'}% {t('executive.advantage')}
                                 </div>
@@ -525,33 +763,31 @@ export const ExecutiveView: React.FC = () => {
 
                             {/* Strengths */}
                             <div style={{
-                                background: 'rgba(255, 255, 255, 0.15)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                                background: 'rgba(255, 255, 255, 0.12)',
+                                borderRadius: '10px',
+                                padding: '12px',
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
                             }}>
                                 <div style={{
-                                    fontSize: '0.8rem',
-                                    opacity: 0.9,
-                                    marginBottom: '8px',
+                                    fontSize: '0.7rem',
+                                    opacity: 0.85,
+                                    marginBottom: '6px',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
+                                    letterSpacing: '0.3px'
                                 }}>
                                     {t('executive.key_strengths')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
                                     flexWrap: 'wrap',
-                                    gap: '6px',
-                                    marginTop: '8px'
+                                    gap: '4px'
                                 }}>
                                     {strengths.length > 0 ? strengths.map((s, i) => (
                                         <span key={i} style={{
-                                            background: 'rgba(34, 197, 94, 0.35)',
-                                            padding: '4px 10px',
-                                            borderRadius: '6px',
-                                            fontSize: '0.75rem',
+                                            background: 'rgba(34, 197, 94, 0.3)',
+                                            padding: '3px 8px',
+                                            borderRadius: '5px',
+                                            fontSize: '0.68rem',
                                             fontWeight: 600,
                                             color: '#bbf7d0'
                                         }}>
@@ -559,7 +795,7 @@ export const ExecutiveView: React.FC = () => {
                                         </span>
                                     )) : (
                                         <span style={{
-                                            fontSize: '0.8rem',
+                                            fontSize: '0.75rem',
                                             opacity: 0.7
                                         }}>{t('executive.no_strengths')}</span>
                                     )}
@@ -568,33 +804,31 @@ export const ExecutiveView: React.FC = () => {
 
                             {/* Weaknesses */}
                             <div style={{
-                                background: 'rgba(255, 255, 255, 0.15)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                                background: 'rgba(255, 255, 255, 0.12)',
+                                borderRadius: '10px',
+                                padding: '12px',
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
                             }}>
                                 <div style={{
-                                    fontSize: '0.8rem',
-                                    opacity: 0.9,
-                                    marginBottom: '8px',
+                                    fontSize: '0.7rem',
+                                    opacity: 0.85,
+                                    marginBottom: '6px',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
+                                    letterSpacing: '0.3px'
                                 }}>
                                     {t('executive.areas_review')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
                                     flexWrap: 'wrap',
-                                    gap: '6px',
-                                    marginTop: '8px'
+                                    gap: '4px'
                                 }}>
                                     {weaknesses.length > 0 ? weaknesses.map((w, i) => (
                                         <span key={i} style={{
-                                            background: 'rgba(251, 146, 60, 0.35)',
-                                            padding: '4px 10px',
-                                            borderRadius: '6px',
-                                            fontSize: '0.75rem',
+                                            background: 'rgba(251, 146, 60, 0.3)',
+                                            padding: '3px 8px',
+                                            borderRadius: '5px',
+                                            fontSize: '0.68rem',
                                             fontWeight: 600,
                                             color: '#fed7aa'
                                         }}>
@@ -602,7 +836,7 @@ export const ExecutiveView: React.FC = () => {
                                         </span>
                                     )) : (
                                         <span style={{
-                                            fontSize: '0.8rem',
+                                            fontSize: '0.75rem',
                                             opacity: 0.7
                                         }}>{t('executive.no_data_available')}</span>
                                     )}
@@ -611,48 +845,48 @@ export const ExecutiveView: React.FC = () => {
 
                             {/* Podium */}
                             <div style={{
-                                background: 'rgba(255, 255, 255, 0.15)',
-                                backdropFilter: 'blur(10px)',
-                                borderRadius: '12px',
-                                padding: '16px',
-                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                                background: 'rgba(255, 255, 255, 0.12)',
+                                borderRadius: '10px',
+                                padding: '12px',
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
                             }}>
                                 <div style={{
-                                    fontSize: '0.8rem',
-                                    opacity: 0.9,
-                                    marginBottom: '12px',
+                                    fontSize: '0.7rem',
+                                    opacity: 0.85,
+                                    marginBottom: '8px',
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
+                                    letterSpacing: '0.3px'
                                 }}>
                                     {t('executive.top_rankings')}
                                 </div>
                                 <div style={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '8px'
+                                    gap: '5px'
                                 }}>
                                     {[winner, runnerUp, thirdPlace].filter(Boolean).map((p, i) => (
                                         <div key={p.provider_name} style={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '0.85rem',
+                                            gap: '6px',
+                                            fontSize: '0.78rem',
                                             fontWeight: 600
                                         }}>
                                             <span style={{
-                                                fontSize: '0.75rem',
+                                                fontSize: '0.7rem',
                                                 fontWeight: 700,
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                minWidth: '24px'
+                                                color: 'rgba(255, 255, 255, 0.6)',
+                                                minWidth: '20px'
                                             }}>
                                                 #{i + 1}
                                             </span>
-                                            <span style={{ flex: 1 }}>{displayProviderName(p.provider_name)}</span>
+                                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayProviderName(p.provider_name)}</span>
                                             <span style={{
-                                                background: 'rgba(255, 255, 255, 0.25)',
-                                                padding: '2px 8px',
+                                                background: 'rgba(255, 255, 255, 0.2)',
+                                                padding: '2px 6px',
                                                 borderRadius: '4px',
-                                                fontSize: '0.75rem'
+                                                fontSize: '0.7rem',
+                                                flexShrink: 0
                                             }}>
                                                 {p.overall_score.toFixed(2)}
                                             </span>
@@ -661,6 +895,35 @@ export const ExecutiveView: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ESG Badges for winner */}
+                        {(winner?.esg_certifications?.filter(c => c.status !== 'not_detected')?.length ?? 0) > 0 && (
+                            <div style={{
+                                marginTop: '16px',
+                                padding: '14px 16px',
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
+                            }}>
+                                <div style={{
+                                    fontSize: '0.7rem',
+                                    opacity: 0.85,
+                                    marginBottom: '8px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.3px',
+                                    fontWeight: 600
+                                }}>
+                                    {t('esg.winner_badges')}
+                                </div>
+                                <div style={{ filter: 'brightness(1.3)' }}>
+                                    <EsgBadges
+                                        certifications={winner.esg_certifications!}
+                                        variant="compact"
+                                        showNotDetected={false}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <style>{`
@@ -682,19 +945,19 @@ export const ExecutiveView: React.FC = () => {
             <div className="charts-row-container">
                 {/* Radar Chart */}
                 <div className="widget-card" style={{
-                minHeight: '480px',
+                minHeight: '460px',
                 display: 'flex',
                 flexDirection: 'column',
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
-                padding: '28px',
+                padding: '22px',
                 animation: 'fadeInUp 0.5s ease-out 0.1s backwards'
             }}>
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '24px'
+                    marginBottom: '12px'
                 }}>
                     <div>
                         <div className="widget-title" style={{ margin: '0 0 6px 0' }}>
@@ -707,11 +970,29 @@ export const ExecutiveView: React.FC = () => {
                         }}>
                             {t('executive.radar.subtitle')}
                         </div>
+                        {radarDomain[0] > 0 && (
+                            <div style={{
+                                fontSize: '0.75rem',
+                                color: 'var(--color-primary)',
+                                fontWeight: 600,
+                                marginTop: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                {t('executive.radar.scale_note')} ({radarDomain[0]}-{radarDomain[1]})
+                            </div>
+                        )}
                     </div>
                 </div>
-                <div style={{ flex: 1, width: '100%', minHeight: '350px' }}>
+                <div style={{ width: '100%', height: '320px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
+                        <RadarChart cx="50%" cy="48%" outerRadius="76%" data={radarData}>
                             <defs>
                                 {sortedByScore.map((p, i) => {
                                     const [topOpacity, bottomOpacity] = getFillOpacity(i);
@@ -739,8 +1020,8 @@ export const ExecutiveView: React.FC = () => {
                             />
                             <PolarRadiusAxis
                                 angle={30}
-                                domain={[0, 10]}
-                                tickCount={6}
+                                domain={radarDomain}
+                                tickCount={radarDomain[0] === 0 ? 6 : radarDomain[1] - radarDomain[0] + 1}
                                 tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
                                 stroke="var(--border-color)"
                             />
@@ -768,32 +1049,6 @@ export const ExecutiveView: React.FC = () => {
                                                 </div>
                                             ))}
                                         </div>
-                                    );
-                                }}
-                            />
-                            <Legend
-                                wrapperStyle={{
-                                    paddingTop: '24px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 600
-                                }}
-                                iconType="circle"
-                                onMouseEnter={(e: any) => {
-                                    const name = e?.dataKey || sortedByScore.find(p => displayProviderName(p.provider_name) === e?.value)?.provider_name;
-                                    if (name) setHighlightedProvider(name);
-                                }}
-                                onMouseLeave={() => setHighlightedProvider(null)}
-                                formatter={(value: string) => {
-                                    const match = sortedByScore.find(p => displayProviderName(p.provider_name) === value);
-                                    const dimmed = highlightedProvider && match && highlightedProvider !== match.provider_name;
-                                    return (
-                                        <span style={{
-                                            color: 'var(--text-primary)',
-                                            fontWeight: 500,
-                                            fontSize: '0.8rem',
-                                            opacity: dimmed ? 0.3 : 1,
-                                            transition: 'opacity 0.2s ease'
-                                        }}>{value}</span>
                                     );
                                 }}
                             />
@@ -828,15 +1083,56 @@ export const ExecutiveView: React.FC = () => {
                     </ResponsiveContainer>
                 </div>
 
+                {/* External legend to avoid shrinking radar plot area */}
+                <div style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    gap: '12px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center'
+                }}>
+                    {sortedByScore.map((p, i) => {
+                        const isDimmed = highlightedProvider && highlightedProvider !== p.provider_name;
+                        return (
+                            <div
+                                key={`radar-legend-${p.provider_name}`}
+                                onMouseEnter={() => setHighlightedProvider(p.provider_name)}
+                                onMouseLeave={() => setHighlightedProvider(null)}
+                                style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    opacity: isDimmed ? 0.35 : 1,
+                                    cursor: 'pointer',
+                                    transition: 'opacity 0.2s ease'
+                                }}
+                            >
+                                <span style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    borderRadius: '50%',
+                                    background: getColor(p.provider_name, i),
+                                    flexShrink: 0
+                                }} />
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                    <span title={displayProviderName(p.provider_name)}>
+                                        {getCompactProviderLabel(p.provider_name, 16)}
+                                    </span>
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
                 {/* Score Comparison Mini-Table */}
                 {radarData.length > 0 && (
-                    <div style={{ marginTop: '16px', overflowX: 'auto' }}>
+                    <div style={{ marginTop: '10px', overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                             <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                                 <tr>
                                     <th style={{
                                         textAlign: 'left',
-                                        padding: '6px 8px',
+                                        padding: '5px 8px',
                                         borderBottom: '2px solid var(--border-color)',
                                         color: 'var(--text-secondary)',
                                         fontWeight: 600,
@@ -849,7 +1145,7 @@ export const ExecutiveView: React.FC = () => {
                                     {sortedByScore.map((p, i) => (
                                         <th key={p.provider_name} style={{
                                             textAlign: 'center',
-                                            padding: '6px 8px',
+                                            padding: '5px 8px',
                                             borderBottom: '2px solid var(--border-color)',
                                             fontWeight: 600,
                                             fontSize: '0.75rem',
@@ -871,7 +1167,9 @@ export const ExecutiveView: React.FC = () => {
                                                 verticalAlign: 'middle',
                                             }} />
                                             <span style={{ color: 'var(--text-primary)', verticalAlign: 'middle' }}>
-                                                {displayProviderName(p.provider_name)}
+                                                <span title={displayProviderName(p.provider_name)}>
+                                                    {getCompactProviderLabel(p.provider_name, 14)}
+                                                </span>
                                             </span>
                                         </th>
                                     ))}
@@ -881,7 +1179,7 @@ export const ExecutiveView: React.FC = () => {
                                 {radarData.map((row) => (
                                     <tr key={row.subject}>
                                         <td style={{
-                                            padding: '5px 8px',
+                                            padding: '4px 8px',
                                             color: 'var(--text-primary)',
                                             fontWeight: 500,
                                             borderBottom: '1px solid var(--border-color)',
@@ -897,7 +1195,7 @@ export const ExecutiveView: React.FC = () => {
                                             return (
                                                 <td key={p.provider_name} style={{
                                                     textAlign: 'center',
-                                                    padding: '5px 8px',
+                                                    padding: '4px 8px',
                                                     fontWeight: 600,
                                                     borderBottom: '1px solid var(--border-color)',
                                                     background: hexToRgba(color, intensity * 0.2),
@@ -997,6 +1295,8 @@ export const ExecutiveView: React.FC = () => {
                             />
                             <Tooltip
                                 cursor={{ fill: 'var(--bg-hover)', opacity: 0.3 }}
+                                allowEscapeViewBox={{ x: true, y: true }}
+                                wrapperStyle={{ zIndex: 20 }}
                                 contentStyle={{
                                     backgroundColor: 'var(--bg-surface)',
                                     border: '1px solid var(--border-color)',
@@ -1063,7 +1363,7 @@ export const ExecutiveView: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div style={{ flex: 1, width: '100%', minHeight: '180px', display: 'flex', alignItems: 'center' }}>
+                <div style={{ flex: 1, width: '100%', minHeight: '240px', display: 'flex', alignItems: 'center' }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <defs>
@@ -1123,8 +1423,8 @@ export const ExecutiveView: React.FC = () => {
                                 cy="50%"
                                 labelLine={false}
                                 label={false}
-                                outerRadius="70%"
-                                innerRadius="40%"
+                                outerRadius="78%"
+                                innerRadius="44%"
                                 dataKey="value"
                                 animationBegin={300}
                                 animationDuration={800}
@@ -1151,6 +1451,8 @@ export const ExecutiveView: React.FC = () => {
                                 ))}
                             </Pie>
                             <Tooltip
+                                allowEscapeViewBox={{ x: true, y: true }}
+                                wrapperStyle={{ zIndex: 20 }}
                                 contentStyle={{
                                     backgroundColor: 'var(--bg-surface)',
                                     border: '1px solid var(--border-color)',

@@ -15,7 +15,7 @@ const SIZE_MAP = {
   large: { size: 140, stroke: 8 }
 };
 
-export const ProgressRing: React.FC<ProgressRingProps> = ({
+export const ProgressRing: React.FC<ProgressRingProps> = React.memo(({
   progress,
   size = 'medium',
   label,
@@ -125,6 +125,8 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
       )}
     </div>
   );
-};
+});
+
+ProgressRing.displayName = 'ProgressRing';
 
 export default ProgressRing;

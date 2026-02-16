@@ -24,7 +24,7 @@ export function useRfqProcessing() {
     setError
   } = useRfqStore();
 
-  const { activeProjectId, loadProjects } = useProjectStore();
+  const { activeProjectId, getActiveProject, loadProjects } = useProjectStore();
 
   /**
    * Maneja el upload y procesamiento de múltiples archivos en paralelo
@@ -75,11 +75,16 @@ export function useRfqProcessing() {
         }
 
         try {
+          const activeProj = getActiveProject();
+          const projectLanguage = activeProj?.default_language || 'es';
+          const projectCurrency = activeProj?.currency || 'EUR';
           const result = await uploadRfqFile(file, {
             project_id: activeProjectId,
             proyecto: metadata.proyecto,
             proveedor: metadata.proveedor as string,
-            tipoEvaluacion: metadata.tipoEvaluacion
+            tipoEvaluacion: metadata.tipoEvaluacion,
+            language: projectLanguage,
+            currency: projectCurrency
           }, tracker.abortController.signal);
 
           updateFileTracker(tracker.id, { status: 'completed' });
@@ -122,10 +127,30 @@ export function useRfqProcessing() {
       const failedResults = fileResults.filter(r => !r.success && !(r as any).cancelled);
       const cancelledResults = fileResults.filter(r => (r as any).cancelled);
 
-      const combinedResults: RfqItem[] = [];
+      // Merge results from multiple files intelligently:
+      // For the same requirement+provider, keep the best evaluation (real data over "NO INFORMATION")
+      const NO_DATA_VALUES = new Set(['NO INFORMATION', 'NOT QUOTED', 'NO COTIZADO', 'SIN INFORMACIÓN', 'ERROR ANALISIS']);
+      const resultsMap = new Map<string, RfqItem>();
+
       successResults.forEach(r => {
-        if ((r as any).results) combinedResults.push(...(r as any).results);
+        if (!(r as any).results) return;
+        ((r as any).results as RfqItem[]).forEach(item => {
+          const key = `${(item as any).requirement_id || item.id}_${(item as any).provider_name || ''}`;
+          const existing = resultsMap.get(key);
+          if (!existing) {
+            resultsMap.set(key, item);
+          } else {
+            // Keep existing if it has real data; overwrite only if existing has no data and new has data
+            const existingValue = (existing as any).evaluation_value || '';
+            const newValue = (item as any).evaluation_value || '';
+            if (NO_DATA_VALUES.has(existingValue) && !NO_DATA_VALUES.has(newValue)) {
+              resultsMap.set(key, item);
+            }
+          }
+        });
       });
+
+      const combinedResults: RfqItem[] = Array.from(resultsMap.values());
 
       if (successResults.length === 0 && failedResults.length > 0) {
         const firstError = failedResults[0]?.error || 'Unknown error';

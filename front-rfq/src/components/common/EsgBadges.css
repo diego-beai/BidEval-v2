@@ -1,0 +1,163 @@
+/* =====================================================
+   ESG Badges Component
+   ===================================================== */
+
+.esg-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.esg-badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.esg-badge-group-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+.esg-badge-group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Badge pill */
+.esg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid;
+    transition: all var(--transition-fast);
+    cursor: default;
+    position: relative;
+}
+
+.esg-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.esg-badge-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.esg-badge-icon svg {
+    width: 13px;
+    height: 13px;
+}
+
+.esg-badge-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+/* Confidence mini bar (full variant) */
+.esg-badge-confidence {
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.esg-badge-confidence-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Status: confirmed */
+.esg-badge--confirmed {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #059669;
+}
+
+.esg-badge--confirmed .esg-badge-confidence-fill {
+    background: #10b981;
+}
+
+/* Status: mentioned */
+.esg-badge--mentioned {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #d97706;
+}
+
+.esg-badge--mentioned .esg-badge-confidence-fill {
+    background: #f59e0b;
+}
+
+/* Status: not_detected */
+.esg-badge--not-detected {
+    background: var(--bg-surface-alt);
+    border-color: var(--border-color);
+    color: var(--text-tertiary);
+    opacity: 0.7;
+}
+
+.esg-badge--not-detected .esg-badge-confidence-fill {
+    background: var(--text-tertiary);
+}
+
+/* Tooltip */
+.esg-badge-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.esg-badge:hover .esg-badge-tooltip {
+    display: block;
+}
+
+/* Dark mode */
+[data-theme='dark'] .esg-badge--confirmed {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #34d399;
+}
+
+[data-theme='dark'] .esg-badge--mentioned {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+
+[data-theme='dark'] .esg-badge--not-detected {
+    opacity: 0.6;
+}
+
+[data-theme='dark'] .esg-badge-confidence {
+    background: rgba(255, 255, 255, 0.1);
+}

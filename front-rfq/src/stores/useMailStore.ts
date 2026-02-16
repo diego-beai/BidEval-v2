@@ -3,6 +3,7 @@ import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { API_CONFIG } from '../config/constants';
 import { useSessionViewStore } from './useSessionViewStore';
 import { supabase } from '../lib/supabase';
+import { sanitizeFields } from '../utils/sanitize';
 import type { QAQuestion } from '../types/qa.types';
 
 // Interface for Q&A items in the mail context
@@ -79,6 +80,8 @@ interface MailState {
         tone: string;
         issues: string[];
         qa_items?: MailQAItem[];
+        language?: string;
+        currency?: string;
     }) => Promise<void>;
 }
 
@@ -210,9 +213,10 @@ export const useMailStore = create<MailState>()(
                 if (!supabase) return;
 
                 try {
+                    const sanitizedMsg = sanitizeFields(msg as Record<string, unknown>, ['body', 'subject']);
                     const { data, error } = await (supabase
                         .from('project_communications' as any)
-                        .insert([msg] as any)
+                        .insert([sanitizedMsg] as any)
                         .select()
                         .single()) as { data: any; error: any };
 

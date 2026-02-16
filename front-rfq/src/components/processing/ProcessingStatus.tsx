@@ -11,7 +11,7 @@ interface ProcessingStatusProps {
 }
 
 export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, onClose, onCancel, onCancelFile }: ProcessingStatusProps) {
-  const { status, isProcessing, results, rfqMetadata, processingStartTime, processingFileCount, fileTrackers } = useRfqStore();
+  const { status, isProcessing, results, rawResults, rfqMetadata, processingStartTime, processingFileCount, fileTrackers } = useRfqStore();
   const { t } = useLanguageStore();
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -154,8 +154,12 @@ export const ProcessingStatus = memo(function ProcessingStatus({ onViewResults, 
           )}
 
           {isComplete && results && results.length > 0 && (() => {
-            // Count unique requirements (deduplicate across providers)
-            const uniqueRequirements = new Set(results.map(r => r.id)).size || results.length;
+            // Count unique requirements by requirement_id (not DB row id)
+            // rawResults from webhook UPSERT have requirement_id field
+            const items = rawResults || results;
+            const uniqueRequirements = new Set(
+              items.map(r => (r as any).requirement_id || r.id)
+            ).size;
             return (
             <div style={{
               marginTop: '16px',

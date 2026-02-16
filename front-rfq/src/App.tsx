@@ -9,7 +9,7 @@ import { useRfqStore } from './stores/useRfqStore';
 import { VendorDecisionDashboard } from './components/dashboard/VendorDecisionDashboard';
 import { HomeDashboard } from './components/dashboard/HomeDashboard';
 import { ChatPage } from './components/chat/ChatPage';
-import { MailDashboard } from './components/mail/MailDashboard';
+import { CommunicationsHub } from './components/communications/CommunicationsHub';
 import { useLanguageStore } from './stores/useLanguageStore';
 import { ProgressRing } from './components/charts/ProgressRing';
 import { ProviderProgressGrid, ProviderEvaluationData } from './components/charts/ProviderProgressGrid';
@@ -29,7 +29,7 @@ import { EconomicSection } from './components/economic/EconomicSection';
 import { RfpGeneratorPage } from './pages/RfpGeneratorPage';
 import { SupplierDirectoryPage } from './pages/SupplierDirectoryPage';
 
-type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'mail' | 'rfp-gen' | 'suppliers' | 'projects-status';
+type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status';
 
 export default function App() {
   const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
@@ -141,7 +141,7 @@ export default function App() {
 
   // Handle routing logic for the Upload View
   const renderUploadView = () => (
-    <div className="card" style={{ minHeight: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
+    <div className="card" style={{ minHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
       <div className="card-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: '32px' }}>
         <div className="tabs-container" style={{
           background: 'var(--bg-surface-alt)',
@@ -572,13 +572,13 @@ export default function App() {
         {activeView === 'upload' && renderUploadView()}
 
         {activeView === 'table' && (
-          <div className="card" style={{ height: 'calc(100vh - 140px)', padding: 0, overflow: 'hidden' }}>
+          <div className="card" style={{ height: 'calc(100vh - 100px)', padding: 0, overflow: 'hidden' }}>
             <ExternalDataTable />
           </div>
         )}
 
         {activeView === 'qa' && (
-          <div style={{ padding: '24px', overflow: 'auto', height: 'calc(100vh - 140px)' }}>
+          <div style={{ padding: '24px', overflow: 'auto', height: 'calc(100vh - 100px)' }}>
             <QAModule projectId={activeProject?.display_name || ''} />
           </div>
         )}
@@ -589,7 +589,7 @@ export default function App() {
 
         {activeView === 'chat' && <ChatPage />}
 
-        {activeView === 'mail' && <MailDashboard />}
+        {activeView === 'communications' && <CommunicationsHub onNavigate={(view) => setActiveView(view as ViewType)} />}
 
         {activeView === 'rfp-gen' && <RfpGeneratorPage />}
 

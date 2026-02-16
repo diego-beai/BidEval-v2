@@ -59,10 +59,17 @@ export const SupplierDirectoryPage = () => {
     return suppliers.find(s => s.supplier_name === selectedSupplier) || null;
   }, [selectedSupplier, suppliers]);
 
+  // Normalize score to 0-10 scale (some projects store 0-100, others 0-10)
+  const normalizeToTen = (score: number | null): number | null => {
+    if (score == null) return null;
+    return score > 10 ? score / 10 : score;
+  };
+
   const getScoreClass = (score: number | null) => {
     if (score == null) return 'none';
-    if (score >= 70) return 'high';
-    if (score >= 50) return 'medium';
+    const n = normalizeToTen(score)!;
+    if (n >= 7) return 'high';
+    if (n >= 5) return 'medium';
     return 'low';
   };
 
@@ -119,7 +126,7 @@ export const SupplierDirectoryPage = () => {
           <div className="stat-label">{t('supplier.stat.scored')}</div>
         </div>
         <div className="supplier-stat-card">
-          <div className="stat-value">{stats.avgScore > 0 ? <>{(stats.avgScore / 10).toFixed(2)}<span style={{ fontSize: '0.6em', opacity: 0.5 }}>/10</span></> : '—'}</div>
+          <div className="stat-value">{stats.avgScore > 0 ? <>{normalizeToTen(stats.avgScore)!.toFixed(2)}<span style={{ fontSize: '0.6em', opacity: 0.5 }}>/10</span></> : '—'}</div>
           <div className="stat-label">{t('supplier.stat.avg_score')}</div>
         </div>
       </div>
@@ -209,7 +216,7 @@ export const SupplierDirectoryPage = () => {
                   </td>
                   <td>
                     <span className={`supplier-score-badge ${getScoreClass(supplier.avg_score)}`}>
-                      {supplier.avg_score != null ? <>{(supplier.avg_score / 10).toFixed(2)}<span style={{ fontSize: '0.65em', fontWeight: 500, opacity: 0.6, marginLeft: 1 }}>/10</span></> : '—'}
+                      {supplier.avg_score != null ? <>{normalizeToTen(supplier.avg_score)!.toFixed(2)}<span style={{ fontSize: '0.65em', fontWeight: 500, opacity: 0.6, marginLeft: 1 }}>/10</span></> : '—'}
                     </span>
                   </td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -287,17 +294,17 @@ const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t }: DetailP
           <div className="supplier-detail-section-title">{t('supplier.detail.scores')}</div>
           <div className="supplier-score-overview">
             <div className="score-overview-item">
-              <div className={`score-val`} style={{ color: supplier.avg_score != null && supplier.avg_score >= 70 ? '#41d17a' : supplier.avg_score != null && supplier.avg_score >= 50 ? '#fbbf24' : 'var(--text-tertiary)' }}>
-                {supplier.avg_score != null ? <>{(supplier.avg_score / 10).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}
+              <div className={`score-val`} style={{ color: supplier.avg_score != null && (supplier.avg_score > 10 ? supplier.avg_score / 10 : supplier.avg_score) >= 7 ? '#41d17a' : supplier.avg_score != null && (supplier.avg_score > 10 ? supplier.avg_score / 10 : supplier.avg_score) >= 5 ? '#fbbf24' : 'var(--text-tertiary)' }}>
+                {supplier.avg_score != null ? <>{(supplier.avg_score > 10 ? supplier.avg_score / 10 : supplier.avg_score).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}
               </div>
               <div className="score-label">{t('supplier.detail.avg')}</div>
             </div>
             <div className="score-overview-item">
-              <div className="score-val">{supplier.best_score != null ? <>{(supplier.best_score / 10).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}</div>
+              <div className="score-val">{supplier.best_score != null ? <>{(supplier.best_score > 10 ? supplier.best_score / 10 : supplier.best_score).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}</div>
               <div className="score-label">{t('supplier.detail.best')}</div>
             </div>
             <div className="score-overview-item">
-              <div className="score-val">{supplier.worst_score != null ? <>{(supplier.worst_score / 10).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}</div>
+              <div className="score-val">{supplier.worst_score != null ? <>{(supplier.worst_score > 10 ? supplier.worst_score / 10 : supplier.worst_score).toFixed(2)}<span style={{ fontSize: '0.5em', fontWeight: 500, opacity: 0.5 }}>/10</span></> : '—'}</div>
               <div className="score-label">{t('supplier.detail.worst')}</div>
             </div>
           </div>

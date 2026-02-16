@@ -125,7 +125,7 @@ const Icons = {
   )
 };
 
-export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialProjectId = '' }) => {
+export const QAModule: React.FC<{ projectId?: string }> = () => {
   const {
     questions,
     isLoading,
@@ -159,18 +159,17 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
 
   const { addToast } = useToastStore();
   const { addQAItem } = useMailStore();
-  const { projects, activeProjectId, getActiveProject } = useProjectStore();
+  const { activeProjectId, getActiveProject } = useProjectStore();
   const { t } = useLanguageStore();
 
-  // Use active project from global store, or initialProjectId as fallback
+  // Use active project from global store
   const activeProject = getActiveProject();
-  const [projectId, setProjectId] = useState<string>(activeProject?.display_name || initialProjectId);
+  const projectId = activeProject?.display_name || '';
   const [selectedProvider, setSelectedProvider] = useState<string>('');
   const [addingToDisciplina, setAddingToDisciplina] = useState<string | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [editedText, setEditedText] = useState<string>('');
   const [expandedDisciplina, setExpandedDisciplina] = useState<Disciplina | null>(null);
-  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [newQuestionTexts, setNewQuestionTexts] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [expandedRequirements, setExpandedRequirements] = useState<Record<string, boolean>>({});
@@ -226,13 +225,6 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   // Dynamic providers from store
   const { projectProviders } = useProviderStore();
 
-  // Sync with active project from global store
-  useEffect(() => {
-    if (activeProject?.display_name && activeProject.display_name !== projectId) {
-      setProjectId(activeProject.display_name);
-    }
-  }, [activeProject?.display_name]);
-
   // Reload questions when activeProjectId changes (global project selector)
   useEffect(() => {
     console.log('[QAModule] Active project changed:', activeProjectId);
@@ -255,26 +247,11 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       if (showProviderSelector) setShowProviderSelector(false);
       if (showFilters) setShowFilters(false);
       if (showNotifications) setShowNotifications(false);
-      if (showProjectDropdown) setShowProjectDropdown(false);
     };
 
     window.addEventListener('scroll', handleScroll, true);
     return () => window.removeEventListener('scroll', handleScroll, true);
-  }, [showProviderSelector, showFilters, showNotifications, showProjectDropdown]);
-
-  // Subscribe to real-time changes and load questions (for local projectId changes)
-  useEffect(() => {
-    // Only load questions if there is a valid projectId and it's different from activeProjectId
-    if (projectId && projectId.trim() && activeProject?.display_name !== projectId) {
-      loadQuestions(projectId);
-      subscribeToChanges(projectId);
-    }
-  }, [projectId]);
-
-  const handleProjectSelect = (project: { id: string; display_name: string }) => {
-    setProjectId(project.display_name);
-    setShowProjectDropdown(false);
-  };
+  }, [showProviderSelector, showFilters, showNotifications]);
 
   // Excel Export - Approved Questions Only
   const handleExportExcel = async () => {
@@ -368,16 +345,16 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
   };
 
   const handleGenerateAudit = async () => {
-    if (!projectId || !selectedProvider) {
-      addToast('Please select a project and a provider', 'warning');
+    if (!selectedProvider) {
+      addToast('Please select a provider', 'warning');
       return;
     }
 
     // Get the actual UUID from the active project
     const projectUUID = activeProjectId || activeProject?.id;
 
-    if (!projectUUID) {
-      addToast('Could not determine project ID. Please reselect the project.', 'warning');
+    if (!projectUUID || !projectId) {
+      addToast('No project selected. Please select a project from the header.', 'warning');
       return;
     }
 
@@ -385,10 +362,13 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
     setStatusMessage('Analyzing deficiencies and generating technical audit questions...');
 
     try {
+      const activeProj = getActiveProject();
       const result = await generateTechnicalAudit({
         project_id: projectUUID,           // UUID real del proyecto
         project_name: projectId,            // Nombre display del proyecto
-        provider: selectedProvider
+        provider: selectedProvider,
+        language: activeProj?.default_language || 'es',
+        currency: activeProj?.currency || 'EUR'
       });
 
       if (result.success && result.data) {
@@ -475,21 +455,16 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
       return;
     }
 
-    if (!projectId) {
-      addToast('Please select a project in the form above', 'warning');
-      return;
-    }
-
     if (!providerToUse) {
-      addToast('Please select a provider in the form above', 'warning');
+      addToast('Please select a provider', 'warning');
       return;
     }
 
     // Get the actual UUID from the active project
     const projectUUID = activeProjectId || activeProject?.id;
 
-    if (!projectUUID) {
-      addToast('Could not determine project ID. Please reselect the project.', 'warning');
+    if (!projectUUID || !projectId) {
+      addToast('No project selected. Please select a project from the header.', 'warning');
       return;
     }
 
@@ -890,75 +865,22 @@ export const QAModule: React.FC<{ projectId?: string }> = ({ projectId: initialP
         </div>
 
         <div className="generator-form module-card">
-          <div className="form-grid">
-            {/* Project Selector */}
-            <div className="form-group">
-              <label className="form-label">{t('qa.generator.project')}</label>
-              <div className="qa-dropdown-container">
-                <button
-                  type="button"
-                  className={`qa-dropdown-btn ${!projectId ? 'placeholder' : ''}`}
-                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-                >
-                  <span title={projectId}>
-                    {projectId || t('qa.generator.select_project')}
-                  </span>
-                  <span className="dropdown-arrow">{showProjectDropdown ? '▲' : '▼'}</span>
-                </button>
+          <div className="generator-inline">
+            <label className="form-label">{t('qa.generator.provider')}</label>
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              className="qa-select"
+            >
+              <option value="">{t('qa.generator.select_provider')}</option>
+              {projectProviders.map(p => (
+                <option key={p} value={p}>{getProviderDisplayName(p)}</option>
+              ))}
+            </select>
 
-                {showProjectDropdown && (
-                  <>
-                    <div
-                      className="dropdown-overlay"
-                      onClick={() => setShowProjectDropdown(false)}
-                    />
-                    <div className="qa-dropdown-menu">
-                      {projects.length === 0 ? (
-                        <div className="dropdown-item disabled">{t('common.no_projects')}</div>
-                      ) : (
-                        projects.map(project => (
-                          <button
-                            key={project.id}
-                            type="button"
-                            className={`dropdown-item ${projectId === project.display_name ? 'selected' : ''}`}
-                            onClick={() => handleProjectSelect(project)}
-                          >
-                            <span>{project.display_name}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginLeft: '8px' }}>
-                              ({project.qa_count} Q&A)
-                            </span>
-                            {projectId === project.display_name && (
-                              <span className="check-icon">✓</span>
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Provider Selector */}
-            <div className="form-group">
-              <label className="form-label">{t('qa.generator.provider')}</label>
-              <select
-                value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value)}
-                className="qa-select"
-              >
-                <option value="">{t('qa.generator.select_provider')}</option>
-                {projectProviders.map(p => (
-                  <option key={p} value={p}>{getProviderDisplayName(p)}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="module-actions">
             <button
               onClick={handleGenerateAudit}
-              disabled={isGenerating || !projectId || !selectedProvider}
+              disabled={isGenerating || !selectedProvider}
               className="module-btn-primary"
             >
               {isGenerating ? (

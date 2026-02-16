@@ -25,7 +25,7 @@ const SIZE_MAP = {
   large: 200
 };
 
-export const DonutChart: React.FC<DonutChartProps> = ({
+export const DonutChart: React.FC<DonutChartProps> = React.memo(({
   data,
   size = 'medium',
   centerText,
@@ -210,6 +210,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({
       </div>
     </div>
   );
-};
+});
+
+DonutChart.displayName = 'DonutChart';
 
 export default DonutChart;

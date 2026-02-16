@@ -108,10 +108,10 @@ interface RfqState {
   fetchAllData: () => Promise<void>;
   fetchAllTableData: () => Promise<void>;
   fetchDataByProject: (projectName: string) => Promise<void>;
-  fetchProposalEvaluations: () => Promise<void>;
+  fetchProposalEvaluations: (projectId?: string) => Promise<void>;
   refreshProposalEvaluations: () => Promise<void>;
   fetchPivotTableData: () => Promise<void>;
-  fetchProviderRanking: () => Promise<void>;
+  fetchProviderRanking: (projectId?: string) => Promise<void>;
 
   // Table Action State
   applyTableFilters: boolean;
@@ -257,7 +257,7 @@ export const useRfqStore = create<RfqState>()(
           }
         }));
 
-        const combined = [...current, ...newFilesWithMeta].slice(0, 7); // Max 7 files
+        const combined = [...current, ...newFilesWithMeta];
         set({ selectedFiles: combined, error: null });
       },
 
@@ -612,11 +612,11 @@ export const useRfqStore = create<RfqState>()(
         }
       },
 
-        fetchProposalEvaluations: async () => {
+        fetchProposalEvaluations: async (projectId?: string) => {
         set({ isLoadingData: true, error: null });
 
         // Get active project ID for filtering
-        const activeProjectId = useProjectStore.getState().activeProjectId;
+        const activeProjectId = projectId || useProjectStore.getState().activeProjectId;
 
         // If no project selected, clear data
         if (!activeProjectId) {
@@ -760,12 +760,27 @@ export const useRfqStore = create<RfqState>()(
         // Detect provider columns dynamically (reuse KNOWN_COLUMNS set)
 
         try {
-          // Obtener datos de rfq_items_master filtrado por proyecto
-          const { data: rfqItemsData, error: rfqItemsError } = await supabase
-            .from('rfq_items_master')
-            .select('*')
-            .eq('project_id', activeProjectId)
-            .order('created_at', { ascending: false });
+          // Obtener datos en paralelo para mejor rendimiento
+          const [rfqItemsResult, responsesResult] = await Promise.all([
+            supabase
+              .from('rfq_items_master')
+              .select('*')
+              .eq('project_id', activeProjectId)
+              .order('created_at', { ascending: false }),
+            supabase
+              .from('provider_responses')
+              .select(`
+                requirement_id,
+                provider_name,
+                evaluation_value,
+                comment
+              `)
+              .eq('project_id', activeProjectId)
+              .order('updated_at', { ascending: false })
+          ]);
+
+          const { data: rfqItemsData, error: rfqItemsError } = rfqItemsResult;
+          const { data: responsesData, error: responsesError } = responsesResult;
 
           if (rfqItemsError) {
             throw new Error(`Supabase error fetching rfq_items: ${rfqItemsError.message}`);
@@ -805,19 +820,11 @@ export const useRfqStore = create<RfqState>()(
             });
           });
 
-          // Segundo: Obtener evaluaciones adicionales de provider_responses
-          const { data: responsesData, error: responsesError } = await supabase
-            .from('provider_responses')
-            .select(`
-              requirement_id,
-              provider_name,
-              evaluation_value,
-              comment
-            `)
-            .order('updated_at', { ascending: false });
-
           if (!responsesError && responsesData) {
-            // Agregar/sobrescribir con datos de provider_responses
+            // Merge provider_responses: data is ordered by updated_at DESC,
+            // so first entry per requirement+provider is the most recent.
+            // Only set if not already populated (keeps newest evaluation).
+            const NO_DATA_VALUES = new Set(['NO INFORMATION', 'NOT QUOTED', 'NO COTIZADO', 'SIN INFORMACIÓN', 'ERROR ANALISIS']);
             responsesData.forEach((response: any) => {
               const reqId = response.requirement_id;
 
@@ -828,8 +835,12 @@ export const useRfqStore = create<RfqState>()(
                   ? `${response.evaluation_value} - ${response.comment}`
                   : response.evaluation_value || response.comment || '';
 
+                const existing = requirementsMap.get(reqId).evaluations[normalizedKey];
                 if (evaluationText.trim() !== '') {
-                  requirementsMap.get(reqId).evaluations[normalizedKey] = evaluationText;
+                  // If no existing value, or existing is "NO INFORMATION" type, use this one
+                  if (!existing || NO_DATA_VALUES.has(existing.split(' - ')[0])) {
+                    requirementsMap.get(reqId).evaluations[normalizedKey] = evaluationText;
+                  }
                 }
               }
             });
@@ -949,14 +960,14 @@ export const useRfqStore = create<RfqState>()(
         }
       },
 
-      fetchProviderRanking: async () => {
+      fetchProviderRanking: async (projectId?: string) => {
         if (!supabase) {
           console.error('[fetchProviderRanking] Supabase not configured');
           return;
         }
 
         // Get active project ID for filtering
-        const activeProjectId = useProjectStore.getState().activeProjectId;
+        const activeProjectId = projectId || useProjectStore.getState().activeProjectId;
 
         // If no project selected, clear data
         if (!activeProjectId) {

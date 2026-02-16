@@ -382,7 +382,9 @@ export const MailDashboard = () => {
             provider_key: normalizeProvider(selectedProvider),
             tone: tone,
             issues: issuesPayload,
-            qa_items: selectedQAItemsForProvider
+            qa_items: selectedQAItemsForProvider,
+            language: activeProject?.default_language || 'es',
+            currency: activeProject?.currency || 'EUR'
         };
 
         // Call store action
