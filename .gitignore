@@ -66,3 +66,13 @@ jspm_packages/
 # Temporary files
 *.tmp
 *~
+
+# Claude Code / AI tooling
+.claude/
+CLAUDE.md
+front-rfq/CLAUDE.md
+.mcp.json
+awesome-claude-code-subagents/
+
+# GitHub workflows (managed separately)
+.github/

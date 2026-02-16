@@ -33,9 +33,13 @@ export const SupplierDirectoryPage = () => {
 
   const stats = useMemo(() => {
     const total = suppliers.length;
-    const withScore = suppliers.filter(s => s.avg_score != null).length;
+    const scored = suppliers.filter(s => s.avg_score != null);
+    const withScore = scored.length;
     const avgScore = withScore > 0
-      ? suppliers.reduce((sum, s) => sum + (s.avg_score || 0), 0) / withScore
+      ? scored.reduce((sum, s) => {
+          const raw = s.avg_score!;
+          return sum + (raw > 10 ? raw / 10 : raw);
+        }, 0) / withScore
       : 0;
     const totalProjects = new Set(suppliers.flatMap(s => s.project_names)).size;
     return { total, withScore, avgScore, totalProjects };
@@ -126,7 +130,7 @@ export const SupplierDirectoryPage = () => {
           <div className="stat-label">{t('supplier.stat.scored')}</div>
         </div>
         <div className="supplier-stat-card">
-          <div className="stat-value">{stats.avgScore > 0 ? <>{normalizeToTen(stats.avgScore)!.toFixed(2)}<span style={{ fontSize: '0.6em', opacity: 0.5 }}>/10</span></> : '—'}</div>
+          <div className="stat-value">{stats.avgScore > 0 ? <>{stats.avgScore.toFixed(2)}<span style={{ fontSize: '0.6em', opacity: 0.5 }}>/10</span></> : '—'}</div>
           <div className="stat-label">{t('supplier.stat.avg_score')}</div>
         </div>
       </div>
