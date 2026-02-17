@@ -78,13 +78,15 @@ export function useRfqProcessing() {
           const activeProj = getActiveProject();
           const projectLanguage = activeProj?.default_language || 'es';
           const projectCurrency = activeProj?.currency || 'EUR';
+          const projectType = (activeProj?.project_type || 'RFP') as 'RFP' | 'RFQ' | 'RFI';
           const result = await uploadRfqFile(file, {
             project_id: activeProjectId,
             proyecto: metadata.proyecto,
             proveedor: metadata.proveedor as string,
             tipoEvaluacion: metadata.tipoEvaluacion,
             language: projectLanguage,
-            currency: projectCurrency
+            currency: projectCurrency,
+            project_type: projectType
           }, tracker.abortController.signal);
 
           updateFileTracker(tracker.id, { status: 'completed' });

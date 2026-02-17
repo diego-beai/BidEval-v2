@@ -39,7 +39,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
     const { tableData, proposalEvaluations, providerRanking, fetchAllTableData, fetchProposalEvaluations, fetchPivotTableData, fetchProviderRanking, refreshProposalEvaluations } = useRfqStore();
 
     // Project store to listen for project changes
-    const { activeProjectId } = useProjectStore();
+    const { activeProjectId, projects } = useProjectStore();
+    const projectType = projects.find(p => p.id === activeProjectId)?.project_type || 'RFP';
 
     // Scoring data from workflow results
     const { scoringResults, refreshScoring, customWeights } = useScoringStore();
@@ -646,6 +647,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
     }, [scoringResults]);
 
     // Dynamic category weights from scoring config (fallback to defaults)
+    // RFI projects exclude economic category
     const categoryWeights = useMemo(() => {
         const defaults = [
             { key: 'technical', label: t('home.scoring.technical'), weight: 30, color: '#12b5b0' },
@@ -653,17 +655,23 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
             { key: 'execution', label: t('home.scoring.execution'), weight: 20, color: '#3b82f6' },
             { key: 'hse_compliance', label: t('home.scoring.hse'), weight: 15, color: '#8b5cf6' }
         ];
-        if (!scoringCategories || scoringCategories.length === 0) return defaults;
-
-        return scoringCategories
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((cat, i) => ({
-                key: cat.name,
-                label: cat.display_name,
-                weight: cat.weight,
-                color: cat.color || defaults[i]?.color || '#64748b'
-            }));
-    }, [scoringCategories, t]);
+        let weights = defaults;
+        if (scoringCategories && scoringCategories.length > 0) {
+            weights = scoringCategories
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((cat, i) => ({
+                    key: cat.name,
+                    label: cat.display_name,
+                    weight: cat.weight,
+                    color: cat.color || defaults[i]?.color || '#64748b'
+                }));
+        }
+        // RFI: filter out economic category
+        if (projectType === 'RFI') {
+            weights = weights.filter(w => !w.key.toLowerCase().includes('econom'));
+        }
+        return weights;
+    }, [scoringCategories, t, projectType]);
 
     // Build scoring criteria from dynamic config (mirrors ExecutiveView/ScoringMatrix logic)
     const homeScoringCriteria = useMemo(() => {
@@ -999,7 +1007,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
                                 {t('home.scoring.title')}
                             </h3>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                {t('home.scoring.subtitle')}
+                                {projectType === 'RFQ'
+                                    ? t('home.scoring.subtitle_rfq')
+                                    : projectType === 'RFI'
+                                        ? t('home.scoring.subtitle_rfi')
+                                        : t('home.scoring.subtitle')
+                                }
                             </span>
                         </div>
                         <div style={{

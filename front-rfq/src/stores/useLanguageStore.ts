@@ -29,10 +29,17 @@ const translations: any = {
         // Stepper phases
         'stepper.bid': 'BID',
         'stepper.rfp': 'RFP',
+        'stepper.rfq': 'RFQ',
+        'stepper.rfi': 'RFI',
         'stepper.proposals': 'Propuestas',
+        'stepper.quotations': 'Cotizaciones',
+        'stepper.responses': 'Respuestas',
         'stepper.qa': 'Q&A',
         'stepper.scoring': 'Scoring',
+        'stepper.pricing': 'Precios',
         'stepper.results': 'Resultados',
+        'stepper.decision': 'Decisión',
+        'stepper.analysis': 'Análisis',
 
         // Detail modal
         'detail.done': 'Completado',
@@ -145,6 +152,8 @@ const translations: any = {
         // AI Scoring section
         'home.scoring.title': 'Scoring IA por Proveedor',
         'home.scoring.subtitle': 'Puntuaciones ponderadas del workflow',
+        'home.scoring.subtitle_rfq': 'Enfasis en analisis de cotizaciones y precios',
+        'home.scoring.subtitle_rfi': 'Analisis cualitativo de respuestas',
         'home.scoring.top_performer': 'Mejor Rendimiento',
         'home.scoring.avg_score': 'Puntuación Promedio',
         'home.scoring.top_score': 'Mejor Puntuacion',
@@ -271,8 +280,11 @@ const translations: any = {
         'upload.btn.close': 'Cerrar',
         'upload.btn.remove': 'Eliminar archivo',
         'upload.btn.clear_all': 'Borrar todos los archivos',
-        'app.upload.tab.rfq': '1. Subir {type} de Referencia',
-        'app.upload.tab.proposals': '2. Subir Propuestas de Proveedores',
+        'app.upload.tab.rfq': '1. Documento Base ({type})',
+        'app.upload.tab.proposals': '2. {responses} de Proveedores',
+        'app.upload.tab.proposals.RFP': '2. Propuestas de Proveedores',
+        'app.upload.tab.proposals.RFQ': '2. Cotizaciones de Proveedores',
+        'app.upload.tab.proposals.RFI': '2. Respuestas de Proveedores',
         'app.upload.supported_providers': 'Proveedores soportados: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY',
         'app.upload.providers_label': 'Proveedores del proyecto',
         'common.error': 'Error',
@@ -726,8 +738,11 @@ const translations: any = {
         'table.loading': 'Cargando datos...',
 
         // Proposal Upload Section
-        'proposal.upload_title': 'Subir Documentos de Propuesta',
+        'proposal.upload_title': 'Subir {responses} de Proveedores',
         'proposal.upload_subtitle': 'Selecciona archivos PDF y configura los metadatos individualmente',
+        'proposal.upload_title.RFP': 'Subir Propuestas de Proveedores',
+        'proposal.upload_title.RFQ': 'Subir Cotizaciones de Proveedores',
+        'proposal.upload_title.RFI': 'Subir Respuestas de Proveedores',
         'proposal.processing_error': 'Error de Procesamiento',
         'proposal.remaining': 'Restantes',
         'proposal.upload_hint': 'Sube documentos de evaluación para aumentar el progreso',
@@ -737,6 +752,14 @@ const translations: any = {
         'proposal.eval_progress': 'Progreso de Evaluación',
         'proposal.completed_count': 'Completados',
 
+        // Project type labels
+        'project.type.RFP.full': 'Solicitud de Propuesta',
+        'project.type.RFQ.full': 'Solicitud de Cotización',
+        'project.type.RFI.full': 'Solicitud de Información',
+        'project.type.RFP.responses': 'Propuestas',
+        'project.type.RFQ.responses': 'Cotizaciones',
+        'project.type.RFI.responses': 'Respuestas',
+
         // FileUploadZone
         'dropzone.processing': 'Procesando propuestas... Esto puede tardar unos minutos',
         'dropzone.files_selected': '{count} archivos seleccionados ({size} MB total)',
@@ -744,6 +767,9 @@ const translations: any = {
         'dropzone.drop_here': 'Suelta los archivos PDF aquí...',
         'dropzone.drag_compact': 'Arrastra archivos PDF o haz clic para seleccionar',
         'dropzone.drag_full': 'Arrastra y suelta archivos PDF aquí (hasta 7), o haz clic para seleccionar',
+        'dropzone.drag_full_rfp': 'Arrastra propuestas PDF aquí (hasta 7), o haz clic para seleccionar',
+        'dropzone.drag_full_rfq': 'Arrastra cotizaciones PDF aquí (hasta 7), o haz clic para seleccionar',
+        'dropzone.drag_full_rfi': 'Arrastra respuestas PDF aquí (hasta 7), o haz clic para seleccionar',
         'dropzone.configure_files': 'Configurar archivos ({count})',
         'dropzone.clear_all': 'Limpiar todo',
 
@@ -1150,6 +1176,8 @@ const translations: any = {
         'econ.confidence.high': 'Alta confianza',
         'econ.confidence.medium': 'Confianza media',
         'econ.confidence.low': 'Baja confianza',
+        'econ.rfq_badge': 'Seccion clave',
+        'econ.rfq_subtitle': 'Seccion principal del proyecto — Analisis de cotizaciones y precios',
 
         // Project detail modal - timeline & meta
         'detail.timeline.title': 'Plazos',
@@ -1267,10 +1295,17 @@ const translations: any = {
         // Stepper phases
         'stepper.bid': 'BID',
         'stepper.rfp': 'RFP',
+        'stepper.rfq': 'RFQ',
+        'stepper.rfi': 'RFI',
         'stepper.proposals': 'Proposals',
+        'stepper.quotations': 'Quotations',
+        'stepper.responses': 'Responses',
         'stepper.qa': 'Q&A',
         'stepper.scoring': 'Scoring',
+        'stepper.pricing': 'Pricing',
         'stepper.results': 'Results',
+        'stepper.decision': 'Decision',
+        'stepper.analysis': 'Analysis',
         'sidebar.tools': 'Tools',
 
         // Detail modal
@@ -1384,6 +1419,8 @@ const translations: any = {
         // AI Scoring section
         'home.scoring.title': 'AI Scoring by Provider',
         'home.scoring.subtitle': 'Weighted scores from workflow',
+        'home.scoring.subtitle_rfq': 'Focus on quotation and pricing analysis',
+        'home.scoring.subtitle_rfi': 'Qualitative response analysis',
         'home.scoring.top_performer': 'Top Performer',
         'home.scoring.avg_score': 'Average Score',
         'home.scoring.top_score': 'Top Performer Score',
@@ -1510,8 +1547,11 @@ const translations: any = {
         'upload.btn.close': 'Close',
         'upload.btn.remove': 'Remove file',
         'upload.btn.clear_all': 'Clear all files',
-        'app.upload.tab.rfq': '1. Upload Reference {type}',
-        'app.upload.tab.proposals': '2. Upload Provider Proposals',
+        'app.upload.tab.rfq': '1. Base Document ({type})',
+        'app.upload.tab.proposals': '2. Provider {responses}',
+        'app.upload.tab.proposals.RFP': '2. Provider Proposals',
+        'app.upload.tab.proposals.RFQ': '2. Provider Quotations',
+        'app.upload.tab.proposals.RFI': '2. Provider Responses',
         'app.upload.supported_providers': 'Supported providers: Técnicas Reunidas, IDOM, SACYR, Empresarios Agrupados, SENER, TRESCA, WORLEY',
         'app.upload.providers_label': 'Project providers',
         'common.error': 'Error',
@@ -1965,8 +2005,11 @@ const translations: any = {
         'table.loading': 'Loading data...',
 
         // Proposal Upload Section
-        'proposal.upload_title': 'Upload Proposal Documents',
+        'proposal.upload_title': 'Upload Provider {responses}',
         'proposal.upload_subtitle': 'Select PDF files and configure metadata for each file individually',
+        'proposal.upload_title.RFP': 'Upload Provider Proposals',
+        'proposal.upload_title.RFQ': 'Upload Provider Quotations',
+        'proposal.upload_title.RFI': 'Upload Provider Responses',
         'proposal.processing_error': 'Processing Error',
         'proposal.remaining': 'Remaining',
         'proposal.upload_hint': 'Upload evaluation documents to increase progress',
@@ -1976,6 +2019,14 @@ const translations: any = {
         'proposal.eval_progress': 'Evaluation Progress',
         'proposal.completed_count': 'Completed',
 
+        // Project type labels
+        'project.type.RFP.full': 'Request for Proposal',
+        'project.type.RFQ.full': 'Request for Quotation',
+        'project.type.RFI.full': 'Request for Information',
+        'project.type.RFP.responses': 'Proposals',
+        'project.type.RFQ.responses': 'Quotations',
+        'project.type.RFI.responses': 'Responses',
+
         // FileUploadZone
         'dropzone.processing': 'Processing proposals... This may take a few minutes',
         'dropzone.files_selected': '{count} files selected ({size} MB total)',
@@ -1983,6 +2034,9 @@ const translations: any = {
         'dropzone.drop_here': 'Drop the PDF files here...',
         'dropzone.drag_compact': 'Drag PDF files or click to select',
         'dropzone.drag_full': 'Drag and drop PDF files here (up to 7), or click to select',
+        'dropzone.drag_full_rfp': 'Drag proposal PDFs here (up to 7), or click to select',
+        'dropzone.drag_full_rfq': 'Drag quotation PDFs here (up to 7), or click to select',
+        'dropzone.drag_full_rfi': 'Drag response PDFs here (up to 7), or click to select',
         'dropzone.configure_files': 'Configure files ({count})',
         'dropzone.clear_all': 'Clear all',
 
@@ -2388,6 +2442,8 @@ const translations: any = {
         'econ.confidence.high': 'High confidence',
         'econ.confidence.medium': 'Medium confidence',
         'econ.confidence.low': 'Low confidence',
+        'econ.rfq_badge': 'Key section',
+        'econ.rfq_subtitle': 'Main project section — Quotation and pricing analysis',
 
         // Project detail modal - timeline & meta
         'detail.timeline.title': 'Deadlines',

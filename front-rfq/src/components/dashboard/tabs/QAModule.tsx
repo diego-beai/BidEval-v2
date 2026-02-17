@@ -365,7 +365,8 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
         project_name: projectId,            // Nombre display del proyecto
         provider: selectedProvider,
         language: activeProj?.default_language || 'es',
-        currency: activeProj?.currency || 'EUR'
+        currency: activeProj?.currency || 'EUR',
+        project_type: (activeProj?.project_type || 'RFP') as 'RFP' | 'RFQ' | 'RFI'
       });
 
       if (result.success && result.data) {

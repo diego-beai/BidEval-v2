@@ -91,6 +91,13 @@ export default function App() {
     }
   }, [activeView, loadDashboardData]);
 
+  // Redirect RFI projects away from economic section
+  useEffect(() => {
+    if (activeView === 'economic' && projectType === 'RFI') {
+      setActiveView('home');
+    }
+  }, [activeView, projectType]);
+
   // Get active project for use throughout the app
   const activeProject = getActiveProject();
   const [uploadTab, setUploadTab] = useState<'rfq' | 'propuestas'>('rfq');
@@ -190,7 +197,7 @@ export default function App() {
               <path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2-2.4-3.5-4.4-3.5h-1.2c-.7-3-3.2-5.2-6.2-5.6-3-.3-5.9 1.3-7.3 4-1.2 2.5-1 6.5.5 8.8m8.7-1.6V21"></path>
               <path d="M16 16l-4-4-4 4"></path>
             </svg>
-            {t('app.upload.tab.proposals')}
+            {t(`app.upload.tab.proposals.${projectType}`)}
           </button>
         </div>
 
@@ -214,7 +221,7 @@ export default function App() {
                   border: '1px solid rgba(18, 181, 176, 0.15)'
                 }}>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {t('proposal.upload_title')}
+                    {t(`proposal.upload_title.${projectType}`)}
                   </h4>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
                     {t('proposal.upload_subtitle')}
@@ -585,7 +592,7 @@ export default function App() {
 
         {activeView === 'decision' && <VendorDecisionDashboard />}
 
-        {activeView === 'economic' && <EconomicSection />}
+        {activeView === 'economic' && projectType !== 'RFI' && <EconomicSection />}
 
         {activeView === 'chat' && <ChatPage />}
 

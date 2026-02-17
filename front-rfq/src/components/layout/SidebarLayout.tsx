@@ -155,16 +155,18 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
                     />
-                    <NavItem
-                        view="economic"
-                        labelKey="nav.economic"
-                        disabled={!currentProject}
-                        icon={
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                            </svg>
-                        }
-                    />
+                    {projectType !== 'RFI' && (
+                        <NavItem
+                            view="economic"
+                            labelKey="nav.economic"
+                            disabled={!currentProject}
+                            icon={
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                            }
+                        />
+                    )}
                     <NavItem
                         view="communications"
                         labelKey="nav.communications"

@@ -7,11 +7,23 @@ export const REQUIRED_EVAL_TYPES = [
   'Economical Evaluation',
 ];
 
+/** Returns required eval types based on project type. RFI only needs Technical. */
+export function getRequiredEvalTypes(projectType?: 'RFP' | 'RFQ' | 'RFI'): string[] {
+  if (projectType === 'RFI') return ['Technical Evaluation'];
+  return REQUIRED_EVAL_TYPES;
+}
+
 export const ALL_EVAL_TYPES = [
   'Technical Evaluation',
   'Economical Evaluation',
   'Others',
 ];
+
+/** Returns all eval types based on project type. RFI excludes Economical. */
+export function getAllEvalTypes(projectType?: 'RFP' | 'RFQ' | 'RFI'): string[] {
+  if (projectType === 'RFI') return ['Technical Evaluation', 'Others'];
+  return ALL_EVAL_TYPES;
+}
 
 export interface ProviderCoverage {
   name: string;
@@ -140,16 +152,19 @@ export const useProjectStore = create<ProjectState>()(
                     supabase!.from('ranking_proveedores').select('provider_name, overall_score').eq('project_id', p.id).order('overall_score', { ascending: false }),
                   ]);
 
-                  // --- Compute RFQ type coverage ---
+                  // --- Compute RFQ type coverage (adapts to project type) ---
+                  const projType = (p.project_type as 'RFP' | 'RFQ' | 'RFI') || 'RFP';
+                  const requiredTypes = getRequiredEvalTypes(projType);
+                  const allTypes = getAllEvalTypes(projType);
                   const rfqTypeSet = new Set<string>();
                   (rfqDocs || []).forEach((doc: any) => {
                     (doc.evaluation_types || []).forEach((t: string) => rfqTypeSet.add(t));
                   });
                   // Visual coverage in UI should include all known types (including Others)
-                  const rfqTypesCovered = ALL_EVAL_TYPES.filter(t => rfqTypeSet.has(t));
-                  const rfqTypesMissing = ALL_EVAL_TYPES.filter(t => !rfqTypeSet.has(t));
+                  const rfqTypesCovered = allTypes.filter(t => rfqTypeSet.has(t));
+                  const rfqTypesMissing = allTypes.filter(t => !rfqTypeSet.has(t));
                   // Status gating keeps using required types only
-                  const requiredRfqTypesMissing = REQUIRED_EVAL_TYPES.filter(t => !rfqTypeSet.has(t));
+                  const requiredRfqTypesMissing = requiredTypes.filter(t => !rfqTypeSet.has(t));
 
                   // --- Compute provider coverage ---
                   const providerMap = new Map<string, Set<string>>();
@@ -170,13 +185,13 @@ export const useProjectStore = create<ProjectState>()(
                   const providerCoverage: ProviderCoverage[] = Array.from(providerMap.entries()).map(([name, types]) => ({
                     name,
                     // Visual coverage includes Others
-                    types_covered: ALL_EVAL_TYPES.filter(t => types.has(t)),
-                    types_missing: ALL_EVAL_TYPES.filter(t => !types.has(t)),
+                    types_covered: allTypes.filter(t => types.has(t)),
+                    types_missing: allTypes.filter(t => !types.has(t)),
                   }));
 
-                  // Qualification keeps using required types only
+                  // Qualification keeps using required types only (adapted per project type)
                   const qualifyingProviders = Array.from(providerMap.values())
-                    .filter(types => REQUIRED_EVAL_TYPES.every(t => types.has(t)))
+                    .filter(types => requiredTypes.every(t => types.has(t)))
                     .length;
 
                   // --- Scoring info ---

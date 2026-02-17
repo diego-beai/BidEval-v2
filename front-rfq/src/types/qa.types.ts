@@ -113,6 +113,7 @@ export interface GenerateAuditPayload {
   provider: string;
   language?: string;
   currency?: string;
+  project_type?: 'RFP' | 'RFQ' | 'RFI';
 }
 
 // Response from the n8n webhook

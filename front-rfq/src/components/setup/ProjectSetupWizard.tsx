@@ -295,8 +295,8 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
       if (scoringStore.draftCategories.length > 0) {
         await scoringStore.saveConfiguration(projectId);
       } else {
-        // Initialize with defaults if no custom config
-        await scoringStore.initializeDefaultConfig(projectId);
+        // Initialize with type-aware defaults if no custom config
+        await scoringStore.initializeDefaultConfig(projectId, formData.projectType);
       }
 
       // 4. Update the project fields (dates, reference code, owner, language)

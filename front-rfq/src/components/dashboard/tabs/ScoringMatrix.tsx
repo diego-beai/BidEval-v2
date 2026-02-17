@@ -88,7 +88,8 @@ export const ScoringMatrix: React.FC = () => {
     } = useScoringConfigStore();
 
     // Get active project
-    const { activeProjectId } = useProjectStore();
+    const { activeProjectId, projects } = useProjectStore();
+    const activeProject = projects.find(p => p.id === activeProjectId);
     const { t } = useLanguageStore();
 
     // UI State
@@ -579,7 +580,7 @@ export const ScoringMatrix: React.FC = () => {
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                         <button
-                            onClick={() => activeProjectId && initializeDefaultConfig(activeProjectId)}
+                            onClick={() => activeProjectId && initializeDefaultConfig(activeProjectId, activeProject?.project_type)}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

@@ -52,8 +52,11 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
     ),
 };
 
-// 6 visual phases
-const STEPS = [
+// Steps per project type:
+// RFP: full flow (bid → rfp → proposals → Q&A → scoring → results)
+// RFQ: economic emphasis (bid → rfq → quotations → Q&A → pricing → decision)
+// RFI: short flow (bid → rfi → responses → analysis)
+const STEPS_RFP = [
     { key: 'bid', labelKey: 'stepper.bid', fallback: 'BID' },
     { key: 'rfp', labelKey: 'stepper.rfp', fallback: 'RFP' },
     { key: 'proposals', labelKey: 'stepper.proposals', fallback: 'Proposals' },
@@ -62,15 +65,43 @@ const STEPS = [
     { key: 'results', labelKey: 'stepper.results', fallback: 'Results' },
 ];
 
+const STEPS_RFQ = [
+    { key: 'bid', labelKey: 'stepper.bid', fallback: 'BID' },
+    { key: 'rfp', labelKey: 'stepper.rfq', fallback: 'RFQ' },
+    { key: 'proposals', labelKey: 'stepper.quotations', fallback: 'Quotations' },
+    { key: 'qa', labelKey: 'stepper.qa', fallback: 'Q&A' },
+    { key: 'scoring', labelKey: 'stepper.pricing', fallback: 'Pricing' },
+    { key: 'results', labelKey: 'stepper.decision', fallback: 'Decision' },
+];
+
+const STEPS_RFI = [
+    { key: 'bid', labelKey: 'stepper.bid', fallback: 'BID' },
+    { key: 'rfp', labelKey: 'stepper.rfi', fallback: 'RFI' },
+    { key: 'proposals', labelKey: 'stepper.responses', fallback: 'Responses' },
+    { key: 'scoring', labelKey: 'stepper.analysis', fallback: 'Analysis' },
+];
+
+function getSteps(projectType?: 'RFP' | 'RFQ' | 'RFI') {
+    if (projectType === 'RFQ') return STEPS_RFQ;
+    if (projectType === 'RFI') return STEPS_RFI;
+    return STEPS_RFP;
+}
+
 /**
- * Maps backend statuses to visual step index (6 steps now).
- * setup             → 0  (BID)
- * extracting        → 1  (RFP)
- * waiting_proposals → 2  (Proposals)
- * evaluation        → 4  (Scoring)
- * completed         → 6  (all done)
+ * Maps backend statuses to visual step index.
+ * RFP/RFQ (6 steps): setup→0, extracting→1, waiting_proposals→2, evaluation→4, completed→6
+ * RFI (4 steps):     setup→0, extracting→1, waiting_proposals→2, evaluation→3, completed→4
  */
-function getActiveStepIndex(status: string): number {
+function getActiveStepIndex(status: string, projectType?: 'RFP' | 'RFQ' | 'RFI'): number {
+    if (projectType === 'RFI') {
+        switch (status) {
+            case 'extracting': return 1;
+            case 'waiting_proposals': return 2;
+            case 'evaluation': return 3;
+            case 'completed': return 4;
+            default: return 0;
+        }
+    }
     switch (status) {
         case 'extracting': return 1;
         case 'waiting_proposals': return 2;
@@ -104,7 +135,8 @@ export const ProjectProgressStepper: React.FC<ProjectProgressStepperProps> = ({
     const questions = useQAStore(s => s.questions);
     const loadQuestions = useQAStore(s => s.loadQuestions);
     const status = project.status || 'setup';
-    const activeIdx = getActiveStepIndex(status);
+    const STEPS = getSteps(project.project_type);
+    const activeIdx = getActiveStepIndex(status, project.project_type);
 
     // Ensure Q&A questions are loaded for the current project
     useEffect(() => {
@@ -117,13 +149,16 @@ export const ProjectProgressStepper: React.FC<ProjectProgressStepperProps> = ({
     // - Has questions → completed only if ALL are Resolved/Discarded
     // - No questions + project past Q&A phase → completed (skipped)
     // - No questions + project at/before Q&A → not completed yet
+    // - RFI has no Q&A step → always true
     const QA_STEP_INDEX = STEPS.findIndex(s => s.key === 'qa');
     const projectQuestions = questions.filter(q =>
         (q.project_id || q.project_name) === project.id
     );
-    const qaCompleted = projectQuestions.length > 0
-        ? projectQuestions.every(q => QA_TERMINAL_STATES.has(q.status || q.estado || ''))
-        : activeIdx > QA_STEP_INDEX;
+    const qaCompleted = QA_STEP_INDEX === -1
+        ? true
+        : projectQuestions.length > 0
+            ? projectQuestions.every(q => QA_TERMINAL_STATES.has(q.status || q.estado || ''))
+            : activeIdx > QA_STEP_INDEX;
 
     // Compact variant: colored badge with dot + current step label
     if (variant === 'compact') {

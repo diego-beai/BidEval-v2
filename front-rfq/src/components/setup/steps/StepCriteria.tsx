@@ -6,21 +6,9 @@ import {
 } from '../../../stores/useScoringConfigStore';
 import type { CategoryDraft, CriterionDraft } from '../../../types/scoring.types';
 import {
-  DEFAULT_CATEGORIES,
-  DEFAULT_CRITERIA,
   INDUSTRY_TEMPLATES,
+  buildDefaultConfiguration,
 } from '../../../types/scoring.types';
-
-/**
- * Convert criteria from relative weights (sum=100%) to absolute weights (sum=categoryWeight).
- * E.g. if category=30% and criterion=33.33%, absolute weight = 10%
- */
-function toAbsoluteWeights(criteria: CriterionDraft[], categoryWeight: number): CriterionDraft[] {
-  return criteria.map(c => ({
-    ...c,
-    weight: parseFloat((c.weight * categoryWeight / 100).toFixed(2)),
-  }));
-}
 
 interface StepCriteriaProps {
   projectType: 'RFP' | 'RFQ' | 'RFI';
@@ -44,48 +32,9 @@ export const StepCriteria: React.FC<StepCriteriaProps> = ({ projectType }) => {
   const [newCriterionNames, setNewCriterionNames] = useState<Record<number, string>>({});
   const [newCriterionWeights, setNewCriterionWeights] = useState<Record<number, number>>({});
 
-  // Load type-specific defaults
+  // Load type-specific defaults (centralised in buildDefaultConfiguration)
   const loadTypeDefaults = useCallback(() => {
-    let categories: CategoryDraft[];
-
-    if (projectType === 'RFQ') {
-      // RFQ: Economic-heavy defaults
-      const rfqWeights: Record<string, number> = {
-        economic: 45,
-        technical: 25,
-        execution: 10,
-        hse_compliance: 10,
-        esg_sustainability: 10,
-      };
-      categories = DEFAULT_CATEGORIES.map(cat => {
-        const weight = rfqWeights[cat.name] ?? 10;
-        return {
-          ...cat,
-          weight,
-          criteria: toAbsoluteWeights(DEFAULT_CRITERIA[cat.name] || [], weight),
-        };
-      });
-    } else if (projectType === 'RFI') {
-      // RFI: Informational, fewer categories
-      categories = DEFAULT_CATEGORIES
-        .filter(cat => cat.name === 'technical' || cat.name === 'execution')
-        .map(cat => {
-          const weight = cat.name === 'technical' ? 60 : 40;
-          return {
-            ...cat,
-            weight,
-            criteria: toAbsoluteWeights(DEFAULT_CRITERIA[cat.name] || [], weight),
-          };
-        });
-    } else {
-      // RFP: Balanced defaults
-      categories = DEFAULT_CATEGORIES.map(cat => ({
-        ...cat,
-        criteria: toAbsoluteWeights(DEFAULT_CRITERIA[cat.name] || [], cat.weight),
-      }));
-    }
-
-    setDraftCategories(categories);
+    setDraftCategories(buildDefaultConfiguration(projectType));
     // Auto-expand first category so user sees sub-criteria exist
     setExpandedCategories(new Set([0]));
   }, [projectType, setDraftCategories]);

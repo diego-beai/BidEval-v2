@@ -28,7 +28,8 @@ interface ScoringSetupWizardProps {
 }
 
 export const ScoringSetupWizard: React.FC<ScoringSetupWizardProps> = ({ onClose }) => {
-  const { activeProjectId } = useProjectStore();
+  const { activeProjectId, projects } = useProjectStore();
+  const activeProject = projects.find(p => p.id === activeProjectId);
   const { t } = useLanguageStore();
   const {
     draftCategories,
@@ -46,16 +47,16 @@ export const ScoringSetupWizard: React.FC<ScoringSetupWizardProps> = ({ onClose 
   const validation = useMemo(() => validateScoringConfiguration(draftCategories), [draftCategories]);
   const totalCategoryWeight = useMemo(() => calculateTotalCategoryWeight(draftCategories), [draftCategories]);
 
-  // Initialize with selected template
+  // Initialize with selected template (type-aware)
   const handleTemplateSelect = useCallback((template: 'default' | 'scratch') => {
     setSelectedTemplate(template);
     if (template === 'default') {
-      setDraftCategories(buildDefaultConfiguration());
+      setDraftCategories(buildDefaultConfiguration(activeProject?.project_type));
     } else {
       setDraftCategories([]);
     }
     setWizardStep(2);
-  }, [setDraftCategories, setWizardStep]);
+  }, [setDraftCategories, setWizardStep, activeProject?.project_type]);
 
   // Category operations
   const handleAddCategory = useCallback(() => {

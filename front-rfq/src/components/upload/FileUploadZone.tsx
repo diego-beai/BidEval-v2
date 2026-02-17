@@ -2,6 +2,7 @@ import { useCallback, memo, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useRfqStore } from '../../stores/useRfqStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
+import { useProjectStore } from '../../stores/useProjectStore';
 import { validateFile } from '../../utils/validators';
 import { MultiFileMetadataModal } from './MultiFileMetadataModal';
 import { useRfqProcessing } from '../../hooks/useRfqProcessing';
@@ -27,6 +28,7 @@ export const FileUploadZone = memo(function FileUploadZone({
   } = useRfqStore();
   const { handleUpload } = useRfqProcessing();
   const { t } = useLanguageStore();
+  const projectType = useProjectStore((s) => s.projects.find(p => p.id === s.activeProjectId)?.project_type || 'RFP');
   const [showMetadataModal, setShowMetadataModal] = useState(false);
 
   // Auto-open modal when files are added
@@ -133,7 +135,7 @@ export const FileUploadZone = memo(function FileUploadZone({
                 ? t('dropzone.drop_here')
                 : compact
                   ? t('dropzone.drag_compact')
-                  : t('dropzone.drag_full')}
+                  : t(`dropzone.drag_full_${projectType.toLowerCase()}`) || t('dropzone.drag_full')}
         </p>
 
         {selectedFiles.length > 0 && (

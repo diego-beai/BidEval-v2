@@ -61,7 +61,7 @@ interface ScoringConfigState {
   clearConfiguration: () => void;
 
   // Actions - Configuration Management
-  initializeDefaultConfig: (projectId: string) => Promise<void>;
+  initializeDefaultConfig: (projectId: string, projectType?: 'RFP' | 'RFQ' | 'RFI') => Promise<void>;
   saveConfiguration: (projectId: string) => Promise<boolean>;
   deleteConfiguration: (projectId: string) => Promise<void>;
 
@@ -228,7 +228,7 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
       // CONFIGURATION MANAGEMENT
       // ============================================
 
-      initializeDefaultConfig: async (projectId: string) => {
+      initializeDefaultConfig: async (projectId: string, projectType?: 'RFP' | 'RFQ' | 'RFI') => {
         if (!supabase) {
           useToastStore.getState().addToast('Supabase not configured', 'error');
           return;
@@ -237,18 +237,12 @@ export const useScoringConfigStore = create<ScoringConfigState>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Call the database function to clone default criteria
-          // Note: Using 'as any' because this RPC function may not be in the generated types yet
-          const { error } = await (supabase as any).rpc('clone_default_criteria_to_project', {
-            p_project_id: projectId,
-          });
+          // Generate type-aware default configuration
+          const defaults = buildDefaults(projectType);
+          set({ draftCategories: defaults, hasUnsavedChanges: true });
 
-          if (error) throw error;
-
-          useToastStore.getState().addToast('Default scoring configuration initialized', 'success');
-
-          // Reload the configuration
-          await get().loadConfiguration(projectId);
+          // Save to database
+          await get().saveConfiguration(projectId);
 
         } catch (err: any) {
           set({

@@ -387,9 +387,51 @@ export const DEFAULT_CRITERIA: Record<string, CriterionDraft[]> = {
 };
 
 /**
- * Build full default configuration with categories and criteria
+ * Build full default configuration with categories and criteria.
+ * Accepts an optional projectType to return type-specific weight distributions:
+ * - RFP: balanced defaults (current weights)
+ * - RFQ: economic-heavy (economic=45%, technical=25%, execution=10%, hse=10%, esg=10%)
+ * - RFI: informational only (technical=60%, execution=40%, no economic/hse/esg)
  */
-export function buildDefaultConfiguration(): CategoryDraft[] {
+export function buildDefaultConfiguration(projectType?: 'RFP' | 'RFQ' | 'RFI'): CategoryDraft[] {
+  if (projectType === 'RFQ') {
+    const rfqWeights: Record<string, number> = {
+      economic: 45,
+      technical: 25,
+      execution: 10,
+      hse_compliance: 10,
+      esg_sustainability: 10,
+    };
+    return DEFAULT_CATEGORIES.map((category) => {
+      const weight = rfqWeights[category.name] ?? category.weight;
+      return {
+        ...category,
+        weight,
+        criteria: (DEFAULT_CRITERIA[category.name] || []).map(c => ({
+          ...c,
+          weight: parseFloat((c.weight * weight / 100).toFixed(2)),
+        })),
+      };
+    });
+  }
+
+  if (projectType === 'RFI') {
+    return DEFAULT_CATEGORIES
+      .filter(cat => cat.name === 'technical' || cat.name === 'execution')
+      .map((category) => {
+        const weight = category.name === 'technical' ? 60 : 40;
+        return {
+          ...category,
+          weight,
+          criteria: (DEFAULT_CRITERIA[category.name] || []).map(c => ({
+            ...c,
+            weight: parseFloat((c.weight * weight / 100).toFixed(2)),
+          })),
+        };
+      });
+  }
+
+  // RFP (default): balanced weights
   return DEFAULT_CATEGORIES.map((category) => ({
     ...category,
     criteria: (DEFAULT_CRITERIA[category.name] || []).map(c => ({

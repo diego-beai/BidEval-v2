@@ -58,7 +58,7 @@ DROP TABLE IF EXISTS public.organization_members CASCADE;
 DROP TABLE IF EXISTS public.projects CASCADE;
 DROP TABLE IF EXISTS public.organizations CASCADE;
 
-RAISE NOTICE 'Tablas BidEval v1 eliminadas de public.';
+-- Tablas BidEval v1 eliminadas de public.
 
 -- ============================================
 -- SECCION 3: CREAR TABLAS CLONANDO ESTRUCTURA DE DESARROLLO
@@ -157,7 +157,7 @@ CREATE TABLE public.supplier_upload_tokens
 CREATE TABLE public.scoring_audit_log
     (LIKE desarrollo.scoring_audit_log INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES INCLUDING GENERATED);
 
-RAISE NOTICE 'Tablas creadas en public (clonadas de desarrollo).';
+-- Tablas creadas en public (clonadas de desarrollo).
 
 -- ============================================
 -- SECCION 4: FOREIGN KEYS
@@ -243,7 +243,7 @@ ALTER TABLE public.supplier_upload_tokens
 ALTER TABLE public.scoring_audit_log
     ADD CONSTRAINT fk_audit_log_project FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
 
-RAISE NOTICE 'Foreign keys creadas.';
+-- Foreign keys creadas.
 
 -- ============================================
 -- SECCION 5: COPIAR DATOS
@@ -283,7 +283,7 @@ INSERT INTO public.scoring_audit_log SELECT * FROM desarrollo.scoring_audit_log;
 -- Reactivar triggers
 SET session_replication_role = 'origin';
 
-RAISE NOTICE 'Datos copiados de desarrollo a public.';
+-- Datos copiados de desarrollo a public.
 
 -- ============================================
 -- SECCION 6: SINCRONIZAR SECUENCIAS (BIGSERIAL)
@@ -296,6 +296,26 @@ SELECT setval(pg_get_serial_sequence('public.proposals', 'id'),
 -- ============================================
 -- SECCION 7: FUNCIONES
 -- ============================================
+
+-- Drop existing functions first (v1 may have different return types)
+DROP FUNCTION IF EXISTS public.update_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS public.update_projects_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS public.normalize_project_name(TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.get_or_create_project(TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.calculate_weighted_overall_score() CASCADE;
+DROP FUNCTION IF EXISTS public.clone_default_criteria_to_project(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.calculate_dynamic_overall_score(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.validate_category_weights() CASCADE;
+DROP FUNCTION IF EXISTS public.validate_criteria_weights() CASCADE;
+DROP FUNCTION IF EXISTS public.update_economic_offers_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS public.soft_delete_project(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.update_project_name(UUID, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.match_rfq(vector, INT, FLOAT) CASCADE;
+DROP FUNCTION IF EXISTS public.match_proposals(vector, INT, FLOAT) CASCADE;
+DROP FUNCTION IF EXISTS public.get_user_org_id() CASCADE;
+DROP FUNCTION IF EXISTS public.log_scoring_changes() CASCADE;
+DROP FUNCTION IF EXISTS public.recalculate_scores_with_weights(UUID, JSONB) CASCADE;
+DROP FUNCTION IF EXISTS public.migrate_existing_scoring_data(UUID) CASCADE;
 
 -- Funcion generica updated_at
 CREATE OR REPLACE FUNCTION public.update_updated_at()
@@ -696,7 +716,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-RAISE NOTICE 'Funciones creadas.';
+-- Funciones creadas.
 
 -- ============================================
 -- SECCION 8: VISTAS
@@ -780,7 +800,7 @@ LEFT JOIN public.projects p ON p.id = pp.project_id
 LEFT JOIN public.ranking_proveedores rp ON UPPER(rp.provider_name) = UPPER(pp.provider_name) AND rp.project_id = pp.project_id
 GROUP BY COALESCE(sd.name, pp.provider_name), sd.display_name, sd.email, sd.phone, sd.contact_person, sd.category, sd.website, sd.notes, sd.tags;
 
-RAISE NOTICE 'Vistas creadas.';
+-- Vistas creadas.
 
 -- ============================================
 -- SECCION 9: TRIGGERS
@@ -817,7 +837,7 @@ CREATE TRIGGER trigger_audit_scoring_weight_configs
 CREATE TRIGGER trigger_audit_scoring_categories
     AFTER INSERT OR UPDATE OR DELETE ON public.scoring_categories FOR EACH ROW EXECUTE FUNCTION public.log_scoring_changes();
 
-RAISE NOTICE 'Triggers creados.';
+-- Triggers creados.
 
 -- ============================================
 -- SECCION 10: RLS POLICIES
@@ -897,7 +917,7 @@ CREATE POLICY "Allow read supplier_upload_tokens" ON public.supplier_upload_toke
 CREATE POLICY "Allow insert supplier_upload_tokens" ON public.supplier_upload_tokens FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow update non_expired_tokens" ON public.supplier_upload_tokens FOR UPDATE USING (expires_at > NOW());
 
-RAISE NOTICE 'RLS policies aplicadas.';
+-- RLS policies aplicadas.
 
 -- ============================================
 -- SECCION 11: PERMISOS

@@ -114,6 +114,7 @@ export function useRfqBaseProcessing() {
     const projectName = activeProject?.display_name || activeProject?.name || undefined;
     const projectLanguage = activeProject?.default_language || 'es';
     const projectCurrency = activeProject?.currency || 'EUR';
+    const projectType = activeProject?.project_type || 'RFP';
 
     const fileCount = files.length;
 
@@ -121,9 +122,9 @@ export function useRfqBaseProcessing() {
       startProcessingRfqBase(fileCount);
       simulateProgress();
 
-      // Procesar todos los archivos en paralelo con el project_id, project_name y language
+      // Procesar todos los archivos en paralelo con el project_id, project_name, language y project_type
       const uploadPromises = files.map(file =>
-        uploadRfqBase(file, activeProjectId, projectName, abortController.signal, projectLanguage, projectCurrency)
+        uploadRfqBase(file, activeProjectId, projectName, abortController.signal, projectLanguage, projectCurrency, projectType as 'RFP' | 'RFQ' | 'RFI')
       );
       const responses = await Promise.all(uploadPromises);
 

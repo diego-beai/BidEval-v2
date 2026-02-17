@@ -54,6 +54,7 @@ export async function uploadRfqFile(
     tipoEvaluacion?: string[];
     language?: string;
     currency?: string;
+    project_type?: 'RFP' | 'RFQ' | 'RFI';
   },
   abortSignal?: AbortSignal
 ): Promise<RfqUploadResponse> {
@@ -74,6 +75,7 @@ export async function uploadRfqFile(
       project_id: additionalMetadata?.project_id || null,
       language: additionalMetadata?.language || 'es',
       currency: additionalMetadata?.currency || 'EUR',
+      project_type: additionalMetadata?.project_type || 'RFP',
       metadata: {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
@@ -84,7 +86,8 @@ export async function uploadRfqFile(
         proveedor: additionalMetadata?.proveedor || null,
         tipoEvaluacion: additionalMetadata?.tipoEvaluacion || [],
         language: additionalMetadata?.language || 'es',
-        currency: additionalMetadata?.currency || 'EUR'
+        currency: additionalMetadata?.currency || 'EUR',
+        project_type: additionalMetadata?.project_type || 'RFP'
       }
     };
 
@@ -311,7 +314,8 @@ export async function uploadRfqBase(
   projectName?: string,
   abortSignal?: AbortSignal,
   language?: string,
-  currency?: string
+  currency?: string,
+  projectType?: 'RFP' | 'RFQ' | 'RFI'
 ): Promise<RfqIngestaResponse> {
   const fileId = generateFileId();
   const fileTitle = file.name;
@@ -333,7 +337,9 @@ export async function uploadRfqBase(
       // Language for LLM output
       language: language || 'es',
       // Currency for economic analysis
-      currency: currency || 'EUR'
+      currency: currency || 'EUR',
+      // Project type for workflow routing
+      project_type: projectType || 'RFP'
     };
 
     const response = await fetchWithTimeout(

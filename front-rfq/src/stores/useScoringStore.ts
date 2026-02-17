@@ -113,6 +113,7 @@ export const useScoringStore = create<ScoringState>()(
                     const activeProject = useProjectStore.getState().getActiveProject();
                     const projectLanguage = activeProject?.default_language || 'es';
                     const projectCurrency = activeProject?.currency || 'EUR';
+                    const projectType = activeProject?.project_type || 'RFP';
 
                     const response = await fetch(API_CONFIG.N8N_SCORING_URL, {
                         method: 'POST',
@@ -124,7 +125,8 @@ export const useScoringStore = create<ScoringState>()(
                             provider_name: providerName || '',
                             recalculate_all: !providerName,
                             language: projectLanguage,
-                            currency: projectCurrency
+                            currency: projectCurrency,
+                            project_type: projectType
                         })
                     });
 

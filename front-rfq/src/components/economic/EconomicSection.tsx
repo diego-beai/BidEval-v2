@@ -41,12 +41,16 @@ export const EconomicSection: React.FC = () => {
     const { offers, comparison, isLoading, error, loadOffers } = useEconomicStore();
     const { t } = useLanguageStore();
     const { activeProjectId, projects } = useProjectStore();
+    const projectType = projects.find(p => p.id === activeProjectId)?.project_type || 'RFP';
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortColumn, setSortColumn] = useState<SortColumn>('net_price');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     useEffect(() => {
         loadOffers();
     }, [loadOffers, activeProjectId]);
+
+    // Guard: RFI projects should never see the economic section
+    if (projectType === 'RFI') return null;
 
     const toggleRow = (id: string) => {
         setExpandedRows(prev => {
@@ -247,7 +251,9 @@ export const EconomicSection: React.FC = () => {
                 <div className="econ-header">
                     <div>
                         <h1 className="econ-title">{t('econ.title')}</h1>
-                        <p className="econ-subtitle">{t('econ.subtitle_compare')}</p>
+                        <p className="econ-subtitle">
+                            {projectType === 'RFQ' ? t('econ.rfq_subtitle') : t('econ.subtitle_compare')}
+                        </p>
                     </div>
                 </div>
                 <div className="econ-empty">
@@ -269,12 +275,33 @@ export const EconomicSection: React.FC = () => {
             {/* Header */}
             <div className="econ-header">
                 <div>
-                    <h1 className="econ-title">{t('econ.title')}</h1>
+                    <h1 className="econ-title">
+                        {t('econ.title')}
+                        {projectType === 'RFQ' && (
+                            <span style={{
+                                display: 'inline-block',
+                                marginLeft: '12px',
+                                fontSize: '0.65em',
+                                fontWeight: 600,
+                                padding: '3px 10px',
+                                borderRadius: '6px',
+                                background: 'rgba(245, 158, 11, 0.12)',
+                                color: '#f59e0b',
+                                verticalAlign: 'middle',
+                                letterSpacing: '0.3px'
+                            }}>
+                                {t('econ.rfq_badge')}
+                            </span>
+                        )}
+                    </h1>
                     <p className="econ-subtitle">
-                        {t('econ.subtitle', {
-                            count: String(offers.length),
-                            providers: String(new Set(offers.map(o => o.provider_name)).size),
-                        })}
+                        {projectType === 'RFQ'
+                            ? t('econ.rfq_subtitle')
+                            : t('econ.subtitle', {
+                                count: String(offers.length),
+                                providers: String(new Set(offers.map(o => o.provider_name)).size),
+                            })
+                        }
                     </p>
                 </div>
                 <button
