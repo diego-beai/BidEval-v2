@@ -21,15 +21,6 @@ stages:
           - script: |
               set -e
 
-              echo "=== Building frontend ==="
-              cd front-rfq
-              npm ci --legacy-peer-deps
-              VITE_SUPABASE_URL="$(VITE_SUPABASE_URL)" \
-              VITE_SUPABASE_ANON_KEY="$(VITE_SUPABASE_ANON_KEY)" \
-              VITE_SUPABASE_SCHEMA="$(VITE_SUPABASE_SCHEMA)" \
-              npm run build
-              cd ..
-
               echo "=== Deploying with Docker ==="
               docker stop bideval 2>/dev/null || true
               docker rm -f bideval 2>/dev/null || true
@@ -44,4 +35,3 @@ stages:
             env:
               VITE_SUPABASE_URL: $(VITE_SUPABASE_URL)
               VITE_SUPABASE_ANON_KEY: $(VITE_SUPABASE_ANON_KEY)
-              VITE_SUPABASE_SCHEMA: $(VITE_SUPABASE_SCHEMA)

@@ -20,12 +20,10 @@ COPY front-rfq/ ./
 # Build arguments for environment variables
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_SUPABASE_SCHEMA=public
 
 # Set environment variables for build
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_SCHEMA=$VITE_SUPABASE_SCHEMA
 
 # n8n URLs are relative paths handled by nginx proxy
 # They're defined in .env.production and baked into the build
