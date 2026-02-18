@@ -593,12 +593,12 @@
   font-size: 1.3rem;
   border-bottom: 2px solid var(--color-primary);
   padding-bottom: 8px;
-  color: var(--color-secondary);
+  color: var(--text-primary);
 }
 
 .rfp-document-content h2 {
   font-size: 1.1rem;
-  color: var(--color-secondary);
+  color: var(--text-primary);
 }
 
 .rfp-document-content h3 {

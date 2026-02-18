@@ -10,10 +10,10 @@
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                -7120,
-                3952
+                -7248,
+                2736
             ],
-            "id": "f8fd154b-336b-4b1a-a255-f19795e6c0ab",
+            "id": "ff5eb84d-67c0-4193-b1a5-95721bbae788",
             "name": "Sticky Note4"
         },
         {
@@ -23,10 +23,10 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1.5,
             "position": [
-                -5360,
-                4144
+                -5488,
+                2928
             ],
-            "id": "c51b8262-a6cc-483a-92a8-785a03767be5",
+            "id": "4f4c7d4c-f574-44e5-8a4a-49564d2aada6",
             "name": "Respond to Webhook5"
         },
         {
@@ -41,10 +41,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
             "typeVersion": 1,
             "position": [
-                -6832,
-                4512
+                -6960,
+                3296
             ],
-            "id": "62e1898e-7519-4383-9a93-e9215ed1edba",
+            "id": "d5c8992c-1b27-48a2-abab-31fbfcdf0a3b",
             "name": "Ollama Chat Model3",
             "credentials": {
                 "ollamaApi": {
@@ -63,10 +63,10 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -7008,
-                4144
+                -7136,
+                2928
             ],
-            "id": "810b1a93-e4b8-4f26-835c-c2d3dbb79821",
+            "id": "1c911022-1f8c-41e3-8199-2a6f2c560769",
             "name": "Webhook1",
             "webhookId": "chat-rfq"
         },
@@ -75,13 +75,13 @@
                 "sessionIdType": "customKey",
                 "sessionKey": "={{ $json.body.sessionId }}"
             },
-            "id": "3b8a9993-b6a4-41d5-a54a-dec63d3a310a",
+            "id": "af74afdd-3a1f-447c-80da-fa50c00aa657",
             "name": "Postgres Chat Memory",
             "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
             "typeVersion": 1,
             "position": [
-                -6656,
-                4368
+                -6784,
+                3152
             ],
             "notesInFlow": false,
             "credentials": {
@@ -98,10 +98,10 @@
             "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
             "typeVersion": 1,
             "position": [
-                -6160,
-                4576
+                -6288,
+                3360
             ],
-            "id": "66b5ddae-fe8d-483b-9066-1c3624334daf",
+            "id": "c34f7a71-8150-4877-9273-02ab9eb81b48",
             "name": "Embeddings Ollama",
             "credentials": {
                 "ollamaApi": {
@@ -118,13 +118,13 @@
                     "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in {{ $json.body.language === 'en' ? 'ENGLISH' : 'SPANISH' }}.\n2. NEVER use emojis or emoticons in your responses.\n3. When referencing monetary values or prices, ALWAYS use {{ $json.body.currency || 'EUR' }} as the currency.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content. Do NOT use this for prices or costs — use query_economic_offers instead.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_economic_offers**: Query economic_offers table. Returns ACTUAL prices: total_price, net_price (after discount), discount_percentage, payment_terms, payment_schedule, tco_value, tco_breakdown, price_breakdown, optional_items, alternative_offers, validity_days, guarantees, insurance_included, taxes_included. USE THIS FIRST for any question about prices, costs, payment conditions or economic comparison between vendors.\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Prices, costs, total price of a vendor | query_economic_offers |\n| Price comparison between vendors | query_economic_offers |\n| Payment terms, payment schedule, milestones | query_economic_offers |\n| TCO, total cost of ownership | query_economic_offers |\n| Discounts, optional items, alternatives | query_economic_offers |\n| Guarantees, insurance, taxes included | query_economic_offers |\n| Price breakdown (itemized costs) | query_economic_offers |\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical descriptions | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## ECONOMIC DATA RULES\n- ALWAYS use query_economic_offers for any question about prices, costs, payment conditions, or TCO.\n- The economic_offers table contains the ACTUAL structured data extracted from proposals. This is the source of truth for prices.\n- When presenting prices, format numbers with thousands separator and always include the currency ({{ $json.body.currency || 'EUR' }}).\n- If net_price differs from total_price, explain the discount.\n- For payment comparisons, highlight payment_terms (e.g. 30 days vs 120 days) as this significantly impacts cash flow.\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise but complete when presenting economic data (show actual numbers).\n4. Remember: respond in {{ $json.body.language === 'en' ? 'English' : 'Spanish' }}, no emojis, use {{ $json.body.currency || 'EUR' }} for monetary values."
                 }
             },
-            "id": "4d16086f-c52b-4dee-a4e9-c0b7c9d7af81",
+            "id": "4b2468ed-7753-4ab1-977d-96c17f0fc4bf",
             "name": "Chat AI Agent",
             "type": "@n8n/n8n-nodes-langchain.agent",
             "typeVersion": 1.6,
             "position": [
-                -6128,
-                4144
+                -6256,
+                2928
             ]
         },
         {
@@ -146,15 +146,180 @@
             "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
             "typeVersion": 1,
             "position": [
-                -6528,
-                4368
+                -6656,
+                3152
             ],
-            "id": "6857aa53-f0b4-47e8-82d1-bd8bc46726f5",
+            "id": "6d0fc800-1122-439e-b037-7fb81265b2c0",
             "name": "Revisar-ofertas",
             "credentials": {
                 "supabaseApi": {
                     "id": "pI4CpdYLTiEEBmnz",
                     "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "model": "qwen3-embedding:8b"
+            },
+            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+            "typeVersion": 1,
+            "position": [
+                -6576,
+                3360
+            ],
+            "id": "8d2e269f-20b9-42c3-9e54-e227245a7106",
+            "name": "Embeddings Ollama5",
+            "credentials": {
+                "ollamaApi": {
+                    "id": "oS2Qqti9oVfsm8XZ",
+                    "name": "Ollama account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, and provider evaluations. Provide a search_term to filter requirements.",
+                "operation": "executeQuery",
+                "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE (rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%') AND ($2 = '' OR rim.project_id::text = $2) ORDER BY rim.id LIMIT 30;",
+                "options": {
+                    "queryReplacement": "={{ $fromAI('search_term', 'Keyword to search in requirements', 'string') }}, {{ $json.body.project_id || '' }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -6080,
+                3152
+            ],
+            "id": "f08010a0-6c57-48f9-9330-30f53a2b1fe3",
+            "name": "query_requirements",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query detailed vendor responses with comments. Use to find: evaluation_value, comment, provider_name. Provide provider_name to filter by vendor (IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY) or leave empty for all.",
+                "operation": "executeQuery",
+                "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.comment, rim.requirement_text, rim.evaluation_type, rim.phase FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') AND ($2 = '' OR pr.project_id::text = $2) ORDER BY pr.provider_name LIMIT 30;",
+                "options": {
+                    "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}, {{ $json.body.project_id || '' }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -5952,
+                3152
+            ],
+            "id": "4a5ea058-e778-4d56-b183-5de9516f1f24",
+            "name": "query_provider_responses",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query vendor rankings and scores. Returns provider_name, overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. Use for ranking questions and score comparisons. Always present the data exactly as returned, never invent or estimate scores.",
+                "operation": "executeQuery",
+                "query": "SELECT rp.provider_name, ROUND(rp.overall_score, 2) as overall_score, rp.compliance_percentage, ROUND(rp.technical_score / 10, 2) as technical_score, ROUND(rp.economic_score / 10, 2) as economic_score, ROUND(rp.execution_score / 10, 2) as execution_score, ROUND(rp.hse_compliance_score / 10, 2) as hse_compliance_score, rp.category_scores_json, rp.individual_scores_json, rp.evaluation_details, rp.evaluation_count, rp.last_updated FROM ranking_proveedores rp WHERE ($1 = '' OR rp.project_id::text = $1) ORDER BY rp.overall_score DESC;",
+                "options": {
+                    "queryReplacement": "={{ $json.body.project_id || '' }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -5824,
+                3152
+            ],
+            "id": "427c1649-1094-49bc-a982-11d34f77438f",
+            "name": "query_ranking",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query ACTUAL prices and economic data from economic_offers table. USE THIS for any question about prices, costs, payment conditions, TCO or economic comparison. Returns: provider_name, total_price, net_price (after discount), discount_percentage, discount_conditions, payment_terms, payment_schedule, tco_value, tco_period_years, tco_breakdown, price_breakdown (itemized), optional_items (with prices), alternative_offers, validity_days, guarantees, insurance_included, taxes_included, price_escalation. Filter by provider_name or leave empty for all providers.",
+                "operation": "executeQuery",
+                "query": "SELECT eo.provider_name, eo.total_price, eo.currency, eo.discount_percentage, eo.discount_conditions, ROUND(eo.total_price * (1 - COALESCE(eo.discount_percentage, 0)/100), 2) as net_price, eo.payment_terms, eo.payment_schedule, eo.tco_value, eo.tco_period_years, eo.tco_breakdown, eo.price_breakdown, eo.optional_items, eo.alternative_offers, eo.validity_days, eo.guarantees, eo.insurance_included, eo.taxes_included, eo.price_escalation, eo.extraction_confidence FROM economic_offers eo WHERE ($2 = '' OR eo.project_id::text = $2) AND ($1 = '' OR eo.provider_name ILIKE '%' || $1 || '%') ORDER BY eo.total_price ASC NULLS LAST;",
+                "options": {
+                    "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}, {{ $json.body.project_id || '' }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -5568,
+                3152
+            ],
+            "id": "ceb2c374-5e41-485d-b479-80386e277276",
+            "name": "query_economic_offers",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query Q&A audit for technical questions and responses. Returns: provider_name, discipline (Electrica/Mecanica/Civil/Proceso/General), question, status (Pending/Approved/etc.), importance (High/Medium/Low), response. Use filter_type: 'provider' with filter_value for vendor name, 'discipline' for discipline, 'status' for status, or 'all' for everything.",
+                "operation": "executeQuery",
+                "query": "SELECT qa.id, qa.provider_name, qa.discipline, qa.question, qa.status, qa.importance, qa.response, qa.created_at FROM qa_audit qa WHERE (($1 = 'all') OR ($1 = 'provider' AND qa.provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND qa.discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND qa.status ILIKE '%' || $2 || '%')) AND ($3 = '' OR qa.project_id::text = $3) ORDER BY qa.created_at DESC LIMIT 25;",
+                "options": {
+                    "queryReplacement": "={{ $fromAI('filter_type', 'Filter type: provider, discipline, status, or all', 'string') }}, {{ $fromAI('filter_value', 'Value to filter by (provider name, discipline, or status)', 'string') }}, {{ $json.body.project_id || '' }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -5696,
+                3152
+            ],
+            "id": "fa80e9c8-424c-4305-b80a-a605b4d9d74e",
+            "name": "query_qa_audit",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {
+                    "temperature": 0.1
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "typeVersion": 1,
+            "position": [
+                -6048,
+                3296
+            ],
+            "id": "c488be28-f98a-475f-a71d-9b372aab64c1",
+            "name": "OpenRouter Chat Model3",
+            "credentials": {
+                "openRouterApi": {
+                    "id": "4AyUqsh1Z35g6bci",
+                    "name": "OpenRouter account"
                 }
             }
         },
@@ -177,200 +342,15 @@
             "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
             "typeVersion": 1,
             "position": [
-                -6240,
-                4368
+                -6368,
+                3152
             ],
-            "id": "0b52716b-b259-49d1-9aff-952f15c6c779",
+            "id": "a2fa7dff-d3b8-4b4b-9f0b-a1e374b1ca84",
             "name": "Revisar RFQs",
             "credentials": {
                 "supabaseApi": {
                     "id": "pI4CpdYLTiEEBmnz",
                     "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "qwen3-embedding:8b"
-            },
-            "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
-            "typeVersion": 1,
-            "position": [
-                -6448,
-                4576
-            ],
-            "id": "460423a4-74a5-435a-a298-5573c4b54274",
-            "name": "Embeddings Ollama5",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Query RFQ requirements with optional vendor responses. Use to find: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, and provider evaluations. Provide a search_term to filter requirements.",
-                "operation": "executeQuery",
-                "query": "SELECT rim.id, rim.evaluation_type, rim.phase, rim.requirement_text, pr.provider_name, pr.evaluation_value, pr.comment FROM rfq_items_master rim LEFT JOIN provider_responses pr ON rim.id = pr.requirement_id WHERE (rim.requirement_text ILIKE '%' || $1 || '%' OR rim.evaluation_type ILIKE '%' || $1 || '%') AND ($2 = '' OR rim.project_id::text = $2) ORDER BY rim.id LIMIT 30;",
-                "options": {
-                    "queryReplacement": "={{ $fromAI('search_term', 'Keyword to search in requirements', 'string') }}, {{ $json.body.project_id || '' }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -5952,
-                4368
-            ],
-            "id": "6c0556a3-5789-4125-aa46-d4bd7fc80b7b",
-            "name": "query_requirements",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Query detailed vendor responses with comments. Use to find: evaluation_value, comment, provider_name. Provide provider_name to filter by vendor (IDOM, SACYR, TECNICASREUNIDAS, EA, SENER, TRESCA, WORLEY) or leave empty for all.",
-                "operation": "executeQuery",
-                "query": "SELECT pr.id, pr.provider_name, pr.evaluation_value, pr.comment, rim.requirement_text, rim.evaluation_type, rim.phase FROM provider_responses pr LEFT JOIN rfq_items_master rim ON pr.requirement_id = rim.id WHERE ($1 = '' OR pr.provider_name ILIKE '%' || $1 || '%') AND ($2 = '' OR pr.project_id::text = $2) ORDER BY pr.provider_name LIMIT 30;",
-                "options": {
-                    "queryReplacement": "={{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}, {{ $json.body.project_id || '' }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -5824,
-                4368
-            ],
-            "id": "56494107-6c68-4ae6-b602-89ab6f2b4720",
-            "name": "query_provider_responses",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Query vendor rankings and scores. Returns provider_name, overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. Use for ranking questions and score comparisons. Always present the data exactly as returned, never invent or estimate scores.",
-                "operation": "executeQuery",
-                "query": "SELECT rp.provider_name, ROUND(rp.overall_score / 10, 2) as overall_score, rp.compliance_percentage, ROUND(rp.technical_score / 10, 2) as technical_score, ROUND(rp.economic_score / 10, 2) as economic_score, ROUND(rp.execution_score / 10, 2) as execution_score, ROUND(rp.hse_compliance_score / 10, 2) as hse_compliance_score, rp.category_scores_json, rp.individual_scores_json, rp.evaluation_details, rp.evaluation_count, rp.last_updated FROM ranking_proveedores rp WHERE ($1 = '' OR rp.project_id::text = $1) ORDER BY rp.overall_score DESC;",
-                "options": {
-                    "queryReplacement": "={{ $json.body.project_id || '' }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -5696,
-                4368
-            ],
-            "id": "d8768d54-0bec-4659-8386-e6a4aeafceef",
-            "name": "query_ranking",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Query ACTUAL prices and economic data from economic_offers table. USE THIS for any question about prices, costs, payment conditions, TCO or economic comparison. Returns: provider_name, total_price, net_price (after discount), discount_percentage, discount_conditions, payment_terms, payment_schedule, tco_value, tco_period_years, tco_breakdown, price_breakdown (itemized), optional_items (with prices), alternative_offers, validity_days, guarantees, insurance_included, taxes_included, price_escalation. Filter by provider_name or leave empty for all providers.",
-                "operation": "executeQuery",
-                "query": "SELECT eo.provider_name, eo.total_price, eo.currency, eo.discount_percentage, eo.discount_conditions, ROUND(eo.total_price * (1 - COALESCE(eo.discount_percentage, 0)/100), 2) as net_price, eo.payment_terms, eo.payment_schedule, eo.tco_value, eo.tco_period_years, eo.tco_breakdown, eo.price_breakdown, eo.optional_items, eo.alternative_offers, eo.validity_days, eo.guarantees, eo.insurance_included, eo.taxes_included, eo.price_escalation, eo.extraction_confidence FROM economic_offers eo WHERE ($1 = '' OR eo.project_id::text = $1) AND ($2 = '' OR eo.provider_name ILIKE '%' || $2 || '%') ORDER BY eo.total_price ASC NULLS LAST;",
-                "options": {
-                    "queryReplacement": "={{ $json.body.project_id || '' }}, {{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -5440,
-                4368
-            ],
-            "id": "b1c2d3e4-ecof-4444-b5c6-d7e8f9a0b1c2",
-            "name": "query_economic_offers",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "descriptionType": "manual",
-                "toolDescription": "Query Q&A audit for technical questions and responses. Returns: provider_name, discipline (Electrica/Mecanica/Civil/Proceso/General), question, status (Pending/Approved/etc.), importance (High/Medium/Low), response. Use filter_type: 'provider' with filter_value for vendor name, 'discipline' for discipline, 'status' for status, or 'all' for everything.",
-                "operation": "executeQuery",
-                "query": "SELECT qa.id, qa.provider_name, qa.discipline, qa.question, qa.status, qa.importance, qa.response, qa.created_at FROM qa_audit qa WHERE (($1 = 'all') OR ($1 = 'provider' AND qa.provider_name ILIKE '%' || $2 || '%') OR ($1 = 'discipline' AND qa.discipline ILIKE '%' || $2 || '%') OR ($1 = 'status' AND qa.status ILIKE '%' || $2 || '%')) AND ($3 = '' OR qa.project_id::text = $3) ORDER BY qa.created_at DESC LIMIT 25;",
-                "options": {
-                    "queryReplacement": "={{ $fromAI('filter_type', 'Filter type: provider, discipline, status, or all', 'string') }}, {{ $fromAI('filter_value', 'Value to filter by (provider name, discipline, or status)', 'string') }}, {{ $json.body.project_id || '' }}"
-                }
-            },
-            "type": "n8n-nodes-base.postgresTool",
-            "typeVersion": 2.5,
-            "position": [
-                -5568,
-                4368
-            ],
-            "id": "7a8d202a-971d-46c6-b61a-e93b8a23dd98",
-            "name": "query_qa_audit",
-            "credentials": {
-                "postgres": {
-                    "id": "V0REAPph5JBLqze3",
-                    "name": "Postgres account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "mistral-large-latest",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-            "typeVersion": 1,
-            "position": [
-                -6032,
-                4592
-            ],
-            "id": "419ee316-6388-4e0c-9d1d-ca483dcd0205",
-            "name": "Mistral Cloud Chat Model2",
-            "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
-            "typeVersion": 1,
-            "position": [
-                -5936,
-                4688
-            ],
-            "id": "e584812c-dcf5-4f82-a367-cb844b222d18",
-            "name": "OpenRouter Chat Model",
-            "credentials": {
-                "openRouterApi": {
-                    "id": "4AyUqsh1Z35g6bci",
-                    "name": "OpenRouter account"
                 }
             }
         }
@@ -421,17 +401,6 @@
             ]
         },
         "Revisar-ofertas": {
-            "ai_tool": [
-                [
-                    {
-                        "node": "Chat AI Agent",
-                        "type": "ai_tool",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Revisar RFQs": {
             "ai_tool": [
                 [
                     {
@@ -508,12 +477,23 @@
                 ]
             ]
         },
-        "Mistral Cloud Chat Model2": {
+        "OpenRouter Chat Model3": {
             "ai_languageModel": [
                 [
                     {
                         "node": "Chat AI Agent",
                         "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Revisar RFQs": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Chat AI Agent",
+                        "type": "ai_tool",
                         "index": 0
                     }
                 ]
