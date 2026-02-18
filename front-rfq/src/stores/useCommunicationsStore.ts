@@ -81,8 +81,8 @@ export const useCommunicationsStore = create<CommunicationsState>()(
         try {
           const { data, error } = await (supabase
             .from('qa_audit' as any)
-            .select('id, project_name, provider_name, discipline, question, status, importance, response, created_at')
-            .eq('project_name', projectId)
+            .select('id, project_id, provider_name, discipline, question, status, importance, response, created_at')
+            .eq('project_id', projectId)
             .eq('provider_name', providerName)
             .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
 

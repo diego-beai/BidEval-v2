@@ -160,8 +160,8 @@ export const EmailComposer = ({ providerName, onClose }: EmailComposerProps) => 
     }
   };
 
-  // Compose view (before generation)
-  if (!hasGenerated && !isGenerating) {
+  // Compose view (before generation, and no error)
+  if (!hasGenerated && !isGenerating && !error) {
     return (
       <div className="comm-new-form">
         <div className="comm-new-form-header">

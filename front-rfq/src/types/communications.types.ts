@@ -30,7 +30,7 @@ export interface Communication {
 
 export interface QATimelineItem {
   id: string;
-  project_name: string;
+  project_id: string;
   provider_name: string;
   discipline: string;
   question: string;

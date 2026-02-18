@@ -12,8 +12,7 @@ interface CommunicationsHubProps {
 
 export const CommunicationsHub = ({ onNavigate }: CommunicationsHubProps) => {
   const { t } = useLanguageStore();
-  const { activeProjectId, getActiveProject } = useProjectStore();
-  const activeProject = getActiveProject();
+  const { activeProjectId } = useProjectStore();
 
   const {
     selectedProvider,
@@ -42,10 +41,10 @@ export const CommunicationsHub = ({ onNavigate }: CommunicationsHubProps) => {
 
   // Load Q&A items when provider changes
   useEffect(() => {
-    if (activeProject?.display_name && selectedProvider) {
-      loadQAForProvider(activeProject.display_name, selectedProvider);
+    if (activeProjectId && selectedProvider) {
+      loadQAForProvider(activeProjectId, selectedProvider);
     }
-  }, [selectedProvider, activeProject?.display_name, loadQAForProvider]);
+  }, [selectedProvider, activeProjectId, loadQAForProvider]);
 
   const timeline = getTimeline();
   const providerStats = getProviderStats();

@@ -358,68 +358,27 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
     setGenerating(true);
     setStatusMessage('Analyzing deficiencies and generating technical audit questions...');
 
+    const countBefore = useQAStore.getState().questions.length;
+
     try {
       const activeProj = getActiveProject();
       const result = await generateTechnicalAudit({
-        project_id: projectUUID,           // UUID real del proyecto
-        project_name: projectId,            // Nombre display del proyecto
+        project_id: projectUUID,
+        project_name: projectId,
         provider: selectedProvider,
         language: activeProj?.default_language || 'es',
         currency: activeProj?.currency || 'EUR',
         project_type: (activeProj?.project_type || 'RFP') as 'RFP' | 'RFQ' | 'RFI'
       });
 
-      if (result.success && result.data) {
-        // Map the raw data from webhook to QAQuestion objects
-        const newQuestions: QAQuestion[] = result.data.map((item: any, index: number) => {
-          // n8n now returns English keys: discipline, question, importance
-          const qData = item["output.questions"] || item?.output?.questions || item;
+      if (result.success) {
+        // Reload from Supabase — n8n inserts directly to DB, webhook response may not contain all items
+        await loadQuestions();
+        const actualCount = useQAStore.getState().questions.length - countBefore;
+        const displayCount = actualCount > 0 ? actualCount : result.preguntas_generadas;
 
-          // Map English disciplines to English ones for the DB/Types
-          const disciplineMapping: Record<string, Disciplina> = {
-            'Electrical': 'Electrical',
-            'Mechanical': 'Mechanical',
-            'Civil': 'Civil',
-            'Process': 'Process',
-            'General': 'General',
-            'Cost': 'Cost'
-          };
-
-          // Map English importance to English ones
-          const importanceMapping: Record<string, Importancia> = {
-            'High': 'High',
-            'Medium': 'Medium',
-            'Low': 'Low'
-          };
-
-          const discipline = disciplineMapping[qData.discipline] || 'General';
-          const importance = importanceMapping[qData.importance] || 'Media';
-
-          return {
-            id: `qa-${Date.now()}-${index}`,
-            created_at: new Date().toISOString(),
-            project_name: projectId,
-            provider_name: selectedProvider,
-            discipline,
-            question: qData.question,
-            status: 'Draft',
-            importance,
-            requirement_id: qData.requirement_id || qData.requirementId || null, // Capture requirement_id from n8n
-            // Alias for frontend compatibility
-            project_id: projectId,
-            proveedor: selectedProvider,
-            disciplina: discipline,
-            pregunta_texto: qData.question,
-            estado: 'Draft',
-            importancia: importance
-          };
-        });
-
-        // Add to existing questions by prepending them
-        setQuestions([...newQuestions, ...questions]);
-
-        setStatusMessage(`Success! ${result.preguntas_generadas} questions generated and displayed.`);
-        addToast(`${result.preguntas_generadas} technical audit questions generated successfully`, 'success');
+        setStatusMessage(`Success! ${displayCount} questions generated and displayed.`);
+        addToast(`${displayCount} technical audit questions generated successfully`, 'success');
       } else {
         setStatusMessage(`Warning: ${result.message || 'The process finished with no results.'}`);
         addToast(result.message || 'The process finished with no results.', 'warning');
