@@ -115,7 +115,7 @@
                 "promptType": "define",
                 "text": "={{ $json.body.chatInput }}",
                 "options": {
-                    "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in {{ $json.body.language === 'en' ? 'ENGLISH' : 'SPANISH' }}.\n2. NEVER use emojis or emoticons in your responses.\n3. When referencing monetary values or prices, ALWAYS use {{ $json.body.currency || 'EUR' }} as the currency.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical details | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise (2-3 sentences max).\n4. Remember: respond in {{ $json.body.language === 'en' ? 'English' : 'Spanish' }}, no emojis, use {{ $json.body.currency || 'EUR' }} for monetary values."
+                    "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in {{ $json.body.language === 'en' ? 'ENGLISH' : 'SPANISH' }}.\n2. NEVER use emojis or emoticons in your responses.\n3. When referencing monetary values or prices, ALWAYS use {{ $json.body.currency || 'EUR' }} as the currency.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content. Do NOT use this for prices or costs — use query_economic_offers instead.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_economic_offers**: Query economic_offers table. Returns ACTUAL prices: total_price, net_price (after discount), discount_percentage, payment_terms, payment_schedule, tco_value, tco_breakdown, price_breakdown, optional_items, alternative_offers, validity_days, guarantees, insurance_included, taxes_included. USE THIS FIRST for any question about prices, costs, payment conditions or economic comparison between vendors.\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Prices, costs, total price of a vendor | query_economic_offers |\n| Price comparison between vendors | query_economic_offers |\n| Payment terms, payment schedule, milestones | query_economic_offers |\n| TCO, total cost of ownership | query_economic_offers |\n| Discounts, optional items, alternatives | query_economic_offers |\n| Guarantees, insurance, taxes included | query_economic_offers |\n| Price breakdown (itemized costs) | query_economic_offers |\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical descriptions | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## ECONOMIC DATA RULES\n- ALWAYS use query_economic_offers for any question about prices, costs, payment conditions, or TCO.\n- The economic_offers table contains the ACTUAL structured data extracted from proposals. This is the source of truth for prices.\n- When presenting prices, format numbers with thousands separator and always include the currency ({{ $json.body.currency || 'EUR' }}).\n- If net_price differs from total_price, explain the discount.\n- For payment comparisons, highlight payment_terms (e.g. 30 days vs 120 days) as this significantly impacts cash flow.\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise but complete when presenting economic data (show actual numbers).\n4. Remember: respond in {{ $json.body.language === 'en' ? 'English' : 'Spanish' }}, no emojis, use {{ $json.body.currency || 'EUR' }} for monetary values."
                 }
             },
             "id": "4d16086f-c52b-4dee-a4e9-c0b7c9d7af81",
@@ -276,6 +276,31 @@
             ],
             "id": "d8768d54-0bec-4659-8386-e6a4aeafceef",
             "name": "query_ranking",
+            "credentials": {
+                "postgres": {
+                    "id": "V0REAPph5JBLqze3",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "descriptionType": "manual",
+                "toolDescription": "Query ACTUAL prices and economic data from economic_offers table. USE THIS for any question about prices, costs, payment conditions, TCO or economic comparison. Returns: provider_name, total_price, net_price (after discount), discount_percentage, discount_conditions, payment_terms, payment_schedule, tco_value, tco_period_years, tco_breakdown, price_breakdown (itemized), optional_items (with prices), alternative_offers, validity_days, guarantees, insurance_included, taxes_included, price_escalation. Filter by provider_name or leave empty for all providers.",
+                "operation": "executeQuery",
+                "query": "SELECT eo.provider_name, eo.total_price, eo.currency, eo.discount_percentage, eo.discount_conditions, ROUND(eo.total_price * (1 - COALESCE(eo.discount_percentage, 0)/100), 2) as net_price, eo.payment_terms, eo.payment_schedule, eo.tco_value, eo.tco_period_years, eo.tco_breakdown, eo.price_breakdown, eo.optional_items, eo.alternative_offers, eo.validity_days, eo.guarantees, eo.insurance_included, eo.taxes_included, eo.price_escalation, eo.extraction_confidence FROM economic_offers eo WHERE ($1 = '' OR eo.project_id::text = $1) AND ($2 = '' OR eo.provider_name ILIKE '%' || $2 || '%') ORDER BY eo.total_price ASC NULLS LAST;",
+                "options": {
+                    "queryReplacement": "={{ $json.body.project_id || '' }}, {{ $fromAI('provider_name', 'Provider name to filter (or empty for all)', 'string') }}"
+                }
+            },
+            "type": "n8n-nodes-base.postgresTool",
+            "typeVersion": 2.5,
+            "position": [
+                -5440,
+                4368
+            ],
+            "id": "b1c2d3e4-ecof-4444-b5c6-d7e8f9a0b1c2",
+            "name": "query_economic_offers",
             "credentials": {
                 "postgres": {
                     "id": "V0REAPph5JBLqze3",
@@ -451,6 +476,17 @@
             ]
         },
         "query_ranking": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Chat AI Agent",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "query_economic_offers": {
             "ai_tool": [
                 [
                     {

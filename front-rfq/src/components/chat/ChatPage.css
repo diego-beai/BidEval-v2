@@ -437,6 +437,11 @@
     opacity: 1;
 }
 
+.copy-btn-message--copied {
+    color: var(--color-success, #10b981);
+    opacity: 1;
+}
+
 .message-avatar {
     width: 36px;
     height: 36px;

@@ -283,8 +283,24 @@ export const ChatPage: React.FC = () => {
         }
     };
 
-    const handleCopy = (text: string) => {
-        navigator.clipboard.writeText(text);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const handleCopy = async (text: string, messageId: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            // Fallback para contextos sin HTTPS o permisos bloqueados
+            const el = document.createElement('textarea');
+            el.value = text;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+        }
+        setCopiedId(messageId);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
     const validMessages = useMemo(() => {
@@ -367,14 +383,20 @@ export const ChatPage: React.FC = () => {
                                         <SafeMarkdown content={msg.content} />
                                     </div>
                                     <button
-                                        className="copy-btn-message"
-                                        onClick={() => handleCopy(msg.content)}
-                                        title={t('chat.copy_clipboard')}
+                                        className={`copy-btn-message${copiedId === msg.id ? ' copy-btn-message--copied' : ''}`}
+                                        onClick={() => handleCopy(msg.content, msg.id)}
+                                        title={copiedId === msg.id ? (t('chat.copied') || 'Copiado') : t('chat.copy_clipboard')}
                                     >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
+                                        {copiedId === msg.id ? (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        ) : (
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            </svg>
+                                        )}
                                     </button>
                                 </div>
                             </div>
