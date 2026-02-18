@@ -1016,7 +1016,7 @@ const translations: any = {
         'setup.criteria.auto_balance': 'Auto-equilibrar pesos de criterios',
         'setup.criteria.balance': 'Equilibrar',
         'setup.providers.edit': 'Editar',
-        'setup.btn.new_project': '+ Nuevo Proyecto',
+        'setup.btn.new_project': 'Nuevo Proyecto',
 
         // RFP Generator
         'nav.rfp_generator': 'Generar RFP',
@@ -1255,7 +1255,7 @@ const translations: any = {
         'board.export_excel': 'Exportar Excel',
         'board.section_profiles': 'Perfiles de Proveedores',
         'board.weaknesses': 'Debilidades',
-        'dashboard.tab.board': 'Informe Comite',
+        'dashboard.tab.board': 'Informe',
 
         // Setup - Industry templates
         'setup.criteria.industry_template': 'Plantilla industria:',
@@ -2282,7 +2282,7 @@ const translations: any = {
         'setup.criteria.auto_balance': 'Auto-balance criteria weights',
         'setup.criteria.balance': 'Balance',
         'setup.providers.edit': 'Edit',
-        'setup.btn.new_project': '+ New Project',
+        'setup.btn.new_project': 'New Project',
 
         // RFP Generator
         'nav.rfp_generator': 'Generate RFP',
@@ -2521,7 +2521,7 @@ const translations: any = {
         'board.export_excel': 'Export Excel',
         'board.section_profiles': 'Provider Profiles',
         'board.weaknesses': 'Weaknesses',
-        'dashboard.tab.board': 'Board Report',
+        'dashboard.tab.board': 'Report',
 
         // Setup - Industry templates
         'setup.criteria.industry_template': 'Industry template:',
