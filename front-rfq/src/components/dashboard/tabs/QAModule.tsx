@@ -438,14 +438,15 @@ export const QAModule: React.FC<{ projectId?: string }> = () => {
   const handleAddManualQuestion = async (disciplina: string) => {
     const text = newQuestionTexts[disciplina]?.trim();
 
-    // Try to get provider from selection, or from existing questions in this discipline
+    // Try to get provider from: 1) selection, 2) existing questions, 3) only provider in project
     const existingProvider = questions.find(q =>
       (q.disciplina || q.discipline) === disciplina
     )?.proveedor || questions.find(q =>
       (q.disciplina || q.discipline) === disciplina
     )?.provider_name;
 
-    const providerToUse = selectedProvider || existingProvider;
+    const singleProjectProvider = projectProviders.length === 1 ? projectProviders[0] : null;
+    const providerToUse = selectedProvider || existingProvider || singleProjectProvider;
 
     if (!text) {
       addToast('Please enter a question', 'warning');

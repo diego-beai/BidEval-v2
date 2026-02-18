@@ -20,7 +20,8 @@ interface N8nChatHistoryRow {
  */
 function generateSessionId(projectId?: string | null): string {
   const projectPart = projectId ? `proj-${projectId.substring(0, 8)}` : 'global';
-  return `chat-${projectPart}-${Date.now()}-${crypto.randomUUID()}`;
+  const uuid = crypto.randomUUID?.() ?? `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  return `chat-${projectPart}-${Date.now()}-${uuid}`;
 }
 
 /**

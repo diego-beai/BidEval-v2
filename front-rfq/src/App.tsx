@@ -17,7 +17,7 @@ import { ProcessingStage } from './types/rfq.types';
 import { QAModule } from './components/dashboard/tabs/QAModule';
 import { useDashboardStore } from './stores/useDashboardStore';
 import { ToastContainer } from './components/common/ToastContainer';
-import { useProjectStore } from './stores/useProjectStore';
+import { useProjectStore, subscribeProjectRealtime, unsubscribeProjectRealtime } from './stores/useProjectStore';
 import { useProviderStore } from './stores/useProviderStore';
 import { getProviderDisplayName } from './types/provider.types';
 
@@ -73,9 +73,11 @@ export default function App() {
   const tp = { type: projectType };
   const { fetchProjectProviders, projectProviders } = useProviderStore();
 
-  // Load projects on app mount
+  // Load projects on app mount + subscribe to realtime updates
   useEffect(() => {
     loadProjects();
+    subscribeProjectRealtime();
+    return () => unsubscribeProjectRealtime();
   }, [loadProjects]);
 
   // Fetch dynamic providers when active project changes

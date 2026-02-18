@@ -90,6 +90,41 @@ interface ProjectState {
   getProjectByName: (name: string) => Project | null;
 }
 
+// --- Realtime subscription for auto-refreshing project status ---
+let _realtimeChannel: any = null;
+let _debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Subscribe to DB changes that affect project status. Call once on app mount. */
+export function subscribeProjectRealtime() {
+  if (_realtimeChannel || !supabase) return;
+
+  const schema = import.meta.env.VITE_SUPABASE_SCHEMA || 'public';
+
+  const debouncedRefresh = () => {
+    if (_debounceTimer) clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(() => {
+      useProjectStore.getState().loadProjects();
+    }, 2000); // 2s debounce to batch rapid changes
+  };
+
+  _realtimeChannel = supabase
+    .channel('project-status-realtime')
+    .on('postgres_changes', { event: '*', schema, table: 'document_metadata' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema, table: 'rfq_items_master' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema, table: 'ranking_proveedores' }, debouncedRefresh)
+    .on('postgres_changes', { event: '*', schema, table: 'projects' }, debouncedRefresh)
+    .subscribe();
+}
+
+/** Unsubscribe from realtime. Call on app unmount if needed. */
+export function unsubscribeProjectRealtime() {
+  if (_debounceTimer) clearTimeout(_debounceTimer);
+  if (_realtimeChannel && supabase) {
+    supabase.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+}
+
 export const useProjectStore = create<ProjectState>()(
   devtools(
     subscribeWithSelector(

@@ -247,6 +247,28 @@ export function SupplierResponsePage() {
         throw new Error(errorData.error || 'Failed to submit responses');
       }
 
+      // Update question statuses to "Answered" and save responses directly in DB
+      if (supabase) {
+        const db = supabase as any;
+        for (const r of responsesArray) {
+          await db
+            .from('qa_audit')
+            .update({
+              status: 'Answered',
+              response: r.response_text,
+              responded_at: new Date().toISOString(),
+              response_source: 'portal'
+            })
+            .eq('id', r.question_id);
+        }
+
+        // Mark token as responded
+        await db
+          .from('qa_response_tokens')
+          .update({ status: 'responded', responded_at: new Date().toISOString() })
+          .eq('token', token);
+      }
+
       setPageState('submitted');
 
     } catch (err) {

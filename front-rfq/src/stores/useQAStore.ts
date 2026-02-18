@@ -562,10 +562,20 @@ export const useQAStore = create<QAState>((set, get) => ({
   // Agrupar por disciplina
   getGroupedByDisciplina: () => {
     const filteredQuestions = get().getFilteredQuestions();
+    const allQuestions = get().questions;
+
+    // Include follow-ups whose parent is in the filtered set
+    const filteredIds = new Set(filteredQuestions.map(q => q.id));
+    const followUps = allQuestions.filter(q =>
+      q.parent_question_id &&
+      filteredIds.has(q.parent_question_id) &&
+      !filteredIds.has(q.id)
+    );
+    const combinedQuestions = [...filteredQuestions, ...followUps];
 
     // Get unique disciplines from actual questions (don't show empty disciplines)
     const uniqueDisciplines = Array.from(
-      new Set(filteredQuestions.map(q => q.disciplina || q.discipline))
+      new Set(combinedQuestions.map(q => q.disciplina || q.discipline))
     ).filter(Boolean) as Disciplina[];
 
     // If no questions, return empty array (no disciplines to show)
@@ -574,7 +584,7 @@ export const useQAStore = create<QAState>((set, get) => ({
     }
 
     return uniqueDisciplines.map(disciplina => {
-      const preguntas = filteredQuestions.filter(q => (q.disciplina || q.discipline) === disciplina);
+      const preguntas = combinedQuestions.filter(q => (q.disciplina || q.discipline) === disciplina);
 
       return {
         disciplina,
