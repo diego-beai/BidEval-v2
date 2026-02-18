@@ -30,13 +30,30 @@ const DEFAULT_CONFIG: PdfTemplateConfig = {
 // ID fijo de la fila global (hasta que se active multi-tenant)
 const GLOBAL_ROW_ID = '00000000-0000-0000-0000-000000000001';
 
+interface PdfTemplateRow {
+  company_name: string;
+  logo_data_url: string;
+  primary_color: string;
+  footer_text: string;
+  show_page_numbers: boolean;
+}
+
+interface PdfTemplateInsert {
+  id: string;
+  company_name: string;
+  logo_data_url: string;
+  primary_color: string;
+  footer_text: string;
+  show_page_numbers: boolean;
+}
+
 async function fetchFromSupabase(): Promise<PdfTemplateConfig | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('pdf_template_config')
     .select('company_name, logo_data_url, primary_color, footer_text, show_page_numbers')
     .eq('id', GLOBAL_ROW_ID)
-    .single();
+    .single() as { data: PdfTemplateRow | null; error: unknown };
   if (error || !data) return null;
   return {
     companyName: data.company_name ?? '',
@@ -49,16 +66,15 @@ async function fetchFromSupabase(): Promise<PdfTemplateConfig | null> {
 
 async function saveToSupabase(config: PdfTemplateConfig): Promise<void> {
   if (!supabase) return;
-  await supabase
-    .from('pdf_template_config')
-    .upsert({
-      id: GLOBAL_ROW_ID,
-      company_name: config.companyName,
-      logo_data_url: config.logoDataUrl,
-      primary_color: config.primaryColor,
-      footer_text: config.footerText,
-      show_page_numbers: config.showPageNumbers,
-    });
+  const values: PdfTemplateInsert = {
+    id: GLOBAL_ROW_ID,
+    company_name: config.companyName,
+    logo_data_url: config.logoDataUrl,
+    primary_color: config.primaryColor,
+    footer_text: config.footerText,
+    show_page_numbers: config.showPageNumbers,
+  };
+  await (supabase.from('pdf_template_config') as any).upsert(values);
 }
 
 export const usePdfTemplateStore = create<PdfTemplateStore>()(
@@ -81,14 +97,13 @@ export const usePdfTemplateStore = create<PdfTemplateStore>()(
       updateConfig: async (partial) => {
         set((state) => ({ ...state, ...partial, isSaving: true }));
         const current = get();
-        const config: PdfTemplateConfig = {
+        await saveToSupabase({
           companyName: current.companyName,
           logoDataUrl: current.logoDataUrl,
           primaryColor: current.primaryColor,
           footerText: current.footerText,
           showPageNumbers: current.showPageNumbers,
-        };
-        await saveToSupabase(config);
+        });
         set({ isSaving: false });
       },
 
@@ -101,20 +116,18 @@ export const usePdfTemplateStore = create<PdfTemplateStore>()(
       setLogo: async (dataUrl) => {
         set({ logoDataUrl: dataUrl, isSaving: true });
         const current = get();
-        const config: PdfTemplateConfig = {
+        await saveToSupabase({
           companyName: current.companyName,
           logoDataUrl: dataUrl,
           primaryColor: current.primaryColor,
           footerText: current.footerText,
           showPageNumbers: current.showPageNumbers,
-        };
-        await saveToSupabase(config);
+        });
         set({ isSaving: false });
       },
     }),
     {
       name: 'bideval-pdf-template',
-      // Solo persistir la config, no los flags de estado
       partialize: (state) => ({
         companyName: state.companyName,
         logoDataUrl: state.logoDataUrl,
