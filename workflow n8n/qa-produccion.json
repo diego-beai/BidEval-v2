@@ -10,10 +10,10 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -9328,
-                4608
+                -10448,
+                3344
             ],
-            "id": "fcad6257-7adf-4024-8eaa-bf3aea602fc7",
+            "id": "012de05a-d137-4c90-b797-448f396a6bf4",
             "name": "Webhook Inbound",
             "webhookId": "0496e481-bb76-42f1-b3d5-734935b4b631"
         },
@@ -44,6 +44,12 @@
                             "name": "currency",
                             "value": "={{ $json.body.currency || 'EUR' }}",
                             "type": "string"
+                        },
+                        {
+                            "id": "project-type-field-qa",
+                            "name": "project_type",
+                            "value": "={{ $json.body.project_type || 'RFP' }}",
+                            "type": "string"
                         }
                     ]
                 },
@@ -52,16 +58,15 @@
             "type": "n8n-nodes-base.set",
             "typeVersion": 3.4,
             "position": [
-                -9104,
-                4608
+                -10224,
+                3344
             ],
-            "id": "3428bbeb-4a2a-45e7-bc32-b5ece1f786dd",
+            "id": "0bc3cb6a-7af2-41c8-8dea-67e0bec8e368",
             "name": "Set Input Params"
         },
         {
             "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "operation": "getAll",
                 "tableId": "provider_responses",
                 "returnAll": true,
@@ -84,10 +89,10 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -8816,
-                4608
+                -9776,
+                3344
             ],
-            "id": "a4384083-d1ab-435a-82dc-2320f68ff7b7",
+            "id": "7ed8cb66-cbb7-409d-929b-1208ce0b01fd",
             "name": "Fetch All Provider Responses",
             "credentials": {
                 "supabaseApi": {
@@ -103,16 +108,15 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -8688,
-                4608
+                -9552,
+                3344
             ],
-            "id": "ec85ede9-7cbb-4cca-ad01-7f9e57a3ed27",
+            "id": "c998c32a-b464-41bb-9328-442d3ee5ed9a",
             "name": "Filter Deficiencies Only"
         },
         {
             "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "operation": "getAll",
                 "tableId": "rfq_items_master",
                 "limit": 1,
@@ -129,10 +133,10 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -8496,
-                4608
+                -9328,
+                3344
             ],
-            "id": "41c3ca8f-4278-45b9-a0c9-4f334def1ead",
+            "id": "f9b517e9-7acc-48ea-8e4f-2be328a351de",
             "name": "Fetch Requirement Specs",
             "credentials": {
                 "supabaseApi": {
@@ -150,26 +154,26 @@
             "type": "n8n-nodes-base.aggregate",
             "typeVersion": 1,
             "position": [
-                -8288,
-                4608
+                -9104,
+                3344
             ],
-            "id": "32a0ac4f-1ebe-4047-83c9-908813b36b97",
+            "id": "300419d0-db38-430c-b79c-d4ebf488440c",
             "name": "Consolidate Deficiencies"
         },
         {
             "parameters": {
                 "promptType": "define",
-                "text": "=Generate technical audit questions based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\n**OUTPUT LANGUAGE**: {{ $('Set Input Params').first().json.language === 'en' ? 'ENGLISH - All questions and text must be in English.' : 'SPANISH - All questions and text must be in Spanish.' }}\n**CURRENCY**: {{ $('Set Input Params').first().json.currency || 'EUR' }} (use this currency when referencing monetary values in questions)\n\n**IMPORTANT**: Each deficiency has an \"id\" field which is the requirement_id. You MUST include this requirement_id with each question you generate, linking the question back to its source deficiency.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n## PROJECT CONTEXT: {{ $('Fetch Project Context QA').first().json.ai_context }}\n\n## DISCIPLINES:\n{{ $('Fetch Project Context QA').first().json.disciplines ? 'Use ONLY these project-specific disciplines: ' + $('Fetch Project Context QA').first().json.disciplines.join(', ') : 'No disciplines defined yet for this project. You MUST first determine the appropriate engineering disciplines based on the project context and the deficiencies provided. Typical disciplines include: Electrical, Mechanical, Civil, Process, Instrumentation, Structural, Environmental, General, etc. Choose the ones that best fit this specific project.' }}\n\n### INSTRUCTIONS:\n1.  **Link to Requirement**: Each question MUST include the \"requirement_id\" (the \"id\" field from the deficiency it relates to).\n2.  **Determine Disciplines**: First, identify the relevant engineering disciplines for THIS project based on the deficiencies and project context. Then classify each question into the most specific discipline.\n    - Be as specific as possible. Do not label everything as \"General\".\n    - Only use \"General\" if it is truly administrative or multi-disciplinary.\n3.  **Language**: All questions and text MUST be in {{ $('Set Input Params').first().json.language === 'en' ? 'English' : 'Spanish' }}.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"disciplines\": [\"list of all unique discipline names used in the questions below\"],\n  \"questions\": [\n    {\n      \"requirement_id\": \"uuid-from-deficiency-id-field\",\n      \"discipline\": \"One of the disciplines listed above\",\n      \"question\": \"The specific question in {{ $('Set Input Params').first().json.language === 'en' ? 'English' : 'Spanish' }}\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
+                "text": "=Generate technical audit questions based on the following deficiencies detected for the provider {{ $(\"Set Input Params\").first().json.provider }}.\n\n**OUTPUT LANGUAGE**: {{ $('Set Input Params').first().json.language === 'en' ? 'ENGLISH - All questions and text must be in English.' : 'SPANISH - All questions and text must be in Spanish.' }}\n**CURRENCY**: {{ $('Set Input Params').first().json.currency || 'EUR' }} (use this currency when referencing monetary values in questions)\n\n**PROJECT TYPE**: {{ $('Set Input Params').first().json.project_type || 'RFP' }}\n{{ $('Set Input Params').first().json.project_type === 'RFI' ? '**RFI MODE**: Generate questions focused on technical capability, experience, and information completeness. Do NOT generate questions about pricing or commercial terms.' : ($('Set Input Params').first().json.project_type === 'RFQ' ? '**RFQ MODE**: Prioritize questions about pricing clarity, payment conditions, cost breakdown, and commercial terms. Include technical questions only when pricing depends on technical scope.' : '**RFP MODE**: Generate balanced questions covering both technical gaps and commercial/pricing clarifications.') }}\n\n**IMPORTANT**: Each deficiency has an \"id\" field which is the requirement_id. You MUST include this requirement_id with each question you generate, linking the question back to its source deficiency.\n\nDEFICIENCIES:\n{{ JSON.stringify($json.total_deficiencies) }}\n\n## PROJECT CONTEXT: {{ $('Fetch Project Context QA').first().json.ai_context }}\n\n## DISCIPLINES:\n{{ $('Fetch Project Context QA').first().json.disciplines ? 'Use ONLY these project-specific disciplines: ' + $('Fetch Project Context QA').first().json.disciplines.join(', ') : 'No disciplines defined yet for this project. You MUST first determine the appropriate engineering disciplines based on the project context and the deficiencies provided. Typical disciplines include: Electrical, Mechanical, Civil, Process, Instrumentation, Structural, Environmental, General, etc. Choose the ones that best fit this specific project.' }}\n\n### INSTRUCTIONS:\n1.  **Link to Requirement**: Each question MUST include the \"requirement_id\" (the \"id\" field from the deficiency it relates to).\n2.  **Determine Disciplines**: First, identify the relevant engineering disciplines for THIS project based on the deficiencies and project context. Then classify each question into the most specific discipline.\n    - Be as specific as possible. Do not label everything as \"General\".\n    - Only use \"General\" if it is truly administrative or multi-disciplinary.\n3.  **Language**: All questions and text MUST be in {{ $('Set Input Params').first().json.language === 'en' ? 'English' : 'Spanish' }}.\n4.  **Format**: Respond strictly with the JSON object following the schema.\n\n### OUTPUT SCHEMA:\n{\n  \"disciplines\": [\"list of all unique discipline names used in the questions below\"],\n  \"questions\": [\n    {\n      \"requirement_id\": \"uuid-from-deficiency-id-field\",\n      \"discipline\": \"One of the disciplines listed above\",\n      \"question\": \"The specific question in {{ $('Set Input Params').first().json.language === 'en' ? 'English' : 'Spanish' }}\",\n      \"importance\": \"High\" | \"Medium\" | \"Low\"\n    }\n  ]\n}",
                 "hasOutputParser": true,
                 "batching": {}
             },
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.8,
             "position": [
-                -8096,
-                4608
+                -8880,
+                3344
             ],
-            "id": "db4c39b8-3220-40bd-a3e1-dd1bf12655d7",
+            "id": "9f8972f0-9b36-4dad-aff7-d368790c41e7",
             "name": "QA Generation Chain"
         },
         {
@@ -180,10 +184,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -7872,
-                4816
+                -8736,
+                3568
             ],
-            "id": "14be67a4-f353-4454-92e4-d742a5d40069",
+            "id": "04c42a54-173d-4662-b8e1-a79d00cd5784",
             "name": "JSON Output Parser"
         },
         {
@@ -195,16 +199,28 @@
             "type": "n8n-nodes-base.itemLists",
             "typeVersion": 3.1,
             "position": [
-                -7776,
-                4608
+                -8528,
+                3344
             ],
-            "id": "8e05b5b5-71ad-4156-9446-bcf638657351",
+            "id": "6c6ed9d6-df97-4bea-a59d-b4e58c8e5d8c",
             "name": "Split Questions List"
         },
         {
             "parameters": {
+                "jsCode": "// =============================================\n// NODO: Validate Requirement IDs\n// Filtra preguntas cuyo requirement_id no existe\n// en rfq_items_master (alucinaciones del LLM)\n// =============================================\n\nconst item = $input.item;\nconst question = item.json['output.questions'];\nconst deficiencies = item.json.total_deficiencies || [];\n\n// IDs válidos = los que vinieron de rfq_items_master\nconst validIds = new Set(deficiencies.map(d => d.id).filter(Boolean));\n\nconst reqId = question?.requirement_id;\n\nif (!reqId || !validIds.has(reqId)) {\n  console.log(`⚠️ requirement_id inválido o alucinado por LLM: ${reqId} — descartando pregunta`);\n  console.log(`   IDs válidos: ${[...validIds].join(', ')}`);\n  return [];\n}\n\nreturn [item];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -8416,
+                3344
+            ],
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "Validate Requirement IDs"
+        },
+        {
+            "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "tableId": "qa_audit",
                 "fieldsUi": {
                     "fieldValues": [
@@ -242,10 +258,10 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -7616,
-                4608
+                -8304,
+                3344
             ],
-            "id": "c7c7d137-49c8-49dd-a676-28368bb42ea5",
+            "id": "07803b46-78a5-4741-8a7c-107b4ece4a06",
             "name": "Supabase Insert",
             "credentials": {
                 "supabaseApi": {
@@ -261,16 +277,15 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -7440,
-                4608
+                -8080,
+                3344
             ],
-            "id": "bb4b65ef-80d0-49be-8d05-4fd8a398919a",
+            "id": "686ff9d7-b1f9-4a80-84f3-8e8fae695ba0",
             "name": "Extract Disciplines"
         },
         {
             "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "operation": "update",
                 "tableId": "projects",
                 "fieldsUi": {
@@ -289,10 +304,10 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -7296,
-                4608
+                -7856,
+                3344
             ],
-            "id": "ddb0b9ad-7a47-40d8-b1c0-bb918b97ee7b",
+            "id": "b4c5a78a-638e-4dbe-a901-116e3e10fde0",
             "name": "Save Project Disciplines",
             "credentials": {
                 "supabaseApi": {
@@ -309,78 +324,31 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1.5,
             "position": [
-                -7280,
-                4816
+                -7632,
+                3344
             ],
-            "id": "98ff8301-297e-4c89-8d5f-4b2372823d7d",
+            "id": "d5b13d5b-3187-41b6-b36a-13c9566a0227",
             "name": "Respond to Webhook1"
         },
         {
             "parameters": {
                 "content": "## Q&A Generator\n\n**Updated**: Dynamic disciplines per project + deficiency filtering.\n\n**Disciplines**:\n- Generated dynamically by the LLM based on project context\n- Saved to `projects.disciplines` for reuse in future runs\n- If project already has disciplines, LLM uses those\n- Merged: existing + new, deduplicated\n\n**Deficiencies filtered**:\n- PARTIALLY INCLUDED\n- NOT INCLUDED WITH ALTERNATIVE\n- NOT INCLUDED\n- NO INFORMATION\n- NO VALUE FOUND - *\n- Any item with score < 5\n\n**Excluded** (not deficiencies):\n- INCLUDED\n- INCLUDED WITH CAVEATS\n- Economic values (prices, hours, etc.)\n\n**Flow**:\n1. Receive project_id and provider\n2. Fetch project context (incl. existing disciplines)\n3. Fetch ALL provider_responses\n4. Filter only deficiencies (Code node)\n5. Fetch requirement details for each\n6. Generate questions + disciplines with LLM\n7. Save questions to qa_audit\n8. Extract & merge disciplines\n9. Save disciplines to project",
-                "height": 656,
-                "width": 2200,
+                "height": 1232,
+                "width": 3448,
                 "color": 7
             },
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                -9424,
-                4384
+                -10816,
+                2720
             ],
-            "id": "20e8f606-6414-4105-bc7b-4480d778017e",
+            "id": "12a6d899-9d67-4d05-b25e-feef4239abc0",
             "name": "Sticky Note1"
         },
         {
             "parameters": {
-                "model": "qwen3:8b",
-                "options": {
-                    "temperature": 0.1,
-                    "numCtx": 8192,
-                    "numPredict": 1536
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmOllama",
-            "typeVersion": 1,
-            "position": [
-                -8192,
-                4864
-            ],
-            "id": "cb7c80d8-4dbd-4f83-a695-22feae44f272",
-            "name": "Ollama Model2",
-            "credentials": {
-                "ollamaApi": {
-                    "id": "oS2Qqti9oVfsm8XZ",
-                    "name": "Ollama account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "mistral-large-latest",
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-            "typeVersion": 1,
-            "position": [
-                -8016,
-                4912
-            ],
-            "id": "53a046fa-69e7-4f98-bded-b62d1c4765cc",
-            "name": "Mistral Cloud Chat Model",
-            "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "operation": "get",
                 "tableId": "projects",
                 "filters": {
@@ -392,18 +360,39 @@
                     ]
                 }
             },
-            "id": "a33a16d0-afca-425d-8678-a2826620c855",
+            "id": "7eebbbcb-47a7-4a8b-ba24-735a27f90927",
             "name": "Fetch Project Context QA",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -8944,
-                4608
+                -10000,
+                3344
             ],
             "credentials": {
                 "supabaseApi": {
                     "id": "pI4CpdYLTiEEBmnz",
                     "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {
+                    "temperature": 0.1
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "typeVersion": 1,
+            "position": [
+                -9136,
+                3616
+            ],
+            "id": "804ebfad-6676-441a-b071-4c8653efbd41",
+            "name": "OpenRouter Chat Model4",
+            "credentials": {
+                "openRouterApi": {
+                    "id": "4AyUqsh1Z35g6bci",
+                    "name": "OpenRouter account"
                 }
             }
         }
@@ -501,6 +490,17 @@
             "main": [
                 [
                     {
+                        "node": "Validate Requirement IDs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validate Requirement IDs": {
+            "main": [
+                [
+                    {
                         "node": "Supabase Insert",
                         "type": "main",
                         "index": 0
@@ -541,23 +541,23 @@
                 ]
             ]
         },
-        "Mistral Cloud Chat Model": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "QA Generation Chain",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
         "Fetch Project Context QA": {
             "main": [
                 [
                     {
                         "node": "Fetch All Provider Responses",
                         "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Chat Model4": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "QA Generation Chain",
+                        "type": "ai_languageModel",
                         "index": 0
                     }
                 ]
