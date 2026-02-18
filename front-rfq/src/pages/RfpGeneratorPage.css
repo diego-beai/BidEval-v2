@@ -383,6 +383,36 @@
 }
 
 /* ===== Generate button ===== */
+/* Banner generación en segundo plano */
+.rfp-background-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: var(--color-primary-dark);
+}
+
+.rfp-background-banner .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.rfp-background-banner-hint {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
 .rfp-generate-btn {
   display: flex;
   align-items: center;

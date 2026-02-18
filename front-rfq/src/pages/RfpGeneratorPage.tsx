@@ -4,7 +4,8 @@ import { useProjectStore } from '../stores/useProjectStore';
 import { useLanguageStore } from '../stores/useLanguageStore';
 import { useScoringConfigStore } from '../stores/useScoringConfigStore';
 import { usePdfTemplateStore } from '../stores/usePdfTemplateStore';
-import { generateRfpDocument, GenerateRfpResponse } from '../services/n8n.service';
+import { useRfpGeneratorStore } from '../stores/useRfpGeneratorStore';
+import { GenerateRfpResponse } from '../services/n8n.service';
 import { useToastStore } from '../stores/useToastStore';
 import './RfpGeneratorPage.css';
 
@@ -64,10 +65,22 @@ export const RfpGeneratorPage = () => {
 
   const project = getActiveProject();
 
-  const [requirements, setRequirements] = useState('');
-  const [selectedSections, setSelectedSections] = useState<string[]>(DEFAULT_SECTIONS);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [result, setResult] = useState<GenerateRfpResponse | null>(null);
+  // Estado persistente — sobrevive a la navegación
+  const {
+    requirements,
+    selectedSections,
+    isGenerating,
+    result,
+    error: generateError,
+    setRequirements,
+    toggleSection,
+    selectAllSections,
+    deselectAllSections,
+    clearResult,
+    generate,
+  } = useRfpGeneratorStore();
+
+  // Estado local — solo UI
   const [showCopied, setShowCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,18 +103,15 @@ export const RfpGeneratorPage = () => {
   // Cargar config PDF desde Supabase al montar (solo una vez)
   useEffect(() => { pdfTemplate.loadConfig(); }, []);
 
+  // Mostrar error de generación via toast
+  useEffect(() => {
+    if (generateError) addToast(generateError, 'error');
+  }, [generateError]);
+
   const criteria = useMemo(() => {
     return categories.map(c => ({ name: c.name, weight: c.weight }));
   }, [categories]);
 
-  const toggleSection = (section: string) => {
-    setSelectedSections(prev =>
-      prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section]
-    );
-  };
-
-  const selectAllSections = () => setSelectedSections([...DEFAULT_SECTIONS]);
-  const deselectAllSections = () => setSelectedSections([]);
 
   // File upload handlers
   const validateFile = (file: File): string | null => {
@@ -169,34 +179,26 @@ export const RfpGeneratorPage = () => {
 
   const handleGenerate = async () => {
     if (!project || !requirements.trim()) return;
-    setIsGenerating(true);
-    setResult(null);
-    try {
-      const payload = {
-        project_id: project.id,
-        project_name: project.display_name || project.name,
-        project_type: project.project_type || 'RFP',
-        description: project.description || '',
-        requirements: requirements.trim(),
-        criteria: criteria.length > 0 ? criteria : undefined,
-        deadlines: {
-          opening: project.date_opening || undefined,
-          submission: project.date_submission_deadline || undefined,
-          evaluation: project.date_evaluation || undefined,
-          award: project.date_award || undefined,
-        },
-        language: project.default_language || language,
-        currency: project.currency || 'EUR',
-        sections: selectedSections,
-      };
-      const response = await generateRfpDocument(payload);
-      setResult(response);
+    const payload = {
+      project_id: project.id,
+      project_name: project.display_name || project.name,
+      project_type: project.project_type || 'RFP',
+      description: project.description || '',
+      requirements: requirements.trim(),
+      criteria: criteria.length > 0 ? criteria : undefined,
+      deadlines: {
+        opening: project.date_opening || undefined,
+        submission: project.date_submission_deadline || undefined,
+        evaluation: project.date_evaluation || undefined,
+        award: project.date_award || undefined,
+      },
+      language: project.default_language || language,
+      currency: project.currency || 'EUR',
+      sections: selectedSections,
+    };
+    await generate(payload, project.id);
+    if (!useRfpGeneratorStore.getState().error) {
       addToast(t('rfp_gen.success'), 'success');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error generating RFP';
-      addToast(msg, 'error');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
@@ -382,8 +384,8 @@ ${footerHtml}
     const tpl = templates.find(t => t.id === id);
     if (!tpl) return;
     setRequirements(tpl.requirements);
-    setSelectedSections(tpl.sections);
-    setResult(null);
+    useRfpGeneratorStore.getState().setSelectedSections(tpl.sections);
+    clearResult();
   };
 
   const handleDeleteTemplate = (id: string) => {
@@ -834,6 +836,17 @@ ${footerHtml}
         </div>
       </div>
 
+      {/* Banner de generación en segundo plano (visible en otras páginas al volver) */}
+      {isGenerating && (
+        <div className="rfp-background-banner">
+          <div className="spinner" />
+          <span>{language === 'es' ? 'Generando RFP en segundo plano...' : 'Generating RFP in background...'}</span>
+          <span className="rfp-background-banner-hint">
+            {language === 'es' ? 'Puedes navegar y volver cuando esté listo.' : 'You can navigate away and come back when ready.'}
+          </span>
+        </div>
+      )}
+
       {/* Generate Button — full width */}
       <button
         className="rfp-generate-btn"
@@ -850,7 +863,7 @@ ${footerHtml}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            {t('rfp_gen.generate')}
+            {result ? (language === 'es' ? 'Regenerar' : 'Regenerate') : t('rfp_gen.generate')}
           </>
         )}
       </button>
@@ -863,7 +876,7 @@ ${footerHtml}
               <div className="rfp-generating-spinner" />
               <p>{t('rfp_gen.generating_doc')}</p>
               <p style={{ fontSize: '0.8rem', marginTop: '8px', color: 'var(--text-tertiary)' }}>
-                {t('rfp_gen.generating_hint')}
+                {language === 'es' ? 'Puedes navegar a otras secciones. El resultado te estará esperando aquí al volver.' : 'You can navigate to other sections. The result will be waiting here when you return.'}
               </p>
             </div>
           )}
