@@ -10,10 +10,10 @@
             "type": "n8n-nodes-base.stickyNote",
             "typeVersion": 1,
             "position": [
-                -4976,
-                5600
+                -5040,
+                4400
             ],
-            "id": "482081ce-a222-494a-8b81-c83389527850",
+            "id": "1c2debd6-34a0-48b5-9086-595d081acf5e",
             "name": "Sticky Note"
         },
         {
@@ -26,10 +26,10 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -4864,
-                5824
+                -4928,
+                4624
             ],
-            "id": "18770b76-483c-4cd2-acbc-7c7f4c375c4e",
+            "id": "4f1a80fe-bc97-4943-bec8-83e6ed11f4b6",
             "name": "Webhook RFQ",
             "webhookId": "86850b01-70b4-4c99-a63a-6ccad35c0be2"
         },
@@ -40,10 +40,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -3744,
-                5824
+                -3808,
+                4624
             ],
-            "id": "a5b1748d-dc74-4350-b778-c9b07d84e435",
+            "id": "07c1c67e-bace-40d9-8d04-44490eafe7f9",
             "name": "Preparar Texto1"
         },
         {
@@ -54,7 +54,7 @@
                 "messages": {
                     "messageValues": [
                         {
-                            "message": "=## TAREA: CLASIFICAR UN DOCUMENTO EN EXACTAMENTE 1 TIPO DE EVALUACIÓN\n\nEres un clasificador de documentos de licitación.\nCada documento pertenece a UN SOLO tipo. No hay excepciones.\n\n### REGLA ABSOLUTA\n**1 documento = 1 tipo. Siempre.**\nEl array tipos_detectados SIEMPRE debe contener EXACTAMENTE 1 elemento.\nNunca 2, nunca 3. Siempre 1.\n\n### LOS 3 TIPOS (elige UNO)\n\n1. **Economical Evaluation** ← Prioridad alta si hay precios\n   - Tablas de precios, tarifas, rates, EUR/h, USD/day\n   - Pricing schedule, cost breakdown, budget\n   - Condiciones de pago, garantías financieras\n   - Cotización económica, commercial proposal\n\n2. **Technical Evaluation** ← Prioridad media\n   - Scope of Work, especificaciones técnicas\n   - Requisitos de ingeniería, metodología, normativas\n   - Entregables técnicos, deliverables, listas de documentos\n   - Criterios de diseño, requisitos de personal\n   - Fases de proyecto (Pre-FEED, FEED, EPC, etc.)\n\n3. **Others** ← Todo lo demás\n   - Información administrativa, legal, contractual\n   - Documentación general, índices, portadas\n   - Cualquier cosa que no sea claramente técnica ni económica\n\n### CÓMO DECIDIR\n\n- ¿El documento habla PRINCIPALMENTE de precios, costes o tarifas? → **Economical Evaluation**\n- ¿El documento habla PRINCIPALMENTE de requisitos técnicos, alcance o entregables? → **Technical Evaluation**\n- ¿No encaja claramente en ninguno de los dos anteriores? → **Others**\n\nEl nombre del archivo (RFQ, RFP, etc.) NO determina el tipo. Solo el CONTENIDO real del documento determina el tipo.\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n5. tipos_detectados DEBE tener EXACTAMENTE 1 elemento.\n\n**EJEMPLO CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\"],\n  \"razonamiento\": \"El documento describe el alcance técnico del proyecto con requisitos de ingeniería.\"\n}"
+                            "message": "=## TAREA: CLASIFICAR UN DOCUMENTO EN EXACTAMENTE 1 TIPO DE EVALUACIÓN\n\nEres un clasificador de documentos de licitación.\nCada documento pertenece a UN SOLO tipo. No hay excepciones.\n\n### REGLA ABSOLUTA\n**1 documento = 1 tipo. Siempre.**\nEl array tipos_detectados SIEMPRE debe contener EXACTAMENTE 1 elemento.\nNunca 2, nunca 3. Siempre 1.\n\n### LOS 3 TIPOS (elige UNO)\n\n1. **Economical Evaluation** ← Prioridad alta si hay precios\n   - Tablas de precios, tarifas, rates, EUR/h, USD/day\n   - Pricing schedule, cost breakdown, budget\n   - Condiciones de pago, garantías financieras\n   - Cotización económica, commercial proposal\n\n2. **Technical Evaluation** ← Prioridad media\n   - Scope of Work, especificaciones técnicas\n   - Requisitos de ingeniería, metodología, normativas\n   - Entregables técnicos, deliverables, listas de documentos\n   - Criterios de diseño, requisitos de personal\n   - Fases de proyecto (Pre-FEED, FEED, EPC, etc.)\n\n3. **Others** ← Todo lo demás, si el nombre del archivo es algo como \"Compliance\" , equivale a \"Others\"\n   - Información administrativa, legal, contractual\n   - Documentación general, índices, portadas\n   - Cualquier cosa que no sea claramente técnica ni económica\n\n### CÓMO DECIDIR\n\n- ¿El documento habla PRINCIPALMENTE de precios, costes o tarifas? → **Economical Evaluation**\n- ¿El documento habla PRINCIPALMENTE de requisitos técnicos, alcance o entregables? → **Technical Evaluation**\n- ¿No encaja claramente en ninguno de los dos anteriores? → **Others**\n\nEl nombre del archivo (RFQ, RFP, etc.) NO determina el tipo. Solo el CONTENIDO real del documento determina el tipo.\n\n### FORMATO DE SALIDA (JSON PLANO – ESTRICTO)\n\n1. Devuelve **ÚNICAMENTE** un objeto JSON que empiece por `{` y termine por `}`.\n2. **PROHIBIDO** devolver el JSON dentro de una lista o array `[]`.\n3. **PROHIBIDO** usar claves contenedoras como `\"output\"`, `\"response\"` o `\"json\"`.\n4. No incluyas bloques de código markdown (\\`\\`\\`json). Solo el texto plano del JSON.\n5. tipos_detectados DEBE tener EXACTAMENTE 1 elemento.\n\n**EJEMPLO CORRECTO:**\n{\n  \"tipos_detectados\": [\"Technical Evaluation\"],\n  \"razonamiento\": \"El documento describe el alcance técnico del proyecto con requisitos de ingeniería.\"\n}"
                         }
                     ]
                 },
@@ -63,10 +63,10 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.8,
             "position": [
-                -4048,
-                6064
+                -4112,
+                4864
             ],
-            "id": "0873a682-1cab-4683-afb1-a9fd3705dd59",
+            "id": "12564477-00eb-4b3a-b616-1237e5f54962",
             "name": "Clasificador de Tipos1"
         },
         {
@@ -79,10 +79,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                -4096,
-                6288
+                -4160,
+                5088
             ],
-            "id": "ce6238a4-95a9-4a52-aa09-457b12b5f02c",
+            "id": "12858fa4-94a4-42a5-9fe7-2f8c94d51b96",
             "name": "Ollama Clasificador1",
             "credentials": {
                 "ollamaApi": {
@@ -99,10 +99,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -3856,
-                6288
+                -3920,
+                5088
             ],
-            "id": "1792ac9d-98a0-4f29-aa24-8439acae6490",
+            "id": "9499422c-2cbe-4ee3-91fc-3878cf5e75ca",
             "name": "Output Parser1"
         },
         {
@@ -112,10 +112,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -3088,
-                6064
+                -3152,
+                4864
             ],
-            "id": "a1ba42e5-6b47-4fc7-a042-8f73e38de229",
+            "id": "81439100-fa6a-4570-a2e9-ead363912699",
             "name": "Expandir por Tipo1"
         },
         {
@@ -125,10 +125,10 @@
             "type": "n8n-nodes-base.splitInBatches",
             "typeVersion": 3,
             "position": [
-                -2880,
-                6064
+                -2944,
+                4864
             ],
-            "id": "ba0af56b-5488-4078-9961-07746bc17007",
+            "id": "3759b7ef-986a-4e09-8e84-4e621c105492",
             "name": "Loop por Tipo1"
         },
         {
@@ -138,10 +138,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -1312,
-                6000
+                -1376,
+                4800
             ],
-            "id": "d02a4955-9a45-4aef-93eb-bc09efa9e8e6",
+            "id": "16aaae20-464f-4d77-a947-0386d3b0b84c",
             "name": "Parsear Items1"
         },
         {
@@ -151,10 +151,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -784,
-                6192
+                -848,
+                4992
             ],
-            "id": "2e5a9da0-0c6d-43f1-be00-88319111c818",
+            "id": "de4b31c7-a2b7-4eff-a608-9c7b0d45cf98",
             "name": "Agregar Resultados1"
         },
         {
@@ -164,10 +164,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -1584,
-                5664
+                -1648,
+                4464
             ],
-            "id": "718f1269-90db-493e-8ad3-b7f5c49a2a63",
+            "id": "bedf08e5-3f62-4730-8cf7-2be6795eeac9",
             "name": "Resumen Final1"
         },
         {
@@ -179,10 +179,10 @@
             "type": "n8n-nodes-base.respondToWebhook",
             "typeVersion": 1.5,
             "position": [
-                -1296,
-                5664
+                -1360,
+                4464
             ],
-            "id": "db8070ce-d2b6-499b-b7d9-d9f404df2e40",
+            "id": "74802e87-a6b9-4188-86a7-30a34b2a4301",
             "name": "Respond Success1"
         },
         {
@@ -192,10 +192,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -4192,
-                5824
+                -4256,
+                4624
             ],
-            "id": "68ae46d3-fa04-4555-ba28-e6ec545a65e3",
+            "id": "5630e707-1df0-4a21-8614-14fd6565b47f",
             "name": "Base64 a Binary3"
         },
         {
@@ -206,10 +206,10 @@
             "type": "n8n-nodes-base.extractFromFile",
             "typeVersion": 1.1,
             "position": [
-                -3968,
-                5824
+                -4032,
+                4624
             ],
-            "id": "093a2623-b0f6-4dae-8853-4bd0129d2e47",
+            "id": "67f40795-26f3-4599-8729-6edb0ed2e383",
             "name": "Extract from File3"
         },
         {
@@ -219,10 +219,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -4640,
-                5824
+                -4704,
+                4624
             ],
-            "id": "5daf8811-2d2f-4726-9986-9bdf26543df4",
+            "id": "c183558b-9d3e-4802-b053-b158007e74a1",
             "name": "Generate IDs1"
         },
         {
@@ -280,10 +280,10 @@
             "type": "n8n-nodes-base.switch",
             "typeVersion": 3.4,
             "position": [
-                -1984,
-                6192
+                -2048,
+                4992
             ],
-            "id": "322202ec-fa12-4931-b449-a00e860357ac",
+            "id": "969748fc-27fc-4e4e-8111-5c6409d5c3a9",
             "name": "Switch1"
         },
         {
@@ -298,10 +298,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                -1728,
-                6640
+                -1792,
+                5440
             ],
-            "id": "fd5e8e1d-d431-48f5-b6df-bd8e128fd205",
+            "id": "be85ffc5-63d8-47ec-bb9f-77ff567896f6",
             "name": "Ollama Extractor2",
             "credentials": {
                 "ollamaApi": {
@@ -326,10 +326,10 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.7,
             "position": [
-                -1664,
-                6416
+                -1728,
+                5216
             ],
-            "id": "5f2d2f25-4602-455c-8443-3d26ad73ba70",
+            "id": "4629b303-8889-46b5-9c0b-6855e6530a25",
             "name": "LLM Extractor - Deliverables"
         },
         {
@@ -339,10 +339,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -1312,
-                6416
+                -1376,
+                5216
             ],
-            "id": "903e1737-7709-47de-a07e-56d72c636266",
+            "id": "ea75c091-9069-491b-ab77-495f4dc03bbe",
             "name": "Parsear deliverables"
         },
         {
@@ -357,10 +357,10 @@
             "type": "@n8n/n8n-nodes-langchain.lmOllama",
             "typeVersion": 1,
             "position": [
-                -1728,
-                6192
+                -1792,
+                4992
             ],
-            "id": "8a857850-bd9c-4030-9976-3807f846dd7e",
+            "id": "fae00d9e-76ba-4d20-81d2-3b6f19d33646",
             "name": "Ollama Extractor1",
             "credentials": {
                 "ollamaApi": {
@@ -377,10 +377,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -1424,
-                6624
+                -1488,
+                5424
             ],
-            "id": "2ba09f7e-fea7-431d-a5df-c33fef62418f",
+            "id": "057ebcdc-2de2-476e-8afc-8ebc5e692fef",
             "name": "Structured Output Parser1"
         },
         {
@@ -391,10 +391,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -1488,
-                6192
+                -1552,
+                4992
             ],
-            "id": "f3ba17f7-53d5-48e8-b604-d91ac5a3fcab",
+            "id": "e1a31aee-00d8-42bb-8345-3e0d820ba108",
             "name": "Structured Output Parser2"
         },
         {
@@ -404,10 +404,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -2592,
-                6176
+                -2656,
+                4976
             ],
-            "id": "d0894693-b659-4d54-93aa-f99bf64ea1e3",
+            "id": "fce727fc-5914-4168-92d7-2bdbbb23f462",
             "name": "Dividir en Trozos1"
         },
         {
@@ -419,10 +419,10 @@
             "type": "n8n-nodes-base.splitInBatches",
             "typeVersion": 3,
             "position": [
-                -2240,
-                6176
+                -2304,
+                4976
             ],
-            "id": "9b53674b-64d1-43e4-af7a-72d0ca980b96",
+            "id": "313855d6-2d8c-48e6-a663-a4ac200d9cb1",
             "name": "Loop por Trozo1"
         },
         {
@@ -432,10 +432,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -2416,
-                6176
+                -2480,
+                4976
             ],
-            "id": "4d7359e3-2cfb-407d-8c12-1917efc6f8c8",
+            "id": "c5735507-7bc5-4a39-9c59-5b2d636e50a6",
             "name": "Reset Items1"
         },
         {
@@ -445,10 +445,10 @@
             "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
             "typeVersion": 1,
             "position": [
-                -3520,
-                6288
+                -3584,
+                5088
             ],
-            "id": "054839af-6523-44c5-a8d8-85bd5de04ce7",
+            "id": "dacbb531-905c-46e9-b386-eef1e4565d46",
             "name": "Embeddings Ollama1",
             "credentials": {
                 "ollamaApi": {
@@ -470,13 +470,13 @@
                     "queryName": "match_rfq"
                 }
             },
-            "id": "3cb450f4-0c49-42a8-8752-cef7274a79ef",
+            "id": "e49ba08d-045c-4fd1-a902-3ec94ca350a0",
             "name": "Insert into Supabase Vectorstore1",
             "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
             "typeVersion": 1,
             "position": [
-                -3440,
-                6064
+                -3504,
+                4864
             ],
             "credentials": {
                 "supabaseApi": {
@@ -494,10 +494,10 @@
             "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
             "typeVersion": 1,
             "position": [
-                -3264,
-                6496
+                -3328,
+                5296
             ],
-            "id": "eacbb9d8-c8b5-49c7-9d8f-f7aed3055053",
+            "id": "902d51d9-3978-48c9-9587-9718aeea9257",
             "name": "Recursive Character Text Splitter1"
         },
         {
@@ -527,19 +527,18 @@
                     }
                 }
             },
-            "id": "28a9d594-cd45-4d12-8df5-9ce887175f31",
+            "id": "d11fac44-5a11-4726-b5d2-bda2b3d6bc61",
             "name": "Default Data Loader1",
             "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
             "typeVersion": 1,
             "position": [
-                -3344,
-                6288
+                -3408,
+                5088
             ]
         },
         {
             "parameters": {
                 "useCustomSchema": true,
-                "schema": "public",
                 "tableId": "rfq_items_master",
                 "fieldsUi": {
                     "fieldValues": [
@@ -565,10 +564,10 @@
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -992,
-                6192
+                -1056,
+                4992
             ],
-            "id": "018c59ac-3ac4-4547-8019-f74c6f83adb9",
+            "id": "fa49da3a-0e3a-4fd7-af4b-bbbdec48ffdf",
             "name": "Create a row",
             "credentials": {
                 "supabaseApi": {
@@ -584,19 +583,19 @@
                 "filterType": "string",
                 "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
             },
-            "id": "8bc39497-3469-4b09-82e0-00f83234555f",
+            "id": "4f991be8-5899-468c-8895-b4a6e069ce6c",
             "name": "Delete Old Doc Rows1",
             "type": "n8n-nodes-base.supabase",
             "typeVersion": 1,
             "position": [
-                -4416,
-                5824
+                -4480,
+                4624
             ],
             "alwaysOutputData": true,
             "credentials": {
                 "supabaseApi": {
-                    "id": "1lXSDxSKEJxdyGOO",
-                    "name": "Supabase Nube Diego"
+                    "id": "pI4CpdYLTiEEBmnz",
+                    "name": "Supabase account"
                 }
             }
         },
@@ -705,10 +704,10 @@
             "type": "n8n-nodes-base.postgres",
             "typeVersion": 2.5,
             "position": [
-                -3664,
-                6064
+                -3728,
+                4864
             ],
-            "id": "4e7659a0-db36-426b-8f05-6ea97dea9e46",
+            "id": "7e38cb96-cdbe-4618-9ec4-16b874f0de91",
             "name": "Insert Document Metadata2",
             "executeOnce": true,
             "credentials": {
@@ -734,49 +733,28 @@
             "type": "@n8n/n8n-nodes-langchain.chainLlm",
             "typeVersion": 1.7,
             "position": [
-                -1680,
-                6000
+                -1744,
+                4800
             ],
-            "id": "b080a77f-92cf-4988-a6fe-4de202c57007",
+            "id": "cba79c0c-0d0e-4649-b6ad-9e773a8acca0",
             "name": "LLM Extractor Tech-Econ"
         },
         {
             "parameters": {
-                "model": "mistral-large-latest",
                 "options": {}
             },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
             "typeVersion": 1,
             "position": [
-                -1616,
-                6176
+                -1968,
+                5216
             ],
-            "id": "fa6b3c44-9d81-49f6-9836-2d602e53a79f",
-            "name": "Mistral Cloud Chat Model7",
+            "id": "d6c3665c-9001-44c2-b3d3-2334a191ed40",
+            "name": "OpenRouter Chat Model7",
             "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "model": "mistral-large-latest",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
-            "typeVersion": 1,
-            "position": [
-                -1600,
-                6624
-            ],
-            "id": "e3fc29da-aec8-45d2-9223-3606ff40a4d7",
-            "name": "Mistral Cloud Chat Model8",
-            "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
+                "openRouterApi": {
+                    "id": "4AyUqsh1Z35g6bci",
+                    "name": "OpenRouter account"
                 }
             }
         },
@@ -784,18 +762,18 @@
             "parameters": {
                 "options": {}
             },
-            "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
             "typeVersion": 1,
             "position": [
-                -4016,
-                6416
+                -4032,
+                5328
             ],
-            "id": "da5e97e9-33c5-4584-bcf4-bf4e9c79db0d",
-            "name": "Mistral Cloud Chat Model9",
+            "id": "ce198106-c776-45f3-bd31-0c6cd1743802",
+            "name": "OpenRouter Chat Model8",
             "credentials": {
-                "mistralCloudApi": {
-                    "id": "tDjuOnF6lpADMmd5",
-                    "name": "Mistral Cloud account"
+                "openRouterApi": {
+                    "id": "4AyUqsh1Z35g6bci",
+                    "name": "OpenRouter account"
                 }
             }
         }
@@ -1108,20 +1086,14 @@
                 ]
             ]
         },
-        "Mistral Cloud Chat Model7": {
+        "OpenRouter Chat Model7": {
             "ai_languageModel": [
                 [
                     {
                         "node": "LLM Extractor Tech-Econ",
                         "type": "ai_languageModel",
                         "index": 0
-                    }
-                ]
-            ]
-        },
-        "Mistral Cloud Chat Model8": {
-            "ai_languageModel": [
-                [
+                    },
                     {
                         "node": "LLM Extractor - Deliverables",
                         "type": "ai_languageModel",
@@ -1130,7 +1102,7 @@
                 ]
             ]
         },
-        "Mistral Cloud Chat Model9": {
+        "OpenRouter Chat Model8": {
             "ai_languageModel": [
                 [
                     {

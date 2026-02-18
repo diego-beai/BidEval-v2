@@ -99,7 +99,7 @@ export const FileUploadZone = memo(function FileUploadZone({
     accept: {
       'application/pdf': ['.pdf']
     },
-    maxFiles: 7,
+    maxFiles: 15,
     multiple: true,
     disabled: isProcessing
   });
