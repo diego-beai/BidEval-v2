@@ -461,6 +461,38 @@ export interface Database {
           updated_at?: string
         }
       }
+      pdf_template_config: {
+        Row: {
+          id: string
+          org_id: string | null
+          company_name: string
+          logo_data_url: string
+          primary_color: string
+          footer_text: string
+          show_page_numbers: boolean
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          org_id?: string | null
+          company_name?: string
+          logo_data_url?: string
+          primary_color?: string
+          footer_text?: string
+          show_page_numbers?: boolean
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          org_id?: string | null
+          company_name?: string
+          logo_data_url?: string
+          primary_color?: string
+          footer_text?: string
+          show_page_numbers?: boolean
+          updated_at?: string
+        }
+      }
       organizations: {
         Row: {
           id: string

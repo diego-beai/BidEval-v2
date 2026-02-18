@@ -87,6 +87,9 @@ export const RfpGeneratorPage = () => {
 
   useEffect(() => { setTemplates(loadTemplates()); }, []);
 
+  // Cargar config PDF desde Supabase al montar (solo una vez)
+  useEffect(() => { pdfTemplate.loadConfig(); }, []);
+
   const criteria = useMemo(() => {
     return categories.map(c => ({ name: c.name, weight: c.weight }));
   }, [categories]);
