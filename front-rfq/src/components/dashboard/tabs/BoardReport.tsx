@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import {
     Printer, Trophy, AlertTriangle, AlertCircle, Info,
-    ShieldCheck, TrendingUp, DollarSign, Target, BarChart3, FileText, Leaf,
+    ShieldCheck, TrendingUp, DollarSign, Target, BarChart3, FileText, Leaf, PieChart,
     Download, FileSpreadsheet, CheckCircle, XCircle, User
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -976,7 +976,7 @@ const BoardReport: React.FC = () => {
             {/* ============================================================ */}
             <section className="board-section">
                 <h2 className="board-section-title">
-                    <ShieldCheck size={20} />
+                    <PieChart size={20} />
                     {t('board.section_confidence')}
                 </h2>
 

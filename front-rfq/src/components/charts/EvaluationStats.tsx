@@ -29,13 +29,13 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
   const getStatusText = () => {
     switch (status) {
       case 'processing':
-        return 'Processing...';
+        return 'Procesando...';
       case 'completed':
-        return 'Completed';
+        return 'Completado';
       case 'error':
         return 'Error';
       default:
-        return 'Ready';
+        return 'Listo';
     }
   };
 
@@ -60,7 +60,7 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
           </svg>
         </div>
         <div className="stat-mini-content">
-          <div className="stat-mini-label">Files</div>
+          <div className="stat-mini-label">Archivos</div>
           <div className="stat-mini-value">{totalFiles}</div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
           </svg>
         </div>
         <div className="stat-mini-content">
-          <div className="stat-mini-label">Total Size</div>
+          <div className="stat-mini-label">Tamaño total</div>
           <div className="stat-mini-value" style={{ fontSize: '0.95rem' }}>{totalSize}</div>
         </div>
       </div>
@@ -111,7 +111,7 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
           </svg>
         </div>
         <div className="stat-mini-content">
-          <div className="stat-mini-label">Status</div>
+          <div className="stat-mini-label">Estado</div>
           <div className="stat-mini-value" style={{ fontSize: '0.85rem', color: getStatusColor() }}>
             {getStatusText()}
           </div>
@@ -129,7 +129,7 @@ export const EvaluationStats: React.FC<EvaluationStatsProps> = ({
             </svg>
           </div>
           <div className="stat-mini-content">
-            <div className="stat-mini-label">Evaluations</div>
+            <div className="stat-mini-label">Evaluaciones</div>
             <div className="stat-mini-value">{totalEvaluations}</div>
           </div>
         </div>

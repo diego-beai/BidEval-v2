@@ -37,12 +37,12 @@ export function useRfqBaseProcessing() {
     const estimatedTotalTime = 120000; // 2 minutos estimados
 
     const stages = [
-      { threshold: 0.10, stage: ProcessingStage.UPLOADING, message: 'Uploading RFQ files to n8n...' },
-      { threshold: 0.25, stage: ProcessingStage.OCR_PROCESSING, message: 'Extracting text from PDFs...' },
-      { threshold: 0.50, stage: ProcessingStage.CLASSIFYING, message: 'Classifying requirement types...' },
-      { threshold: 0.70, stage: ProcessingStage.EMBEDDING, message: 'Generating vector embeddings...' },
-      { threshold: 0.85, stage: ProcessingStage.EVALUATING, message: 'Extracting requirements with IA...' },
-      { threshold: 0.95, stage: ProcessingStage.EVALUATING, message: 'Finalizing processing...' }
+      { threshold: 0.10, stage: ProcessingStage.UPLOADING, message: 'Subiendo archivos RFQ a n8n...' },
+      { threshold: 0.25, stage: ProcessingStage.OCR_PROCESSING, message: 'Extrayendo texto de los PDFs...' },
+      { threshold: 0.50, stage: ProcessingStage.CLASSIFYING, message: 'Clasificando tipos de requerimientos...' },
+      { threshold: 0.70, stage: ProcessingStage.EMBEDDING, message: 'Generando embeddings vectoriales...' },
+      { threshold: 0.85, stage: ProcessingStage.EVALUATING, message: 'Extrayendo requerimientos con IA...' },
+      { threshold: 0.95, stage: ProcessingStage.EVALUATING, message: 'Finalizando procesamiento...' }
     ];
 
     let currentStageIndex = 0;
@@ -97,7 +97,7 @@ export function useRfqBaseProcessing() {
 
     // Validar que hay un proyecto activo seleccionado
     if (!activeProjectId) {
-      setRfqBaseError('No project selected. Please select a project from the sidebar first.');
+      setRfqBaseError('No hay proyecto seleccionado. Por favor selecciona un proyecto del panel lateral primero.');
       isUploadingRef.current = false;
       return false;
     }
@@ -160,7 +160,7 @@ export function useRfqBaseProcessing() {
       if (isCancelled) {
         setRfqBaseError(null);
       } else {
-        const errorMessage = error instanceof Error ? error.message : 'Error processing RFQ files';
+        const errorMessage = error instanceof Error ? error.message : 'Error al procesar los archivos RFQ';
         setRfqBaseError(errorMessage);
       }
 

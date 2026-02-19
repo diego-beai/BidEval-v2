@@ -145,7 +145,7 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
               color: 'var(--text-secondary)',
               margin: 0
             }}>
-              Processing your reference document...
+              Procesando tu documento de referencia...
             </p>
           )}
 
@@ -160,12 +160,12 @@ export const RfqBaseProcessingStatus = memo(function RfqBaseProcessingStatus() {
               color: 'var(--text-primary)'
             }}>
               <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--color-cyan)' }}>
-                📋 Document Summary
+                📋 Resumen del documento
               </div>
               <div style={{ lineHeight: '1.4' }}>
-                • File: {rfqBase.fileName}<br/>
-                • Types processed: {rfqBase.tiposProcesados.join(', ')}<br/>
-                • Ready for proposal evaluation
+                • Archivo: {rfqBase.fileName}<br/>
+                • Tipos procesados: {rfqBase.tiposProcesados.join(', ')}<br/>
+                • Listo para evaluación de propuestas
               </div>
             </div>
           )}
