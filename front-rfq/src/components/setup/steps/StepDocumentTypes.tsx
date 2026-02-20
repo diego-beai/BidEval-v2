@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useSetupStore } from '../../../stores/useSetupStore';
+import { generateUUID } from '../../../utils/uuid';
 import type { DocCategory, EvaluationLink } from '../../../types/database.types';
 
 // ============================================
@@ -79,7 +80,7 @@ export const StepDocumentTypes: React.FC = () => {
     if (!trimmed) return;
 
     addDocumentType({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: trimmed,
       docCategory: newCategory,
       evaluationLink: newEvalLink,

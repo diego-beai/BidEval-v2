@@ -12,6 +12,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { generateUUID } from '../utils/uuid';
 import type {
   MilestoneEntry,
   DocumentTypeEntry,
@@ -95,7 +96,7 @@ interface SetupState {
 function createDefaultMilestones(): MilestoneEntry[] {
   return DEFAULT_MILESTONES.map((m) => ({
     ...m,
-    id: crypto.randomUUID(),
+    id: generateUUID(),
   }));
 }
 
@@ -197,7 +198,7 @@ export const useSetupStore = create<SetupState>()(
         const presets: DocumentTypeEntry[] = DOCUMENT_TYPE_PRESETS.map(
           (preset, index) => ({
             ...preset,
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             sortOrder: index,
           }),
         );
@@ -361,7 +362,7 @@ export const useSetupStore = create<SetupState>()(
         const milestones: MilestoneEntry[] = templateData.milestones.map(
           (m, i) => ({
             ...m,
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             sortOrder: i,
           }),
         );
@@ -369,14 +370,14 @@ export const useSetupStore = create<SetupState>()(
         const documentTypes: DocumentTypeEntry[] =
           templateData.documentTypes.map((d, i) => ({
             ...d,
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             sortOrder: i,
           }));
 
         const economicFields: EconomicFieldEntry[] =
           templateData.economicFields.map((f, i) => ({
             ...f,
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             parentId: null, // parent references are lost on template load
             sortOrder: i,
           }));

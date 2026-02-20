@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useSetupStore } from '../../../stores/useSetupStore';
+import { generateUUID } from '../../../utils/uuid';
 import type { EconomicFieldType } from '../../../types/database.types';
 import type { EconomicFieldEntry } from '../../../types/setup.types';
 
@@ -176,7 +177,7 @@ export const StepEconomicModel: React.FC<StepEconomicModelProps> = ({ currency }
     if (!trimmed) return;
 
     addEconomicField({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       parentId: parentId || null,
       name: trimmed,
       fieldType: newFieldType,
@@ -189,8 +190,8 @@ export const StepEconomicModel: React.FC<StepEconomicModelProps> = ({ currency }
   };
 
   const handleLoadDefaults = () => {
-    const capexId = crypto.randomUUID();
-    const opexId = crypto.randomUUID();
+    const capexId = generateUUID();
+    const opexId = generateUUID();
 
     const fields: EconomicFieldEntry[] = DEFAULT_EPC_FIELDS.map((preset, index) => {
       let parentId: string | null = null;
@@ -201,7 +202,7 @@ export const StepEconomicModel: React.FC<StepEconomicModelProps> = ({ currency }
       const id =
         preset.name === 'CAPEX Total' ? capexId :
         preset.name === 'OPEX (Annual)' ? opexId :
-        crypto.randomUUID();
+        generateUUID();
 
       return {
         ...preset,

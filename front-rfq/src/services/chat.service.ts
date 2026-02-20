@@ -4,6 +4,7 @@ import { ApiError } from '../types/api.types';
 import { ChatMessage, ChatRole } from '../types/chat.types';
 import { supabase } from '../lib/supabase';
 import { N8nChatMessage } from '../types/database.types';
+import { generateUUID } from '../utils/uuid';
 
 /**
  * Tipo para la fila de n8n_chat_history desde Supabase
@@ -20,7 +21,7 @@ interface N8nChatHistoryRow {
  */
 function generateSessionId(projectId?: string | null): string {
   const projectPart = projectId ? `proj-${projectId.substring(0, 8)}` : 'global';
-  const uuid = crypto.randomUUID?.() ?? `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  const uuid = generateUUID();
   return `chat-${projectPart}-${Date.now()}-${uuid}`;
 }
 

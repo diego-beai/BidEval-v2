@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useSetupStore } from '../../../stores/useSetupStore';
+import { generateUUID } from '../../../utils/uuid';
 import type { ProjectSetupData } from '../ProjectSetupWizard';
 import type { MilestoneEntry } from '../../../types/setup.types';
 import type { MilestoneType } from '../../../types/database.types';
@@ -245,7 +246,7 @@ export const StepDeadlines: React.FC<StepDeadlinesProps> = ({ data: _data, onCha
     if (!newName.trim()) return;
 
     const entry: MilestoneEntry = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: newName.trim(),
       dueDate: newDate,
       sortOrder: sorted.length,

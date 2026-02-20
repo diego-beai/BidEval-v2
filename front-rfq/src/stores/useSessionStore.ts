@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { generateUUID } from '../utils/uuid';
 
 /**
  * Background Process Types
@@ -124,7 +125,7 @@ interface SessionState {
 /**
  * Generate unique ID
  */
-const generateId = () => `${Date.now()}-${crypto.randomUUID?.() ?? `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`}`;
+const generateId = () => `${Date.now()}-${generateUUID()}`;
 
 /**
  * Session Store with Persistence
