@@ -25,11 +25,78 @@ function generateSessionId(projectId?: string | null): string {
 }
 
 /**
+ * Builds a project context summary to inject in the chat system prompt.
+ * Fetches project details, providers, scores and economic data from Supabase.
+ */
+export async function buildProjectContext(projectId: string): Promise<string> {
+  if (!supabase) return '';
+
+  try {
+    // Fetch project details
+    const { data: project } = await (supabase as any)
+      .from('projects')
+      .select('name, display_name, project_type, status, invited_suppliers, date_submission_deadline')
+      .eq('id', projectId)
+      .single();
+
+    if (!project) return '';
+
+    // Fetch ranking
+    const { data: ranking } = await (supabase as any)
+      .from('ranking_proveedores')
+      .select('provider_name, overall_score')
+      .eq('project_id', projectId)
+      .order('overall_score', { ascending: false });
+
+    // Fetch economic offers summary
+    const { data: offers } = await (supabase as any)
+      .from('economic_offers')
+      .select('provider_name, total_price, currency')
+      .eq('project_id', projectId);
+
+    const providers = (project.invited_suppliers || []) as string[];
+    const rankingLines = (ranking || []).map((r: any, i: number) => {
+      const score = r.overall_score != null
+        ? (r.overall_score > 10 ? (r.overall_score / 10).toFixed(1) : Number(r.overall_score).toFixed(1))
+        : 'N/A';
+      return `${i + 1}. ${r.provider_name} (${score}/10)`;
+    });
+
+    let economicSummary = '';
+    if (offers && offers.length > 0) {
+      const prices = offers.filter((o: any) => o.total_price != null).map((o: any) => o.total_price as number);
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        const currency = offers[0].currency || 'EUR';
+        economicSummary = `${min.toLocaleString()} - ${max.toLocaleString()} ${currency}`;
+      }
+    }
+
+    return `
+## Contexto del Proyecto Activo
+- Nombre: ${project.display_name || project.name}
+- Tipo: ${project.project_type || 'RFP'}
+- Proveedores invitados: ${providers.join(', ') || 'N/A'}
+- Estado: ${project.status || 'N/A'}
+${rankingLines.length > 0 ? `- Ranking actual: ${rankingLines.join(', ')}` : ''}
+${economicSummary ? `- Rango de precios: ${economicSummary}` : ''}
+    `.trim();
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Envía un mensaje al chat de n8n y recibe la respuesta
  * @param message - El mensaje del usuario
  * @param sessionId - ID de sesión opcional
  * @param projectId - ID del proyecto activo para filtrar las respuestas
  * @param documentIds - IDs de documentos seleccionados para acotar el contexto
+ * @param language - Idioma preferido
+ * @param currency - Moneda del proyecto
+ * @param projectContext - Contexto resumido del proyecto para inyectar en el prompt
+ * @param enableCrossProject - Habilitar consultas cruzadas entre proyectos
  */
 export async function sendChatMessage(
   message: string,
@@ -37,7 +104,9 @@ export async function sendChatMessage(
   projectId?: string | null,
   documentIds?: string[],
   language?: string,
-  currency?: string
+  currency?: string,
+  projectContext?: string,
+  enableCrossProject?: boolean
 ): Promise<{ response: string; sessionId: string }> {
   // Si no hay sessionId, generar uno nuevo que incluya el projectId
   const currentSessionId = sessionId || generateSessionId(projectId);
@@ -57,6 +126,14 @@ export async function sendChatMessage(
 
     if (documentIds && documentIds.length > 0) {
       payload.document_ids = documentIds;
+    }
+
+    if (projectContext) {
+      payload.project_context = projectContext;
+    }
+
+    if (enableCrossProject) {
+      payload.enable_cross_project = true;
     }
 
     const response = await fetchWithTimeout(

@@ -28,8 +28,9 @@ import { LandingPage } from './pages/LandingPage';
 import { EconomicSection } from './components/economic/EconomicSection';
 import { RfpGeneratorPage } from './pages/RfpGeneratorPage';
 import { SupplierDirectoryPage } from './pages/SupplierDirectoryPage';
+import { TechnicalReportPage } from './pages/TechnicalReportPage';
 
-type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status';
+type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status' | 'report';
 
 export default function App() {
   const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
@@ -171,7 +172,7 @@ export default function App() {
               gap: '8px',
               padding: '10px 20px',
               borderRadius: '8px',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+              transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -192,7 +193,7 @@ export default function App() {
               gap: '8px',
               padding: '10px 20px',
               borderRadius: '8px',
-              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+              transition: 'background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -514,14 +515,28 @@ export default function App() {
                   zIndex: 1000,
                   animation: 'fadeIn 0.3s ease-out'
                 }}
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
                   // Close when clicking on backdrop (not on the modal content)
                   if (e.target === e.currentTarget && status.stage === ProcessingStage.COMPLETED) {
                     useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
                   }
                 }}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget && status.stage === ProcessingStage.COMPLETED) {
+                    e.preventDefault();
+                    useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
+                  }
+                }}
               >
-                <div style={{ maxWidth: '600px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+                <div
+                  style={{ maxWidth: '600px', width: '90%' }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
+                >
                   <ProcessingStatus
                     onViewResults={() => {
                       useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
@@ -603,6 +618,8 @@ export default function App() {
         {activeView === 'rfp-gen' && <RfpGeneratorPage />}
 
         {activeView === 'suppliers' && <SupplierDirectoryPage />}
+
+        {activeView === 'report' && <TechnicalReportPage />}
 
         {activeView === 'projects-status' && (
           <AllProjectsStatusPage />

@@ -585,3 +585,89 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================
+   Excel Template Section
+   ============================================ */
+
+.econ-excel-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.econ-excel-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.econ-excel-toggle:hover {
+    background: var(--bg-hover);
+}
+
+.econ-excel-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+}
+
+.econ-excel-toggle-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.econ-excel-toggle-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    background: rgba(18, 181, 176, 0.1);
+    color: var(--color-primary);
+}
+
+.econ-excel-chevron {
+    color: var(--text-tertiary);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+
+.econ-excel-chevron.open {
+    transform: rotate(180deg);
+}
+
+.econ-excel-content {
+    padding: 0 20px 20px;
+    animation: econ-slideDown 0.25s ease;
+}
+
+@keyframes econ-slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Dynamic Economic Model Fields ─── */
+
+.econ-missing-required {
+    color: var(--color-error) !important;
+    font-style: italic;
+    background: rgba(239, 68, 68, 0.04);
+}

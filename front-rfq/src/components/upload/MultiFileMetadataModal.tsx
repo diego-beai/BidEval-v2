@@ -2,18 +2,11 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { getProviderDisplayName } from '../../types/provider.types';
 import { FileWithMetadata, isFileMetadataComplete } from '../../types/rfq.types';
-import { useProjectStore } from '../../stores/useProjectStore';
+import { useProjectStore, deriveEvalTypes } from '../../stores/useProjectStore';
 import { useProviderStore } from '../../stores/useProviderStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { formatFileSize } from '../../utils/formatters';
 import './MultiFileMetadataModal.css';
-
-// Evaluation types available
-const EVALUATION_TYPES = [
-  'Technical Evaluation',
-  'Economical Evaluation',
-  'Others'
-];
 
 interface DropdownPosition {
   top: number;
@@ -45,10 +38,19 @@ export function MultiFileMetadataModal({
   disabled = false
 }: MultiFileMetadataModalProps) {
   const [expandedIndex, setExpandedIndex] = useState<number>(0);
-  const { projects, activeProjectId } = useProjectStore();
+  const { projects, activeProjectId, projectDocTypes, loadProjectDocTypes } = useProjectStore();
   const { projectProviders, addLocalProvider } = useProviderStore();
   const { t } = useLanguageStore();
   const [providerSearch, setProviderSearch] = useState('');
+
+  // Load dynamic evaluation types from project setup
+  useEffect(() => {
+    if (activeProjectId && open) {
+      loadProjectDocTypes(activeProjectId);
+    }
+  }, [activeProjectId, open, loadProjectDocTypes]);
+
+  const EVALUATION_TYPES = useMemo(() => deriveEvalTypes(projectDocTypes), [projectDocTypes]);
 
   // Hidden file input ref for adding more files
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,9 +85,7 @@ export function MultiFileMetadataModal({
   // Refs for dropdown buttons to calculate position
   const dropdownButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  const configuredCount = useMemo(() => {
-    return files.filter(isFileMetadataComplete).length;
-  }, [files]);
+  const configuredCount = files.filter(isFileMetadataComplete).length;
 
   const allConfigured = configuredCount === files.length && files.length > 0;
 
@@ -242,7 +242,6 @@ export function MultiFileMetadataModal({
                   handleProviderSelect(fileIndex, normalized);
                 }
               }}
-              autoFocus
               style={{
                 width: '100%',
                 padding: '7px 10px',
@@ -326,7 +325,7 @@ export function MultiFileMetadataModal({
 
     return createPortal(
       <>
-        <div className="mfm-dropdown-overlay" onClick={closeDropdown} style={{ zIndex: 9999 }} />
+        <div className="mfm-dropdown-overlay" role="presentation" onClick={closeDropdown} style={{ zIndex: 9999 }} />
         {content}
       </>,
       document.body
@@ -335,7 +334,7 @@ export function MultiFileMetadataModal({
 
   return (
     <>
-      <div className="mfm-overlay" onClick={onClose} />
+      <div className="mfm-overlay" role="presentation" onClick={onClose} />
       <div className="mfm-modal">
         <div className="mfm-header">
           <div className="mfm-header-title">
@@ -369,7 +368,7 @@ export function MultiFileMetadataModal({
             const { file, metadata } = fileWithMeta;
 
             return (
-              <div key={`${file.name}-${index}`} className={`mfm-accordion ${isExpanded ? 'mfm-accordion--expanded' : ''}`}>
+              <div key={`${file.name}-${file.size}-${file.lastModified}`} className={`mfm-accordion ${isExpanded ? 'mfm-accordion--expanded' : ''}`}>
                 <button
                   type="button"
                   className="mfm-accordion-header"

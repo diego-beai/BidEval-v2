@@ -150,16 +150,23 @@ export const useScoringStore = create<ScoringState>()(
                     }
 
                     if (data.success) {
-                        set({
-                            scoringResults: data,
-                            lastCalculation: new Date(),
-                            isCalculating: false
-                        });
-
                         addToast(
                             `Scoring completed! ${data.ranking.length} providers evaluated. Top: ${data.statistics.top_performer}`,
                             'success'
                         );
+
+                        // Reload full data from Supabase (evaluation_details, strengths, etc.)
+                        // n8n writes to DB but its HTTP response may lack these fields.
+                        try {
+                            await get().refreshScoring();
+                        } catch {
+                            // Fallback: use n8n response directly
+                            set({
+                                scoringResults: data,
+                                lastCalculation: new Date(),
+                                isCalculating: false
+                            });
+                        }
                     } else {
                         throw new Error(data.message || 'Scoring calculation failed');
                     }

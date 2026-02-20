@@ -3,6 +3,8 @@ import { fetchWithTimeout } from './api.service';
 import { ApiError, N8nWebhookResponse } from '../types/api.types';
 import { RfqItem } from '../types/rfq.types';
 import type { GenerateAuditPayload, GenerateAuditResponse } from '../types/qa.types';
+import { useSetupStore } from '../stores/useSetupStore';
+import { useScoringConfigStore } from '../stores/useScoringConfigStore';
 
 /**
  * Multiple files processing result
@@ -37,6 +39,53 @@ function fileToBase64(file: File): Promise<string> {
     };
     reader.onerror = (error) => reject(error);
   });
+}
+
+/**
+ * Get enriched project configuration for n8n payloads.
+ * Reads document types and economic fields from the setup store,
+ * and scoring criteria from the scoring config store, then formats
+ * them into a structured object that n8n workflows can consume.
+ */
+export function getProjectConfig(_projectId: string): {
+  document_types: Array<{ name: string; category: string; evaluation_link: string; mandatory: boolean }>;
+  economic_fields: Array<{ name: string; type: string; unit?: string; required: boolean; children?: Array<{ name: string; type: string; unit?: string }> }>;
+  scoring_criteria: Array<{ category: string; weight: number; criteria: Array<{ name: string; weight: number }> }>;
+} {
+  const setupStore = useSetupStore.getState();
+  const scoringStore = useScoringConfigStore.getState();
+
+  return {
+    document_types: setupStore.documentTypes.map(dt => ({
+      name: dt.name,
+      category: dt.docCategory,
+      evaluation_link: dt.evaluationLink,
+      mandatory: dt.isMandatory,
+    })),
+    economic_fields: setupStore.economicFields
+      .filter(f => !f.parentId)
+      .map(parent => ({
+        name: parent.name,
+        type: parent.fieldType,
+        unit: parent.unit || undefined,
+        required: parent.isRequired,
+        children: setupStore.economicFields
+          .filter(c => c.parentId === parent.id)
+          .map(child => ({
+            name: child.name,
+            type: child.fieldType,
+            unit: child.unit || undefined,
+          })),
+      })),
+    scoring_criteria: scoringStore.draftCategories.map(cat => ({
+      category: cat.display_name,
+      weight: cat.weight,
+      criteria: (cat.criteria || []).map(c => ({
+        name: c.display_name,
+        weight: c.weight,
+      })),
+    })),
+  };
 }
 
 /**
@@ -76,6 +125,7 @@ export async function uploadRfqFile(
       language: additionalMetadata?.language || 'es',
       currency: additionalMetadata?.currency || 'EUR',
       project_type: additionalMetadata?.project_type || 'RFP',
+      project_config: additionalMetadata?.project_id ? getProjectConfig(additionalMetadata.project_id) : null,
       metadata: {
         uploadedAt: new Date().toISOString(),
         fileName: file.name,
@@ -339,7 +389,9 @@ export async function uploadRfqBase(
       // Currency for economic analysis
       currency: currency || 'EUR',
       // Project type for workflow routing
-      project_type: projectType || 'RFP'
+      project_type: projectType || 'RFP',
+      // Enriched project configuration for n8n processing
+      project_config: projectId ? getProjectConfig(projectId) : null,
     };
 
     const response = await fetchWithTimeout(
@@ -485,6 +537,19 @@ export interface ScoringEvaluationPayload {
   recalculate_all?: boolean;
   language?: string;
   currency?: string;
+  /** Configuration for deterministic and reproducible scoring */
+  scoring_config?: {
+    /** LLM temperature (0 for deterministic output) */
+    temperature: number;
+    /** comparative = all providers evaluated together; individual = one at a time */
+    evaluation_mode: 'comparative' | 'individual';
+    /** Use quantitative rubrics for scoring */
+    rubric_mode: boolean;
+    /** Run multiple evaluation passes and average the results */
+    multi_pass: boolean;
+    /** Number of passes when multi_pass is true */
+    passes: number;
+  };
 }
 
 /**
@@ -522,6 +587,22 @@ export async function triggerScoringEvaluation(
   payload: ScoringEvaluationPayload
 ): Promise<ScoringEvaluationResponse> {
   try {
+    // Default scoring configuration for deterministic, reproducible results
+    const defaultScoringConfig = {
+      temperature: 0,
+      evaluation_mode: 'comparative' as const,
+      rubric_mode: true,
+      multi_pass: false,
+      passes: 1,
+    };
+
+    // Build enriched payload with project config and scoring defaults
+    const enrichedPayload = {
+      ...payload,
+      scoring_config: payload.scoring_config ?? defaultScoringConfig,
+      project_config: getProjectConfig(payload.project_id),
+    };
+
     const response = await fetchWithTimeout(
       API_CONFIG.N8N_SCORING_URL,
       {
@@ -529,7 +610,7 @@ export async function triggerScoringEvaluation(
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(enrichedPayload)
       },
       API_CONFIG.REQUEST_TIMEOUT,
       { maxRetries: 0 }

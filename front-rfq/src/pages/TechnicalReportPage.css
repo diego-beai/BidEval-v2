@@ -1,0 +1,624 @@
+/* ─── Technical Report Page ─── */
+
+.report-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  animation: fadeInDashboard 0.4s ease-out;
+}
+
+/* ─── Header — matches dashboard winner-banner style ─── */
+.report-hero {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: var(--shadow-md);
+  flex-wrap: wrap;
+}
+
+.report-hero-info h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.report-hero-subtitle {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.report-hero-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.report-type-select {
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.report-type-select option {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+}
+
+.report-generate-btn {
+  background-color: white;
+  color: var(--color-primary-dark);
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.report-generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.report-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Main Layout: Sidebar + Viewer ─── */
+.report-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── Sidebar: Version History — uses widget-card style ─── */
+.report-sidebar {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.report-sidebar:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.report-sidebar-title {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--bg-surface-alt);
+  flex-shrink: 0;
+}
+
+.report-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.report-sidebar-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+}
+
+.report-sidebar-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.report-sidebar-item:hover {
+  background: var(--bg-hover);
+}
+
+.report-sidebar-item.active {
+  background: var(--bg-hover);
+  border-left-color: var(--color-primary);
+}
+
+.report-sidebar-item-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-sidebar-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-sidebar-item-version {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.report-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-tertiary);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.report-delete-btn:hover {
+  color: var(--color-error);
+}
+
+.report-delete-confirm {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.report-delete-confirm-cancel {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.report-delete-confirm-yes {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  background: var(--color-error);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ─── Viewer Panel — uses widget-card style ─── */
+.report-viewer-panel {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  overflow-y: auto;
+  min-height: 0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.report-viewer-panel:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.report-viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 260px;
+  color: var(--text-tertiary);
+  gap: 12px;
+}
+
+.report-viewer-empty svg {
+  opacity: 0.35;
+}
+
+.report-viewer-empty span {
+  font-size: 0.9rem;
+}
+
+/* ─── Viewer Content ─── */
+.report-viewer-header {
+  padding: 22px 28px;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--bg-surface-alt);
+}
+
+.report-viewer-header img {
+  height: 28px;
+  margin-bottom: 10px;
+}
+
+.report-viewer-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-viewer-header-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* ─── Report Sections ─── */
+.report-section {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.report-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
+}
+
+.report-section-title svg {
+  flex-shrink: 0;
+}
+
+.report-section-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 14px 0;
+  line-height: 1.6;
+}
+
+/* Methodology grid */
+.report-methodology-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.report-methodology-card {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s;
+}
+
+.report-methodology-card:hover {
+  border-color: var(--color-primary);
+}
+
+.report-methodology-card-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-methodology-card-weight {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-top: 2px;
+}
+
+.report-methodology-card-count {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+/* Ranking table — matches dashboard scoring-table */
+.report-ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.report-ranking-table thead tr {
+  border-bottom: 2px solid var(--border-color);
+}
+
+.report-ranking-table th {
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--bg-surface-alt);
+}
+
+.report-ranking-table th.center {
+  text-align: center;
+}
+
+.report-ranking-table td {
+  padding: 10px 12px;
+}
+
+.report-ranking-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+
+.report-ranking-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.report-ranking-table tbody tr.winner {
+  background: rgba(18, 181, 176, 0.06);
+}
+
+.report-strength-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.report-strength-tag {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Stats grid — matches dashboard stats-grid pattern */
+.report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.report-stat-card {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-alt);
+  text-align: center;
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s;
+}
+
+.report-stat-card:hover {
+  border-color: var(--color-primary);
+}
+
+.report-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.report-stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Risk / recommendation items */
+.report-alert-section {
+  margin-bottom: 12px;
+}
+
+.report-alert-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.report-alert-title.warning {
+  color: var(--color-warning);
+}
+
+.report-alert-title.info {
+  color: var(--color-info);
+}
+
+.report-alert-item {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding-left: 14px;
+  margin-bottom: 4px;
+}
+
+/* Change log */
+.report-changelog-list {
+  font-size: 0.8rem;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.report-changelog-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.report-changelog-entry:hover {
+  background: var(--bg-hover);
+}
+
+.report-changelog-date {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.report-changelog-type {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.report-changelog-desc {
+  flex: 1;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer */
+.report-viewer-footer {
+  padding: 14px 28px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  background: var(--bg-surface-alt);
+}
+
+/* ─── Score colors ─── */
+.score-high {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.score-mid {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.score-low {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+.pos-top3 {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.pos-other {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px) {
+  .report-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .report-body {
+    grid-template-columns: 1fr;
+  }
+
+  .report-sidebar {
+    max-height: 220px;
+  }
+
+  .report-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 24px;
+  }
+
+  .report-hero-actions {
+    width: 100%;
+  }
+
+  .report-type-select {
+    flex: 1;
+  }
+
+  .report-ranking-table th:last-child,
+  .report-ranking-table td:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .report-page {
+    gap: 12px;
+  }
+
+  .report-hero {
+    padding: 18px;
+  }
+
+  .report-hero-info h2 {
+    font-size: 1.2rem;
+  }
+
+  .report-hero-actions {
+    flex-direction: column;
+  }
+
+  .report-generate-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .report-section {
+    padding: 14px 16px;
+  }
+
+  .report-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report-methodology-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report-ranking-table {
+    font-size: 0.75rem;
+  }
+
+  .report-ranking-table th.hide-mobile,
+  .report-ranking-table td.hide-mobile {
+    display: none;
+  }
+}

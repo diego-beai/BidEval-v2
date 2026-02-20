@@ -1,0 +1,113 @@
+/* ===== Award Markdown Preview ===== */
+
+.award-md-preview {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.award-md-preview h1 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.award-md-preview h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 20px 0 8px;
+}
+
+.award-md-preview h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 16px 0 6px;
+}
+
+.award-md-preview p {
+  margin: 6px 0;
+}
+
+.award-md-preview strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.award-md-preview hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 16px 0;
+}
+
+.award-md-preview ul,
+.award-md-preview ol {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.award-md-preview li {
+  margin: 3px 0;
+}
+
+.award-md-preview blockquote {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--color-primary);
+  background: rgba(18, 181, 176, 0.06);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.award-md-preview blockquote p {
+  margin: 0;
+}
+
+/* Tables */
+.award-md-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 0.82rem;
+}
+
+.award-md-preview thead th {
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.award-md-preview tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.award-md-preview tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.award-md-preview tbody tr:hover {
+  background: rgba(18, 181, 176, 0.04);
+}
+
+/* Code inline (unlikely but handle it) */
+.award-md-preview code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+}

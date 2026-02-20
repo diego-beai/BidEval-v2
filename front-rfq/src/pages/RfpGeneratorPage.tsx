@@ -7,6 +7,7 @@ import { usePdfTemplateStore } from '../stores/usePdfTemplateStore';
 import { useRfpGeneratorStore } from '../stores/useRfpGeneratorStore';
 import { GenerateRfpResponse } from '../services/n8n.service';
 import { useToastStore } from '../stores/useToastStore';
+import { RfpSectionList } from '../components/rfp/RfpSectionList';
 import './RfpGeneratorPage.css';
 
 const DEFAULT_SECTIONS = [
@@ -78,6 +79,8 @@ export const RfpGeneratorPage = () => {
     deselectAllSections,
     clearResult,
     generate,
+    activeTab,
+    setActiveTab,
   } = useRfpGeneratorStore();
 
   // Estado local — solo UI
@@ -455,6 +458,118 @@ ${footerHtml}
         </div>
       </div>
 
+      {/* Tab selector: Secciones | Documento completo */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          marginBottom: '16px',
+          padding: '4px',
+          background: 'var(--bg-surface-alt)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-color)',
+          width: 'fit-content',
+        }}
+      >
+        <button
+          onClick={() => setActiveTab('sections')}
+          style={{
+            padding: '8px 18px',
+            background: activeTab === 'sections'
+              ? 'var(--bg-surface)'
+              : 'transparent',
+            border: activeTab === 'sections'
+              ? '1px solid var(--border-color)'
+              : '1px solid transparent',
+            borderRadius: '6px',
+            fontSize: '0.82rem',
+            fontWeight: activeTab === 'sections' ? 600 : 500,
+            color: activeTab === 'sections'
+              ? 'var(--color-primary)'
+              : 'var(--text-secondary)',
+            cursor: 'pointer',
+            transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+            boxShadow: activeTab === 'sections' ? 'var(--shadow-sm)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
+          </svg>
+          {language === 'es' ? 'Secciones' : 'Sections'}
+        </button>
+        <button
+          onClick={() => setActiveTab('document')}
+          style={{
+            padding: '8px 18px',
+            background: activeTab === 'document'
+              ? 'var(--bg-surface)'
+              : 'transparent',
+            border: activeTab === 'document'
+              ? '1px solid var(--border-color)'
+              : '1px solid transparent',
+            borderRadius: '6px',
+            fontSize: '0.82rem',
+            fontWeight: activeTab === 'document' ? 600 : 500,
+            color: activeTab === 'document'
+              ? 'var(--color-primary)'
+              : 'var(--text-secondary)',
+            cursor: 'pointer',
+            transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+            boxShadow: activeTab === 'document' ? 'var(--shadow-sm)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          {language === 'es' ? 'Documento completo' : 'Full document'}
+        </button>
+      </div>
+
+      {/* SECTIONS TAB */}
+      {activeTab === 'sections' && (
+        <div style={{ marginBottom: '20px' }}>
+          {/* Requirements input (shared) */}
+          <div className="rfp-card rfp-card-requirements" style={{ marginBottom: '16px' }}>
+            <div className="rfp-card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              {t('rfp_gen.requirements')}
+            </div>
+            <textarea
+              className="rfp-textarea"
+              placeholder={t('rfp_gen.requirements_placeholder')}
+              value={requirements}
+              onChange={(e) => setRequirements(e.target.value)}
+              disabled={isGenerating}
+              style={{ minHeight: '120px' }}
+            />
+            <div className="rfp-textarea-footer">
+              <span>{requirements.length} {t('rfp_gen.chars')}</span>
+            </div>
+          </div>
+
+          <RfpSectionList />
+        </div>
+      )}
+
+      {/* DOCUMENT TAB (existing full-document mode) */}
+      {activeTab === 'document' && (
+      <>
       {/* Main 2-column layout */}
       <div className="rfp-main-grid">
         {/* LEFT COLUMN: Context + Requirements */}
@@ -519,6 +634,9 @@ ${footerHtml}
 
             <div
               className={`rfp-upload-zone ${isDragOver ? 'drag-over' : ''}`}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -657,7 +775,6 @@ ${footerHtml}
                   value={templateName}
                   onChange={e => setTemplateName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
-                  autoFocus
                 />
                 <button className="rfp-template-save-btn" onClick={handleSaveTemplate} disabled={!templateName.trim()}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -789,7 +906,7 @@ ${footerHtml}
                 {/* Page Numbers Toggle */}
                 <div className="rfp-template-config-field row">
                   <label>{t('rfp_gen.page_numbers')}</label>
-                  <label className="rfp-template-toggle-switch">
+                  <label className="rfp-template-toggle-switch" aria-label={t('rfp_gen.page_numbers')}>
                     <input
                       type="checkbox"
                       checked={pdfTemplate.showPageNumbers}
@@ -923,6 +1040,8 @@ ${footerHtml}
                   </button>
                 </div>
               </div>
+              {/* Safe: HTML is generated by our own formatMarkdown() from trusted AI output,
+                 then sanitized through DOMPurify.sanitize() to strip any XSS vectors. */}
               <div
                 className="rfp-document-content"
                 dangerouslySetInnerHTML={{
@@ -932,6 +1051,9 @@ ${footerHtml}
             </div>
           )}
         </div>
+      )}
+
+      </>
       )}
 
       {showCopied && (

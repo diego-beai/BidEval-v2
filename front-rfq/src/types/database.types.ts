@@ -40,6 +40,13 @@ export type Disciplina = 'Electrical' | 'Mechanical' | 'Civil' | 'Process' | 'Ge
 export type EstadoPregunta = 'Draft' | 'Pending' | 'Approved' | 'Sent' | 'Answered' | 'Resolved' | 'NeedsMoreInfo' | 'Discarded'
 export type Importancia = 'High' | 'Medium' | 'Low'
 export type NotificationType = 'supplier_responded' | 'evaluation_updated' | 'questions_sent'
+export type MilestoneType = 'opening' | 'submission' | 'questions' | 'evaluation' | 'award' | 'negotiation' | 'due_diligence' | 'kickoff' | 'custom'
+export type DocCategory = 'technical' | 'economic' | 'administrative' | 'legal' | 'hse' | 'custom'
+export type EvaluationLink = 'technical' | 'economic' | 'info'
+export type EconomicFieldType = 'currency' | 'percentage' | 'number' | 'text' | 'formula'
+export type ScoringChangeType = 'score_update' | 'weight_change' | 'criteria_change' | 'recalculation' | 'manual_override'
+export type AwardStatus = 'draft' | 'pending_approval' | 'approved' | 'notified' | 'contracted' | 'cancelled'
+export type ReportType = 'evaluation' | 'comparison' | 'executive_summary' | 'award_justification'
 
 export interface Database {
   public: {
@@ -66,6 +73,9 @@ export interface Database {
           invited_suppliers: string[]
           organization_id?: string | null
           created_by?: string | null
+          is_locked: boolean
+          locked_at?: string | null
+          locked_by?: string | null
           created_at: string
           updated_at: string
         }
@@ -90,6 +100,9 @@ export interface Database {
           invited_suppliers?: string[]
           organization_id?: string | null
           created_by?: string | null
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -114,6 +127,9 @@ export interface Database {
           invited_suppliers?: string[]
           organization_id?: string | null
           created_by?: string | null
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -405,6 +421,9 @@ export interface Database {
           alternative_offers: Array<{description: string; total_price: number; details?: string}> | null
           extraction_confidence?: number | null
           raw_notes?: string | null
+          excel_template_data?: Json | null
+          custom_fields?: Json | null
+          validation_errors?: Json | null
           created_at: string
           updated_at: string
         }
@@ -431,6 +450,9 @@ export interface Database {
           alternative_offers?: Array<{description: string; total_price: number; details?: string}> | null
           extraction_confidence?: number | null
           raw_notes?: string | null
+          excel_template_data?: Json | null
+          custom_fields?: Json | null
+          validation_errors?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -457,6 +479,9 @@ export interface Database {
           alternative_offers?: Array<{description: string; total_price: number; details?: string}> | null
           extraction_confidence?: number | null
           raw_notes?: string | null
+          excel_template_data?: Json | null
+          custom_fields?: Json | null
+          validation_errors?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -592,6 +617,331 @@ export interface Database {
           read_at?: string | null
         }
       }
+      project_milestones: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          description?: string | null
+          due_date?: string | null
+          sort_order: number
+          is_mandatory: boolean
+          is_completed: boolean
+          completed_at?: string | null
+          milestone_type: MilestoneType
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          description?: string | null
+          due_date?: string | null
+          sort_order?: number
+          is_mandatory?: boolean
+          is_completed?: boolean
+          completed_at?: string | null
+          milestone_type?: MilestoneType
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          description?: string | null
+          due_date?: string | null
+          sort_order?: number
+          is_mandatory?: boolean
+          is_completed?: boolean
+          completed_at?: string | null
+          milestone_type?: MilestoneType
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      project_document_types: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          description?: string | null
+          doc_category: DocCategory
+          evaluation_link: EvaluationLink
+          is_mandatory: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          description?: string | null
+          doc_category?: DocCategory
+          evaluation_link?: EvaluationLink
+          is_mandatory?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          description?: string | null
+          doc_category?: DocCategory
+          evaluation_link?: EvaluationLink
+          is_mandatory?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      project_economic_fields: {
+        Row: {
+          id: string
+          project_id: string
+          parent_id?: string | null
+          name: string
+          description?: string | null
+          field_type: EconomicFieldType
+          unit?: string | null
+          is_required: boolean
+          sort_order: number
+          formula?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          parent_id?: string | null
+          name: string
+          description?: string | null
+          field_type?: EconomicFieldType
+          unit?: string | null
+          is_required?: boolean
+          sort_order?: number
+          formula?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          parent_id?: string | null
+          name?: string
+          description?: string | null
+          field_type?: EconomicFieldType
+          unit?: string | null
+          is_required?: boolean
+          sort_order?: number
+          formula?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      project_setup_templates: {
+        Row: {
+          id: string
+          name: string
+          description?: string | null
+          project_type: 'RFP' | 'RFQ' | 'RFI'
+          template_data: Json
+          organization_id?: string | null
+          created_by?: string | null
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          project_type?: 'RFP' | 'RFQ' | 'RFI'
+          template_data?: Json
+          organization_id?: string | null
+          created_by?: string | null
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          project_type?: 'RFP' | 'RFQ' | 'RFI'
+          template_data?: Json
+          organization_id?: string | null
+          created_by?: string | null
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      scoring_change_log: {
+        Row: {
+          id: string
+          project_id: string
+          provider_name: string
+          changed_by: string
+          change_type: ScoringChangeType
+          field_changed: string
+          old_value?: Json | null
+          new_value?: Json | null
+          reason?: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          provider_name: string
+          changed_by?: string
+          change_type?: ScoringChangeType
+          field_changed: string
+          old_value?: Json | null
+          new_value?: Json | null
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          provider_name?: string
+          changed_by?: string
+          change_type?: ScoringChangeType
+          field_changed?: string
+          old_value?: Json | null
+          new_value?: Json | null
+          reason?: string | null
+          created_at?: string
+        }
+      }
+      scoring_simulations: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          description?: string | null
+          alternative_weights: Json
+          results: Json
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          description?: string | null
+          alternative_weights?: Json
+          results?: Json
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          description?: string | null
+          alternative_weights?: Json
+          results?: Json
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      project_awards: {
+        Row: {
+          id: string
+          project_id: string
+          winner_provider_name: string
+          justification: string
+          award_status: AwardStatus
+          award_date?: string | null
+          contract_reference?: string | null
+          contract_data?: Json | null
+          award_document_url?: string | null
+          contract_document_url?: string | null
+          awarded_by: string
+          approved_by?: string | null
+          approved_at?: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          winner_provider_name: string
+          justification: string
+          award_status?: AwardStatus
+          award_date?: string | null
+          contract_reference?: string | null
+          contract_data?: Json | null
+          award_document_url?: string | null
+          contract_document_url?: string | null
+          awarded_by?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          winner_provider_name?: string
+          justification?: string
+          award_status?: AwardStatus
+          award_date?: string | null
+          contract_reference?: string | null
+          contract_data?: Json | null
+          award_document_url?: string | null
+          contract_document_url?: string | null
+          awarded_by?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      technical_reports: {
+        Row: {
+          id: string
+          project_id: string
+          version: number
+          report_type: ReportType
+          title: string
+          report_data: Json
+          generated_by: string
+          pdf_url?: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          version?: number
+          report_type?: ReportType
+          title: string
+          report_data?: Json
+          generated_by?: string
+          pdf_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          version?: number
+          report_type?: ReportType
+          title?: string
+          report_data?: Json
+          generated_by?: string
+          pdf_url?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       v_projects_with_stats: {
@@ -607,6 +957,22 @@ export interface Database {
           qa_count: number
         }
       }
+      v_supplier_price_history: {
+        Row: {
+          provider_name: string
+          project_id: string
+          project_name: string
+          project_type: string
+          total_price?: number | null
+          currency: string
+          discount_percentage: number
+          tco_value?: number | null
+          overall_score?: number | null
+          category_scores_json?: Record<string, number> | null
+          project_date: string
+          offer_date: string
+        }
+      }
     }
     Functions: {
       [_ in never]: never
@@ -615,6 +981,13 @@ export interface Database {
       disciplina: Disciplina
       estado_pregunta: EstadoPregunta
       importancia: Importancia
+      milestone_type: MilestoneType
+      doc_category: DocCategory
+      evaluation_link: EvaluationLink
+      economic_field_type: EconomicFieldType
+      scoring_change_type: ScoringChangeType
+      award_status: AwardStatus
+      report_type: ReportType
     }
   }
 }

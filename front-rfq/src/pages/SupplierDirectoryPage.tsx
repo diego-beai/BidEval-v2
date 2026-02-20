@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSupplierDirectoryStore, SupplierEntry, SupplierEvalDetail } from '../stores/useSupplierDirectoryStore';
 import { useLanguageStore } from '../stores/useLanguageStore';
+import { SupplierHistoryProfile } from '../components/suppliers/SupplierHistoryProfile';
 import './SupplierDirectoryPage.css';
 
 export const SupplierDirectoryPage = () => {
@@ -13,6 +14,7 @@ export const SupplierDirectoryPage = () => {
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [historySupplier, setHistorySupplier] = useState<string | null>(null);
 
   useEffect(() => {
     loadSuppliers();
@@ -196,7 +198,8 @@ export const SupplierDirectoryPage = () => {
                 <th>{t('supplier.col.projects')}</th>
                 <th>{t('supplier.col.avg_score')}</th>
                 <th>{t('supplier.col.last_participation')}</th>
-                <th>{t('supplier.col.contact')}</th>
+                <th>{t('supplier.col.performance')}</th>
+                <th style={{ width: 140 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -233,8 +236,99 @@ export const SupplierDirectoryPage = () => {
                       ? new Date(supplier.last_participation).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'short' })
                       : '—'}
                   </td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {supplier.contact_person || supplier.email || '—'}
+                  <td>
+                    {supplier.best_score != null && supplier.worst_score != null ? (() => {
+                      const best = normalizeToTen(supplier.best_score)!;
+                      const worst = normalizeToTen(supplier.worst_score)!;
+                      const avg = normalizeToTen(supplier.avg_score)!;
+                      const range = best - worst;
+                      const consistency = range < 1 ? 'high' : range < 2 ? 'medium' : 'low';
+                      const consistencyColor = consistency === 'high' ? '#10b981' : consistency === 'medium' ? '#f59e0b' : '#ef4444';
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {/* Mini score range bar */}
+                          <div style={{ flex: 1, minWidth: 60, maxWidth: 100 }}>
+                            <div style={{
+                              position: 'relative',
+                              height: 6,
+                              borderRadius: 3,
+                              background: 'var(--bg-surface-alt)',
+                              overflow: 'visible',
+                            }}>
+                              {/* Range bar */}
+                              <div style={{
+                                position: 'absolute',
+                                left: `${(worst / 10) * 100}%`,
+                                width: `${Math.max(((best - worst) / 10) * 100, 4)}%`,
+                                height: '100%',
+                                borderRadius: 3,
+                                background: `linear-gradient(90deg, ${consistencyColor}60, ${consistencyColor})`,
+                              }} />
+                              {/* Avg marker */}
+                              <div style={{
+                                position: 'absolute',
+                                left: `${(avg / 10) * 100}%`,
+                                top: -2,
+                                width: 4,
+                                height: 10,
+                                borderRadius: 2,
+                                background: consistencyColor,
+                                transform: 'translateX(-50%)',
+                              }} />
+                            </div>
+                          </div>
+                          {/* Consistency label */}
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 600,
+                            color: consistencyColor,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {worst.toFixed(1)}-{best.toFixed(1)}
+                          </span>
+                        </div>
+                      );
+                    })() : (
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHistorySupplier(supplier.supplier_name);
+                      }}
+                      title={t('supplier.history.view')}
+                      style={{
+                        background: 'rgba(18,181,176,0.08)',
+                        border: '1px solid rgba(18,181,176,0.25)',
+                        color: 'var(--color-primary)',
+                        cursor: 'pointer',
+                        padding: '5px 12px',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        transition: 'border-color 0.15s, color 0.15s, background 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--color-primary)';
+                        e.currentTarget.style.background = 'rgba(18,181,176,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(18,181,176,0.25)';
+                        e.currentTarget.style.background = 'rgba(18,181,176,0.08)';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 8v4l3 3" />
+                        <circle cx="12" cy="12" r="10" />
+                      </svg>
+                      {t('supplier.history.view_short')}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -257,6 +351,14 @@ export const SupplierDirectoryPage = () => {
           isLoadingEvaluations={isLoadingEvaluations}
           loadEvaluations={loadSupplierEvaluationDetails}
           saveFeedback={saveSupplierFeedback}
+        />
+      )}
+
+      {/* Supplier History Profile Modal */}
+      {historySupplier && (
+        <SupplierHistoryProfile
+          providerName={historySupplier}
+          onClose={() => setHistorySupplier(null)}
         />
       )}
     </div>
@@ -584,7 +686,7 @@ const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t, evaluatio
                               {language === 'es' ? 'Fortalezas' : 'Strengths'}
                             </div>
                             {ev.evaluation_details.strengths.map((s, i) => (
-                              <div key={i} style={{
+                              <div key={`strength-${ev.project_id}-${i}-${s.slice(0, 20)}`} style={{
                                 fontSize: '0.78rem',
                                 color: 'var(--text-primary)',
                                 padding: '4px 8px',
@@ -605,7 +707,7 @@ const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t, evaluatio
                               {language === 'es' ? 'Areas de Mejora' : 'Areas for Improvement'}
                             </div>
                             {ev.evaluation_details.weaknesses.map((w, i) => (
-                              <div key={i} style={{
+                              <div key={`weakness-${ev.project_id}-${i}-${w.slice(0, 20)}`} style={{
                                 fontSize: '0.78rem',
                                 color: 'var(--text-primary)',
                                 padding: '4px 8px',

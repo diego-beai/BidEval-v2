@@ -3138,6 +3138,72 @@
               "name": "providers",
               "value": "={{ $json.body.providers }}",
               "type": "array"
+            },
+            {
+              "id": "rfp-action",
+              "name": "action",
+              "value": "={{ $json.body.action || 'generate_rfp' }}",
+              "type": "string"
+            },
+            {
+              "id": "award-winner-name",
+              "name": "winner_name",
+              "value": "={{ $json.body.winner_name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "award-winner-score",
+              "name": "winner_score",
+              "value": "={{ $json.body.winner_score || 0 }}",
+              "type": "string"
+            },
+            {
+              "id": "award-runner-up-name",
+              "name": "runner_up_name",
+              "value": "={{ $json.body.runner_up_name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "award-runner-up-score",
+              "name": "runner_up_score",
+              "value": "={{ $json.body.runner_up_score || 0 }}",
+              "type": "string"
+            },
+            {
+              "id": "award-total-providers",
+              "name": "total_providers",
+              "value": "={{ $json.body.total_providers || 0 }}",
+              "type": "string"
+            },
+            {
+              "id": "award-category-scores",
+              "name": "category_scores",
+              "value": "={{ JSON.stringify($json.body.category_scores || {}) }}",
+              "type": "string"
+            },
+            {
+              "id": "award-strengths",
+              "name": "strengths",
+              "value": "={{ JSON.stringify($json.body.strengths || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "award-weaknesses",
+              "name": "weaknesses",
+              "value": "={{ JSON.stringify($json.body.weaknesses || []) }}",
+              "type": "string"
+            },
+            {
+              "id": "award-economic-summary",
+              "name": "economic_summary",
+              "value": "={{ $json.body.economic_summary || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "award-scoring-summary",
+              "name": "scoring_criteria_summary",
+              "value": "={{ $json.body.scoring_criteria_summary || '' }}",
+              "type": "string"
             }
           ]
         },
@@ -3155,11 +3221,11 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### INPUT\n\n## PROJECT: {{ $json.project_name }}\n## TYPE: {{ $json.project_type }}\n## LANGUAGE: {{ $json.language }}\n## CURRENCY: {{ $json.currency || 'EUR' }}\n\n## DESCRIPTION:\n{{ $json.description }}\n\n## REQUIREMENTS:\n{{ $json.requirements }}\n\n## SECTIONS TO INCLUDE:\n{{ JSON.stringify($json.sections) }}\n\n## EVALUATION CRITERIA:\n{{ JSON.stringify($json.criteria) }}\n\n## DEADLINES:\n{{ JSON.stringify($json.deadlines) }}\n\n## INVITED PROVIDERS:\n{{ JSON.stringify($json.providers) }}\n\n### INSTRUCTIONS\nGenerate a complete, professional {{ $json.project_type }} document with ALL the requested sections.\nThe document must be in {{ $json.language === 'en' ? 'English' : 'Spanish' }}.\nAll monetary references and pricing sections must use {{ $json.currency || 'EUR' }} as the currency.\nUse Markdown formatting for the document body.\nEach section should be comprehensive and detailed.\nInclude the evaluation criteria and deadlines in the appropriate sections.\n\nReturn ONLY the JSON object. Do NOT include any text before or after the JSON.\n\n### OUTPUT SCHEMA\n{\n  \"title\": \"Document title\",\n  \"document\": \"Full document content in Markdown\",\n  \"sections\": [\n    { \"title\": \"Section Name\", \"content\": \"Section content in Markdown\" }\n  ]\n}",
+        "text": "=### CONTEXTO DEL PROYECTO\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Moneda:** {{ $json.currency || 'EUR' }}\n- **Descripcion:** {{ $json.description }}\n- **Requisitos:** {{ $json.requirements }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n### CRITERIOS DE EVALUACION\n{{ $json.criteria }}\n\n### PLAZOS Y CRONOGRAMA\n{{ $json.deadlines }}\n\n### PROVEEDORES INVITADOS\n{{ $json.providers }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION\n1. **Extension**: Escribe un MINIMO de 600 palabras para esta seccion. Debe ser completa y detallada.\n2. **Estilo narrativo**: Escribe en PROSA NARRATIVA. Usa parrafos completos de 3-5 oraciones cada uno que expliquen con profundidad.\n3. **Listas con contexto**: Si necesitas usar listas o enumeraciones, SIEMPRE precedelas de un parrafo explicativo. Nunca una seccion que sea SOLO una lista.\n4. **Tablas**: Si esta seccion trata de criterios de evaluacion, plazos o comparativas, incluye tablas Markdown bien formateadas.\n5. **Especificidad**: Incluye detalles especificos relevantes para proyectos {{ $json.project_type }} del sector energetico/industrial.\n6. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales ni cierres del documento. Escribe SOLO el contenido de esta seccion.\n7. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo (```).\n- NO incluyas comentarios meta ni explicaciones sobre lo que escribiste.\n- Empieza directamente con el contenido.",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are an expert procurement specialist and technical writer with extensive experience in industrial projects (energy, P2X, green hydrogen, EPC).\n\n### ROLE\nGenerate formal {{ $json.project_type }} (Request for Proposal/Quotation/Information) documents that are professional, comprehensive, and aligned with industry best practices.\n\n### GUIDELINES\n1. **Structure**: Follow standard {{ $json.project_type }} format with clear sections, numbering, and professional language.\n2. **Content**: Each section must be substantive (not just headers). Include specific requirements, evaluation methodology, and clear instructions for bidders.\n3. **Evaluation Criteria**: If criteria with weights are provided, include them in a dedicated section with a clear scoring methodology.\n4. **Deadlines**: If deadlines are provided, include a timeline section with key dates.\n5. **Providers**: If invited providers are listed, reference the closed bidding process.\n6. **Language**: Write entirely in the requested language. Use formal, professional tone.\n7. **Formatting**: Use Markdown (headers ##, bold **, bullet points -, tables |) for readability.\n\n### CRITICAL: OUTPUT RESTRICTIONS\n- Return **ONLY** a valid JSON object.\n- **DO NOT** include any conversational text, explanations, or reasoning.\n- **DO NOT** use Markdown code blocks (e.g., ```json).\n- The output must start with `{` and end with `}`.\n- The 'document' field must contain the FULL document text, not just a summary."
+              "message": "=You are a senior procurement specialist and technical writer with 15+ years of experience drafting {{ $json.project_type }} documents for industrial EPC projects (energy, P2X, green hydrogen, solar, wind, BESS, petrochemical).\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal {{ $json.project_type }} document. You must write this section with the depth, detail and quality expected in a real corporate procurement document used in multi-million euro tenders.\n\n### WRITING STYLE REQUIREMENTS\n1. **NARRATIVE PROSE is mandatory**: Write in full, well-constructed paragraphs. Each paragraph must have 3-5 complete sentences that develop an idea thoroughly.\n2. **NO list-only sections**: You may use bullet points or numbered lists to enumerate specific items (e.g., requirements, criteria), but they MUST be preceded and followed by explanatory paragraphs that provide context and rationale.\n3. **Minimum 600 words**: This section must be substantial. A section shorter than 600 words is unacceptable.\n4. **Professional register**: Use formal, precise language appropriate for corporate procurement. No colloquialisms, no filler text, no generic statements.\n5. **Specificity over generality**: Reference the specific project type, sector, and requirements. Avoid vague statements like 'the provider must comply with applicable regulations' — instead specify WHICH regulations.\n6. **Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}** throughout.\n\n### FORMATTING\n- Use Markdown: **bold** for key terms, - for lists, | for tables where appropriate.\n- Do NOT include the section header/title (it will be added automatically).\n- Start directly with the substantive content.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT explain what you are doing. Just write the section."
             }
           ]
         },
@@ -3176,7 +3242,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Parse LLM output and structure the RFP response\nconst llmOutput = $input.first().json;\nconst params = $('Set RFP Params').first().json;\nlet result;\n\nconst logoPlaceholderRegex = /(?:^|\\n)\\s*!?\\[\\s*(?:logo(?:\\s+de\\s+la)?(?:\\s+empresa)?|company\\s+logo)\\s*\\](?:\\([^\\)]*\\))?\\s*(?=\\n|$)/gi;\n\nconst cleanDoc = (text) => String(text || '')\n  .replace(logoPlaceholderRegex, '\\n')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\nconst tryParseJson = (source) => {\n  const attempts = [];\n\n  // 1) Raw text (without markdown fences)\n  attempts.push(source.replace(/```json\\n?/gi, '').replace(/```\\n?/g, '').trim());\n\n  // 2) Extract probable JSON object/array block from noisy text\n  const firstObj = source.indexOf('{');\n  const firstArr = source.indexOf('[');\n  let start = -1;\n  if (firstObj >= 0 && firstArr >= 0) start = Math.min(firstObj, firstArr);\n  else start = Math.max(firstObj, firstArr);\n  if (start >= 0) {\n    const lastObj = source.lastIndexOf('}');\n    const lastArr = source.lastIndexOf(']');\n    const end = Math.max(lastObj, lastArr);\n    if (end > start) attempts.push(source.slice(start, end + 1).trim());\n  }\n\n  const parseAttempt = (candidate) => {\n    // A) direct parse\n    try { return JSON.parse(candidate); } catch (_) {}\n\n    // B) escape control chars inside strings\n    let sanitized = '';\n    let inStr = false;\n    let esc = false;\n    for (let i = 0; i < candidate.length; i++) {\n      const ch = candidate[i];\n      const code = candidate.charCodeAt(i);\n      if (esc) { sanitized += ch; esc = false; continue; }\n      if (ch === '\\\\' && inStr) { sanitized += ch; esc = true; continue; }\n      if (ch === '\"') { inStr = !inStr; sanitized += ch; continue; }\n      if (inStr && code <= 0x1f) {\n        if (ch === '\\n') sanitized += '\\\\n';\n        else if (ch === '\\r') sanitized += '\\\\r';\n        else if (ch === '\\t') sanitized += '\\\\t';\n        continue;\n      }\n      sanitized += ch;\n    }\n    try { return JSON.parse(sanitized); } catch (_) {}\n\n    // C) remove trailing commas before } or ]\n    const noTrailingCommas = sanitized.replace(/,\\s*([}\\]])/g, '$1');\n    try { return JSON.parse(noTrailingCommas); } catch (_) {}\n\n    return null;\n  };\n\n  for (const candidate of attempts) {\n    const parsed = parseAttempt(candidate);\n    if (parsed) return parsed;\n  }\n\n  return null;\n};\n\ntry {\n  const rawText = llmOutput.text || llmOutput.output || JSON.stringify(llmOutput);\n  let parsed = null;\n\n  if (typeof rawText === 'string') {\n    parsed = tryParseJson(rawText);\n  } else if (rawText && typeof rawText === 'object') {\n    parsed = rawText;\n  }\n\n  // Fallback: if the model returned plain markdown/text, keep it as document\n  if (!parsed) {\n    const fallbackDocument = cleanDoc(String(rawText || ''));\n    const wordCount = fallbackDocument.split(/\\s+/).filter(w => w.length > 0).length;\n\n    result = {\n      success: true,\n      title: `${params.project_type} - ${params.project_name}`,\n      document: fallbackDocument,\n      sections: [],\n      metadata: {\n        word_count: wordCount,\n        generated_at: new Date().toISOString(),\n        model: 'mistral-large-latest'\n      },\n      message: `RFP generated with fallback text (${wordCount} words)`\n    };\n\n    console.log('⚠️ RFP output was not valid JSON; used fallback document text');\n    return [{ json: result }];\n  }\n\n  const sections = Array.isArray(parsed.sections)\n    ? parsed.sections.map(s => ({\n        title: s?.title || 'Untitled Section',\n        content: s?.content || ''\n      }))\n    : [];\n\n  const document = cleanDoc(\n    parsed.document || sections.map(s => `## ${s.title}\\n\\n${s.content}`).join('\\n\\n')\n  );\n\n  const wordCount = document.split(/\\s+/).filter(w => w.length > 0).length;\n\n  result = {\n    success: true,\n    title: parsed.title || `${params.project_type} - ${params.project_name}`,\n    document,\n    sections,\n    metadata: {\n      word_count: wordCount,\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest'\n    },\n    message: `RFP generated successfully (${wordCount} words, ${sections.length} sections)`\n  };\n\n  console.log('✅ RFP Generated:');\n  console.log(`   ├─ Title: ${result.title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   └─ Words: ${wordCount}`);\n} catch (err) {\n  console.error('❌ Error parsing RFP output:', err.message);\n  result = {\n    success: false,\n    title: '',\n    document: '',\n    sections: [],\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error generating RFP: ' + err.message\n  };\n}\n\nreturn [{ json: result }];\n"
+        "jsCode": "// Consolidate multiple section outputs into a single RFP document\n// Each input item is one section's LLM output; section metadata comes from Prepare RFP Sections\nconst params = $('Set RFP Params').first().json;\nconst sectionMeta = $('Prepare RFP Sections').all();\nconst llmOutputs = $input.all();\n\nconst logoPlaceholderRegex = /(?:^|\\n)\\s*!?\\[\\s*(?:logo(?:\\s+de\\s+la)?(?:\\s+empresa)?|company\\s+logo)\\s*\\](?:\\([^\\)]*\\))?\\s*(?=\\n|$)/gi;\n\nconst cleanText = (text) => String(text || '')\n  .replace(logoPlaceholderRegex, '\\n')\n  .replace(/```json\\n?/gi, '').replace(/```\\n?/g, '')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\ntry {\n  const sections = sectionMeta.map((meta, index) => {\n    const llmItem = llmOutputs[index];\n    const rawContent = llmItem?.json?.text || llmItem?.json?.output || llmItem?.json?.response || '';\n    const content = cleanText(rawContent);\n    return {\n      title: meta.json.section_title,\n      content: content,\n      word_count: content.split(/\\s+/).filter(w => w.length > 0).length\n    };\n  });\n\n  // Build the full document with numbered section headers\n  const documentParts = sections.map((s, i) => {\n    return `## ${i + 1}. ${s.title}\\n\\n${s.content}`;\n  });\n  const document = documentParts.join('\\n\\n---\\n\\n');\n  const totalWords = sections.reduce((sum, s) => sum + s.word_count, 0);\n\n  const result = {\n    success: true,\n    title: `${params.project_type} - ${params.project_name}`,\n    document,\n    sections: sections.map(s => ({ title: s.title, content: s.content })),\n    metadata: {\n      word_count: totalWords,\n      section_count: sections.length,\n      words_per_section: sections.map(s => ({ title: s.title, words: s.word_count })),\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest',\n      generation_mode: 'multi-agent-per-section'\n    },\n    message: `RFP generated with ${sections.length} sections (${totalWords} words total)`\n  };\n\n  console.log('✅ RFP Consolidated:');\n  console.log(`   ├─ Title: ${result.title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   ├─ Total words: ${totalWords}`);\n  sections.forEach(s => console.log(`   │  └─ ${s.title}: ${s.word_count} words`));\n  console.log(`   └─ Mode: multi-agent-per-section`);\n\n  return [{ json: result }];\n} catch (err) {\n  console.error('❌ Error consolidating RFP:', err.message);\n  return [{ json: {\n    success: false,\n    title: '',\n    document: '',\n    sections: [],\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error consolidating RFP: ' + err.message\n  }}];\n}\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -5554,6 +5620,99 @@
           "name": "Supabase account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-award-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "generate_award_justification",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        6656
+      ],
+      "id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+      "name": "Is Award Justification?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### DATOS DE LA EVALUACION\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Fecha:** {{ new Date().toISOString().split('T')[0] }}\n- **Proveedor ganador:** {{ $json.winner_name }}\n- **Puntuacion global ganador:** {{ $json.winner_score }}/10\n- **Segundo clasificado:** {{ $json.runner_up_name || 'N/A' }}\n- **Puntuacion segundo:** {{ $json.runner_up_score || 0 }}/10\n- **Total proveedores evaluados:** {{ $json.total_providers }}\n\n**Puntuaciones por categoria:**\n{{ $json.category_scores }}\n\n**Fortalezas identificadas:**\n{{ $json.strengths }}\n\n**Debilidades identificadas:**\n{{ $json.weaknesses }}\n\n**Resumen economico:**\n{{ $json.economic_summary || 'No disponible' }}\n\n**Criterios de evaluacion:**\n{{ $json.scoring_criteria_summary }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION\n1. **Extension**: Escribe un MINIMO de 500 palabras para esta seccion.\n2. **Estilo narrativo**: Escribe en PROSA NARRATIVA con parrafos completos de 3-5 oraciones. No solo listas.\n3. **Basado en datos**: Referencia puntuaciones concretas, porcentajes y diferencias numericas de los datos proporcionados.\n4. **No inventes**: NO fabriques datos que no esten en el input. Si no hay datos para algun punto, indicalo.\n5. **Tono auditable**: Este documento debe resistir el escrutinio de auditoria interna, compliance y gobernanza.\n6. **Tablas**: Si esta seccion requiere comparativas, incluye tablas Markdown con los datos.\n7. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales.\n8. **Idioma**: Escribe en {{ $json.language === 'en' ? 'English' : 'Español' }}.\n9. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo.\n- Empieza directamente con el contenido.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert procurement analyst, technical evaluator, and document writer specialized in industrial EPC projects (energy, green hydrogen, P2X, solar, wind, BESS).\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal Award Justification document (Propuesta de Adjudicacion). This is a critical procurement document that must be:\n- **Auditable**: Subject to review by internal audit, compliance, and governance teams\n- **Data-driven**: Every conclusion must reference specific scores, percentages, or factual data\n- **Objective**: Present both strengths and weaknesses honestly\n- **Professional**: Written in formal corporate language suitable for executive review\n\n### WRITING STYLE\n1. Write in NARRATIVE PROSE with full paragraphs (3-5 sentences each). Do not produce list-only sections.\n2. Minimum 500 words for this section.\n3. Reference specific numerical data from the evaluation throughout your analysis.\n4. Use Markdown formatting: **bold** for emphasis, - for lists, | for tables.\n5. When comparing providers, use concrete data points and percentage differences.\n6. Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT include the section title. Start directly with content."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        -1088,
+        6856
+      ],
+      "id": "c2d3e4f5-a6b7-8901-bcde-f23456789012",
+      "name": "Award Justification Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Consolidate multiple section outputs into a single Award Justification document\nconst params = $('Set RFP Params').first().json;\nconst sectionMeta = $('Prepare Award Sections').all();\nconst llmOutputs = $input.all();\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst cleanText = (text) => String(text || '')\n  .replace(/```json\\n?/gi, '').replace(/```\\n?/g, '')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\ntry {\n  const sections = sectionMeta.map((meta, index) => {\n    const llmItem = llmOutputs[index];\n    const rawContent = llmItem?.json?.text || llmItem?.json?.output || llmItem?.json?.response || '';\n    const content = cleanText(rawContent);\n    return {\n      title: meta.json.section_title,\n      content: content,\n      word_count: content.split(/\\s+/).filter(w => w.length > 0).length\n    };\n  });\n\n  // Build the full justification document\n  const documentParts = sections.map((s, i) => {\n    return `## ${i + 1}. ${s.title}\\n\\n${s.content}`;\n  });\n\n  const title = lang === 'es'\n    ? `Propuesta de Adjudicacion - ${params.project_name}`\n    : `Award Proposal - ${params.project_name}`;\n\n  const justification = documentParts.join('\\n\\n---\\n\\n');\n  const totalWords = sections.reduce((sum, s) => sum + s.word_count, 0);\n\n  // Extract recommendation from the last section (Final Recommendation)\n  const lastSection = sections[sections.length - 1];\n  const recommendationSummary = lang === 'es'\n    ? `Se recomienda adjudicar el proyecto \"${params.project_name}\" a ${params.winner_name} con una puntuacion global de ${params.winner_score}/10, habiendo obtenido la mayor puntuacion en la evaluacion integral de las ${params.total_providers} ofertas recibidas.`\n    : `It is recommended to award the project \"${params.project_name}\" to ${params.winner_name} with an overall score of ${params.winner_score}/10, having achieved the highest score in the comprehensive evaluation of ${params.total_providers} submitted proposals.`;\n\n  const result = {\n    success: true,\n    title,\n    justification,\n    document: justification,\n    content: justification,\n    text: justification,\n    sections: sections.map(s => ({ title: s.title, content: s.content })),\n    recommendation_summary: recommendationSummary,\n    metadata: {\n      word_count: totalWords,\n      section_count: sections.length,\n      words_per_section: sections.map(s => ({ title: s.title, words: s.word_count })),\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest',\n      generation_mode: 'multi-agent-per-section'\n    },\n    message: `Award justification generated with ${sections.length} sections (${totalWords} words total)`\n  };\n\n  console.log('✅ Award Justification Consolidated:');\n  console.log(`   ├─ Title: ${title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   ├─ Total words: ${totalWords}`);\n  sections.forEach(s => console.log(`   │  └─ ${s.title}: ${s.word_count} words`));\n  console.log(`   └─ Mode: multi-agent-per-section`);\n\n  return [{ json: result }];\n} catch (err) {\n  console.error('❌ Error consolidating award justification:', err.message);\n  return [{ json: {\n    success: false,\n    title: '',\n    justification: '',\n    document: '',\n    content: '',\n    text: '',\n    sections: [],\n    recommendation_summary: '',\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error consolidating award justification: ' + err.message\n  }}];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -880,
+        6856
+      ],
+      "id": "d3e4f5a6-b789-0123-cdef-456789012345",
+      "name": "Parse Award Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split RFP sections into individual items for per-section LLM generation\nconst params = $input.first().json;\nconst sections = params.sections || [];\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\n// Default professional RFP sections if none provided\nconst defaultSections = lang === 'es' ? [\n  { id: 'introduccion', title: 'Introduccion y Objeto del Proyecto', description: 'Contexto del proyecto, objetivo de la licitacion, alcance general, antecedentes y justificacion de la necesidad. Explica quien es la empresa compradora, por que se lanza esta licitacion y que se espera lograr.' },\n  { id: 'alcance', title: 'Alcance Tecnico y Descripcion de Trabajos', description: 'Descripcion detallada del alcance tecnico del proyecto, fases de ejecucion, entregables esperados, tecnologias involucradas, condiciones de sitio y requisitos de ingenieria.' },\n  { id: 'requisitos', title: 'Requisitos Tecnicos y Funcionales', description: 'Especificaciones tecnicas detalladas, normativas aplicables, certificaciones requeridas, estandares de calidad, requisitos de seguridad y medio ambiente.' },\n  { id: 'economico', title: 'Condiciones Economicas y Estructura de Precios', description: 'Estructura de desglose de costes esperada (CAPEX, OPEX, unitarios), condiciones de pago, hitos de facturacion, garantias bancarias, moneda, validez de precios y formula de revision.' },\n  { id: 'evaluacion', title: 'Metodologia de Evaluacion y Criterios de Seleccion', description: 'Explicacion detallada del modelo de evaluacion ponderada multi-criterio, definicion de cada criterio, pesos asignados, escala de puntuacion y proceso de decision.' },\n  { id: 'cronograma', title: 'Cronograma del Proyecto y Plazos', description: 'Calendario del proceso de licitacion, hitos clave del proyecto, fechas de entrega, plazo de ejecucion y penalizaciones por retraso.' },\n  { id: 'participacion', title: 'Instrucciones para los Licitadores', description: 'Como presentar la oferta: formato requerido, numero de copias, documentacion obligatoria, plazo de presentacion, canal de comunicacion, proceso de preguntas y aclaraciones.' },\n  { id: 'legal', title: 'Condiciones Generales, Legales y Contractuales', description: 'Clausulas de confidencialidad, proteccion de datos, propiedad intelectual, seguros, responsabilidad civil, resolucion de disputas, ley aplicable y compliance anti-corrupcion.' }\n] : [\n  { id: 'introduction', title: 'Project Introduction and Objective', description: 'Project background, purpose of the tender, general scope, rationale and justification. Explain who the buyer is, why this tender is launched and what outcomes are expected.' },\n  { id: 'scope', title: 'Technical Scope and Work Description', description: 'Detailed technical scope, project phases, expected deliverables, technologies involved, site conditions and engineering requirements.' },\n  { id: 'requirements', title: 'Technical and Functional Requirements', description: 'Detailed technical specifications, applicable standards, required certifications, quality standards, HSE requirements.' },\n  { id: 'economic', title: 'Economic Conditions and Pricing Structure', description: 'Expected cost breakdown structure (CAPEX, OPEX, unit prices), payment terms, invoicing milestones, bank guarantees, currency, price validity and escalation formula.' },\n  { id: 'evaluation', title: 'Evaluation Methodology and Selection Criteria', description: 'Detailed explanation of weighted multi-criteria evaluation model, criterion definitions, assigned weights, scoring scale and decision process.' },\n  { id: 'timeline', title: 'Project Timeline and Milestones', description: 'Tender process calendar, key project milestones, delivery dates, execution period and delay penalties.' },\n  { id: 'submission', title: 'Bidder Instructions', description: 'How to submit the proposal: required format, number of copies, mandatory documentation, submission deadline, communication channel, Q&A process.' },\n  { id: 'legal', title: 'General, Legal and Contractual Conditions', description: 'Confidentiality clauses, data protection, intellectual property, insurance, liability, dispute resolution, governing law and anti-corruption compliance.' }\n];\n\nconst sectionsToGenerate = sections.length > 0 ? sections : defaultSections;\nconst totalSections = sectionsToGenerate.length;\n\n// Create one item per section with full project context\nconst items = sectionsToGenerate.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title || section.name || `Section ${index + 1}`,\n    section_description: section.description || section.content || '',\n    section_id: section.id || `section_${index}`,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    description: params.description,\n    requirements: params.requirements,\n    language: params.language,\n    currency: params.currency,\n    criteria: typeof params.criteria === 'string' ? params.criteria : JSON.stringify(params.criteria || []),\n    deadlines: typeof params.deadlines === 'string' ? params.deadlines : JSON.stringify(params.deadlines || {}),\n    providers: typeof params.providers === 'string' ? params.providers : JSON.stringify(params.providers || []),\n    all_sections_outline: sectionsToGenerate.map((s, i) => `${i+1}. ${s.title || s.name}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} RFP sections for individual generation`);\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        6456
+      ],
+      "id": "e4f5a6b7-c890-1234-def0-567890123456",
+      "name": "Prepare RFP Sections"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split Award Justification into individual sections for per-section LLM generation\nconst params = $input.first().json;\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst awardSections = lang === 'es' ? [\n  { id: 'resumen_ejecutivo', title: 'Resumen Ejecutivo', description: 'Sintesis del proceso de evaluacion: numero de proveedores evaluados, metodologia utilizada (modelo de evaluacion ponderada multi-criterio), resultado global y recomendacion final. Debe ser un resumen que permita a un directivo entender la conclusion sin leer el resto del documento.' },\n  { id: 'proceso_evaluacion', title: 'Descripcion del Proceso de Evaluacion', description: 'Metodologia de evaluacion detallada: modelo ponderado multi-criterio, como se definio cada criterio, como se asignaron los pesos, quien participo en la evaluacion, que fuentes de informacion se utilizaron (documentos tecnicos, ofertas economicas, referencias).' },\n  { id: 'analisis_comparativo', title: 'Analisis Comparativo de Proveedores', description: 'Comparacion detallada entre el proveedor ganador y el segundo clasificado (y tercero si relevante). Incluir tabla comparativa de puntuaciones globales, diferencias por categoria, y analisis de las brechas mas significativas.' },\n  { id: 'evaluacion_categorias', title: 'Evaluacion Detallada por Categorias', description: 'Desglose de las puntuaciones del ganador en CADA categoria de evaluacion. Para cada categoria: que se evaluo, que evidencia sustenta la puntuacion, como se compara con otros proveedores.' },\n  { id: 'fortalezas', title: 'Fortalezas del Proveedor Recomendado', description: 'Analisis exhaustivo de los puntos fuertes del proveedor ganador: experiencia relevante, capacidad tecnica, propuesta economica, plazos, equipo propuesto, referencias, innovacion. Cada fortaleza debe estar sustentada con datos concretos.' },\n  { id: 'riesgos_mitigacion', title: 'Areas de Atencion y Plan de Mitigacion', description: 'Identificacion honesta de debilidades o riesgos del proveedor ganador. Para cada riesgo: descripcion del riesgo, impacto potencial, probabilidad, y propuesta concreta de mitigacion (clausulas contractuales, supervisión adicional, hitos de control).' },\n  { id: 'analisis_economico', title: 'Analisis Economico', description: 'Resumen detallado de la propuesta economica del ganador. Comparativa de precios con otros proveedores. Analisis de la relacion calidad-precio. Desglose de costes principales si esta disponible. Condiciones de pago propuestas.' },\n  { id: 'recomendacion_final', title: 'Recomendacion Final y Proximos Pasos', description: 'Justificacion formal y fundamentada de por que se recomienda adjudicar a este proveedor. Referencia a las puntuaciones, fortalezas clave y analisis economico. Incluir proximos pasos recomendados (negociacion, due diligence, firma de contrato).' }\n] : [\n  { id: 'executive_summary', title: 'Executive Summary', description: 'Overview of the evaluation process: number of providers evaluated, methodology used (weighted multi-criteria model), overall result and final recommendation. Should allow an executive to understand the conclusion without reading the rest.' },\n  { id: 'evaluation_process', title: 'Evaluation Process Description', description: 'Detailed evaluation methodology: weighted multi-criteria model, how each criterion was defined, how weights were assigned, who participated, what information sources were used.' },\n  { id: 'comparative_analysis', title: 'Comparative Provider Analysis', description: 'Detailed comparison between winner and runner-up. Include comparative scoring table, per-category differences, and analysis of most significant gaps.' },\n  { id: 'category_evaluation', title: 'Detailed Category Evaluation', description: 'Breakdown of winner scores in EACH evaluation category. For each: what was evaluated, supporting evidence, comparison with other providers.' },\n  { id: 'strengths', title: 'Recommended Provider Strengths', description: 'Comprehensive analysis of winner strengths: relevant experience, technical capability, economic proposal, timelines, proposed team, references, innovation. Each backed by concrete data.' },\n  { id: 'risks_mitigation', title: 'Areas of Attention and Mitigation Plan', description: 'Honest identification of winner weaknesses or risks. For each: description, potential impact, probability, and concrete mitigation proposal.' },\n  { id: 'economic_analysis', title: 'Economic Analysis', description: 'Detailed summary of winner economic proposal. Price comparison with others. Value-for-money analysis. Main cost breakdown if available.' },\n  { id: 'final_recommendation', title: 'Final Recommendation and Next Steps', description: 'Formal justification for recommending this provider. Reference scores, key strengths, economic analysis. Include recommended next steps (negotiation, due diligence, contract signing).' }\n];\n\nconst totalSections = awardSections.length;\n\nconst items = awardSections.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title,\n    section_description: section.description,\n    section_id: section.id,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    language: params.language || 'es',\n    winner_name: params.winner_name,\n    winner_score: params.winner_score,\n    runner_up_name: params.runner_up_name || '',\n    runner_up_score: params.runner_up_score || 0,\n    total_providers: params.total_providers,\n    category_scores: params.category_scores,\n    strengths: params.strengths,\n    weaknesses: params.weaknesses,\n    economic_summary: params.economic_summary || '',\n    scoring_criteria_summary: params.scoring_criteria_summary,\n    all_sections_outline: awardSections.map((s, i) => `${i+1}. ${s.title}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} Award Justification sections for individual generation`);\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1100,
+        6856
+      ],
+      "id": "f5a6b7c8-d901-2345-ef01-678901234567",
+      "name": "Prepare Award Sections"
     }
   ],
   "connections": {
@@ -6632,6 +6791,35 @@
       "main": [
         [
           {
+            "node": "Is Award Justification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Award Justification?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Award Sections",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare RFP Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare RFP Sections": {
+      "main": [
+        [
+          {
             "node": "RFP Generation Chain",
             "type": "main",
             "index": 0
@@ -6651,6 +6839,39 @@
       ]
     },
     "Parse RFP Output": {
+      "main": [
+        [
+          {
+            "node": "Respond RFP Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Award Sections": {
+      "main": [
+        [
+          {
+            "node": "Award Justification Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Award Justification Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse Award Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Award Output": {
       "main": [
         [
           {
@@ -6687,6 +6908,11 @@
           },
           {
             "node": "RFP Generation Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Award Justification Chain",
             "type": "ai_languageModel",
             "index": 0
           }

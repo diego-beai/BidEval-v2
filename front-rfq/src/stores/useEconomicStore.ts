@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useProjectStore } from './useProjectStore';
+import type { ExcelTemplateData } from '../types/setup.types';
+import {
+    buildExcelComparison,
+    exportFilledExcel,
+    type ExcelComparisonData,
+} from '../utils/excel.utils';
 
 export interface EconomicOffer {
     id: string;
@@ -42,14 +48,30 @@ interface EconomicState {
     comparison: EconomicComparison[];
     isLoading: boolean;
     error: string | null;
+
+    // Excel-related state
+    excelTemplate: ExcelTemplateData | null;
+    comparisonData: ExcelComparisonData | null;
+
+    // Actions
     loadOffers: () => Promise<void>;
+
+    // Excel actions
+    setExcelTemplate: (data: ExcelTemplateData) => void;
+    clearExcelTemplate: () => void;
+    buildComparison: () => void;
+    exportExcel: (projectName: string, currency: string) => void;
 }
 
-export const useEconomicStore = create<EconomicState>((set) => ({
+export const useEconomicStore = create<EconomicState>((set, get) => ({
     offers: [],
     comparison: [],
     isLoading: false,
     error: null,
+
+    // Excel-related state
+    excelTemplate: null,
+    comparisonData: null,
 
     loadOffers: async () => {
         const projectId = useProjectStore.getState().activeProjectId;
@@ -94,8 +116,58 @@ export const useEconomicStore = create<EconomicState>((set) => ({
             });
 
             set({ offers, comparison: withNet, isLoading: false });
+
+            // Auto-rebuild Excel comparison if template is loaded
+            const { excelTemplate } = get();
+            if (excelTemplate) {
+                const comparisonData = buildExcelComparison(excelTemplate, offers, []);
+                set({ comparisonData });
+            }
         } catch (err: any) {
             set({ error: err.message || 'Failed to load economic data', isLoading: false });
         }
+    },
+
+    // ============================================
+    // EXCEL ACTIONS
+    // ============================================
+
+    setExcelTemplate: (data: ExcelTemplateData) => {
+        set({ excelTemplate: data });
+
+        // Auto-build comparison if we already have offers
+        const { offers } = get();
+        if (offers.length > 0) {
+            const comparisonData = buildExcelComparison(data, offers, []);
+            set({ comparisonData });
+        }
+    },
+
+    clearExcelTemplate: () => {
+        set({ excelTemplate: null, comparisonData: null });
+    },
+
+    buildComparison: () => {
+        const { excelTemplate, offers } = get();
+        if (!excelTemplate) return;
+
+        const comparisonData = buildExcelComparison(excelTemplate, offers, []);
+        set({ comparisonData });
+    },
+
+    exportExcel: (projectName: string, currency: string) => {
+        const { excelTemplate, offers } = get();
+        if (!excelTemplate || offers.length === 0) return;
+
+        const blob = exportFilledExcel(excelTemplate, offers, projectName, currency);
+
+        // Trigger browser download
+        const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `comparativa_economica_${safeName}.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
     },
 }));

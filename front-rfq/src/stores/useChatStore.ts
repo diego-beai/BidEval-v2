@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import { ChatMessage, ChatRole, ChatStatus } from '../types/chat.types';
-import { sendChatMessage, getChatHistory, getLastActiveSession } from '../services/chat.service';
+import { sendChatMessage, getChatHistory, getLastActiveSession, buildProjectContext } from '../services/chat.service';
 import { useSessionViewStore } from './useSessionViewStore';
 import { useActivityStore, ActivityType, ActivityStatus } from './useActivityStore';
 import { useProjectStore } from './useProjectStore';
@@ -32,6 +32,10 @@ interface ChatState {
   // Document context for multi-doc querying
   selectedDocumentIds: string[];
 
+  // Project context injection toggles
+  projectContextEnabled: boolean;
+  crossProjectEnabled: boolean;
+
   // Mapa de conversaciones por proyecto (projectId -> conversación)
   projectConversations: Record<string, ProjectConversation>;
 
@@ -50,6 +54,8 @@ interface ChatState {
   loadProjectConversation: (projectId: string | null) => void;
   setSelectedDocumentIds: (ids: string[]) => void;
   toggleDocumentId: (id: string) => void;
+  setProjectContextEnabled: (enabled: boolean) => void;
+  setCrossProjectEnabled: (enabled: boolean) => void;
 }
 
 /**
@@ -81,6 +87,8 @@ export const useChatStore = create<ChatState>()(
         historyLoaded: false,
         currentProjectId: null,
         selectedDocumentIds: [],
+        projectContextEnabled: true,
+        crossProjectEnabled: false,
         projectConversations: {},
 
         toggleChat: () => {
@@ -117,6 +125,13 @@ export const useChatStore = create<ChatState>()(
             const activeProjectId = useProjectStore.getState().activeProjectId;
             const activeProject = useProjectStore.getState().getActiveProject();
 
+            // Build project context if enabled
+            const { projectContextEnabled, crossProjectEnabled } = get();
+            let projectContext: string | undefined;
+            if (projectContextEnabled && activeProjectId) {
+              projectContext = await buildProjectContext(activeProjectId);
+            }
+
             // Enviar mensaje a n8n con el project_id, document_ids, language y currency
             const selectedDocs = get().selectedDocumentIds;
             const { response, sessionId } = await sendChatMessage(
@@ -125,7 +140,9 @@ export const useChatStore = create<ChatState>()(
               activeProjectId,
               selectedDocs.length > 0 ? selectedDocs : undefined,
               activeProject?.default_language || 'es',
-              activeProject?.currency || 'EUR'
+              activeProject?.currency || 'EUR',
+              projectContext,
+              crossProjectEnabled
             );
 
             // Agregar respuesta del asistente
@@ -349,6 +366,14 @@ export const useChatStore = create<ChatState>()(
           } else {
             set({ selectedDocumentIds: [...current, id] });
           }
+        },
+
+        setProjectContextEnabled: (enabled: boolean) => {
+          set({ projectContextEnabled: enabled });
+        },
+
+        setCrossProjectEnabled: (enabled: boolean) => {
+          set({ crossProjectEnabled: enabled });
         },
 
         handleProjectChange: (newProjectId: string | null) => {

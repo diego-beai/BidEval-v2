@@ -125,6 +125,46 @@ function sanitizeContent(content: string): string {
     return safe;
 }
 
+/**
+ * Small toggle pill for chat header options
+ */
+const ChatTogglePill: React.FC<{
+    label: string;
+    enabled: boolean;
+    onChange: (enabled: boolean) => void;
+}> = ({ label, enabled, onChange }) => (
+    <button
+        onClick={() => onChange(!enabled)}
+        style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '5px 12px',
+            borderRadius: 999,
+            border: `1px solid ${enabled ? 'rgba(18, 181, 176, 0.35)' : 'var(--border-color)'}`,
+            background: enabled ? 'rgba(18, 181, 176, 0.1)' : 'var(--bg-surface)',
+            color: enabled ? 'var(--color-cyan, #12b5b0)' : 'var(--text-tertiary)',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+            whiteSpace: 'nowrap',
+        }}
+    >
+        <span
+            style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: enabled ? 'var(--color-cyan, #12b5b0)' : 'var(--text-tertiary)',
+                opacity: enabled ? 1 : 0.4,
+                transition: 'background 0.2s ease, opacity 0.2s ease',
+            }}
+        />
+        {label}
+    </button>
+);
+
 const PlainText: React.FC<{ content: string }> = ({ content }) => (
     <pre style={{
         whiteSpace: 'pre-wrap',
@@ -223,7 +263,10 @@ const SafeMarkdown: React.FC<{ content: string }> = ({ content }) => {
 };
 
 export const ChatPage: React.FC = () => {
-    const { messages, sendMessage, status, clearMessages, loadHistory, historyLoaded } = useChatStore();
+    const {
+        messages, sendMessage, status, clearMessages, loadHistory, historyLoaded,
+        projectContextEnabled, crossProjectEnabled, setProjectContextEnabled, setCrossProjectEnabled,
+    } = useChatStore();
     const { t } = useLanguageStore();
     const [input, setInput] = useState('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -321,6 +364,17 @@ export const ChatPage: React.FC = () => {
             <div className="chat-main">
                 {/* Header actions */}
                 <div className="chat-header-actions">
+                    {/* Context toggles */}
+                    <ChatTogglePill
+                        label={t('chat.toggle_project_context')}
+                        enabled={projectContextEnabled}
+                        onChange={setProjectContextEnabled}
+                    />
+                    <ChatTogglePill
+                        label={t('chat.toggle_cross_project')}
+                        enabled={crossProjectEnabled}
+                        onChange={setCrossProjectEnabled}
+                    />
                     <button
                         onClick={() => clearMessages()}
                         className="chat-clear-btn"
@@ -427,6 +481,9 @@ export const ChatPage: React.FC = () => {
                 <div className="chat-input-container">
                     <div
                         className="chat-input-wrapper"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); textareaRef.current?.focus(); } }}
                         onClick={() => textareaRef.current?.focus()}
                     >
                         <textarea

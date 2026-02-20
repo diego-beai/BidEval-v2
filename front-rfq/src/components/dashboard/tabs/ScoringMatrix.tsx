@@ -125,7 +125,9 @@ export const ScoringMatrix: React.FC = () => {
         }
     }, [activeProjectId, deleteConfiguration, resetScoringStore, loadConfiguration]);
 
-    // Load scoring configuration when project changes
+    // Sync effect: load scoring configuration when the active project changes.
+    // This cannot be an event handler because activeProjectId is set externally
+    // (e.g. from URL params, project selector, or store hydration on mount).
     useEffect(() => {
         if (activeProjectId) {
             loadConfiguration(activeProjectId);
@@ -207,7 +209,10 @@ export const ScoringMatrix: React.FC = () => {
         }
     }, [refreshScoring, loadSavedWeights]);
 
-    // Reload scoring when active project changes
+    // Sync effect: reload scoring when the active project changes.
+    // This responds to an external dependency (activeProjectId) that is set by
+    // project selection, URL routing, or store hydration — not by a local event
+    // handler in this component, so it must remain a useEffect.
     useEffect(() => {
         // Reset scoring data immediately when project changes to avoid showing stale data
         if (activeProjectId) {
@@ -298,7 +303,7 @@ export const ScoringMatrix: React.FC = () => {
                 overall_score: newOverall,
                 scores: newScores,
             };
-        }).sort((a, b) => (a.provider_name || '').localeCompare(b.provider_name || ''))
+        }).sort((a, b) => b.overall_score - a.overall_score)
           .map((p, idx) => ({ ...p, position: idx + 1 }));
     }, [scoringResults, customWeights, customCategoryWeights, SCORING_CRITERIA, CATEGORY_INFO]);
 
@@ -442,7 +447,7 @@ export const ScoringMatrix: React.FC = () => {
                                 fontWeight: 600,
                                 fontSize: '0.8rem',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'background-color 0.2s, border-color 0.2s, color 0.2s'
                             }}
                             title={t('scoring.delete_config')}
                         >
@@ -471,7 +476,7 @@ export const ScoringMatrix: React.FC = () => {
                                 fontWeight: 600,
                                 fontSize: '0.8rem',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'background-color 0.2s, border-color 0.2s, color 0.2s'
                             }}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -526,7 +531,7 @@ export const ScoringMatrix: React.FC = () => {
                                 fontWeight: 600,
                                 fontSize: '0.8rem',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s'
+                                transition: 'background-color 0.2s, border-color 0.2s, color 0.2s'
                             }}
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -553,7 +558,7 @@ export const ScoringMatrix: React.FC = () => {
                                 fontWeight: 600,
                                 fontSize: '0.8rem',
                                 cursor: isSavingWeights ? 'not-allowed' : 'pointer',
-                                transition: 'all 0.2s',
+                                transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
                                 boxShadow: isSavingWeights ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
                             }}
                         >
@@ -591,7 +596,7 @@ export const ScoringMatrix: React.FC = () => {
                             fontWeight: 600,
                             fontSize: '0.875rem',
                             cursor: isCalculating ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s',
+                            transition: 'background-color 0.2s, color 0.2s, box-shadow 0.2s',
                             boxShadow: isCalculating ? 'none' : '0 4px 12px var(--color-primary)30'
                         }}
                     >
@@ -811,7 +816,7 @@ export const ScoringMatrix: React.FC = () => {
                                         {categoryCriteria.map((criterion, index) => (
                                             <tr key={criterion.id} style={{
                                                 background: index % 2 === 0 ? 'transparent' : 'var(--bg-surface-alt)',
-                                                transition: 'all 0.2s'
+                                                transition: 'background-color 0.2s'
                                             }}>
                                                 <td style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)' }}>
                                                     <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '2px' }}>
@@ -844,6 +849,8 @@ export const ScoringMatrix: React.FC = () => {
                                                         }}>
                                                             <span
                                                                 className="score-cell-clickable"
+                                                                role="button"
+                                                                tabIndex={0}
                                                                 onClick={(e) => {
                                                                     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                                                                     setSelectedScoreCell({
@@ -854,6 +861,20 @@ export const ScoringMatrix: React.FC = () => {
                                                                         categoryColor: info.color,
                                                                         rect,
                                                                     });
+                                                                }}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault();
+                                                                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                                        setSelectedScoreCell({
+                                                                            provider: p,
+                                                                            criterionId: criterion.id,
+                                                                            criterionName: criterion.name,
+                                                                            categoryName: getCategoryName(category, t, info.displayName),
+                                                                            categoryColor: info.color,
+                                                                            rect,
+                                                                        });
+                                                                    }
                                                                 }}
                                                                 style={{
                                                                     display: 'inline-block',
@@ -973,7 +994,7 @@ export const ScoringMatrix: React.FC = () => {
                                                             const items = analysis[cat]?.highlights || [];
                                                             if (items.length === 0) return null;
                                                             return items.map((item, i) => (
-                                                                <div key={`${cat}-s-${i}`} className="analysis-item">
+                                                                <div key={`${cat}-s-${item.slice(0, 40)}-${i}`} className="analysis-item">
                                                                     <div className="analysis-item-bullet" />
                                                                     <div>
                                                                         {item}
@@ -1010,7 +1031,7 @@ export const ScoringMatrix: React.FC = () => {
                                                             const items = analysis[cat]?.improvements || [];
                                                             if (items.length === 0) return null;
                                                             return items.map((item, i) => (
-                                                                <div key={`${cat}-w-${i}`} className="analysis-item">
+                                                                <div key={`${cat}-w-${item.slice(0, 40)}-${i}`} className="analysis-item">
                                                                     <div className="analysis-item-bullet" />
                                                                     <div>
                                                                         {item}
@@ -1063,30 +1084,40 @@ export const ScoringMatrix: React.FC = () => {
 
             {/* Delete Configuration Confirmation Modal - rendered via portal */}
             {showDeleteConfirm && ReactDOM.createPortal(
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 99999
-                }}
-                onClick={() => setShowDeleteConfirm(false)}
-                >
-                    <div style={{
-                        background: 'var(--bg-surface)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: '28px',
-                        maxWidth: '420px',
-                        width: '90%',
-                        boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
-                        border: '1px solid var(--border-color)'
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('scoring.delete_config_confirm')}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 99999
                     }}
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={() => setShowDeleteConfirm(false)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                            setShowDeleteConfirm(false);
+                        }
+                    }}
+                >
+                    <div
+                        style={{
+                            background: 'var(--bg-surface)',
+                            borderRadius: 'var(--radius-lg)',
+                            padding: '28px',
+                            maxWidth: '420px',
+                            width: '90%',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+                            border: '1px solid var(--border-color)'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                             <div style={{

@@ -11,7 +11,12 @@ import { useLanguageStore } from '../../../stores/useLanguageStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { getProviderColor, getProviderDisplayName as displayProviderName } from '../../../types/provider.types';
 import { useProviderStore } from '../../../stores/useProviderStore';
+import { useAwardStore } from '../../../stores/useAwardStore';
 import { EsgBadges } from '../../common/EsgBadges';
+import { AwardWizard } from '../../award/AwardWizard';
+import { ContractGenerator } from '../../award/ContractGenerator';
+import { ProjectLockBanner } from '../../award/ProjectLockBanner';
+import { MilestoneTimeline } from '../MilestoneTimeline';
 
 // Function to get translated criteria labels (fallback when no dynamic config)
 const getDefaultCriteriaLabels = (t: (key: string) => string): Record<string, string> => ({
@@ -37,9 +42,12 @@ export const ExecutiveView: React.FC = () => {
     const { scoringResults, refreshScoring, isCalculating, customWeights } = useScoringStore();
     const { categories: dynamicCategories, hasConfiguration, loadConfiguration } = useScoringConfigStore();
     const { t } = useLanguageStore();
-    const { activeProjectId, approveResults, resultsApprovedMap, loadProjects } = useProjectStore();
+    const { activeProjectId, approveResults, resultsApprovedMap, loadProjects, loadProjectMilestones, projectMilestones } = useProjectStore();
     const { projectProviders } = useProviderStore();
     const [highlightedProvider, setHighlightedProvider] = useState<string | null>(null);
+    const [showAwardWizard, setShowAwardWizard] = useState(false);
+    const [showContractGenerator, setShowContractGenerator] = useState(false);
+    const { award, loadAward } = useAwardStore();
 
     const getCompactProviderLabel = (providerName: string, max = 18) => {
         const label = displayProviderName(providerName);
@@ -73,8 +81,10 @@ export const ExecutiveView: React.FC = () => {
         refreshScoring();
         if (activeProjectId) {
             loadConfiguration(activeProjectId);
+            loadAward(activeProjectId);
+            loadProjectMilestones(activeProjectId);
         }
-    }, [refreshScoring, loadConfiguration, activeProjectId]);
+    }, [refreshScoring, loadConfiguration, loadAward, loadProjectMilestones, activeProjectId]);
 
     // Calculate category weights from dynamic config or customWeights
     const categoryWeights = useMemo(() => {
@@ -534,6 +544,28 @@ export const ExecutiveView: React.FC = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Project Lock Banner */}
+            <ProjectLockBanner />
+
+            {/* Award Wizard Modal */}
+            <AwardWizard
+                isOpen={showAwardWizard}
+                onClose={() => setShowAwardWizard(false)}
+                onAwarded={() => {
+                    approveResults(activeProjectId!);
+                    loadProjects();
+                }}
+            />
+
+            {/* Contract Generator Modal */}
+            <ContractGenerator
+                isOpen={showContractGenerator}
+                onClose={() => setShowContractGenerator(false)}
+                onContracted={() => {
+                    loadProjects();
+                    if (activeProjectId) loadAward(activeProjectId);
+                }}
+            />
 
             {/* Top Section: Winner & Stats */}
             <div>
@@ -556,7 +588,7 @@ export const ExecutiveView: React.FC = () => {
                         height: '200px',
                         background: 'rgba(255, 255, 255, 0.12)',
                         borderRadius: '50%',
-                        filter: 'blur(50px)'
+                        filter: 'blur(12px)'
                     }}></div>
 
                     <div style={{
@@ -641,7 +673,7 @@ export const ExecutiveView: React.FC = () => {
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                     flexShrink: 0,
-                                    transition: 'all 0.2s ease',
+                                    transition: 'background-color 0.2s ease',
                                     backdropFilter: 'blur(10px)',
                                 }}
                                 onMouseEnter={e => {
@@ -664,30 +696,66 @@ export const ExecutiveView: React.FC = () => {
                             {/* Award Contract Button */}
                             {activeProjectId && (
                                 resultsApprovedMap[activeProjectId] ? (
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        padding: '10px 20px',
-                                        background: 'rgba(255, 255, 255, 0.2)',
-                                        borderRadius: '10px',
-                                        backdropFilter: 'blur(10px)',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 600,
-                                        flexShrink: 0
-                                    }}>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                        {t('executive.awarded_badge')}
-                                    </div>
+                                    <>
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            padding: '10px 20px',
+                                            background: 'rgba(255, 255, 255, 0.2)',
+                                            borderRadius: '10px',
+                                            backdropFilter: 'blur(10px)',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 600,
+                                            flexShrink: 0
+                                        }}>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                            {t('executive.awarded_badge')}
+                                        </div>
+                                        {/* Generate Contract button - only if award exists and not yet contracted */}
+                                        {award && award.award_status !== 'contracted' && award.award_status !== 'cancelled' && (
+                                            <button
+                                                onClick={() => setShowContractGenerator(true)}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    padding: '10px 20px',
+                                                    background: 'rgba(255, 255, 255, 0.95)',
+                                                    color: 'var(--color-info)',
+                                                    border: 'none',
+                                                    borderRadius: '10px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 700,
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                                }}
+                                                onMouseEnter={e => {
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.2)';
+                                                }}
+                                                onMouseLeave={e => {
+                                                    e.currentTarget.style.transform = 'translateY(0)';
+                                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                                                }}
+                                            >
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                    <polyline points="14 2 14 8 20 8" />
+                                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                                </svg>
+                                                {t('contract.btn_generate')}
+                                            </button>
+                                        )}
+                                    </>
                                 ) : (
                                     <button
-                                        onClick={() => {
-                                            approveResults(activeProjectId);
-                                            // Reload projects to recalculate status
-                                            loadProjects();
-                                        }}
+                                        onClick={() => setShowAwardWizard(true)}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -701,7 +769,7 @@ export const ExecutiveView: React.FC = () => {
                                             fontWeight: 700,
                                             cursor: 'pointer',
                                             flexShrink: 0,
-                                            transition: 'all 0.2s ease',
+                                            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                                             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                         }}
                                         onMouseEnter={e => {
@@ -781,8 +849,8 @@ export const ExecutiveView: React.FC = () => {
                                     flexWrap: 'wrap',
                                     gap: '4px'
                                 }}>
-                                    {strengths.length > 0 ? strengths.map((s, i) => (
-                                        <span key={i} style={{
+                                    {strengths.length > 0 ? strengths.map((s) => (
+                                        <span key={s} style={{
                                             background: 'rgba(34, 197, 94, 0.3)',
                                             padding: '3px 8px',
                                             borderRadius: '5px',
@@ -822,8 +890,8 @@ export const ExecutiveView: React.FC = () => {
                                     flexWrap: 'wrap',
                                     gap: '4px'
                                 }}>
-                                    {weaknesses.length > 0 ? weaknesses.map((w, i) => (
-                                        <span key={i} style={{
+                                    {weaknesses.length > 0 ? weaknesses.map((w) => (
+                                        <span key={w} style={{
                                             background: 'rgba(251, 146, 60, 0.3)',
                                             padding: '3px 8px',
                                             borderRadius: '5px',
@@ -939,6 +1007,9 @@ export const ExecutiveView: React.FC = () => {
                     `}</style>
                 </div>
             </div>
+
+            {/* Project Milestones Timeline */}
+            <MilestoneTimeline milestones={projectMilestones} />
 
             {/* Charts Row - 3 charts in a row */}
             <div className="charts-row-container">
@@ -1325,7 +1396,7 @@ export const ExecutiveView: React.FC = () => {
                             >
                                 {barChartData.map((entry, index) => (
                                     <Cell
-                                        key={`cell-${index}`}
+                                        key={`cell-${entry.id}`}
                                         fill={`url(#bar-gradient-${svgId(entry.id)})`}
                                         stroke={getColor(entry.id, index)}
                                         strokeWidth={entry.id === winner.provider_name ? 3 : 0}
@@ -1445,8 +1516,8 @@ export const ExecutiveView: React.FC = () => {
                                         { name: t('category.execution'), value: categoryWeights.EXECUTION || 20, color: 'url(#exec-gradient)' },
                                         { name: t('category.hse_compliance'), value: categoryWeights['HSE_COMPLIANCE'] || 15, color: 'url(#hse-gradient)' }
                                       ]
-                                ).map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={String(entry.color)} stroke="var(--bg-surface)" strokeWidth={3} />
+                                ).map((entry) => (
+                                    <Cell key={`pie-${entry.name}`} fill={String(entry.color)} stroke="var(--bg-surface)" strokeWidth={3} />
                                 ))}
                             </Pie>
                             <Tooltip

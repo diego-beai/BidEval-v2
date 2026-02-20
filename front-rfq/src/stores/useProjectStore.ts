@@ -25,6 +25,57 @@ export function getAllEvalTypes(projectType?: 'RFP' | 'RFQ' | 'RFI'): string[] {
   return ALL_EVAL_TYPES;
 }
 
+// --- Dynamic document types from project setup ---
+
+export interface ProjectDocType {
+  id: string;
+  name: string;
+  docCategory: string;
+  evaluationLink: string;
+  isMandatory: boolean;
+}
+
+/**
+ * Derives evaluation types from the project's configured document types.
+ * Falls back to ALL_EVAL_TYPES if no document types are configured.
+ */
+export function deriveEvalTypes(docTypes: ProjectDocType[]): string[] {
+  if (docTypes.length === 0) return ALL_EVAL_TYPES;
+  const links = new Set(docTypes.map(d => d.evaluationLink));
+  const types: string[] = [];
+  if (links.has('technical')) types.push('Technical Evaluation');
+  if (links.has('economic')) types.push('Economical Evaluation');
+  if (links.has('info')) types.push('Others');
+  return types.length > 0 ? types : ALL_EVAL_TYPES;
+}
+
+// --- Dynamic milestones from project setup ---
+
+export interface ProjectMilestone {
+  id: string;
+  name: string;
+  description: string | null;
+  dueDate: string;
+  sortOrder: number;
+  isMandatory: boolean;
+  milestoneType: string; // opening, submission, evaluation, award, custom
+}
+
+// --- Dynamic economic fields from project setup ---
+
+export interface ProjectEconomicField {
+  id: string;
+  parentId: string | null;
+  name: string;
+  description: string | null;
+  fieldType: string; // currency, percentage, number, text, formula
+  unit: string | null;
+  isRequired: boolean;
+  sortOrder: number;
+  formula: string | null;
+  children: ProjectEconomicField[];
+}
+
 export interface ProviderCoverage {
   name: string;
   types_covered: string[];
@@ -76,6 +127,14 @@ interface ProjectState {
   error: string | null;
   resultsApprovedMap: Record<string, boolean>;
 
+  // Dynamic project config from setup
+  projectDocTypes: ProjectDocType[];
+  projectDocTypesProjectId: string | null; // tracks which project the docTypes belong to
+  projectEconomicFields: ProjectEconomicField[];
+  projectEconomicFieldsProjectId: string | null;
+  projectMilestones: ProjectMilestone[];
+  projectMilestonesProjectId: string | null;
+
   // Actions
   loadProjects: () => Promise<void>;
   setActiveProject: (projectId: string | null) => void;
@@ -84,6 +143,9 @@ interface ProjectState {
   updateProjectName: (projectId: string, newDisplayName: string) => Promise<boolean>;
   deleteProject: (projectId: string) => Promise<boolean>;
   approveResults: (projectId: string) => void;
+  loadProjectDocTypes: (projectId: string) => Promise<void>;
+  loadProjectEconomicFields: (projectId: string) => Promise<void>;
+  loadProjectMilestones: (projectId: string) => Promise<void>;
 
   // Helpers
   getProjectById: (id: string) => Project | null;
@@ -136,6 +198,12 @@ export const useProjectStore = create<ProjectState>()(
           isLoading: false,
           error: null,
           resultsApprovedMap: {},
+          projectDocTypes: [],
+          projectDocTypesProjectId: null,
+          projectEconomicFields: [],
+          projectEconomicFieldsProjectId: null,
+          projectMilestones: [],
+          projectMilestonesProjectId: null,
 
           // Load projects from v_projects_with_stats view
           loadProjects: async () => {
@@ -521,6 +589,128 @@ export const useProjectStore = create<ProjectState>()(
                 isLoading: false
               });
               return false;
+            }
+          },
+
+          // Load document types configured in setup for a project
+          loadProjectDocTypes: async (projectId: string) => {
+            // Skip if already loaded for this project
+            if (get().projectDocTypesProjectId === projectId && get().projectDocTypes.length > 0) return;
+
+            if (!isSupabaseConfigured()) {
+              set({ projectDocTypes: [], projectDocTypesProjectId: projectId });
+              return;
+            }
+
+            try {
+              const { data, error } = await (supabase! as any)
+                .from('project_document_types')
+                .select('id, name, doc_category, evaluation_link, is_mandatory')
+                .eq('project_id', projectId)
+                .order('sort_order', { ascending: true });
+
+              if (error) throw error;
+
+              const docTypes: ProjectDocType[] = (data || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                docCategory: row.doc_category,
+                evaluationLink: row.evaluation_link,
+                isMandatory: row.is_mandatory,
+              }));
+
+              set({ projectDocTypes: docTypes, projectDocTypesProjectId: projectId });
+            } catch {
+              // Silently fall back to defaults
+              set({ projectDocTypes: [], projectDocTypesProjectId: projectId });
+            }
+          },
+
+          // Load economic fields configured in setup for a project
+          loadProjectEconomicFields: async (projectId: string) => {
+            // Skip if already loaded for this project
+            if (get().projectEconomicFieldsProjectId === projectId && get().projectEconomicFields.length > 0) return;
+
+            if (!isSupabaseConfigured()) {
+              set({ projectEconomicFields: [], projectEconomicFieldsProjectId: projectId });
+              return;
+            }
+
+            try {
+              const { data, error } = await (supabase! as any)
+                .from('project_economic_fields')
+                .select('id, parent_id, name, description, field_type, unit, is_required, sort_order, formula')
+                .eq('project_id', projectId)
+                .order('sort_order', { ascending: true });
+
+              if (error) throw error;
+
+              const flat: ProjectEconomicField[] = (data || []).map((row: any) => ({
+                id: row.id,
+                parentId: row.parent_id || null,
+                name: row.name,
+                description: row.description || null,
+                fieldType: row.field_type || 'currency',
+                unit: row.unit || null,
+                isRequired: row.is_required ?? true,
+                sortOrder: row.sort_order ?? 0,
+                formula: row.formula || null,
+                children: [],
+              }));
+
+              // Build tree: nest children under parents
+              const map = new Map<string, ProjectEconomicField>();
+              for (const f of flat) map.set(f.id, f);
+
+              const tree: ProjectEconomicField[] = [];
+              for (const f of flat) {
+                if (f.parentId && map.has(f.parentId)) {
+                  map.get(f.parentId)!.children.push(f);
+                } else {
+                  tree.push(f);
+                }
+              }
+
+              set({ projectEconomicFields: tree, projectEconomicFieldsProjectId: projectId });
+            } catch {
+              // Silently fall back to defaults
+              set({ projectEconomicFields: [], projectEconomicFieldsProjectId: projectId });
+            }
+          },
+
+          // Load milestones configured in setup for a project
+          loadProjectMilestones: async (projectId: string) => {
+            // Skip if already loaded for this project
+            if (get().projectMilestonesProjectId === projectId && get().projectMilestones.length > 0) return;
+
+            if (!isSupabaseConfigured()) {
+              set({ projectMilestones: [], projectMilestonesProjectId: projectId });
+              return;
+            }
+
+            try {
+              const { data, error } = await (supabase! as any)
+                .from('project_milestones')
+                .select('id, name, description, due_date, sort_order, is_mandatory, milestone_type')
+                .eq('project_id', projectId)
+                .order('sort_order', { ascending: true });
+
+              if (error) throw error;
+
+              const milestones: ProjectMilestone[] = (data || []).map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                description: row.description || null,
+                dueDate: row.due_date,
+                sortOrder: row.sort_order ?? 0,
+                isMandatory: row.is_mandatory ?? false,
+                milestoneType: row.milestone_type || 'custom',
+              }));
+
+              set({ projectMilestones: milestones, projectMilestonesProjectId: projectId });
+            } catch {
+              // Silently fall back to empty
+              set({ projectMilestones: [], projectMilestonesProjectId: projectId });
             }
           },
 

@@ -1,9 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useEconomicStore, EconomicOffer } from '../../stores/useEconomicStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
-import { useProjectStore } from '../../stores/useProjectStore';
+import { useProjectStore, type ProjectEconomicField } from '../../stores/useProjectStore';
 import { getProviderDisplayName } from '../../types/provider.types';
 import { PermissionGate } from '../permissions/PermissionGate';
+import { ExcelUploader } from './ExcelUploader';
+import { ExcelComparison } from './ExcelComparison';
+import { ChevronDown, FileSpreadsheet } from 'lucide-react';
+import type { ExcelTemplateData } from '../../types/setup.types';
 import './EconomicSection.css';
 
 function formatCurrency(value: number | string | null | undefined, currency: string = 'EUR'): string {
@@ -70,16 +74,42 @@ const SortHeader: React.FC<SortHeaderProps> = ({ column, label, className, sortC
 );
 
 const EconomicSectionContent: React.FC = () => {
-    const { offers, comparison, isLoading, error, loadOffers } = useEconomicStore();
+    const {
+        offers, comparison, isLoading, error, loadOffers,
+        excelTemplate, comparisonData,
+        setExcelTemplate, exportExcel,
+    } = useEconomicStore();
     const { t } = useLanguageStore();
-    const { activeProjectId, projects } = useProjectStore();
+    const { activeProjectId, projects, projectEconomicFields, loadProjectEconomicFields } = useProjectStore();
     const projectType = projects.find(p => p.id === activeProjectId)?.project_type || 'RFP';
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortColumn, setSortColumn] = useState<SortColumn>('net_price');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
+    const [excelSectionOpen, setExcelSectionOpen] = useState(false);
+
     useEffect(() => {
         loadOffers();
     }, [loadOffers, activeProjectId]);
+
+    // Load dynamic economic fields from project setup
+    useEffect(() => {
+        if (activeProjectId) {
+            loadProjectEconomicFields(activeProjectId);
+        }
+    }, [activeProjectId, loadProjectEconomicFields]);
+
+    // Excel handlers
+    const handleTemplateLoaded = useCallback((data: ExcelTemplateData) => {
+        setExcelTemplate(data);
+        setExcelSectionOpen(true);
+    }, [setExcelTemplate]);
+
+    const handleExcelExport = useCallback(() => {
+        const projectName = projects.find(p => p.id === activeProjectId)?.name || 'project';
+        const activeProject = projects.find(p => p.id === activeProjectId);
+        const cur = activeProject?.currency || 'EUR';
+        exportExcel(projectName, cur);
+    }, [exportExcel, activeProjectId, projects]);
 
     const toggleRow = (id: string) => {
         setExpandedRows(prev => {
@@ -172,10 +202,7 @@ const EconomicSectionContent: React.FC = () => {
         return map;
     }, [offers]);
 
-    // Guard: RFI projects should never see the economic section — placed after all hooks
-    if (projectType === 'RFI') return null;
-
-    // CSV Export
+    // CSV Export — must be before any conditional returns (Rules of Hooks)
     const handleExportCSV = useCallback(() => {
         const projectName = projects.find(p => p.id === activeProjectId)?.name || 'project';
         const safeName = projectName.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
@@ -228,6 +255,9 @@ const EconomicSectionContent: React.FC = () => {
             </span>
         );
     };
+
+    // Guard: RFI projects should never see the economic section — placed after all hooks
+    if (projectType === 'RFI') return null;
 
     if (isLoading) {
         return (
@@ -361,6 +391,56 @@ const EconomicSectionContent: React.FC = () => {
                     )}
                 </div>
             )}
+
+            {/* Dynamic Economic Fields from Setup */}
+            {projectEconomicFields.length > 0 && (
+                <EconomicFieldsPanel
+                    fields={projectEconomicFields}
+                    offers={offers}
+                    currency={currency}
+                    t={t}
+                />
+            )}
+
+            {/* Excel Template Section */}
+            <div className="econ-excel-section">
+                <button
+                    className={`econ-excel-toggle ${excelSectionOpen ? 'open' : ''}`}
+                    onClick={() => setExcelSectionOpen(prev => !prev)}
+                >
+                    <div className="econ-excel-toggle-left">
+                        <FileSpreadsheet size={18} />
+                        <span className="econ-excel-toggle-label">
+                            {t('econ.excel.section_title')}
+                        </span>
+                        {excelTemplate && (
+                            <span className="econ-excel-toggle-badge">
+                                {excelTemplate.fileName}
+                            </span>
+                        )}
+                    </div>
+                    <ChevronDown
+                        size={18}
+                        className={`econ-excel-chevron ${excelSectionOpen ? 'open' : ''}`}
+                    />
+                </button>
+
+                {excelSectionOpen && (
+                    <div className="econ-excel-content">
+                        <ExcelUploader onTemplateLoaded={handleTemplateLoaded} />
+
+                        {comparisonData && offers.length > 0 && (
+                            <div style={{ marginTop: '16px' }}>
+                                <ExcelComparison
+                                    comparisonData={comparisonData}
+                                    currency={currency}
+                                    onExport={handleExcelExport}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
 
             {/* Comparison table */}
             <div className="econ-table-wrapper">
@@ -546,8 +626,8 @@ const EconomicSectionContent: React.FC = () => {
                                                                     <span className="econ-detail-group-title">
                                                                         {t('econ.detail.alternative_offers')}
                                                                     </span>
-                                                                    {offer.alternative_offers.map((alt, idx) => (
-                                                                        <div key={idx} className="econ-detail-item">
+                                                                    {offer.alternative_offers.map((alt) => (
+                                                                        <div key={alt.description} className="econ-detail-item">
                                                                             <span className="label">{alt.description}</span>
                                                                             <span className="value">{formatCurrency(alt.total_price, currency)}</span>
                                                                         </div>
@@ -560,8 +640,8 @@ const EconomicSectionContent: React.FC = () => {
                                                                     <span className="econ-detail-group-title">
                                                                         {t('econ.detail.optional_items')}
                                                                     </span>
-                                                                    {offer.optional_items.map((item, idx) => (
-                                                                        <div key={idx} className="econ-detail-item">
+                                                                    {offer.optional_items.map((item) => (
+                                                                        <div key={item.description} className="econ-detail-item">
                                                                             <span className="label">{item.description}</span>
                                                                             <span className="value">{formatCurrency(item.price, currency)}</span>
                                                                         </div>
@@ -579,8 +659,8 @@ const EconomicSectionContent: React.FC = () => {
                                                                 {t('econ.detail.payment_schedule')}
                                                             </span>
                                                             <div className="econ-schedule-row">
-                                                                {offer.payment_schedule.map((ps, idx) => (
-                                                                    <div key={idx} className="econ-schedule-chip">
+                                                                {offer.payment_schedule.map((ps) => (
+                                                                    <div key={`${ps.milestone}-${ps.event}`} className="econ-schedule-chip">
                                                                         <span className="econ-schedule-pct">{ps.milestone}%</span>
                                                                         <span className="econ-schedule-event">{ps.event}</span>
                                                                     </div>
@@ -618,6 +698,172 @@ const EconomicSectionContent: React.FC = () => {
                                         );
                                     })()}
                                 </React.Fragment>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+/* ─── Dynamic Economic Fields Panel ─── */
+
+interface EconomicFieldsPanelProps {
+    fields: ProjectEconomicField[];
+    offers: EconomicOffer[];
+    currency: string;
+    t: (key: string, vars?: Record<string, string>) => string;
+}
+
+/** Extract a value for a field from an offer's price_breakdown or custom_fields */
+function extractFieldValue(offer: EconomicOffer, fieldName: string): number | string | null {
+    // Normalize field name to match various formats: "Engineering Costs" → "engineering_costs"
+    const normalized = fieldName.toLowerCase().replace(/\s+/g, '_');
+    const nameLC = fieldName.toLowerCase();
+
+    // Check price_breakdown first (most common location for extracted economic data)
+    if (offer.price_breakdown) {
+        for (const [key, val] of Object.entries(offer.price_breakdown)) {
+            const keyLC = key.toLowerCase().replace(/\s+/g, '_');
+            if (keyLC === normalized || key.toLowerCase() === nameLC) {
+                return val as number;
+            }
+        }
+    }
+
+    // Check tco_breakdown
+    if (offer.tco_breakdown) {
+        for (const [key, val] of Object.entries(offer.tco_breakdown)) {
+            const keyLC = key.toLowerCase().replace(/\s+/g, '_');
+            if (keyLC === normalized || key.toLowerCase() === nameLC) {
+                return val as number;
+            }
+        }
+    }
+
+    // Check well-known fields
+    const wellKnown: Record<string, () => number | string | null> = {
+        'total_price': () => offer.total_price,
+        'precio_total': () => offer.total_price,
+        'discount': () => offer.discount_percentage,
+        'descuento': () => offer.discount_percentage,
+        'discount_percentage': () => offer.discount_percentage,
+        'tco': () => offer.tco_value,
+        'tco_value': () => offer.tco_value,
+        'payment_terms': () => offer.payment_terms,
+        'condiciones_pago': () => offer.payment_terms,
+        'validity': () => offer.validity_days,
+        'validity_days': () => offer.validity_days,
+        'validez': () => offer.validity_days,
+    };
+
+    const getter = wellKnown[normalized] || wellKnown[nameLC];
+    if (getter) return getter();
+
+    return null;
+}
+
+const EconomicFieldsPanel: React.FC<EconomicFieldsPanelProps> = ({ fields, offers, currency, t }) => {
+    const providers = [...new Set(offers.map(o => o.provider_name))];
+
+    if (providers.length === 0) return null;
+
+    const flatFields = useMemo(() => {
+        const result: (ProjectEconomicField & { indent: number })[] = [];
+        const flatten = (list: ProjectEconomicField[], indent: number) => {
+            for (const f of list) {
+                result.push({ ...f, indent });
+                if (f.children && f.children.length > 0) {
+                    flatten(f.children, indent + 1);
+                }
+            }
+        };
+        flatten(fields, 0);
+        return result;
+    }, [fields]);
+
+    return (
+        <div className="econ-table-wrapper">
+            <div className="econ-table-header">
+                <h3 className="econ-table-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" style={{ marginRight: 8, verticalAlign: 'middle' }}>
+                        <rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="3" x2="9" y2="21" />
+                    </svg>
+                    {t('econ.model.title')}
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)' }}>
+                    {flatFields.length} {t('econ.model.fields')} &middot; {providers.length} {t('econ.table.provider').toLowerCase()}s
+                </span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+                <table className="econ-table">
+                    <thead>
+                        <tr>
+                            <th style={{ minWidth: 200 }}>{t('econ.model.field')}</th>
+                            <th style={{ width: 70, textAlign: 'center' }}>{t('econ.model.type')}</th>
+                            {providers.map(p => (
+                                <th key={p} style={{ textAlign: 'right', minWidth: 130 }}>
+                                    {getProviderDisplayName(p)}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {flatFields.map(field => {
+                            const isParent = field.children && field.children.length > 0;
+                            return (
+                                <tr
+                                    key={field.id}
+                                    className={isParent ? 'econ-row' : ''}
+                                    style={isParent ? { background: 'var(--bg-surface-alt)' } : undefined}
+                                >
+                                    <td style={{ paddingLeft: `${16 + field.indent * 20}px` }}>
+                                        <span style={{ fontWeight: isParent ? 700 : 500, fontSize: isParent ? '0.88rem' : '0.84rem' }}>
+                                            {field.name}
+                                        </span>
+                                        {field.isRequired && (
+                                            <span style={{ color: 'var(--color-error)', marginLeft: 4, fontSize: '0.7rem' }}>*</span>
+                                        )}
+                                        {field.unit && (
+                                            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.72rem', marginLeft: 6 }}>
+                                                ({field.unit})
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        <span className="econ-tag" style={{ fontSize: '0.68rem' }}>
+                                            {field.fieldType}
+                                        </span>
+                                    </td>
+                                    {providers.map(provName => {
+                                        const offer = offers.find(o => o.provider_name === provName);
+                                        const value = offer ? extractFieldValue(offer, field.name) : null;
+
+                                        let display: string;
+                                        let cellClass = '';
+                                        if (value == null) {
+                                            display = '—';
+                                            cellClass = field.isRequired ? 'econ-missing-required' : '';
+                                        } else if (field.fieldType === 'currency') {
+                                            display = formatCurrency(value as number, currency);
+                                        } else if (field.fieldType === 'percentage') {
+                                            display = formatPercent(value as number);
+                                        } else {
+                                            display = String(value);
+                                        }
+
+                                        return (
+                                            <td
+                                                key={provName}
+                                                className={`col-right ${cellClass}`}
+                                                style={{ fontWeight: isParent ? 700 : 400 }}
+                                            >
+                                                {display}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
                             );
                         })}
                     </tbody>

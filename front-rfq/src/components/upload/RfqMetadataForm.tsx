@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getProviderDisplayName } from '../../types/provider.types';
-import { useProjectStore } from '../../stores/useProjectStore';
+import { useProjectStore, deriveEvalTypes } from '../../stores/useProjectStore';
 import { useProviderStore } from '../../stores/useProviderStore';
 import './RfqMetadataForm.css';
 
@@ -16,15 +16,8 @@ interface RfqMetadataFormProps {
   disabled?: boolean;
 }
 
-// Tipos de evaluacion disponibles
-const EVALUATION_TYPES = [
-  'Technical Evaluation',
-  'Economical Evaluation',
-  'Others'
-];
-
 export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMetadataFormProps) {
-  const { projects, getActiveProject } = useProjectStore();
+  const { projects, getActiveProject, projectDocTypes, loadProjectDocTypes } = useProjectStore();
 
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProviderDropdown, setShowProviderDropdown] = useState(false);
@@ -35,6 +28,15 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
   const { activeProjectId } = useProjectStore();
   const { projectProviders, addLocalProvider } = useProviderStore();
   const activeProject = getActiveProject();
+
+  // Load dynamic evaluation types from project setup
+  useEffect(() => {
+    if (activeProjectId) {
+      loadProjectDocTypes(activeProjectId);
+    }
+  }, [activeProjectId, loadProjectDocTypes]);
+
+  const EVALUATION_TYPES = useMemo(() => deriveEvalTypes(projectDocTypes), [projectDocTypes]);
 
   // Filter providers by search text
   const filteredProviders = projectProviders.filter(p =>
@@ -104,11 +106,12 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
       <div className="metadata-form-grid">
         {/* Campo Proyecto */}
         <div className="metadata-field">
-          <label className="metadata-label">
+          <label className="metadata-label" htmlFor="metadata-project-btn">
             Project <span className="required">*</span>
           </label>
           <div className="metadata-dropdown-container">
             <button
+              id="metadata-project-btn"
               type="button"
               className={`metadata-dropdown-btn ${!metadata.proyecto ? 'placeholder' : ''}`}
               onClick={() => !disabled && setShowProjectDropdown(!showProjectDropdown)}
@@ -124,6 +127,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
               <>
                 <div
                   className="dropdown-overlay"
+                  role="presentation"
                   onClick={() => setShowProjectDropdown(false)}
                 />
                 <div className="metadata-dropdown-menu">
@@ -157,11 +161,12 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
 
         {/* Campo Proveedor - combobox with search + new entry */}
         <div className="metadata-field">
-          <label className="metadata-label">
+          <label className="metadata-label" htmlFor="metadata-provider-btn">
             Provider <span className="required">*</span>
           </label>
           <div className="metadata-dropdown-container">
             <button
+              id="metadata-provider-btn"
               type="button"
               className={`metadata-dropdown-btn ${!metadata.proveedor ? 'placeholder' : ''}`}
               onClick={() => {
@@ -182,6 +187,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
               <>
                 <div
                   className="dropdown-overlay"
+                  role="presentation"
                   onClick={() => { setShowProviderDropdown(false); setProviderSearch(''); }}
                 />
                 <div className="metadata-dropdown-menu">
@@ -246,11 +252,12 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
 
         {/* Campo Tipo de Evaluacion */}
         <div className="metadata-field">
-          <label className="metadata-label">
+          <label className="metadata-label" htmlFor="metadata-evaluation-btn">
             Evaluation Types <span className="required">*</span>
           </label>
           <div className="metadata-dropdown-container">
             <button
+              id="metadata-evaluation-btn"
               type="button"
               className={`metadata-dropdown-btn ${metadata.tipoEvaluacion.length === 0 ? 'placeholder' : ''}`}
               onClick={() => !disabled && setShowEvaluationDropdown(!showEvaluationDropdown)}
@@ -270,6 +277,7 @@ export function RfqMetadataForm({ metadata, onChange, disabled = false }: RfqMet
               <>
                 <div
                   className="dropdown-overlay"
+                  role="presentation"
                   onClick={() => setShowEvaluationDropdown(false)}
                 />
                 <div className="metadata-dropdown-menu checkbox-menu">

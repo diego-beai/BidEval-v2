@@ -23,7 +23,7 @@
     background: var(--bg-surface);
     border-radius: 16px;
     width: 95%;
-    max-width: 720px;
+    max-width: 960px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
@@ -70,17 +70,25 @@
 .setup-wizard-steps {
     display: flex;
     align-items: center;
-    padding: 16px 24px;
+    padding: 14px 20px;
     gap: 0;
     background: var(--bg-surface-alt);
     border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.setup-wizard-steps::-webkit-scrollbar {
+    display: none;
 }
 
 .setup-step-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
+    min-width: 0;
     position: relative;
 }
 
@@ -89,7 +97,8 @@
     flex: 1;
     height: 2px;
     background: var(--border-color);
-    margin: 0 12px;
+    margin: 0 8px;
+    min-width: 12px;
     transition: background 0.3s;
 }
 
@@ -98,13 +107,13 @@
 }
 
 .setup-step-number {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     flex-shrink: 0;
     transition: all 0.3s;
@@ -126,7 +135,7 @@
 }
 
 .setup-step-label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-tertiary);
     white-space: nowrap;
@@ -366,8 +375,294 @@
 }
 
 /* ============================
-   Step 2: Deadlines/Calendar
+   Step 2: Milestones / Deadlines
    ============================ */
+
+/* Warning banner */
+.milestone-warning {
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #f59e0b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Milestone list */
+.milestone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* Milestone card */
+.milestone-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: all 0.2s;
+    animation: fadeIn 0.25s ease-out both;
+    position: relative;
+    overflow: hidden;
+}
+
+.milestone-card:hover {
+    border-color: var(--text-tertiary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.milestone-card-warning {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
+}
+
+/* Color bar */
+.milestone-color-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 10px 0 0 10px;
+}
+
+/* Icon */
+.milestone-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+/* Name area */
+.milestone-name-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.milestone-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.milestone-name-input {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border-color);
+    padding: 0 0 2px 0;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.milestone-name-input:focus {
+    border-bottom-color: var(--accent, #12b5b0);
+}
+
+.milestone-type-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 4px;
+    width: fit-content;
+    line-height: 1.4;
+}
+
+/* Date input inside milestone card */
+.milestone-date-input {
+    width: 140px;
+    flex-shrink: 0;
+    padding: 6px 10px !important;
+    font-size: 0.82rem !important;
+    border-radius: 8px !important;
+}
+
+/* Mandatory badge */
+.milestone-mandatory-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--accent, #12b5b0);
+    background: rgba(18, 181, 176, 0.1);
+    padding: 2px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Action buttons */
+.milestone-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.milestone-action-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+
+.milestone-action-btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.milestone-action-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.milestone-action-delete:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+}
+
+/* Add milestone button (dashed) */
+.milestone-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+    font-family: inherit;
+}
+
+.milestone-add-btn:hover {
+    border-color: var(--accent, #12b5b0);
+    color: var(--accent, #12b5b0);
+    background: rgba(18, 181, 176, 0.04);
+}
+
+/* Add milestone inline form */
+.milestone-add-form {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.milestone-add-form-header {
+    padding: 10px 14px;
+    background: var(--bg-surface-alt);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.milestone-add-form-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.milestone-add-form-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.milestone-add-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.milestone-add-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.milestone-add-field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.milestone-add-field select.setup-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+}
+
+.milestone-add-checkbox-field {
+    justify-content: flex-end;
+    padding-bottom: 10px;
+}
+
+.milestone-checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.milestone-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent, #12b5b0);
+    cursor: pointer;
+}
+
+.milestone-add-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+}
+
+/* Legacy compat: keep old date grid classes for other potential usage */
 .setup-dates-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -840,13 +1135,60 @@
     }
 }
 
-/* Responsive */
+/* Responsive - Tablet */
+@media (max-width: 1024px) {
+    .setup-wizard {
+        max-width: 92vw;
+    }
+
+    .setup-step-item:not(:last-child)::after {
+        margin: 0 6px;
+        min-width: 8px;
+    }
+
+    .setup-step-label {
+        font-size: 0.7rem;
+    }
+}
+
+/* Responsive - Small tablet */
+@media (max-width: 768px) {
+    .setup-wizard {
+        width: 100%;
+        max-width: none;
+        max-height: 100vh;
+        border-radius: 12px;
+        margin: 8px;
+    }
+
+    .setup-wizard-steps {
+        padding: 12px 16px;
+    }
+
+    .setup-step-label {
+        font-size: 0.68rem;
+    }
+
+    .setup-step-item:not(:last-child)::after {
+        margin: 0 4px;
+        min-width: 6px;
+    }
+
+    .setup-step-number {
+        width: 24px;
+        height: 24px;
+        font-size: 0.68rem;
+    }
+}
+
+/* Responsive - Mobile */
 @media (max-width: 640px) {
     .setup-wizard {
         width: 100%;
         max-width: none;
         max-height: 100vh;
         border-radius: 0;
+        margin: 0;
     }
 
     .setup-type-selector {
@@ -863,5 +1205,58 @@
 
     .setup-step-label {
         display: none;
+    }
+
+    .setup-wizard-steps {
+        justify-content: center;
+        gap: 0;
+        padding: 12px 12px;
+    }
+
+    .setup-step-item {
+        flex: 0 0 auto;
+    }
+
+    .setup-step-item:not(:last-child)::after {
+        margin: 0 6px;
+        min-width: 16px;
+    }
+
+    /* Milestone cards stack vertically on mobile */
+    .milestone-card {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 14px 12px 18px;
+    }
+
+    .milestone-date-input {
+        width: 100% !important;
+        order: 5;
+    }
+
+    .milestone-actions {
+        order: 6;
+        margin-left: auto;
+    }
+
+    .milestone-mandatory-badge {
+        order: 4;
+    }
+
+    .milestone-add-row {
+        flex-direction: column;
+    }
+
+    .milestone-add-field {
+        width: 100%;
+    }
+
+    /* Timeline scrolls horizontally on mobile */
+    .setup-timeline {
+        overflow-x: auto;
+    }
+
+    .timeline-track {
+        min-width: max-content;
     }
 }

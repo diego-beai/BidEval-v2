@@ -1,13 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useToastStore } from '../../stores/useToastStore';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useScoringConfigStore } from '../../stores/useScoringConfigStore';
+import { useSetupStore } from '../../stores/useSetupStore';
 import { StepBasicInfo } from './steps/StepBasicInfo';
 import { StepDeadlines } from './steps/StepDeadlines';
 import { StepProviders } from './steps/StepProviders';
+import { StepDocumentTypes } from './steps/StepDocumentTypes';
+import { StepEconomicModel } from './steps/StepEconomicModel';
 import { StepCriteria } from './steps/StepCriteria';
+import { StepValidation } from './steps/StepValidation';
 import './ProjectSetupWizard.css';
 
 export interface ProjectSetupData {
@@ -19,14 +23,17 @@ export interface ProjectSetupData {
   owner: string;
   currency: string;
   defaultLanguage: 'es' | 'en';
-  // Step 2: Deadlines
+  // Step 2: Deadlines (legacy fields kept for backward compat)
   dateOpening: string;
   dateSubmissionDeadline: string;
   dateEvaluation: string;
   dateAward: string;
   // Step 3: Providers
   providers: ProviderEntry[];
-  // Step 4: Criteria (uses useScoringConfigStore)
+  // Step 4: Document Types (uses useSetupStore)
+  // Step 5: Economic Model (uses useSetupStore)
+  // Step 6: Criteria (uses useScoringConfigStore)
+  // Step 7: Validation (read-only summary)
 }
 
 export interface ProviderEntry {
@@ -45,7 +52,10 @@ const STEPS = [
   { key: 'basic', icon: '1' },
   { key: 'deadlines', icon: '2' },
   { key: 'providers', icon: '3' },
-  { key: 'criteria', icon: '4' },
+  { key: 'doctypes', icon: '4' },
+  { key: 'economic', icon: '5' },
+  { key: 'criteria', icon: '6' },
+  { key: 'validation', icon: '7' },
 ];
 
 export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
@@ -56,10 +66,15 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   const { t } = useLanguageStore();
   const { loadProjects, setActiveProject } = useProjectStore();
   const { addToast } = useToastStore();
-  // Store accessed via useScoringConfigStore.getState() in saveProvidersAndCriteria
+  const resetSetup = useSetupStore(s => s.resetSetup);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset setup store when wizard opens
+  useEffect(() => {
+    resetSetup();
+  }, [resetSetup]);
 
   // Form data
   const [formData, setFormData] = useState<ProjectSetupData>({
@@ -85,7 +100,10 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
     t('setup.step.basic') || 'Info',
     t('setup.step.deadlines') || 'Plazos',
     t('setup.step.providers') || 'Proveedores',
+    t('setup.step.doctypes') || 'Documentos',
+    t('setup.step.economic') || 'Económico',
     t('setup.step.criteria') || 'Criterios',
+    t('setup.step.validation') || 'Validación',
   ];
 
   // Per-step validation: returns null if valid, or a warning string
@@ -98,7 +116,11 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
         return null; // Deadlines are optional
       case 2:
         return null; // Providers are optional
-      case 3: {
+      case 3:
+        return null; // Document types are optional
+      case 4:
+        return null; // Economic model is optional
+      case 5: {
         const scoringStore = useScoringConfigStore.getState();
         const cats = scoringStore.draftCategories;
         if (cats.length > 0) {
@@ -106,7 +128,6 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           if (Math.abs(total - 100) >= 0.01) {
             return (t('setup.warn.weights_invalid') || 'Los pesos no suman 100%') + ` (${total.toFixed(0)}%)`;
           }
-          // Check sub-criteria within each category
           for (const cat of cats) {
             if (cat.criteria && cat.criteria.length > 0) {
               const criteriaSum = cat.criteria.reduce((s, c) => s + c.weight, 0);
@@ -118,6 +139,8 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
         }
         return null;
       }
+      case 6:
+        return null; // Validation step shows its own detailed checks
       default:
         return null;
     }
@@ -148,6 +171,12 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
     }
   };
 
+  const handleGoToStep = useCallback((step: number) => {
+    if (step >= 0 && step < STEPS.length) {
+      setCurrentStep(step);
+    }
+  }, []);
+
   const handleSave = async () => {
     if (!isSupabaseConfigured()) {
       addToast(t('setup.error.no_supabase') || 'Supabase no configurado', 'error');
@@ -170,7 +199,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           (t('setup.error.weights_not_100') || 'Los pesos de las categorías deben sumar 100%') + ` (${total.toFixed(0)}%)`,
           'warning'
         );
-        setCurrentStep(3);
+        setCurrentStep(5);
         return;
       }
     }
@@ -200,9 +229,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
 
         if (fallbackError) throw fallbackError;
 
-        // Update the project with the new fields manually
         if (fallbackId) {
-          // Core fields first (always exist)
           await (supabase! as any)
             .from('projects')
             .update({
@@ -216,7 +243,6 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
             })
             .eq('id', fallbackId);
 
-          // Extended fields (may not exist)
           if (formData.referenceCode.trim() || formData.owner.trim()) {
             await (supabase! as any)
               .from('projects')
@@ -228,12 +254,11 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           }
         }
 
-        // Use fallbackId for the rest
-        await saveProvidersAndCriteria(fallbackId);
+        await saveProjectData(fallbackId);
         return;
       }
 
-      await saveProvidersAndCriteria(projectId);
+      await saveProjectData(projectId);
     } catch (err: any) {
       addToast(err.message || t('setup.error.generic') || 'Error al crear proyecto', 'error');
     } finally {
@@ -241,7 +266,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
     }
   };
 
-  const saveProvidersAndCriteria = async (projectId: string) => {
+  const saveProjectData = async (projectId: string) => {
     if (!projectId) {
       addToast('Error: no se recibió ID del proyecto', 'error');
       return;
@@ -257,37 +282,26 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           provider_contact: p.contact || null,
         }));
 
-        // Try upsert first, fallback to insert if it fails
         const { error: provError } = await (supabase! as any)
           .from('project_providers')
           .upsert(providerRows, { onConflict: 'project_id,provider_name' });
 
         if (provError) {
-          // Fallback: delete existing + insert fresh
           await (supabase! as any)
             .from('project_providers')
             .delete()
             .eq('project_id', projectId);
 
-          const { error: insertError } = await (supabase! as any)
+          await (supabase! as any)
             .from('project_providers')
             .insert(providerRows);
-
-          if (insertError) {
-            // ignored
-          }
         }
 
-        // Always sync invited_suppliers array on projects table
         const supplierNames = formData.providers.map(p => p.name);
-        const { error: suppError } = await (supabase! as any)
+        await (supabase! as any)
           .from('projects')
           .update({ invited_suppliers: supplierNames })
           .eq('id', projectId);
-
-        if (suppError) {
-          // ignored
-        }
       }
 
       // 3. Save scoring criteria (use store)
@@ -295,13 +309,15 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
       if (scoringStore.draftCategories.length > 0) {
         await scoringStore.saveConfiguration(projectId);
       } else {
-        // Initialize with type-aware defaults if no custom config
         await scoringStore.initializeDefaultConfig(projectId, formData.projectType);
       }
 
-      // 4. Update the project fields (dates, reference code, owner, language)
-      // First update core fields that always exist
-      const { error: coreUpdateError } = await (supabase! as any)
+      // 4. Save setup store data (milestones, document types, economic fields)
+      const setupStore = useSetupStore.getState();
+      await setupStore.saveToProject(projectId);
+
+      // 5. Update the project fields
+      await (supabase! as any)
         .from('projects')
         .update({
           project_type: formData.projectType,
@@ -314,23 +330,14 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
         })
         .eq('id', projectId);
 
-      if (coreUpdateError) {
-        // ignored
-      }
-
-      // Then try to update extended fields (may not exist in all schemas)
       if (formData.referenceCode.trim() || formData.owner.trim()) {
-        const { error: extUpdateError } = await (supabase! as any)
+        await (supabase! as any)
           .from('projects')
           .update({
             reference_code: formData.referenceCode.trim() || null,
             owner_name: formData.owner.trim() || null,
           })
           .eq('id', projectId);
-
-        if (extUpdateError) {
-          // ignored
-        }
       }
 
       // Reload projects, set active, notify
@@ -355,7 +362,13 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
       case 2:
         return <StepProviders data={formData} onChange={updateFormData} />;
       case 3:
+        return <StepDocumentTypes />;
+      case 4:
+        return <StepEconomicModel currency={formData.currency} />;
+      case 5:
         return <StepCriteria projectType={formData.projectType} />;
+      case 6:
+        return <StepValidation data={formData} onGoToStep={handleGoToStep} />;
       default:
         return null;
     }
@@ -364,11 +377,26 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
   const isLastStep = currentStep === STEPS.length - 1;
 
   return (
-    <div className="setup-wizard-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="setup-wizard" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="setup-wizard-overlay"
+      role="button"
+      tabIndex={0}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); onClose(); } }}
+    >
+      <div
+        className="setup-wizard"
+        role="button"
+        tabIndex={0}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}
+      >
         {/* Header */}
         <div className="setup-wizard-header">
           <h2>{t('setup.title') || 'Configurar Proyecto'}</h2>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+            {currentStep + 1} / {STEPS.length}
+          </span>
           <button className="setup-wizard-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -385,7 +413,10 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
               <div
                 key={step.key}
                 className={`setup-step-item ${idx === currentStep ? 'active' : ''} ${idx < currentStep ? 'completed' : ''} ${warning ? 'has-warning' : ''}`}
-                onClick={() => { if (idx < currentStep || (idx <= currentStep)) setCurrentStep(idx); }}
+                role="button"
+                tabIndex={idx <= currentStep ? 0 : -1}
+                onClick={() => { if (idx <= currentStep) setCurrentStep(idx); }}
+                onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && idx <= currentStep) { e.preventDefault(); setCurrentStep(idx); } }}
                 style={{ cursor: idx <= currentStep ? 'pointer' : 'default' }}
               >
                 <div className="setup-step-number">
