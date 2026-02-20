@@ -28,9 +28,8 @@ import { LandingPage } from './pages/LandingPage';
 import { EconomicSection } from './components/economic/EconomicSection';
 import { RfpGeneratorPage } from './pages/RfpGeneratorPage';
 import { SupplierDirectoryPage } from './pages/SupplierDirectoryPage';
-import { TechnicalReportPage } from './pages/TechnicalReportPage';
 
-type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status' | 'report';
+type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status';
 
 export default function App() {
   const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
@@ -618,8 +617,6 @@ export default function App() {
         {activeView === 'rfp-gen' && <RfpGeneratorPage />}
 
         {activeView === 'suppliers' && <SupplierDirectoryPage />}
-
-        {activeView === 'report' && <TechnicalReportPage />}
 
         {activeView === 'projects-status' && (
           <AllProjectsStatusPage />
