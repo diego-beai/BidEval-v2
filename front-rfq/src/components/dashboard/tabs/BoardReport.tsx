@@ -4,8 +4,6 @@ import {
     ShieldCheck, TrendingUp, DollarSign, Target, BarChart3, FileText, Leaf, PieChart,
     Download, FileSpreadsheet, CheckCircle, XCircle, User
 } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { ESG_CATALOG, ESG_CATEGORY_LABELS } from '../../../types/esg.types';
 import type { ESGCertification } from '../../../types/esg.types';
@@ -15,7 +13,10 @@ import { useEconomicStore } from '../../../stores/useEconomicStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useProviderStore } from '../../../stores/useProviderStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { usePdfTemplateStore } from '../../../stores/usePdfTemplateStore';
 import { getProviderColor } from '../../../types/provider.types';
+import { downloadBoardReportPdf } from './BoardReportPdf';
+import type { BoardReportPdfData } from './BoardReportPdf';
 import './BoardReport.css';
 
 /* ------------------------------------------------------------------ */
@@ -40,6 +41,7 @@ const BoardReport: React.FC = () => {
     const { getActiveProject, activeProjectId } = useProjectStore();
     const { projectProviders } = useProviderStore();
     const { t, language } = useLanguageStore();
+    const pdfConfig = usePdfTemplateStore();
 
     const project = getActiveProject();
     const reportRef = useRef<HTMLDivElement>(null);
@@ -310,10 +312,10 @@ const BoardReport: React.FC = () => {
     }, [project?.currency, language]);
 
     /* ---------- category label helper ---------- */
-    const getCategoryLabel = (cat: { display_name: string; display_name_es?: string; name: string }) => {
+    const getCategoryLabel = useCallback((cat: { display_name: string; display_name_es?: string; name: string }) => {
         if (language === 'es' && cat.display_name_es) return cat.display_name_es;
         return cat.display_name || cat.name;
-    };
+    }, [language]);
 
     /* ---------- confidence level helper ---------- */
     const getConfidenceLevel = (value: number): 'high' | 'medium' | 'low' => {
@@ -322,255 +324,108 @@ const BoardReport: React.FC = () => {
         return 'low';
     };
 
-    /* ---------- PDF export ---------- */
+    /* ---------- PDF export (react-pdf/renderer) ---------- */
     const handleDownloadPdf = useCallback(async () => {
-        if (!reportRef.current) return;
+        if (!sortedRanking.length || !winner) return;
+
+        // Build category data for PDF
+        const cats = Array.isArray(categories) ? categories : [];
+        const pdfCategories: BoardReportPdfData['categories'] = cats.map(cat => {
+            const catCriteria = scoringCriteria.filter(c => c.category === cat.name);
+            return {
+                name: getCategoryLabel(cat),
+                weight: cat.weight || 0,
+                criteria: catCriteria.map(crit => {
+                    const providerScores: Record<string, number> = {};
+                    sortedRanking.forEach(p => {
+                        providerScores[displayName(p.provider_name)] = p.individual_scores?.[crit.id] ?? 0;
+                    });
+                    return {
+                        name: crit.displayName,
+                        weight: crit.weight,
+                        providerScores,
+                    };
+                }),
+            };
+        });
+
+        // Build economic data for PDF
+        const cheapestPrice = comparison[0]?.net_price ?? 1;
+        const pdfEconomic: BoardReportPdfData['economic'] = comparison.map((c, i) => {
+            const vsCheapest = cheapestPrice > 0 ? ((c.net_price - cheapestPrice) / cheapestPrice) * 100 : 0;
+            const offer = offers.find(o => norm(o.provider_name) === norm(c.provider_name));
+            const flags = economicFlags[norm(c.provider_name)] || [];
+            return {
+                name: displayName(c.provider_name),
+                price: c.total_price ?? null,
+                discount: c.discount_percentage,
+                net: c.net_price,
+                vsCheapest: i === 0 ? t('board.cheapest') : `+${vsCheapest.toFixed(1)}%`,
+                tco: offer?.tco_value ?? null,
+                flags,
+            };
+        });
+
+        const pdfData: BoardReportPdfData = {
+            project: {
+                name: project?.display_name || '',
+                type: project?.project_type || '',
+                ref: project?.reference_code || '',
+                date: new Date(scoringResults?.statistics?.evaluation_date || Date.now()).toLocaleDateString(
+                    language === 'es' ? 'es-ES' : 'en-US',
+                    { year: 'numeric', month: 'long', day: 'numeric' }
+                ),
+                currency: project?.currency || 'EUR',
+            },
+            pdfConfig: {
+                companyName: pdfConfig.companyName,
+                logoDataUrl: pdfConfig.logoDataUrl,
+                primaryColor: pdfConfig.primaryColor,
+                footerText: pdfConfig.footerText,
+                showPageNumbers: pdfConfig.showPageNumbers,
+            },
+            winner: {
+                name: displayName(winner.provider_name),
+                score: winner.overall_score,
+                margin: runnerUp ? winner.overall_score - runnerUp.overall_score : 0,
+                summary: winner.summary,
+            },
+            ranking: sortedRanking.map((p, i) => ({
+                position: i + 1,
+                name: displayName(p.provider_name),
+                score: p.overall_score,
+                compliance: p.compliance_percentage,
+            })),
+            categories: pdfCategories,
+            economic: pdfEconomic,
+            confidence: {
+                overall: confidence.overall,
+                level: getConfidenceLevel(confidence.overall),
+            },
+            risks,
+            recommendations: winner.recommendations || [],
+            providers: sortedRanking.map((p, i) => ({
+                name: displayName(p.provider_name),
+                rank: i + 1,
+                score: p.overall_score,
+                summary: p.summary,
+                strengths: p.strengths || [],
+                weaknesses: p.weaknesses || [],
+            })),
+            language,
+            t,
+        };
+
         try {
-            const canvas = await html2canvas(reportRef.current, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                onclone: (clonedDoc) => {
-                    // Force light theme on cloned document so html2canvas resolves colors correctly
-                    const root = clonedDoc.documentElement;
-                    root.setAttribute('data-theme', 'light');
-
-                    // Apply light-mode CSS variable values directly to root
-                    root.style.setProperty('--bg-body', '#f8fafc');
-                    root.style.setProperty('--bg-surface', '#ffffff');
-                    root.style.setProperty('--bg-surface-alt', '#f1f5f9');
-                    root.style.setProperty('--bg-hover', '#f3f4f6');
-                    root.style.setProperty('--text-primary', '#0f172a');
-                    root.style.setProperty('--text-secondary', '#64748b');
-                    root.style.setProperty('--text-tertiary', '#94a3b8');
-                    root.style.setProperty('--border-color', '#e2e8f0');
-                    root.style.setProperty('--color-primary', '#12b5b0');
-                    root.style.setProperty('--color-primary-dark', '#0e8f8b');
-                    root.style.setProperty('--color-primary-light', '#e0f7f6');
-                    root.style.setProperty('--color-success', '#10b981');
-                    root.style.setProperty('--color-warning', '#f59e0b');
-                    root.style.setProperty('--color-error', '#ef4444');
-                    root.style.setProperty('--color-info', '#3b82f6');
-                    root.style.setProperty('--shadow-sm', '0 1px 2px 0 rgba(0,0,0,0.05)');
-                    root.style.setProperty('--shadow-md', '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)');
-
-                    // Inline gradient backgrounds that html2canvas may not resolve from CSS vars
-                    const report = clonedDoc.querySelector('.board-report') as HTMLElement;
-                    if (report) {
-                        report.style.background = '#ffffff';
-                    }
-
-                    const header = clonedDoc.querySelector('.board-header') as HTMLElement;
-                    if (header) {
-                        header.style.background = 'linear-gradient(135deg, #12b5b0 0%, #0e8f8b 100%)';
-                        header.style.color = 'white';
-                    }
-
-                    const winnerCard = clonedDoc.querySelector('.board-winner-card') as HTMLElement;
-                    if (winnerCard) {
-                        winnerCard.style.background = 'linear-gradient(135deg, #12b5b0 0%, #0e8f8b 100%)';
-                        winnerCard.style.color = 'white';
-                    }
-
-                    // Force white bg on all sections
-                    clonedDoc.querySelectorAll('.board-section').forEach((el) => {
-                        (el as HTMLElement).style.background = '#ffffff';
-                        (el as HTMLElement).style.border = '1px solid #e2e8f0';
-                    });
-
-                    // Force text colors on key elements
-                    clonedDoc.querySelectorAll('.board-section-title').forEach((el) => {
-                        (el as HTMLElement).style.color = '#0f172a';
-                        (el as HTMLElement).style.borderBottomColor = '#e2e8f0';
-                    });
-
-                    clonedDoc.querySelectorAll('.board-section-title svg').forEach((el) => {
-                        (el as HTMLElement).style.color = '#12b5b0';
-                    });
-
-                    // Fix table header backgrounds
-                    clonedDoc.querySelectorAll('.board-categories-table th, .board-economic-table th').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                        (el as HTMLElement).style.color = '#64748b';
-                    });
-
-                    // Fix category header rows
-                    clonedDoc.querySelectorAll('.board-cat-header-row td').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                    });
-
-                    // Fix weight badges
-                    clonedDoc.querySelectorAll('.board-weight-badge').forEach((el) => {
-                        (el as HTMLElement).style.background = '#12b5b0';
-                        (el as HTMLElement).style.color = 'white';
-                    });
-
-                    // Fix factor fill bars (gradients with CSS vars)
-                    clonedDoc.querySelectorAll('.board-factor-fill').forEach((el) => {
-                        const htmlEl = el as HTMLElement;
-                        if (htmlEl.classList.contains('high')) {
-                            htmlEl.style.background = 'linear-gradient(90deg, #10b981, #059669)';
-                        } else if (htmlEl.classList.contains('medium')) {
-                            htmlEl.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
-                        } else if (htmlEl.classList.contains('low')) {
-                            htmlEl.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
-                        } else {
-                            htmlEl.style.background = 'linear-gradient(90deg, #12b5b0, #0e8f8b)';
-                        }
-                    });
-                    clonedDoc.querySelectorAll('.board-factor-bar').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                    });
-
-                    // Fix provider profile cards
-                    clonedDoc.querySelectorAll('.board-profile-card').forEach((el) => {
-                        (el as HTMLElement).style.background = '#ffffff';
-                        (el as HTMLElement).style.borderColor = '#e2e8f0';
-                    });
-
-                    clonedDoc.querySelectorAll('.board-profile-summary').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                        (el as HTMLElement).style.color = '#64748b';
-                        (el as HTMLElement).style.borderLeftColor = '#12b5b0';
-                    });
-
-                    // Fix diff score winner badges
-                    clonedDoc.querySelectorAll('.board-diff-score.winner').forEach((el) => {
-                        (el as HTMLElement).style.background = 'linear-gradient(135deg, #12b5b0, #0e8f8b)';
-                        (el as HTMLElement).style.color = 'white';
-                    });
-
-                    // Fix comparison columns
-                    clonedDoc.querySelectorAll('.board-comparison-col').forEach((el) => {
-                        (el as HTMLElement).style.background = '#ffffff';
-                        (el as HTMLElement).style.borderColor = '#e2e8f0';
-                    });
-
-                    // Fix risk items
-                    clonedDoc.querySelectorAll('.board-risk-high').forEach((el) => {
-                        (el as HTMLElement).style.background = 'rgba(239, 68, 68, 0.06)';
-                    });
-                    clonedDoc.querySelectorAll('.board-risk-medium').forEach((el) => {
-                        (el as HTMLElement).style.background = 'rgba(245, 158, 11, 0.06)';
-                    });
-                    clonedDoc.querySelectorAll('.board-risk-low').forEach((el) => {
-                        (el as HTMLElement).style.background = 'rgba(59, 130, 246, 0.06)';
-                    });
-
-                    // Fix overall score cells
-                    clonedDoc.querySelectorAll('.board-overall-row td').forEach((el) => {
-                        (el as HTMLElement).style.background = '#ffffff';
-                    });
-                    clonedDoc.querySelectorAll('.board-overall-score').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                        (el as HTMLElement).style.color = '#0f172a';
-                        (el as HTMLElement).style.borderColor = '#e2e8f0';
-                    });
-
-                    // Fix category avg rows
-                    clonedDoc.querySelectorAll('.board-cat-avg-row td').forEach((el) => {
-                        (el as HTMLElement).style.background = '#f1f5f9';
-                    });
-
-                    // Fix cell winner bg
-                    clonedDoc.querySelectorAll('.board-cell-winner').forEach((el) => {
-                        (el as HTMLElement).style.background = 'rgba(16, 185, 129, 0.08)';
-                    });
-
-                    // SVG fill/stroke fixes for scatter plot
-                    clonedDoc.querySelectorAll('.board-scatter-axis').forEach((el) => {
-                        (el as SVGElement).setAttribute('stroke', '#94a3b8');
-                    });
-                    clonedDoc.querySelectorAll('.board-scatter-grid').forEach((el) => {
-                        (el as SVGElement).setAttribute('stroke', '#e2e8f0');
-                    });
-                    clonedDoc.querySelectorAll('.board-scatter-label').forEach((el) => {
-                        (el as SVGElement).setAttribute('fill', '#0f172a');
-                    });
-
-                    // Fix SVG text elements that use var()
-                    clonedDoc.querySelectorAll('svg text[fill^="var("]').forEach((el) => {
-                        const fillVal = el.getAttribute('fill') || '';
-                        if (fillVal.includes('--text-primary')) (el as SVGElement).setAttribute('fill', '#0f172a');
-                        else if (fillVal.includes('--text-secondary')) (el as SVGElement).setAttribute('fill', '#64748b');
-                        else if (fillVal.includes('--text-tertiary')) (el as SVGElement).setAttribute('fill', '#94a3b8');
-                        else if (fillVal.includes('--color-success')) (el as SVGElement).setAttribute('fill', '#10b981');
-                        else if (fillVal.includes('--color-error')) (el as SVGElement).setAttribute('fill', '#ef4444');
-                    });
-
-                    // Fix SVG elements with var() in stroke
-                    clonedDoc.querySelectorAll('svg [stroke^="var("]').forEach((el) => {
-                        const strokeVal = el.getAttribute('stroke') || '';
-                        if (strokeVal.includes('--border-color')) (el as SVGElement).setAttribute('stroke', '#e2e8f0');
-                        else if (strokeVal.includes('--color-success')) (el as SVGElement).setAttribute('stroke', '#10b981');
-                        else if (strokeVal.includes('--color-warning')) (el as SVGElement).setAttribute('stroke', '#f59e0b');
-                        else if (strokeVal.includes('--color-error')) (el as SVGElement).setAttribute('stroke', '#ef4444');
-                    });
-
-                    // Fix SVG rect fills with var()
-                    clonedDoc.querySelectorAll('svg rect[fill^="var("]').forEach((el) => {
-                        const fillVal = el.getAttribute('fill') || '';
-                        if (fillVal.includes('--color-success')) (el as SVGElement).setAttribute('fill', '#10b981');
-                    });
-
-                    // Fix confidence gauge ring
-                    clonedDoc.querySelectorAll('svg circle[stroke^="var("]').forEach((el) => {
-                        const strokeVal = el.getAttribute('stroke') || '';
-                        if (strokeVal.includes('--border-color')) (el as SVGElement).setAttribute('stroke', '#e2e8f0');
-                        else if (strokeVal.includes('--color-success')) (el as SVGElement).setAttribute('stroke', '#10b981');
-                        else if (strokeVal.includes('--color-warning')) (el as SVGElement).setAttribute('stroke', '#f59e0b');
-                        else if (strokeVal.includes('--color-error')) (el as SVGElement).setAttribute('stroke', '#ef4444');
-                    });
-
-                    // Hide action buttons in the PDF
-                    clonedDoc.querySelectorAll('.board-header-actions').forEach((el) => {
-                        (el as HTMLElement).style.display = 'none';
-                    });
-                },
-            });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'a4',
-            });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-
-            const pageContentHeight = pdfHeight - 10;
-            const totalScaledHeight = (imgHeight * pdfWidth) / imgWidth;
-            const totalPages = Math.ceil(totalScaledHeight / pageContentHeight);
-
-            if (totalPages <= 1) {
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                pdf.addImage(imgData, 'PNG', 0, 5, imgWidth * ratio, imgHeight * ratio);
-            } else {
-                for (let page = 0; page < totalPages; page++) {
-                    if (page > 0) pdf.addPage();
-                    const srcY = (page * pageContentHeight * imgWidth) / pdfWidth;
-                    const srcH = (pageContentHeight * imgWidth) / pdfWidth;
-                    const pageCanvas = document.createElement('canvas');
-                    pageCanvas.width = imgWidth;
-                    pageCanvas.height = Math.min(srcH, imgHeight - srcY);
-                    const ctx = pageCanvas.getContext('2d');
-                    if (ctx) {
-                        ctx.drawImage(canvas, 0, srcY, imgWidth, pageCanvas.height, 0, 0, imgWidth, pageCanvas.height);
-                        const pageImg = pageCanvas.toDataURL('image/png');
-                        const pageImgH = (pageCanvas.height * pdfWidth) / imgWidth;
-                        pdf.addImage(pageImg, 'PNG', 0, 5, pdfWidth, pageImgH);
-                    }
-                }
-            }
-
-            const projectName = project?.display_name || 'board-report';
-            pdf.save(`${projectName.replace(/\s+/g, '-')}-board-report.pdf`);
+            await downloadBoardReportPdf(pdfData);
         } catch (err) {
-            // ignored
+            console.error('PDF generation failed:', err);
         }
-    }, [project]);
+    }, [
+        sortedRanking, winner, runnerUp, categories, scoringCriteria, comparison,
+        offers, economicFlags, confidence, risks, project, scoringResults,
+        language, t, pdfConfig, getCategoryLabel,
+    ]);
 
     /* ---------- Excel export ---------- */
     const handleExportExcel = useCallback(() => {
