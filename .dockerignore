@@ -6,8 +6,8 @@
 front-rfq/node_modules
 node_modules
 
-# Build outputs (keep front-rfq/dist, needed by Dockerfile)
-!front-rfq/dist
+# Build outputs (generated inside Docker, not needed from host)
+front-rfq/dist
 
 # Development files
 *.log
