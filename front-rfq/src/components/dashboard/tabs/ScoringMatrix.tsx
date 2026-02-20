@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom';
-import { useScoringStore } from '../../../stores/useScoringStore';
+import { useScoringStore, ProviderScore } from '../../../stores/useScoringStore';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { ScoreJustificationPopup } from './ScoreJustificationPopup';
+import './ScoringMatrix.css';
 
 // Lazy-load wizard and editor (only rendered on user action)
 const ScoringSetupWizard = lazy(() => import('../scoring').then(m => ({ default: m.ScoringSetupWizard })));
@@ -95,6 +97,19 @@ export const ScoringMatrix: React.FC = () => {
     // UI State
     const [showConfigEditor, setShowConfigEditor] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    // Score Justification Popup state
+    const [selectedScoreCell, setSelectedScoreCell] = useState<{
+        provider: ProviderScore;
+        criterionId: string;
+        criterionName: string;
+        categoryName: string;
+        categoryColor: string;
+        rect: DOMRect;
+    } | null>(null);
+
+    // Analysis expandable rows state
+    const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set());
 
     // Handler to delete scoring configuration
     const handleDeleteConfig = useCallback(async () => {
@@ -287,6 +302,78 @@ export const ScoringMatrix: React.FC = () => {
           .map((p, idx) => ({ ...p, position: idx + 1 }));
     }, [scoringResults, customWeights, customCategoryWeights, SCORING_CRITERIA, CATEGORY_INFO]);
 
+    // Use recalculated providers (with custom weights applied)
+    const providers = recalculatedProviders;
+
+    // Toggle provider analysis expansion
+    const toggleProviderAnalysis = useCallback((providerName: string) => {
+        setExpandedProviders(prev => {
+            const next = new Set(prev);
+            if (next.has(providerName)) {
+                next.delete(providerName);
+            } else {
+                next.add(providerName);
+            }
+            return next;
+        });
+    }, []);
+
+    // Derive analysis data per provider per category
+    const providerAnalysisMap = useMemo(() => {
+        const result: Record<string, Record<string, { highlights: string[]; improvements: string[] }>> = {};
+        if (!providers) return result;
+
+        const categoryNames = Object.keys(CATEGORY_INFO);
+
+        for (const provider of providers) {
+            // Use category_analysis directly if available
+            if (provider.category_analysis && Object.keys(provider.category_analysis).length > 0) {
+                result[provider.provider_name] = provider.category_analysis;
+                continue;
+            }
+
+            // Derive from strengths/weaknesses by matching to categories
+            const derived: Record<string, { highlights: string[]; improvements: string[] }> = {};
+            for (const cat of categoryNames) {
+                derived[cat] = { highlights: [], improvements: [] };
+            }
+
+            const catCriteriaWords: Record<string, string[]> = {};
+            for (const cat of categoryNames) {
+                const criteria = SCORING_CRITERIA.filter(c => c.category === cat);
+                catCriteriaWords[cat] = criteria.flatMap(c =>
+                    c.name.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+                );
+            }
+
+            const assignToCategory = (text: string): string => {
+                const lower = text.toLowerCase();
+                let bestCat = categoryNames[0];
+                let bestCount = 0;
+                for (const cat of categoryNames) {
+                    const count = catCriteriaWords[cat].filter(w => lower.includes(w)).length;
+                    if (count > bestCount) {
+                        bestCount = count;
+                        bestCat = cat;
+                    }
+                }
+                return bestCat;
+            };
+
+            for (const s of provider.strengths || []) {
+                const cat = assignToCategory(s);
+                derived[cat].highlights.push(s);
+            }
+            for (const w of provider.weaknesses || []) {
+                const cat = assignToCategory(w);
+                derived[cat].improvements.push(w);
+            }
+
+            result[provider.provider_name] = derived;
+        }
+        return result;
+    }, [providers, CATEGORY_INFO, SCORING_CRITERIA]);
+
     const getScoreColor = (score: number) => {
         if (score >= 8) return 'var(--color-primary)';
         if (score >= 5) return 'var(--text-secondary)';
@@ -297,9 +384,6 @@ export const ScoringMatrix: React.FC = () => {
         if (!provider.individual_scores) return 0;
         return provider.individual_scores[criterionId] || 0;
     };
-
-    // Use recalculated providers (with custom weights applied)
-    const providers = recalculatedProviders;
 
     return (
         <div style={{
@@ -758,15 +842,29 @@ export const ScoringMatrix: React.FC = () => {
                                                             padding: '14px 16px',
                                                             borderBottom: '1px solid var(--border-color)'
                                                         }}>
-                                                            <span style={{
-                                                                display: 'inline-block',
-                                                                padding: '6px 12px',
-                                                                borderRadius: '8px',
-                                                                fontWeight: 600,
-                                                                fontSize: '0.9rem',
-                                                                color: getScoreColor(score),
-                                                                background: 'transparent'
-                                                            }}>
+                                                            <span
+                                                                className="score-cell-clickable"
+                                                                onClick={(e) => {
+                                                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                                    setSelectedScoreCell({
+                                                                        provider: p,
+                                                                        criterionId: criterion.id,
+                                                                        criterionName: criterion.name,
+                                                                        categoryName: getCategoryName(category, t, info.displayName),
+                                                                        categoryColor: info.color,
+                                                                        rect,
+                                                                    });
+                                                                }}
+                                                                style={{
+                                                                    display: 'inline-block',
+                                                                    padding: '6px 12px',
+                                                                    borderRadius: '8px',
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.9rem',
+                                                                    color: getScoreColor(score),
+                                                                    background: 'transparent'
+                                                                }}
+                                                            >
                                                                 {score.toFixed(1)}
                                                             </span>
                                                         </td>
@@ -810,35 +908,157 @@ export const ScoringMatrix: React.FC = () => {
                                     fontSize: '1.1rem',
                                     fontWeight: 700,
                                     color: 'var(--text-primary)',
-                                    borderBottomLeftRadius: '10px'
                                 }}>
                                     {t('scoring.overall')}:
                                 </td>
-                                {providers && providers.map((p, idx) => (
-                                    <td key={displayProviderName(p.provider_name)} style={{
-                                        textAlign: 'center',
-                                        padding: '20px 16px',
-                                        borderBottomRightRadius: idx === providers.length - 1 ? '10px' : 0
-                                    }}>
-                                        <div style={{
-                                            fontSize: '1.5rem',
-                                            fontWeight: 700,
-                                            color: getScoreColor(p.overall_score),
-                                            padding: '10px 18px',
-                                            background: 'var(--bg-surface)',
-                                            borderRadius: '10px',
-                                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                                            display: 'inline-block',
-                                            border: '2px solid var(--border-color)'
+                                {providers && providers.map((p) => {
+                                    const isExpanded = expandedProviders.has(p.provider_name);
+                                    return (
+                                        <td key={displayProviderName(p.provider_name)} style={{
+                                            textAlign: 'center',
+                                            padding: '20px 16px',
                                         }}>
-                                            {p.overall_score.toFixed(2)}
-                                        </div>
-                                    </td>
-                                ))}
+                                            <div style={{
+                                                fontSize: '1.5rem',
+                                                fontWeight: 700,
+                                                color: getScoreColor(p.overall_score),
+                                                padding: '10px 18px',
+                                                background: 'var(--bg-surface)',
+                                                borderRadius: '10px',
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                                display: 'inline-block',
+                                                border: '2px solid var(--border-color)'
+                                            }}>
+                                                {p.overall_score.toFixed(2)}
+                                            </div>
+                                            <div>
+                                                <button
+                                                    className="analysis-toggle-btn"
+                                                    onClick={() => toggleProviderAnalysis(p.provider_name)}
+                                                >
+                                                    {isExpanded ? '\u25B2 Cerrar' : '\u25BC Analisis'}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    );
+                                })}
                             </tr>
+                            {/* Expanded Analysis Rows */}
+                            {providers && providers.filter(p => expandedProviders.has(p.provider_name)).map(p => {
+                                const analysis = providerAnalysisMap[p.provider_name] || {};
+                                const categoryEntries = Object.entries(CATEGORY_INFO);
+                                return (
+                                    <tr key={`analysis-${p.provider_name}`} className="analysis-row">
+                                        <td colSpan={2 + (providers?.length || 0)}>
+                                            <div className="analysis-row-inner">
+                                                <div style={{
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 700,
+                                                    color: 'var(--text-primary)',
+                                                    marginBottom: 12,
+                                                }}>
+                                                    {displayProviderName(p.provider_name)} — Analisis por area
+                                                </div>
+                                                <div className="analysis-columns">
+                                                    {/* Strengths column */}
+                                                    <div className="analysis-strengths">
+                                                        <div className="analysis-column-title">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                                <polyline points="22 4 12 14.01 9 11.01" />
+                                                            </svg>
+                                                            Puntos Fuertes
+                                                        </div>
+                                                        {categoryEntries.map(([cat, info]) => {
+                                                            const items = analysis[cat]?.highlights || [];
+                                                            if (items.length === 0) return null;
+                                                            return items.map((item, i) => (
+                                                                <div key={`${cat}-s-${i}`} className="analysis-item">
+                                                                    <div className="analysis-item-bullet" />
+                                                                    <div>
+                                                                        {item}
+                                                                        <span
+                                                                            className="analysis-category-chip"
+                                                                            style={{
+                                                                                background: `${info.color}15`,
+                                                                                color: info.color,
+                                                                            }}
+                                                                        >
+                                                                            {getCategoryName(cat, t, info.displayName)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            ));
+                                                        })}
+                                                        {categoryEntries.every(([cat]) => !(analysis[cat]?.highlights?.length)) && (
+                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
+                                                                Sin datos disponibles
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* Improvements column */}
+                                                    <div className="analysis-improvements">
+                                                        <div className="analysis-column-title">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <circle cx="12" cy="12" r="10" />
+                                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                                            </svg>
+                                                            Areas de Mejora
+                                                        </div>
+                                                        {categoryEntries.map(([cat, info]) => {
+                                                            const items = analysis[cat]?.improvements || [];
+                                                            if (items.length === 0) return null;
+                                                            return items.map((item, i) => (
+                                                                <div key={`${cat}-w-${i}`} className="analysis-item">
+                                                                    <div className="analysis-item-bullet" />
+                                                                    <div>
+                                                                        {item}
+                                                                        <span
+                                                                            className="analysis-category-chip"
+                                                                            style={{
+                                                                                background: `${info.color}15`,
+                                                                                color: info.color,
+                                                                            }}
+                                                                        >
+                                                                            {getCategoryName(cat, t, info.displayName)}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            ));
+                                                        })}
+                                                        {categoryEntries.every(([cat]) => !(analysis[cat]?.improvements?.length)) && (
+                                                            <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
+                                                                Sin datos disponibles
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {/* Score Justification Popup */}
+            {selectedScoreCell && (
+                <ScoreJustificationPopup
+                    score={getCriterionScore(selectedScoreCell.provider, selectedScoreCell.criterionId)}
+                    criterionName={selectedScoreCell.criterionName}
+                    categoryName={selectedScoreCell.categoryName}
+                    categoryColor={selectedScoreCell.categoryColor}
+                    justification={selectedScoreCell.provider.criterion_justifications?.[selectedScoreCell.criterionId]}
+                    strengths={selectedScoreCell.provider.strengths}
+                    weaknesses={selectedScoreCell.provider.weaknesses}
+                    summary={selectedScoreCell.provider.summary}
+                    providerName={selectedScoreCell.provider.provider_name}
+                    onClose={() => setSelectedScoreCell(null)}
+                    anchorRect={selectedScoreCell.rect}
+                />
             )}
 
             {/* Delete Configuration Confirmation Modal - rendered via portal */}

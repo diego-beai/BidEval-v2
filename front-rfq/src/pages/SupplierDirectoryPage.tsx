@@ -1,11 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useSupplierDirectoryStore, SupplierEntry } from '../stores/useSupplierDirectoryStore';
+import { useSupplierDirectoryStore, SupplierEntry, SupplierEvalDetail } from '../stores/useSupplierDirectoryStore';
 import { useLanguageStore } from '../stores/useLanguageStore';
 import './SupplierDirectoryPage.css';
 
 export const SupplierDirectoryPage = () => {
   const { t, language } = useLanguageStore();
-  const { suppliers, isLoading, loadSuppliers, selectedSupplier, setSelectedSupplier, upsertSupplier } = useSupplierDirectoryStore();
+  const {
+    suppliers, isLoading, loadSuppliers, selectedSupplier, setSelectedSupplier,
+    upsertSupplier, supplierEvaluations, isLoadingEvaluations,
+    loadSupplierEvaluationDetails, saveSupplierFeedback,
+  } = useSupplierDirectoryStore();
 
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -98,6 +102,7 @@ export const SupplierDirectoryPage = () => {
   }
 
   return (
+    <div className={`supplier-dir-wrapper${detail ? ' has-detail' : ''}`}>
     <div className="supplier-dir">
       {/* Header */}
       <div className="supplier-dir-header">
@@ -238,6 +243,8 @@ export const SupplierDirectoryPage = () => {
         </div>
       )}
 
+    </div>
+
       {/* Detail Side Panel */}
       {detail && (
         <SupplierDetailPanel
@@ -246,6 +253,10 @@ export const SupplierDirectoryPage = () => {
           onSave={upsertSupplier}
           language={language}
           t={t}
+          evaluations={supplierEvaluations[detail.supplier_name] || []}
+          isLoadingEvaluations={isLoadingEvaluations}
+          loadEvaluations={loadSupplierEvaluationDetails}
+          saveFeedback={saveSupplierFeedback}
         />
       )}
     </div>
@@ -258,9 +269,13 @@ interface DetailPanelProps {
   onSave: (data: any) => Promise<boolean>;
   language: string;
   t: (key: string) => string;
+  evaluations: SupplierEvalDetail[];
+  isLoadingEvaluations: boolean;
+  loadEvaluations: (name: string) => Promise<void>;
+  saveFeedback: (supplierName: string, projectId: string, feedback: string) => Promise<boolean>;
 }
 
-const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t }: DetailPanelProps) => {
+const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t, evaluations, isLoadingEvaluations, loadEvaluations, saveFeedback }: DetailPanelProps) => {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     email: supplier.email || '',
@@ -270,6 +285,43 @@ const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t }: DetailP
     website: supplier.website || '',
     notes: supplier.notes || '',
   });
+
+  // Evaluation details
+  const [expandedEvalProject, setExpandedEvalProject] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [feedbackSaved, setFeedbackSaved] = useState(false);
+
+  // Load evaluations when supplier changes
+  useEffect(() => {
+    loadEvaluations(supplier.supplier_name);
+  }, [supplier.supplier_name, loadEvaluations]);
+
+  // Set default expanded project and feedback text when evaluations load
+  useEffect(() => {
+    if (evaluations.length > 0) {
+      setExpandedEvalProject(evaluations[0].project_id);
+      setFeedbackText(evaluations[0].evaluation_details?.feedback || '');
+    }
+  }, [evaluations]);
+
+  const handleSaveFeedback = async () => {
+    if (!evaluations[0]) return;
+    setIsSavingFeedback(true);
+    setFeedbackSaved(false);
+    const ok = await saveFeedback(supplier.supplier_name, evaluations[0].project_id, feedbackText);
+    setIsSavingFeedback(false);
+    if (ok) {
+      setFeedbackSaved(true);
+      setTimeout(() => setFeedbackSaved(false), 3000);
+    }
+  };
+
+  const getEvalScoreColor = (score: number) => {
+    if (score >= 7) return '#10b981';
+    if (score >= 5) return '#f59e0b';
+    return '#ef4444';
+  };
 
   const handleSave = async () => {
     const ok = await onSave({
@@ -399,6 +451,232 @@ const SupplierDetailPanel = ({ supplier, onClose, onSave, language, t }: DetailP
             )}
           </div>
         </div>
+
+        {/* Performance Analysis */}
+        <div className="supplier-detail-section">
+          <div className="supplier-detail-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{language === 'es' ? 'Análisis de Rendimiento' : 'Performance Analysis'}</span>
+            {evaluations.length > 0 && (() => {
+              const wins = evaluations.filter(e => e.is_winner).length;
+              return wins > 0 ? (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '2px 8px', borderRadius: 999,
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  color: '#f59e0b', fontSize: '0.72rem', fontWeight: 700,
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  {wins}/{evaluations.length} {language === 'es' ? 'victorias' : 'wins'}
+                </span>
+              ) : (
+                <span style={{
+                  padding: '2px 8px', borderRadius: 999,
+                  background: 'var(--bg-surface-alt)',
+                  color: 'var(--text-tertiary)', fontSize: '0.72rem', fontWeight: 600,
+                }}>
+                  0/{evaluations.length} {language === 'es' ? 'victorias' : 'wins'}
+                </span>
+              );
+            })()}
+          </div>
+          {isLoadingEvaluations ? (
+            <div className="supplier-eval-loading">
+              <div style={{
+                width: '100%', height: 12, borderRadius: 6,
+                background: 'var(--bg-surface-alt)',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: '60%', height: '100%',
+                  background: 'linear-gradient(90deg, var(--bg-surface-alt), var(--border-color), var(--bg-surface-alt))',
+                  animation: 'shimmer 1.5s infinite',
+                  borderRadius: 6,
+                }} />
+              </div>
+              <div style={{
+                width: '100%', height: 12, borderRadius: 6,
+                background: 'var(--bg-surface-alt)',
+                marginTop: 8,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: '40%', height: '100%',
+                  background: 'linear-gradient(90deg, var(--bg-surface-alt), var(--border-color), var(--bg-surface-alt))',
+                  animation: 'shimmer 1.5s infinite 0.3s',
+                  borderRadius: 6,
+                }} />
+              </div>
+            </div>
+          ) : evaluations.length === 0 ? (
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', margin: 0 }}>
+              {language === 'es' ? 'Sin evaluaciones disponibles' : 'No evaluations available'}
+            </p>
+          ) : (
+            <div className="supplier-eval-accordion">
+              {evaluations.map((ev) => {
+                const isOpen = expandedEvalProject === ev.project_id;
+                return (
+                  <div key={ev.project_id} className={`supplier-eval-item ${isOpen ? 'open' : ''}`}>
+                    <button
+                      className="supplier-eval-item-header"
+                      onClick={() => setExpandedEvalProject(isOpen ? null : ev.project_id)}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          color: getEvalScoreColor(ev.overall_score),
+                          background: `${getEvalScoreColor(ev.overall_score)}15`,
+                        }}>
+                          {ev.overall_score.toFixed(1)}
+                        </span>
+                        {ev.is_winner && (
+                          <span title={language === 'es' ? 'Ganó este proyecto' : 'Won this project'} style={{
+                            display: 'flex', alignItems: 'center', gap: 3,
+                            padding: '2px 6px', borderRadius: 999,
+                            background: 'rgba(245, 158, 11, 0.12)',
+                            color: '#f59e0b', fontSize: '0.68rem', fontWeight: 700,
+                            flexShrink: 0,
+                          }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            {language === 'es' ? 'Ganó' : 'Won'}
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {ev.project_name}
+                        </span>
+                      </div>
+                      <svg
+                        width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="var(--text-tertiary)" strokeWidth="2"
+                        style={{ flexShrink: 0, transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {isOpen && ev.evaluation_details && (
+                      <div className="supplier-eval-item-body">
+                        {/* Summary */}
+                        {ev.evaluation_details.summary && (
+                          <p style={{
+                            fontSize: '0.78rem',
+                            color: 'var(--text-secondary)',
+                            margin: '0 0 10px',
+                            lineHeight: 1.5,
+                            fontStyle: 'italic',
+                          }}>
+                            {ev.evaluation_details.summary}
+                          </p>
+                        )}
+                        {/* Strengths */}
+                        {ev.evaluation_details.strengths && ev.evaluation_details.strengths.length > 0 && (
+                          <div style={{ marginBottom: 10 }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#10b981', marginBottom: 4, textTransform: 'uppercase' }}>
+                              {language === 'es' ? 'Fortalezas' : 'Strengths'}
+                            </div>
+                            {ev.evaluation_details.strengths.map((s, i) => (
+                              <div key={i} style={{
+                                fontSize: '0.78rem',
+                                color: 'var(--text-primary)',
+                                padding: '4px 8px',
+                                background: 'rgba(16,185,129,0.05)',
+                                borderRadius: 6,
+                                marginBottom: 3,
+                                lineHeight: 1.4,
+                              }}>
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Weaknesses */}
+                        {ev.evaluation_details.weaknesses && ev.evaluation_details.weaknesses.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#f59e0b', marginBottom: 4, textTransform: 'uppercase' }}>
+                              {language === 'es' ? 'Areas de Mejora' : 'Areas for Improvement'}
+                            </div>
+                            {ev.evaluation_details.weaknesses.map((w, i) => (
+                              <div key={i} style={{
+                                fontSize: '0.78rem',
+                                color: 'var(--text-primary)',
+                                padding: '4px 8px',
+                                background: 'rgba(245,158,11,0.05)',
+                                borderRadius: 6,
+                                marginBottom: 3,
+                                lineHeight: 1.4,
+                              }}>
+                                {w}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Feedback Section */}
+        {evaluations.length > 0 && (
+          <div className="supplier-detail-section supplier-feedback-section">
+            <div className="supplier-detail-section-title">
+              {language === 'es' ? 'Feedback al Proveedor' : 'Supplier Feedback'}
+            </div>
+            <textarea
+              className="supplier-feedback-textarea"
+              value={feedbackText}
+              onChange={(e) => { setFeedbackText(e.target.value); setFeedbackSaved(false); }}
+              placeholder={language === 'es'
+                ? 'Escribe feedback para este proveedor...'
+                : 'Write feedback for this supplier...'}
+            />
+            <button
+              className="supplier-feedback-save-btn"
+              onClick={handleSaveFeedback}
+              disabled={isSavingFeedback}
+            >
+              {isSavingFeedback ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 0.8s linear infinite' }}>
+                    <path d="M21 12a9 9 0 11-6.219-8.56" />
+                  </svg>
+                  {language === 'es' ? 'Guardando...' : 'Saving...'}
+                </span>
+              ) : feedbackSaved ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                  {language === 'es' ? 'Guardado' : 'Saved'}
+                </span>
+              ) : (
+                language === 'es' ? 'Guardar feedback' : 'Save feedback'
+              )}
+            </button>
+            <p style={{
+              fontSize: '0.7rem',
+              color: 'var(--text-tertiary)',
+              margin: '8px 0 0',
+              lineHeight: 1.4,
+            }}>
+              {language === 'es'
+                ? 'Este feedback puede compartirse si el proveedor solicita una explicacion de la evaluacion'
+                : 'This feedback can be shared if the supplier requests an evaluation explanation'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

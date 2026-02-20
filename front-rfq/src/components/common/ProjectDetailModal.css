@@ -147,12 +147,13 @@
     align-items: flex-start;
     justify-content: center;
     gap: 0;
-    padding: 14px 12px 20px;
+    padding: 14px 12px 32px;
     background: var(--bg-body);
     border-radius: 14px;
     border: 1px solid var(--border-color);
     overflow-x: auto;
-    overflow-y: visible;
+    /* overflow-y must NOT be visible when overflow-x is auto (browser clips both).
+       Extra bottom padding (32px) gives room for the urgency badge. */
     scrollbar-width: none;
     position: relative;
     z-index: 1;

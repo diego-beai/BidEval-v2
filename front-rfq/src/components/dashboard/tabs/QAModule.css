@@ -1426,6 +1426,60 @@
   .question-actions {
     flex-direction: column;
   }
+
+  .module-section-header-content {
+    flex-wrap: wrap;
+  }
+
+  .module-section-header-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .send-modal-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .qa-main-title {
+    font-size: 1.75rem;
+  }
+
+  .disciplina-header {
+    padding: 14px;
+  }
+
+  .preguntas-list {
+    padding: 14px;
+  }
+
+  .question-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qa-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qa-title {
+    font-size: 1.25rem;
+  }
+
+  .qa-main-title {
+    font-size: 1.4rem;
+  }
+
+  .disciplina-name {
+    font-size: 1rem;
+  }
+
+  .module-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 14px 16px;
+  }
 }
 
 /* Status Banner */

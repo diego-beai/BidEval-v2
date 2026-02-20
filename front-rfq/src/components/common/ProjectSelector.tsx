@@ -248,12 +248,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
   };
 
   const formatProjectName = (name: string) => {
-    const formatted = name.replace(/_/g, ' ');
-    const maxLength = compact ? 20 : 35;
-    if (formatted.length > maxLength) {
-      return formatted.substring(0, maxLength) + '...';
-    }
-    return formatted;
+    return name.replace(/_/g, ' ');
   };
 
   return (
@@ -261,7 +256,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
       <button
         className={`project-selector-btn ${isOpen ? 'active' : ''} ${!activeProject ? 'placeholder' : ''}`}
         onClick={handleToggle}
-        disabled={isLoading}
       >
         <div className="project-selector-content">
           <svg
@@ -279,7 +273,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ compact = fals
           </svg>
 
           <span className="project-name" title={activeProject?.display_name}>
-            {isLoading ? t('project.loading') : (activeProject?.display_name ? formatProjectName(activeProject.display_name) : t('project.select'))}
+            {activeProject?.display_name ? formatProjectName(activeProject.display_name) : t('project.select')}
           </span>
 
           {activeProject?.project_type && (

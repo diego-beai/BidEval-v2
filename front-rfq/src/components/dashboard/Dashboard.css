@@ -60,9 +60,18 @@
     padding: 6px;
     border-radius: 12px;
     width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
     margin-bottom: 20px;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-shrink: 0;
+}
+
+.dashboard-tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .dashboard-tab {
@@ -76,6 +85,8 @@
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .dashboard-tab:hover:not(.active) {
@@ -502,4 +513,130 @@
 
 .stat-card {
     /* Animation removed to prevent initial position shift */
+}
+
+/* ============================================
+   Dashboard Responsive Styles
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Hero section */
+    .home-hero {
+        padding: 24px 20px !important;
+    }
+
+    .home-hero h1 {
+        font-size: 1.8rem !important;
+    }
+
+    /* Stat cards: reduce padding on mobile */
+    .stat-card.widget-card {
+        padding: 20px 16px !important;
+    }
+
+    .dashboard-title {
+        font-size: 1.35rem;
+    }
+
+    .dashboard-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .dashboard-tabs {
+        width: 100%;
+    }
+
+    .dashboard-tab {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .widget-card {
+        padding: 16px;
+    }
+
+    .winner-banner {
+        flex-direction: column;
+        gap: 16px;
+        padding: 20px;
+    }
+
+    .winner-banner .award-btn {
+        width: 100%;
+    }
+
+    .home-dashboard {
+        padding: 4px 0 12px 0;
+        gap: 16px;
+    }
+
+    .dashboard-header-simple {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .dashboard-header-simple h1 {
+        font-size: 1.6rem;
+    }
+
+    .dashboard-header-simple p {
+        font-size: 0.95rem;
+    }
+
+    .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .charts-row-container {
+        grid-template-columns: 1fr;
+    }
+
+    .charts-row-container .widget-card:first-child {
+        grid-row: auto;
+        min-height: 320px;
+    }
+
+    .charts-row-container .widget-card:nth-child(2),
+    .charts-row-container .widget-card:nth-child(3) {
+        min-height: 200px;
+    }
+
+    .scoring-analysis-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .bar-chart-container {
+        height: 140px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-tab {
+        padding: 7px 10px;
+        font-size: 0.78rem;
+    }
+
+    .dashboard-header-simple h1 {
+        font-size: 1.3rem;
+    }
+
+    .winner-banner {
+        padding: 16px;
+    }
+
+    .winner-info h2 {
+        font-size: 1.1rem;
+    }
 }

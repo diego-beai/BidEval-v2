@@ -360,10 +360,9 @@
 .top-header-left {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     flex: 1;
     min-width: 0;
-    overflow: visible;
 }
 
 
@@ -389,74 +388,57 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* ============================================
+   Mobile Menu Button (hamburger in top header)
+   ============================================ */
+.mobile-menu-btn {
+    display: none; /* hidden on desktop */
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 7px;
+    margin-right: 4px;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.mobile-menu-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--text-tertiary);
+}
+
+/* ============================================
+   Responsive Strategy:
+   Desktop/Tablet: Collapsed (72px) <-> Expanded (260px)
+   Mobile (<768px): Hidden off-screen <-> Overlay (260px)
+   ============================================ */
+
 @media (max-width: 768px) {
     :root {
         --sidebar-width-collapsed: 0px;
-        --sidebar-width-expanded: 240px;
+        --sidebar-width-expanded: 260px;
     }
 
-    /* Sidebar becomes an overlay or sliding drawer */
+    /* Sidebar slides in as overlay */
     .sidebar {
+        width: 260px;
         transform: translateX(-100%);
-        /* Hidden by default */
         transition: transform 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .sidebar.expanded {
-        width: var(--sidebar-width-expanded);
-        transform: translateX(0);
-    }
-
-    /* When collapsed (default on mobile), sidebar is effectively GONE via transform */
-    /* When expanded, it slides IN. logic in JS toggles 'expanded' class.
-       BUT the JS logic toggles width. We need to override behavior.
-    */
-
-    /* Main Content adjustments */
-    .main-content {
-        margin-left: 0 !important;
-        /* Always 0 margin on mobile */
-        width: 100%;
-    }
-
-    .main-content.expanded-margin {
-        margin-left: 0 !important;
-    }
-
-    /* Header & Padding */
-    .top-header {
-        padding: 0 16px;
-    }
-
-    .content-wrapper {
-        padding: 16px;
-    }
-
-}
-
-/* Better Responsive Strategy: 
-   Tablets/Desktop: Collapsed (72px) <-> Expanded (260px)
-   Mobile (<768px): Hidden (0px) <-> Expanded (Overlay)
-*/
-
-@media (max-width: 768px) {
-    .sidebar {
-        width: 260px;
-        /* Always wide when visible */
-        transform: translateX(-100%);
-        /* Hidden off-screen */
         z-index: 2000;
-        /* On top of everything */
+        box-shadow: none;
     }
 
     .sidebar.expanded {
         transform: translateX(0);
-        /* Slide in */
         width: 260px;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
     }
 
-    /* Overlay backdrop when sidebar is open */
+    /* Backdrop when sidebar is open */
     .sidebar.expanded::before {
         content: '';
         position: fixed;
@@ -464,32 +446,170 @@
         left: 260px;
         right: -100vw;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.45);
         z-index: -1;
     }
 
+    /* Main content always full width on mobile */
     .main-content {
         margin-left: 0 !important;
-        /* No margin shift */
+        width: 100%;
     }
 
-    /* We need a toggle button IN THE HEADER for mobile since sidebar header is hidden */
-    /* Wait, the current button is INSIDE the sidebar. If sidebar is hidden, button is gone.
-       We need to add a mobile toggle to the Top Header in SidebarLayout.tsx
-    */
-
-    .content-wrapper {
-        padding: 16px;
+    .main-content.expanded-margin {
+        margin-left: 0 !important;
     }
 
+    /* Show hamburger button */
+    .mobile-menu-btn {
+        display: flex;
+    }
+
+    /* Header adjustments */
     .top-header {
-        padding: 0 16px;
+        padding: 0 12px;
+        height: 56px;
     }
 
+    /* Content area padding */
+    .content-wrapper {
+        padding: 12px;
+    }
+
+    /* Single column stats */
     .stats-grid {
         grid-template-columns: 1fr;
-        /* Single column */
     }
+
+    /* Header right side: hide less important items on small screens */
+    .header-lang-label {
+        display: none;
+    }
+}
+
+/* ============================================
+   Tablet breakpoint (768px - 1100px)
+   ============================================ */
+@media (max-width: 1100px) and (min-width: 769px) {
+    .top-header {
+        padding: 0 20px;
+    }
+
+    .content-wrapper {
+        padding: 16px 20px;
+    }
+}
+
+/* ============================================
+   Notification dropdown — mobile fix
+   ============================================ */
+@media (max-width: 480px) {
+    /* Make notification dropdown fit the screen */
+    .notif-dropdown-mobile {
+        width: calc(100vw - 24px) !important;
+        right: -12px !important;
+        left: auto !important;
+    }
+
+    /* Compact header actions */
+    .top-header {
+        padding: 0 10px;
+    }
+
+    .top-header-left {
+        gap: 8px;
+    }
+}
+
+/* ============================================
+   Demo Role Selector (footer of sidebar)
+   ============================================ */
+.demo-role-selector {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.demo-role-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(18, 181, 176, 0.08);
+    border: 1px solid rgba(18, 181, 176, 0.25);
+    border-radius: 6px;
+    color: var(--color-cyan);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    height: 26px;
+    min-width: 26px;
+}
+
+.demo-role-badge:hover {
+    background: rgba(18, 181, 176, 0.15);
+    border-color: rgba(18, 181, 176, 0.4);
+}
+
+/* Hide text label when sidebar is collapsed */
+.sidebar:not(.expanded) .demo-role-text {
+    display: none;
+}
+
+.sidebar:not(.expanded) .demo-role-badge {
+    padding: 4px;
+    width: 26px;
+    justify-content: center;
+}
+
+.demo-role-dropdown {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+    z-index: 1100;
+    min-width: 140px;
+    animation: fadeInUp 0.15s ease;
+}
+
+.sidebar.expanded .demo-role-dropdown {
+    left: 0;
+    transform: none;
+}
+
+.demo-role-option {
+    display: block;
+    width: 100%;
+    padding: 7px 12px;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.demo-role-option:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.demo-role-option.active {
+    background: rgba(18, 181, 176, 0.1);
+    color: var(--color-cyan);
+    font-weight: 600;
 }
 
 /* Global Processing Indicator Animations */

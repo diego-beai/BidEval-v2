@@ -36,10 +36,10 @@ body {
     flex: 1;
     background-color: var(--bg-body);
     transition: margin-left var(--transition-normal);
-    /* padding: 32px;  Handled by internal children usually, but let's standardise */
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
 }
 
 .main-content.sidebar-open {
@@ -68,6 +68,8 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
+    flex: 1;
+    min-width: 0;
 }
 
 .page-title {
@@ -75,6 +77,21 @@ body {
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+}
+
+/* ============================================
+   Global utility: prevent horizontal overflow
+   ============================================ */
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Scrollable tables in tight layouts */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Animations */

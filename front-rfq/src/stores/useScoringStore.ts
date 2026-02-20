@@ -40,6 +40,8 @@ export interface ProviderScore {
     summary?: string;
     recommendations?: string[];
     esg_certifications?: ESGCertification[];
+    criterion_justifications?: Record<string, string>;
+    category_analysis?: Record<string, { highlights: string[]; improvements: string[] }>;
 }
 
 export interface ScoringResult {
@@ -298,6 +300,12 @@ export const useScoringStore = create<ScoringState>()(
                             summary: evalDetails.summary || '',
                             recommendations: evalDetails.recommendations || [],
                             esg_certifications: evalDetails.esg_certifications || [],
+                            criterion_justifications: evalDetails.criterion_justifications || {},
+                            category_analysis: evalDetails.category_analysis
+                                ? Object.fromEntries(
+                                    Object.entries(evalDetails.category_analysis).map(([k, v]) => [k.toLowerCase(), v])
+                                  ) as Record<string, { highlights: string[]; improvements: string[] }>
+                                : undefined,
                         };
                     });
 

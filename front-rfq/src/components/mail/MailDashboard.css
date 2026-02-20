@@ -794,3 +794,61 @@
         min-height: 500px;
     }
 }
+
+@media (max-width: 768px) {
+    .mail-container {
+        gap: 12px;
+    }
+
+    .sent-filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 16px;
+        gap: 8px;
+    }
+
+    .sent-filters {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    .sent-filters::-webkit-scrollbar {
+        display: none;
+    }
+
+    .editor-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 16px;
+    }
+
+    .email-meta {
+        padding: 10px 16px;
+    }
+
+    .email-body {
+        padding: 12px 16px;
+    }
+
+    .editor-footer {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .mail-tab span {
+        display: none;
+    }
+
+    .mail-tab {
+        gap: 0;
+    }
+
+    .sent-messages-list {
+        padding: 12px;
+    }
+}

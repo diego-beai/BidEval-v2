@@ -597,11 +597,39 @@
   .comm-hub {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    height: calc(100vh - 56px);
   }
 
   .comm-provider-panel {
     border-right: none;
     border-bottom: 1px solid var(--border-color);
-    max-height: 200px;
+    max-height: 220px;
+  }
+
+  .comm-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .comm-timeline-header-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .comm-timeline-filters {
+    order: 1;
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .comm-provider-panel {
+    max-height: 180px;
+  }
+
+  .comm-new-btn span {
+    display: none;
   }
 }

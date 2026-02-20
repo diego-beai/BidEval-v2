@@ -13,6 +13,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { useScoringConfigStore } from '../../../stores/useScoringConfigStore';
 import { useProjectStore } from '../../../stores/useProjectStore';
 import { useLanguageStore } from '../../../stores/useLanguageStore';
+import { usePermissionsStore } from '../../../stores/usePermissionsStore';
+import { AccessDenied } from '../../permissions/AccessDenied';
 import type { CategoryDraft, CriterionDraft } from '../../../types/scoring.types';
 import {
   buildDefaultConfiguration,
@@ -30,7 +32,8 @@ interface ScoringSetupWizardProps {
 export const ScoringSetupWizard: React.FC<ScoringSetupWizardProps> = ({ onClose }) => {
   const { activeProjectId, projects } = useProjectStore();
   const activeProject = projects.find(p => p.id === activeProjectId);
-  const { t } = useLanguageStore();
+  const { t, language } = useLanguageStore();
+  const can = usePermissionsStore((state) => state.can);
   const {
     draftCategories,
     setDraftCategories,
@@ -186,6 +189,35 @@ export const ScoringSetupWizard: React.FC<ScoringSetupWizardProps> = ({ onClose 
         return false;
     }
   }, [wizardStep, selectedTemplate, draftCategories, totalCategoryWeight, validation]);
+
+  // Permission gate — placed after all hooks to comply with Rules of Hooks
+  if (!can('edit_scoring')) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+      }}>
+        <div style={{
+          background: 'var(--bg-surface)', borderRadius: '16px',
+          width: '90%', maxWidth: '500px', padding: '24px',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)', position: 'relative',
+        }}>
+          <button onClick={onClose} style={{
+            position: 'absolute', top: '16px', right: '16px',
+            width: '32px', height: '32px', borderRadius: '8px',
+            border: 'none', background: 'var(--bg-surface-alt)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12"></path>
+            </svg>
+          </button>
+          <AccessDenied requiredRoles={language === 'es' ? ['Admin', 'Evaluador'] : ['Admin', 'Evaluator']} />
+        </div>
+      </div>
+    );
+  }
 
   // Render step content
   const renderStepContent = () => {

@@ -3,6 +3,7 @@ import { useEconomicStore, EconomicOffer } from '../../stores/useEconomicStore';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { getProviderDisplayName } from '../../types/provider.types';
+import { PermissionGate } from '../permissions/PermissionGate';
 import './EconomicSection.css';
 
 function formatCurrency(value: number | string | null | undefined, currency: string = 'EUR'): string {
@@ -37,7 +38,38 @@ function numericEntries(obj: Record<string, unknown>): [string, number][] {
 type SortColumn = 'total_price' | 'discount' | 'net_price' | 'tco';
 type SortDir = 'asc' | 'desc';
 
-export const EconomicSection: React.FC = () => {
+interface SortHeaderProps {
+    column: SortColumn;
+    label: string;
+    className?: string;
+    sortColumn: SortColumn;
+    sortDir: SortDir;
+    onSort: (col: SortColumn) => void;
+}
+
+const SortHeader: React.FC<SortHeaderProps> = ({ column, label, className, sortColumn, sortDir, onSort }) => (
+    <th
+        className={`econ-sortable ${className || ''} ${sortColumn === column ? 'active' : ''}`}
+        onClick={() => onSort(column)}
+    >
+        <span className="econ-sort-header">
+            {label}
+            <span className="econ-sort-icon">
+                {sortColumn === column ? (
+                    sortDir === 'asc' ? (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15" /></svg>
+                    ) : (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                    )
+                ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}><polyline points="18 15 12 9 6 15" /></svg>
+                )}
+            </span>
+        </span>
+    </th>
+);
+
+const EconomicSectionContent: React.FC = () => {
     const { offers, comparison, isLoading, error, loadOffers } = useEconomicStore();
     const { t } = useLanguageStore();
     const { activeProjectId, projects } = useProjectStore();
@@ -48,9 +80,6 @@ export const EconomicSection: React.FC = () => {
     useEffect(() => {
         loadOffers();
     }, [loadOffers, activeProjectId]);
-
-    // Guard: RFI projects should never see the economic section
-    if (projectType === 'RFI') return null;
 
     const toggleRow = (id: string) => {
         setExpandedRows(prev => {
@@ -96,7 +125,7 @@ export const EconomicSection: React.FC = () => {
         }
 
         return { lowest, highest, average, spread, spreadPct, cheapestProvider: cheapestOffer?.provider_name || '', currency, bestTco };
-    }, [offers]);
+    }, [offers, projects, activeProjectId]);
 
     // Sorted comparison
     const sortedComparison = useMemo(() => {
@@ -142,6 +171,9 @@ export const EconomicSection: React.FC = () => {
         for (const o of offers) map.set(o.provider_name, o);
         return map;
     }, [offers]);
+
+    // Guard: RFI projects should never see the economic section — placed after all hooks
+    if (projectType === 'RFI') return null;
 
     // CSV Export
     const handleExportCSV = useCallback(() => {
@@ -196,29 +228,6 @@ export const EconomicSection: React.FC = () => {
             </span>
         );
     };
-
-    // Sort header helper
-    const SortHeader: React.FC<{ column: SortColumn; label: string; className?: string }> = ({ column, label, className }) => (
-        <th
-            className={`econ-sortable ${className || ''} ${sortColumn === column ? 'active' : ''}`}
-            onClick={() => handleSort(column)}
-        >
-            <span className="econ-sort-header">
-                {label}
-                <span className="econ-sort-icon">
-                    {sortColumn === column ? (
-                        sortDir === 'asc' ? (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15" /></svg>
-                        ) : (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-                        )
-                    ) : (
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.3 }}><polyline points="18 15 12 9 6 15" /></svg>
-                    )}
-                </span>
-            </span>
-        </th>
-    );
 
     if (isLoading) {
         return (
@@ -369,11 +378,11 @@ export const EconomicSection: React.FC = () => {
                         <tr>
                             <th style={{ width: 50 }} className="col-center">#</th>
                             <th>{t('econ.table.provider')}</th>
-                            <SortHeader column="total_price" label={t('econ.table.total_price')} className="col-right" />
-                            <SortHeader column="discount" label={t('econ.table.discount')} className="col-center" />
-                            <SortHeader column="net_price" label={t('econ.table.net_price')} className="col-right" />
+                            <SortHeader column="total_price" label={t('econ.table.total_price')} className="col-right" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
+                            <SortHeader column="discount" label={t('econ.table.discount')} className="col-center" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
+                            <SortHeader column="net_price" label={t('econ.table.net_price')} className="col-right" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
                             <th>{t('econ.table.payment_terms')}</th>
-                            <SortHeader column="tco" label={t('econ.table.tco')} className="col-right" />
+                            <SortHeader column="tco" label={t('econ.table.tco')} className="col-right" sortColumn={sortColumn} sortDir={sortDir} onSort={handleSort} />
                             <th style={{ width: 40 }}></th>
                         </tr>
                     </thead>
@@ -617,3 +626,9 @@ export const EconomicSection: React.FC = () => {
         </div>
     );
 };
+
+export const EconomicSection: React.FC = () => (
+    <PermissionGate action="view_economic">
+        <EconomicSectionContent />
+    </PermissionGate>
+);

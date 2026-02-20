@@ -770,7 +770,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ onNavigate, onNewP
         <div className="home-dashboard">
 
             {/* Hero Section */}
-            <div style={{
+            <div className="home-hero" style={{
                 background: 'linear-gradient(135deg, var(--color-primary), #0d9488)',
                 borderRadius: 'var(--radius-lg)',
                 padding: '40px 32px',
@@ -1249,21 +1249,23 @@ const DashboardCard = ({ title, value, trend, icon, color, isPositiveTrend = tru
                     color: trendColor,
                     fontWeight: 600,
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
+                    alignItems: 'flex-start',
+                    gap: '6px',
                 }}>
                     {isPositiveTrend ? (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
                             <polyline points="17 6 23 6 23 12"></polyline>
                         </svg>
                     ) : (
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}>
                             <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
                             <polyline points="17 18 23 18 23 12"></polyline>
                         </svg>
                     )}
-                    {trend}
+                    <span style={{ lineHeight: 1.3, textAlign: 'left' }}>
+                        {trend}
+                    </span>
                 </div>
             </div>
         </div>

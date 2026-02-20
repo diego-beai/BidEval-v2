@@ -22,6 +22,22 @@ export interface SupplierEntry {
   statuses: string[];
 }
 
+export interface SupplierEvalDetail {
+  project_id: string;
+  project_name: string;
+  overall_score: number;
+  is_winner: boolean;
+  evaluation_details: {
+    strengths?: string[];
+    weaknesses?: string[];
+    summary?: string;
+    recommendations?: string[];
+    category_analysis?: Record<string, { highlights: string[]; improvements: string[] }>;
+    feedback?: string;
+  } | null;
+  created_at: string;
+}
+
 export interface SupplierDirectoryRecord {
   id: string;
   name: string;
@@ -42,10 +58,14 @@ interface SupplierDirectoryState {
   isLoading: boolean;
   error: string | null;
   selectedSupplier: string | null;
+  supplierEvaluations: Record<string, SupplierEvalDetail[]>;
+  isLoadingEvaluations: boolean;
 
   loadSuppliers: () => Promise<void>;
   setSelectedSupplier: (name: string | null) => void;
   upsertSupplier: (data: Partial<SupplierDirectoryRecord> & { name: string }) => Promise<boolean>;
+  loadSupplierEvaluationDetails: (supplierName: string) => Promise<void>;
+  saveSupplierFeedback: (supplierName: string, projectId: string, feedback: string) => Promise<boolean>;
 }
 
 export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
@@ -55,6 +75,8 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
       isLoading: false,
       error: null,
       selectedSupplier: null,
+      supplierEvaluations: {},
+      isLoadingEvaluations: false,
 
       loadSuppliers: async () => {
         if (!isSupabaseConfigured()) return;
@@ -103,6 +125,159 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
       },
 
       setSelectedSupplier: (name) => set({ selectedSupplier: name }),
+
+      loadSupplierEvaluationDetails: async (supplierName: string) => {
+        if (!isSupabaseConfigured()) return;
+
+        set({ isLoadingEvaluations: true });
+
+        try {
+          // Query ranking_proveedores for this supplier
+          const { data: rankingData, error: rankingError } = await (supabase!
+            .from('ranking_proveedores' as any)
+            .select('project_id, overall_score, evaluation_details, created_at')
+            .ilike('provider_name', supplierName)
+            .order('created_at', { ascending: false })) as { data: any[] | null; error: any };
+
+          if (rankingError) {
+            set({ isLoadingEvaluations: false });
+            return;
+          }
+
+          if (!rankingData || rankingData.length === 0) {
+            set((state) => ({
+              supplierEvaluations: { ...state.supplierEvaluations, [supplierName]: [] },
+              isLoadingEvaluations: false,
+            }));
+            return;
+          }
+
+          // Get project names for the project IDs
+          const projectIds = rankingData.map((r: any) => r.project_id).filter(Boolean);
+          let projectMap: Record<string, string> = {};
+
+          if (projectIds.length > 0) {
+            const { data: projectData } = await (supabase!
+              .from('projects' as any)
+              .select('id, display_name, name')
+              .in('id', projectIds)) as { data: any[] | null; error: any };
+
+            if (projectData) {
+              projectMap = projectData.reduce((acc: Record<string, string>, p: any) => {
+                acc[p.id] = p.display_name || p.name || p.id;
+                return acc;
+              }, {});
+            }
+          }
+
+          // Determine winners: get top scorer per project
+          // winner = supplier with highest overall_score in that project
+          const winnerMap: Record<string, boolean> = {};
+          if (projectIds.length > 0) {
+            const { data: allScores } = await (supabase!
+              .from('ranking_proveedores' as any)
+              .select('project_id, provider_name, overall_score')
+              .in('project_id', projectIds)) as { data: any[] | null; error: any };
+
+            if (allScores) {
+              // Find max score per project
+              const maxByProject: Record<string, number> = {};
+              for (const row of allScores) {
+                const s = row.overall_score || 0;
+                if (!maxByProject[row.project_id] || s > maxByProject[row.project_id]) {
+                  maxByProject[row.project_id] = s;
+                }
+              }
+              // Mark this supplier as winner where their score equals the max
+              for (const row of rankingData) {
+                const max = maxByProject[row.project_id] || 0;
+                winnerMap[row.project_id] = max > 0 && row.overall_score === max;
+              }
+            }
+          }
+
+          const parseJsonField = (val: any) => {
+            if (!val) return null;
+            if (typeof val === 'string') {
+              try { return JSON.parse(val); } catch { return null; }
+            }
+            return typeof val === 'object' ? val : null;
+          };
+
+          const evaluations: SupplierEvalDetail[] = rankingData.map((row: any) => {
+            const evalDetails = parseJsonField(row.evaluation_details);
+            const rawScore = row.overall_score || 0;
+            return {
+              project_id: row.project_id,
+              project_name: projectMap[row.project_id] || row.project_id,
+              overall_score: rawScore > 10 ? rawScore / 10 : rawScore,
+              is_winner: winnerMap[row.project_id] || false,
+              evaluation_details: evalDetails ? {
+                strengths: evalDetails.strengths || [],
+                weaknesses: evalDetails.weaknesses || [],
+                summary: evalDetails.summary || '',
+                recommendations: evalDetails.recommendations || [],
+                category_analysis: evalDetails.category_analysis
+                  ? Object.fromEntries(
+                      Object.entries(evalDetails.category_analysis).map(([k, v]) => [k.toLowerCase(), v])
+                    ) as Record<string, { highlights: string[]; improvements: string[] }>
+                  : undefined,
+                feedback: evalDetails.feedback || '',
+              } : null,
+              created_at: row.created_at,
+            };
+          });
+
+          set((state) => ({
+            supplierEvaluations: { ...state.supplierEvaluations, [supplierName]: evaluations },
+            isLoadingEvaluations: false,
+          }));
+        } catch {
+          set({ isLoadingEvaluations: false });
+        }
+      },
+
+      saveSupplierFeedback: async (supplierName: string, projectId: string, feedback: string) => {
+        if (!isSupabaseConfigured()) return false;
+
+        try {
+          // First read the current evaluation_details
+          const { data: current, error: readError } = await (supabase!
+            .from('ranking_proveedores' as any)
+            .select('evaluation_details')
+            .eq('project_id', projectId)
+            .eq('provider_name', supplierName)
+            .single()) as { data: any; error: any };
+
+          if (readError) return false;
+
+          const parseJsonField = (val: any) => {
+            if (!val) return {};
+            if (typeof val === 'string') {
+              try { return JSON.parse(val); } catch { return {}; }
+            }
+            return typeof val === 'object' ? val : {};
+          };
+
+          const existingDetails = parseJsonField(current?.evaluation_details);
+          const updatedDetails = { ...existingDetails, feedback };
+
+          const client = supabase as any;
+          const { error: updateError } = await client
+            .from('ranking_proveedores')
+            .update({ evaluation_details: updatedDetails })
+            .eq('project_id', projectId)
+            .eq('provider_name', supplierName);
+
+          if (updateError) return false;
+
+          // Reload evaluations for this supplier
+          await get().loadSupplierEvaluationDetails(supplierName);
+          return true;
+        } catch {
+          return false;
+        }
+      },
 
       upsertSupplier: async (data) => {
         if (!isSupabaseConfigured()) return false;

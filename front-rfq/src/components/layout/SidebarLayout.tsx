@@ -11,6 +11,7 @@ import { ProjectProgressStepper } from '../common/ProjectProgressStepper';
 import { ProjectDetailModal } from '../common/ProjectDetailModal';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { usePermissionsStore, ALL_ROLES, ROLE_LABELS } from '../../stores/usePermissionsStore';
 
 
 interface SidebarLayoutProps {
@@ -20,11 +21,46 @@ interface SidebarLayoutProps {
     onNewProject?: () => void;
 }
 
+interface NavItemProps {
+    view: string;
+    labelKey: string;
+    icon: React.ReactNode;
+    disabled?: boolean;
+    labelParams?: Record<string, string>;
+    activeView: string;
+    isExpanded: boolean;
+    language: string;
+    t: (key: string, params?: Record<string, string>) => string;
+    hasActiveSession: (module: string) => boolean;
+    onNavigate: (view: string) => void;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ view, labelKey, icon, disabled, labelParams, activeView, isExpanded, language, t, hasActiveSession, onNavigate }) => {
+    const hasSession = hasActiveSession(view);
+    return (
+        <button
+            className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''} ${disabled ? 'disabled' : ''}`}
+            onClick={() => !disabled && onNavigate(view)}
+            title={!isExpanded ? t(labelKey, labelParams) : disabled ? (language === 'es' ? 'Selecciona un proyecto primero' : 'Select a project first') : ''}
+            data-tour={`nav-${view}`}
+        >
+            <div className="nav-icon">{icon}</div>
+            <span className="nav-label">{t(labelKey, labelParams)}</span>
+            {hasSession && <div className="session-indicator" title="Active session"></div>}
+        </button>
+    );
+};
+
 export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeView, onNavigate, onNewProject }) => {
     const activeProjectId = useProjectStore(state => state.activeProjectId);
     const projects = useProjectStore(state => state.projects);
     const currentProject = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
     const projectType = currentProject?.project_type || 'RFP';
+
+    const { role, setRole, can } = usePermissionsStore();
+    const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+    const roleDropdownRef = useRef<HTMLDivElement>(null);
+    const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -59,6 +95,17 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+    // Close role dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
+                setShowRoleDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const toggleSidebar = () => setIsExpanded(!isExpanded);
 
     // Marcar como visto cuando el usuario entra a una sección
@@ -74,22 +121,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
         return activeSessions.some(s => s.module === module && s.hasUnreadContent);
     };
 
-    const NavItem = ({ view, labelKey, icon, disabled, labelParams }: { view: string, labelKey: string, icon: React.ReactNode, disabled?: boolean, labelParams?: Record<string, string> }) => {
-        const hasSession = hasActiveSession(view);
-
-        return (
-            <button
-                className={`nav-item ${activeView === view ? 'active' : ''} ${hasSession ? 'has-session' : ''} ${disabled ? 'disabled' : ''}`}
-                onClick={() => !disabled && onNavigate(view)}
-                title={!isExpanded ? t(labelKey, labelParams) : disabled ? (language === 'es' ? 'Selecciona un proyecto primero' : 'Select a project first') : ''}
-                data-tour={`nav-${view}`}
-            >
-                <div className="nav-icon">{icon}</div>
-                <span className="nav-label">{t(labelKey, labelParams)}</span>
-                {hasSession && <div className="session-indicator" title="Active session"></div>}
-            </button>
-        );
-    };
 
     return (
         <div className="app-container-sidebar">
@@ -110,12 +141,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
                 <nav className="sidebar-nav">
                     {/* General section */}
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="home"
                         labelKey="nav.home"
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>}
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="projects-status"
                         labelKey="sidebar.projects_list"
                         icon={
@@ -130,36 +161,36 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
                     {/* Active project section */}
                     <div className="nav-section-divider" />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="upload"
                         labelKey="nav.upload"
                         labelParams={{ type: projectType }}
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="table"
                         labelKey="nav.table"
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18v16H3V4zm0 5h18M3 14h18M9 4v16M15 4v16" /></svg>}
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="qa"
                         labelKey="nav.qa"
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="decision"
                         labelKey="nav.decision"
                         disabled={!currentProject}
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
                     />
                     {projectType !== 'RFI' && (
-                        <NavItem
+                        <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                             view="economic"
                             labelKey="nav.economic"
-                            disabled={!currentProject}
+                            disabled={!currentProject || !can('view_economic')}
                             icon={
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -167,7 +198,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             }
                         />
                     )}
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="communications"
                         labelKey="nav.communications"
                         disabled={!currentProject}
@@ -176,12 +207,12 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
                     {/* Tools section */}
                     <div className="nav-section-divider" />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="chat"
                         labelKey="nav.chat"
                         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>}
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="rfp-gen"
                         labelKey="nav.rfp_generator"
                         icon={
@@ -193,7 +224,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             </svg>
                         }
                     />
-                    <NavItem
+                    <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
                         view="suppliers"
                         labelKey="nav.suppliers"
                         icon={
@@ -228,6 +259,38 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             </svg>
                         </button>
                     )}
+
+                    {/* Demo Role Selector */}
+                    {isDemoMode && (
+                        <div className="demo-role-selector" ref={roleDropdownRef}>
+                            <button
+                                className="demo-role-badge"
+                                onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                                title={ROLE_LABELS[role][language]}
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                </svg>
+                                <span className="demo-role-text">{ROLE_LABELS[role][language]}</span>
+                            </button>
+                            {showRoleDropdown && (
+                                <div className="demo-role-dropdown">
+                                    {ALL_ROLES.map((r) => (
+                                        <button
+                                            key={r}
+                                            className={`demo-role-option ${r === role ? 'active' : ''}`}
+                                            onClick={() => {
+                                                setRole(r);
+                                                setShowRoleDropdown(false);
+                                            }}
+                                        >
+                                            {ROLE_LABELS[r][language]}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </aside>
             {/* Project Detail Modal */}
@@ -246,15 +309,6 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         <button
                             className="mobile-menu-btn"
                             onClick={toggleSidebar}
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-primary)',
-                                padding: '8px',
-                                marginRight: '8px',
-                                cursor: 'pointer',
-                                display: 'none' // Hidden by default, shown via CSS media query
-                            }}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -370,7 +424,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
                             {/* Notification Dropdown */}
                             {showNotifications && (
-                                <div style={{
+                                <div className="notif-dropdown-mobile" style={{
                                     position: 'absolute',
                                     top: '100%',
                                     right: 0,
@@ -613,7 +667,10 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                     </div>
                 </header>
 
-                <main className="content-wrapper">
+                <main
+                    className="content-wrapper"
+                    style={activeView === 'suppliers' ? { padding: 0, overflow: 'hidden', maxWidth: 'none', margin: 0 } : undefined}
+                >
                     <div className="fade-in">
                         {children}
                     </div>

@@ -1,6 +1,6 @@
 /* ===== Chat Page Layout ===== */
 .chat-page {
-    height: calc(100vh - 56px);
+    height: calc(100vh - 80px); /* 80px = top header height */
     display: flex;
     flex-direction: row;
     background-color: var(--bg-body);
@@ -11,6 +11,13 @@
     margin: -20px -24px;
     padding-top: 0;
     animation: fadeInModule 0.4s ease-out;
+}
+
+@media (max-width: 768px) {
+    .chat-page {
+        height: calc(100vh - 56px); /* 56px = mobile header height */
+        margin: -12px;
+    }
 }
 
 /* Main chat area */
