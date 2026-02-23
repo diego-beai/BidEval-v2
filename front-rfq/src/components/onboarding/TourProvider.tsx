@@ -230,7 +230,7 @@ export const TourProvider: React.FC<TourProviderProps> = ({ onNavigate: _onNavig
         } else if (action === ACTIONS.CLOSE) {
             completeTour();
         } else if (type === EVENTS.STEP_AFTER || type === EVENTS.TARGET_NOT_FOUND) {
-            setStep(index + 1);
+            setStep(action === ACTIONS.PREV ? index - 1 : index + 1);
         }
     };
 
