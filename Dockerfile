@@ -20,11 +20,13 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy source code
 COPY front-rfq/ .
 
-# Receive Supabase env vars as build args (from docker-compose)
+# Receive env vars as build args (from docker-compose)
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_SUPABASE_SCHEMA=desarrollo
 ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_SCHEMA=$VITE_SUPABASE_SCHEMA
 
 # Build Vite app
 RUN npm run build

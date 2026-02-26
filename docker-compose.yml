@@ -8,6 +8,7 @@ services:
       args:
         - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_SUPABASE_SCHEMA=desarrollo
     container_name: bideval
     restart: unless-stopped
     ports:
