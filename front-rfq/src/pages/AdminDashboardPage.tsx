@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useLanguageStore } from '../stores/useLanguageStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useProjectStore } from '../stores/useProjectStore';
+import { useOrganizationStore } from '../stores/useOrganizationStore';
+import { usePermissionsStore } from '../stores/usePermissionsStore';
+import { InviteUserModal } from '../components/organization/InviteUserModal';
+import { UserPlus, Trash2, Mail } from 'lucide-react';
 import './AdminDashboardPage.css';
 
 interface AuditEntry {
@@ -22,12 +26,17 @@ interface OrgUsage {
 
 export const AdminDashboardPage: React.FC = () => {
   const { language } = useLanguageStore();
-  const { session, organizationName } = useAuthStore();
+  const { session, organizationName, user } = useAuthStore();
   const { projects } = useProjectStore();
+  const { members, invites, loadMembers, loadInvites, changeRole, removeMember, revokeInvite } = useOrganizationStore();
+  const { can } = usePermissionsStore();
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [orgUsage, setOrgUsage] = useState<OrgUsage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
 
+  const canManageUsers = can('manage_users');
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   useEffect(() => {
@@ -63,7 +72,27 @@ export const AdminDashboardPage: React.FC = () => {
     };
 
     loadData();
-  }, [session?.access_token, supabaseUrl]);
+
+    if (canManageUsers) {
+      loadMembers();
+      loadInvites();
+    }
+  }, [session?.access_token, supabaseUrl, canManageUsers, loadMembers, loadInvites]);
+
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    await changeRole(memberId, newRole);
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    await removeMember(memberId);
+    setConfirmRemove(null);
+  };
+
+  const handleRevokeInvite = async (inviteId: string) => {
+    await revokeInvite(inviteId);
+  };
+
+  const pendingInvites = invites.filter(i => i.status === 'pending');
 
   const activeProjects = projects.filter(p => p.status !== 'setup').length;
   const totalProviders = new Set(
@@ -228,6 +257,153 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* User Management Section — only for admins/owners */}
+      {canManageUsers && (
+        <div className="admin-users-section">
+          <div className="admin-panel-header">
+            <h2>{language === 'es' ? 'Gestion de Usuarios' : 'User Management'}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {orgUsage && (
+                <span className={`admin-invite-badge ${orgUsage.users_used >= orgUsage.users_max ? 'at-limit' : ''}`}>
+                  {orgUsage.users_used} / {orgUsage.users_max} {language === 'es' ? 'usuarios' : 'users'}
+                </span>
+              )}
+              <button className="admin-invite-btn" onClick={() => setShowInviteModal(true)}>
+                <UserPlus size={16} />
+                {language === 'es' ? 'Invitar Usuario' : 'Invite User'}
+              </button>
+            </div>
+          </div>
+
+          {/* Members Table */}
+          <div className="admin-users-table-wrap">
+            <table className="admin-users-table">
+              <thead>
+                <tr>
+                  <th>{language === 'es' ? 'Nombre' : 'Name'}</th>
+                  <th>Email</th>
+                  <th>{language === 'es' ? 'Rol' : 'Role'}</th>
+                  <th>{language === 'es' ? 'Desde' : 'Since'}</th>
+                  <th>{language === 'es' ? 'Acciones' : 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => {
+                  const isOwner = member.role === 'owner';
+                  const isSelf = member.user_id === user?.id;
+                  return (
+                    <tr key={member.id}>
+                      <td className="admin-user-name">
+                        {member.full_name || '—'}
+                      </td>
+                      <td className="admin-user-email">{member.email}</td>
+                      <td>
+                        {isOwner ? (
+                          <span className="admin-role-badge owner">Owner</span>
+                        ) : (
+                          <select
+                            className="admin-role-select"
+                            value={member.role}
+                            onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                          >
+                            <option value="admin">Admin</option>
+                            <option value="member">{language === 'es' ? 'Miembro' : 'Member'}</option>
+                            <option value="viewer">{language === 'es' ? 'Visor' : 'Viewer'}</option>
+                          </select>
+                        )}
+                      </td>
+                      <td className="admin-user-date">
+                        {new Date(member.created_at).toLocaleDateString()}
+                      </td>
+                      <td>
+                        {!isOwner && !isSelf ? (
+                          confirmRemove === member.id ? (
+                            <div className="admin-confirm-remove">
+                              <span>{language === 'es' ? 'Confirmar?' : 'Confirm?'}</span>
+                              <button className="admin-confirm-yes" onClick={() => handleRemoveMember(member.id)}>
+                                {language === 'es' ? 'Si' : 'Yes'}
+                              </button>
+                              <button className="admin-confirm-no" onClick={() => setConfirmRemove(null)}>
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              className="admin-remove-btn"
+                              onClick={() => setConfirmRemove(member.id)}
+                              title={language === 'es' ? 'Eliminar miembro' : 'Remove member'}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )
+                        ) : (
+                          <span className="admin-user-tag">
+                            {isOwner ? 'Owner' : (language === 'es' ? 'Tu' : 'You')}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {members.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="admin-empty">
+                      {language === 'es' ? 'Sin miembros' : 'No members'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pending Invites */}
+          {pendingInvites.length > 0 && (
+            <>
+              <h3 className="admin-invites-title">
+                <Mail size={16} />
+                {language === 'es' ? 'Invitaciones Pendientes' : 'Pending Invitations'}
+                <span className="admin-invite-count">{pendingInvites.length}</span>
+              </h3>
+              <div className="admin-users-table-wrap">
+                <table className="admin-users-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>{language === 'es' ? 'Rol' : 'Role'}</th>
+                      <th>{language === 'es' ? 'Expira' : 'Expires'}</th>
+                      <th>{language === 'es' ? 'Accion' : 'Action'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingInvites.map((invite) => (
+                      <tr key={invite.id}>
+                        <td className="admin-user-email">{invite.email}</td>
+                        <td>
+                          <span className="admin-role-badge">{invite.role}</span>
+                        </td>
+                        <td className="admin-user-date">
+                          {new Date(invite.expires_at).toLocaleDateString()}
+                        </td>
+                        <td>
+                          <button
+                            className="admin-revoke-btn"
+                            onClick={() => handleRevokeInvite(invite.id)}
+                          >
+                            {language === 'es' ? 'Revocar' : 'Revoke'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {showInviteModal && <InviteUserModal onClose={() => { setShowInviteModal(false); loadInvites(); }} />}
     </div>
   );
 };

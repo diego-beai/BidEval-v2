@@ -47,10 +47,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -6720,
-        5120
+        -2304,
+        12272
       ],
-      "id": "a889b394-0627-4bc2-b6ef-10c30bae3c65",
+      "id": "598ae917-0afe-4bc5-967f-6f0639ef6f1f",
       "name": "Extract Fields"
     },
     {
@@ -98,10 +98,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -6496,
-        5120
+        -2080,
+        12272
       ],
-      "id": "5bbfc522-c1a8-48e2-8f09-fae681726be7",
+      "id": "a3b77639-2017-45b3-8dc1-89a156aa965a",
       "name": "Validate Data"
     },
     {
@@ -111,10 +111,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6272,
-        5008
+        -1856,
+        12160
       ],
-      "id": "02630d8a-1222-4bf7-80ec-e3becc68733c",
+      "id": "40e6d07b-d05b-4cd7-9c2a-aa8b5a3e5981",
       "name": "Convert Markdown to HTML"
     },
     {
@@ -129,10 +129,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        -6064,
-        5008
+        -1648,
+        12160
       ],
-      "id": "de7f8272-a0b2-4df7-8d17-920fe11b8460",
+      "id": "77cb47dc-46e2-42ee-bb99-fbdf0cba2160",
       "name": "Gmail Send",
       "webhookId": "f32bcbf1-73d7-463b-b209-b7e114249ee9",
       "disabled": true
@@ -148,10 +148,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -6272,
-        5216
+        -1856,
+        12368
       ],
-      "id": "adc219e4-0d1c-474b-9c98-7810d98d3dfe",
+      "id": "b9429021-ac1c-4194-96da-01e3c0571f6e",
       "name": "Respond Error"
     },
     {
@@ -164,10 +164,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -7248,
-        4656
+        -2832,
+        11808
       ],
-      "id": "22e1eb7b-7f83-417f-b9fa-5f98a5d94cc6",
+      "id": "ade53115-a8b5-4fa0-8242-c34c416f381e",
       "name": "Instructions"
     },
     {
@@ -180,10 +180,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6944,
-        5120
+        -2528,
+        12272
       ],
-      "id": "74c7e7df-c8f3-4f9a-8be0-56f393384e92",
+      "id": "a77975d2-e158-40d7-9dd3-d0754dc8be02",
       "name": "Webhook2",
       "webhookId": "qa-send-email-webhook"
     },
@@ -198,10 +198,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -5840,
-        5008
+        -1424,
+        12160
       ],
-      "id": "cfb53b8a-09a0-4560-8524-1ce59ab4655b",
+      "id": "61dd437b-31f7-4867-8cf1-5e504b41ca84",
       "name": "Respond Success2"
     },
     {
@@ -214,10 +214,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4736,
-        6288
+        -320,
+        13440
       ],
-      "id": "e1278189-f426-4ec9-9657-1f76ff996055",
+      "id": "90d8c957-cd9b-4cbf-afe2-7048ef0ef26b",
       "name": "Webhook Receive",
       "webhookId": "qa-send-to-supplier-webhook"
     },
@@ -247,10 +247,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.1,
       "position": [
-        -2944,
-        6288
+        1472,
+        13440
       ],
-      "id": "dda7aebd-f00e-418c-bbb9-bf5bf7177204",
+      "id": "9161ad0e-b62c-4383-86d1-e77b8e6a5bf1",
       "name": "Email Provided?"
     },
     {
@@ -265,10 +265,10 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [
-        -2720,
-        6224
+        1696,
+        13376
       ],
-      "id": "fae250bd-78ca-40a3-9270-2a0329f34017",
+      "id": "298216b6-2383-4476-95d4-52bf16db705c",
       "name": "Send Email via Gmail",
       "webhookId": "9be31203-685f-4b78-a56d-e950bca3a806",
       "disabled": true
@@ -280,10 +280,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4288,
-        6288
+        128,
+        13440
       ],
-      "id": "ac9745b3-5695-482f-acbc-f117f5c9e054",
+      "id": "0f778dd8-e96c-46cd-849d-afbcaf1ae0ff",
       "name": "Generate Token"
     },
     {
@@ -318,10 +318,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4064,
-        6288
+        352,
+        13440
       ],
-      "id": "e2774fd8-7a73-4f2f-8807-9919c27b41ea",
+      "id": "5c2ba411-5a39-4504-b002-fae2c0095eb3",
       "name": "Save Token to DB",
       "credentials": {
         "supabaseApi": {
@@ -337,10 +337,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3840,
-        6192
+        576,
+        13344
       ],
-      "id": "427d7fa4-990b-4021-b041-785b4b8b1a68",
+      "id": "30d5cc5a-5a8a-4562-8680-c58d6abdb856",
       "name": "Split Question IDs"
     },
     {
@@ -362,10 +362,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3616,
-        6192
+        800,
+        13344
       ],
-      "id": "6fb23413-b824-4741-92a2-1b09233bc8b7",
+      "id": "3bf46bd8-5358-4c23-b4fc-14b16a086387",
       "name": "Fetch Questions",
       "credentials": {
         "supabaseApi": {
@@ -393,10 +393,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -3616,
-        6384
+        800,
+        13536
       ],
-      "id": "387c90e7-b159-4d8b-90dd-4b26eae62ba7",
+      "id": "a4b14111-ef7d-40bd-9cc6-6fc3871ad95e",
       "name": "Fetch Project Name",
       "credentials": {
         "supabaseApi": {
@@ -414,10 +414,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3392,
-        6288
+        1024,
+        13440
       ],
-      "id": "cde2624d-1a4a-492a-a05a-97feafed5f5f",
+      "id": "3b668624-bd07-483e-b9d0-ca9cff45fd54",
       "name": "Merge Data"
     },
     {
@@ -427,10 +427,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3168,
-        6288
+        1248,
+        13440
       ],
-      "id": "ad482d81-a0b4-4fdf-b2e9-dd21b02339f9",
+      "id": "aec52e97-5f37-4951-a89d-1257798bbc44",
       "name": "Build Email Content"
     },
     {
@@ -440,10 +440,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2496,
-        6288
+        1920,
+        13440
       ],
-      "id": "dee668eb-5e52-4342-a18f-30af79b438a4",
+      "id": "81f23fa3-c129-4cb2-8d95-c5cad0d9d3fe",
       "name": "Split for Update"
     },
     {
@@ -473,10 +473,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -2272,
-        6288
+        2144,
+        13440
       ],
-      "id": "feb0f73a-7725-4e5c-b382-4fec3d56341a",
+      "id": "078ad4b4-3fc4-4aaa-9a75-1891c8a73b81",
       "name": "Update Question Status",
       "credentials": {
         "supabaseApi": {
@@ -526,10 +526,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -4512,
-        6288
+        -96,
+        13440
       ],
-      "id": "b3ec3f54-39fc-447a-9c34-a4f89ac27789",
+      "id": "e30eebe0-a8c0-4717-8d14-c27c1ce7bad3",
       "name": "Set Input Params2"
     },
     {
@@ -541,10 +541,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -2048,
-        6288
+        2368,
+        13440
       ],
-      "id": "74f0932d-08ed-4710-a476-041430940a30",
+      "id": "8629ecac-61ee-43f0-bef3-ab1336cc6ce1",
       "name": "Respond to Webhook2"
     },
     {
@@ -557,10 +557,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -5104,
-        5904
+        -688,
+        13056
       ],
-      "id": "d8a31664-33c8-4541-bca6-33663d26ea3b",
+      "id": "63f280df-81aa-4871-97ba-9869d23274c8",
       "name": "Sticky Note3"
     },
     {
@@ -582,10 +582,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -8896,
-        6064
+        -4480,
+        13216
       ],
-      "id": "0f2b1089-c132-4c2c-a4b4-e6c08ce4e6c3",
+      "id": "b1fde485-0110-40e5-933b-20723f2c832c",
       "name": "Validate Token",
       "credentials": {
         "supabaseApi": {
@@ -629,10 +629,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -8672,
-        6064
+        -4256,
+        13216
       ],
-      "id": "372357fd-e53c-438b-b629-67276f268f08",
+      "id": "fc813d95-54e4-41c0-aceb-b5dd2448d0f0",
       "name": "Token Valid?"
     },
     {
@@ -646,10 +646,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -8448,
-        6240
+        -4032,
+        13392
       ],
-      "id": "2d79fbb9-f865-475c-bd83-9a57e0ead70c",
+      "id": "33b1ec30-6147-4c45-b705-7f4a84402d5d",
       "name": "Respond Invalid"
     },
     {
@@ -659,10 +659,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8448,
-        6064
+        -4032,
+        13216
       ],
-      "id": "18f2314b-d36d-47d4-9cec-1a4e5ca0c7ce",
+      "id": "b2bc6bed-4ad2-4325-8580-6261c7cae634",
       "name": "Split Responses"
     },
     {
@@ -672,10 +672,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -8224,
-        6064
+        -3808,
+        13216
       ],
-      "id": "8101a674-c1a3-4b6c-80ac-e41100133e7e",
+      "id": "6ecf1e8e-8763-43d1-b553-aaea41f0a185",
       "name": "Loop Over Items"
     },
     {
@@ -717,10 +717,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -8000,
-        6064
+        -3584,
+        13216
       ],
-      "id": "181608e0-febe-449f-b3a5-77283d50a3e4",
+      "id": "14f44aa8-e3b5-496e-b43f-875aa7fc4370",
       "name": "Save Response to QA Audit",
       "credentials": {
         "supabaseApi": {
@@ -748,10 +748,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7776,
-        6064
+        -3360,
+        13216
       ],
-      "id": "d5be2bd0-1ce6-4fe2-ab1a-c76af2dacfee",
+      "id": "7f29806e-cff9-46ea-bf84-76fc95fde52b",
       "name": "Fetch Question Details",
       "alwaysOutputData": true,
       "credentials": {
@@ -788,10 +788,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -7552,
-        6064
+        -3136,
+        13216
       ],
-      "id": "28c9215c-e748-4dc0-82d6-d6a926ce80af",
+      "id": "3b60e31d-aeb1-4ac4-b723-6ebb2cc270b5",
       "name": "Has Requirement?"
     },
     {
@@ -813,10 +813,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7328,
-        5952
+        -2912,
+        13104
       ],
-      "id": "1cfa4566-bafd-4787-a02e-3dc4c9356fd6",
+      "id": "26dce434-a851-44f0-9c6b-d640dbb7515f",
       "name": "Fetch Requirement",
       "alwaysOutputData": true,
       "credentials": {
@@ -851,10 +851,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7104,
-        5952
+        -2688,
+        13104
       ],
-      "id": "dd7b0b2a-f836-47fe-b7c6-83f7578a4897",
+      "id": "68b50379-46ab-4c7b-892e-2a8297dbb3b3",
       "name": "Fetch Current Evaluation",
       "alwaysOutputData": true,
       "credentials": {
@@ -874,10 +874,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -6880,
-        5952
+        -2464,
+        13104
       ],
-      "id": "106ccc45-1430-45bf-beb5-d7171afc2da1",
+      "id": "bef76b77-a440-462f-a63f-397e45ba6e25",
       "name": "LLM Re-evaluate"
     },
     {
@@ -915,10 +915,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -6656,
-        5952
+        -2240,
+        13104
       ],
-      "id": "f5613ba0-8bed-4afd-a01d-0f84474d1aa7",
+      "id": "ffad110b-cae3-407b-b844-48b07c48065d",
       "name": "Should Update?"
     },
     {
@@ -957,10 +957,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6432,
-        5872
+        -2016,
+        13024
       ],
-      "id": "0d20f7ad-8439-4194-b607-78c5e158847d",
+      "id": "40d08e8d-86f6-4df4-a520-287d08aa85d0",
       "name": "Update Provider Response",
       "credentials": {
         "supabaseApi": {
@@ -974,10 +974,10 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        -6432,
-        6032
+        -2016,
+        13184
       ],
-      "id": "7a4e21c6-a028-4383-a6b7-c987c4a5b1f2",
+      "id": "db492a89-4186-4a5f-81fe-64689c05b163",
       "name": "Skip Update"
     },
     {
@@ -985,10 +985,10 @@
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
       "position": [
-        -7328,
-        6176
+        -2912,
+        13328
       ],
-      "id": "a796b68d-03e3-45ff-a098-bdc09ec8d7c8",
+      "id": "c4b28c75-5db9-4e2e-b322-bedb7b9d2590",
       "name": "No Requirement"
     },
     {
@@ -996,10 +996,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -6208,
-        6064
+        -1792,
+        13216
       ],
-      "id": "daa32020-3dd2-4762-a61c-85cdf3800ea4",
+      "id": "00f3615a-66c5-4db9-86da-88ebee63280e",
       "name": "Merge Results"
     },
     {
@@ -1033,10 +1033,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5984,
-        6064
+        -1568,
+        13216
       ],
-      "id": "a43f16f6-8187-4417-9650-cd20e20db889",
+      "id": "f400870d-2d41-4a90-b0be-bf9012ef08a2",
       "name": "Mark Token Responded",
       "credentials": {
         "supabaseApi": {
@@ -1081,10 +1081,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -5760,
-        6064
+        -1344,
+        13216
       ],
-      "id": "9e25f034-32c6-4dbb-aaac-fd7fcc60d6a7",
+      "id": "da33a5b7-3ec8-4d97-b9cd-a43f212677c5",
       "name": "Create Notification",
       "credentials": {
         "supabaseApi": {
@@ -1102,10 +1102,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -5536,
-        6064
+        -1120,
+        13216
       ],
-      "id": "a5f2b726-9408-4cbc-b294-63905ca44b2f",
+      "id": "007f9b79-37a4-4742-8b5c-8e16c62df781",
       "name": "Respond Success"
     },
     {
@@ -1118,10 +1118,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -9328,
-        6064
+        -4912,
+        13216
       ],
-      "id": "45fe8e32-f477-4f83-b9b7-b357167e22fb",
+      "id": "4934318d-ff92-49c8-b276-d95451d04b2f",
       "name": "Webhook Receive1",
       "webhookId": "qa-process-responses-webhook"
     },
@@ -1148,10 +1148,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -9104,
-        6064
+        -4688,
+        13216
       ],
-      "id": "fe01a080-9727-40b4-902c-bea68e41d982",
+      "id": "52c68aff-e469-4733-9944-367a03f9e32e",
       "name": "Set Input Params3"
     },
     {
@@ -1162,10 +1162,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -6880,
-        6192
+        -2464,
+        13344
       ],
-      "id": "26d591db-17b0-4aff-9e98-2fcece0d9038",
+      "id": "f4a85b7a-0f45-4d5b-b7de-3f4d805dbc6a",
       "name": "JSON Output Parser2"
     },
     {
@@ -1178,10 +1178,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -9680,
-        5472
+        -5264,
+        12624
       ],
-      "id": "38ef0448-7ad3-44e4-8436-751425a295b3",
+      "id": "16e0f130-21d9-4454-8da8-5a03ff6d1fe4",
       "name": "Sticky Note6"
     },
     {
@@ -1194,10 +1194,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1680,
-        5936
+        2736,
+        13088
       ],
-      "id": "14dbedd9-3cc7-4ffe-8406-b3d39df4ac50",
+      "id": "dc0536c2-2969-4518-aefa-2bc0f8be76b3",
       "name": "Sticky Note QA Email"
     },
     {
@@ -1210,10 +1210,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1264,
-        6176
+        3152,
+        13328
       ],
-      "id": "4668236e-17f9-401b-9ee1-14c5bcfb2eb2",
+      "id": "885bd8be-4f34-480c-9d26-600292ab4130",
       "name": "Webhook QA Email Response",
       "webhookId": "qa-email-response-webhook-001"
     },
@@ -1246,10 +1246,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1040,
-        6176
+        3376,
+        13328
       ],
-      "id": "20365396-960a-4220-ac7e-ba9dbbf99079",
+      "id": "bc79237e-6823-47dc-9432-5d36f020cc16",
       "name": "Set QA Email Params"
     },
     {
@@ -1277,10 +1277,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -816,
-        6176
+        3600,
+        13328
       ],
-      "id": "2f3cd97a-56c0-4e30-8ca1-851b18bb83b9",
+      "id": "03739b5a-5a5b-4bbf-a9b6-b73babfa1bf4",
       "name": "Fetch QA Questions",
       "alwaysOutputData": true,
       "credentials": {
@@ -1297,10 +1297,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -592,
-        6176
+        3824,
+        13328
       ],
-      "id": "085cc77f-2d51-48a2-922b-160c39229b53",
+      "id": "b632f4bb-c5da-478b-8264-c2a3536dc22c",
       "name": "Build AI Context"
     },
     {
@@ -1319,10 +1319,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -368,
-        6176
+        4048,
+        13328
       ],
-      "id": "32714b74-cc03-4752-9fc9-1986be643686",
+      "id": "ee7fe6b3-5aa5-43c7-9e54-c7a05f7597cb",
       "name": "QA Email Mapping Chain"
     },
     {
@@ -1332,10 +1332,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -16,
-        6176
+        4400,
+        13328
       ],
-      "id": "edb722f3-444a-47a1-a4df-3d1841f63489",
+      "id": "6091961e-0886-47ec-855e-9276418b74f5",
       "name": "Parse QA Email Output"
     },
     {
@@ -1346,10 +1346,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        208,
-        6176
+        4624,
+        13328
       ],
-      "id": "fbe7a105-5de5-4fd0-aa7d-b061034ba977",
+      "id": "928a89d9-2a76-4344-9810-6628cab3a101",
       "name": "Respond QA Email Response"
     },
     {
@@ -1361,10 +1361,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -6144,
-        4224
+        -1728,
+        11376
       ],
-      "id": "7f131c36-0bf0-4fb7-bbe8-cafa296cef62",
+      "id": "0585998f-32f4-44c9-8f8c-cccbe1abcdd7",
       "name": "OpenRouter Chat Model",
       "credentials": {
         "openRouterApi": {
@@ -1426,10 +1426,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -6736,
-        4000
+        -2320,
+        11152
       ],
-      "id": "85d0a8c1-8ba2-4926-a019-a1cd9762929c",
+      "id": "94a542c8-fb40-4e1c-8da0-5d35b1c4256e",
       "name": "Edit Fields"
     },
     {
@@ -1439,10 +1439,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6288,
-        4000
+        -1872,
+        11152
       ],
-      "id": "688fbb8a-d90e-4dbc-82a4-3de4b1c75dbc",
+      "id": "60fdbe32-af54-4477-8bb2-9db97fcf586b",
       "name": "Filter and Aggregate Issues"
     },
     {
@@ -1455,10 +1455,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -7248,
-        3712
+        -2832,
+        10864
       ],
-      "id": "78b59d23-be18-4d45-99bf-9103756b29af",
+      "id": "971b1c45-035c-4dc6-aa4d-9bfa3931e731",
       "name": "Sticky Note2"
     },
     {
@@ -1471,10 +1471,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -6960,
-        4000
+        -2544,
+        11152
       ],
-      "id": "59cc00f7-484d-40ae-b785-f32127cd5c3b",
+      "id": "28efc3b3-e8e6-439e-8360-79518dc621a0",
       "name": "Webhook3",
       "webhookId": "2dcca6b6-4d20-4250-9202-7b16ac06f716"
     },
@@ -1499,13 +1499,13 @@
           ]
         }
       },
-      "id": "4ce9cf26-7fe9-4b87-a888-525df9dacc80",
+      "id": "57c7168f-ffdc-4fb3-abc6-56f5f64bf22b",
       "name": "Get Offers",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6512,
-        4208
+        -2096,
+        11360
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -1527,10 +1527,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -5696,
-        4224
+        -1280,
+        11376
       ],
-      "id": "eee00eb8-f2c3-4482-b6c5-e943fe94aaa5",
+      "id": "6c487bd1-dc2b-41be-8635-b1a7087c3865",
       "name": "Ollama Chat Model",
       "credentials": {
         "ollamaApi": {
@@ -1555,10 +1555,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -6064,
-        4000
+        -1648,
+        11152
       ],
-      "id": "82dcb2df-cb8e-48f5-ba89-1d146741c0aa",
+      "id": "0f5597ed-4bf9-4e35-8d59-3390835c6899",
       "name": "Basic LLM Chain"
     },
     {
@@ -1569,10 +1569,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -5712,
-        4000
+        -1296,
+        11152
       ],
-      "id": "38174faa-82f0-431f-90de-2e0c60bcfbfb",
+      "id": "4091e47e-d445-4471-87cd-a9e6481931ce",
       "name": "Respond to Webhook3"
     },
     {
@@ -1589,13 +1589,13 @@
           ]
         }
       },
-      "id": "6b882074-7210-43a7-82e6-3c8008a99ab6",
+      "id": "e0e0c0c3-2981-41d9-84be-50c3093edb0e",
       "name": "Fetch Project Context Email",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -6480,
-        4000
+        -2064,
+        11152
       ],
       "credentials": {
         "supabaseApi": {
@@ -1629,10 +1629,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4064,
-        2864
+        352,
+        10016
       ],
-      "id": "b2d08489-1a4e-409f-8563-c28e669510f4",
+      "id": "1d4e3d74-3b61-4724-817e-ac5f716349af",
       "name": "Get many rows1",
       "credentials": {
         "supabaseApi": {
@@ -1648,10 +1648,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -1024,
-        3968
+        3392,
+        11120
       ],
-      "id": "be9692a9-355d-43f2-8e6f-9b370102a5b3",
+      "id": "5316e973-9b71-460c-8f00-d45938e7afc3",
       "name": "Embeddings Ollama3",
       "credentials": {
         "ollamaApi": {
@@ -1677,10 +1677,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -1520,
-        3504
+        2896,
+        10656
       ],
-      "id": "03c42f58-850b-4650-8908-ba2e868061ea",
+      "id": "bedc50b7-10f5-4ca8-8f48-83f8139a9421",
       "name": "Validador de Ofertas",
       "disabled": true
     },
@@ -1696,10 +1696,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -1568,
-        3696
+        2848,
+        10848
       ],
-      "id": "858d3f5d-c144-46a4-8355-858effa5f44f",
+      "id": "d8a660e9-733c-4278-89a2-d871e0f8292c",
       "name": "Ollama Chat Model1",
       "credentials": {
         "ollamaApi": {
@@ -1716,10 +1716,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1328,
-        3696
+        3088,
+        10848
       ],
-      "id": "5b8f5b90-6465-4162-a22c-bd00065b0446",
+      "id": "c88011fb-a365-4c12-bdb4-94ea9fda07f3",
       "name": "Structured Output Parser4"
     },
     {
@@ -1739,10 +1739,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -1520,
-        3936
+        2896,
+        11088
       ],
-      "id": "f4c11f92-fba5-48a6-b6c2-0df75615ccb3",
+      "id": "74ae0cc5-5ba6-4727-94a9-116180c743ad",
       "name": "Clasificador de Tipo de Evaluacion y Proveedor",
       "disabled": true
     },
@@ -1794,10 +1794,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1792,
-        3696
+        2624,
+        10848
       ],
-      "id": "0bda1cc4-4af4-4ae1-9b57-62f81e87a519",
+      "id": "08e3b6a5-abdc-47e8-9cb4-2b6773c1e438",
       "name": "If"
     },
     {
@@ -1812,10 +1812,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -1808,
-        3136
+        2608,
+        10288
       ],
-      "id": "5bd6292e-af91-4a26-acd2-420e798e6e74",
+      "id": "cc410eb7-e97b-4204-b04e-7aae91285249",
       "name": "Ollama Model1",
       "credentials": {
         "ollamaApi": {
@@ -1836,10 +1836,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -1568,
-        4144
+        2848,
+        11296
       ],
-      "id": "230d5621-ec95-43e1-8919-4d7116cca952",
+      "id": "927f3166-e689-4170-a393-be495600667c",
       "name": "Ollama Model",
       "credentials": {
         "ollamaApi": {
@@ -1858,10 +1858,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -5040,
-        2544
+        -624,
+        9696
       ],
-      "id": "0d22e4bc-ab3d-4d2e-8b40-c9895cc36cf1",
+      "id": "871a4be5-99f6-4666-8785-b731f7ef5885",
       "name": "Sticky Note5"
     },
     {
@@ -1874,23 +1874,23 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -3232,
-        2928
+        1184,
+        10080
       ],
-      "id": "fe46fb8c-275b-4f03-8c9b-e3ed98b9df50",
+      "id": "e555316e-c354-4071-990e-9da10dba5f9b",
       "name": "Loop Over Phases"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Parsear y Preparar Update (con merge inteligente)\n// =============================================\n\n// Valores que indican 'sin datos' - no deben sobreescribir datos reales\nconst NO_DATA_VALUES = new Set(['NO INFORMATION', 'NOT QUOTED', 'NO COTIZADO', 'SIN INFORMACIÓN', 'ERROR ANALISIS']);\n\n// 1. Obtener TODOS los items del LLM Chain\nconst allItems = $input.all();\nconsole.log(`📥 Procesando ${allItems.length} respuestas del LLM`);\n\n// 2. Obtener la lista de requisitos VÁLIDOS (para validar FK)\nlet validRequirements = [];\ntry {\n  const getRowsData = $('Get many rows1').all();\n  validRequirements = getRowsData.map(item => item.json.id);\n  console.log(`✅ Lista de requisitos válidos: ${validRequirements.length} items`);\n} catch(e) {\n  console.error('❌ Error obteniendo lista de requisitos válidos:', e.message);\n  return [];\n}\n\n// 3. Obtener el provider name (una sola vez, es el mismo para todos)\nlet providerName = \"OTROS\";\ntry {\n  providerName = $('Expandir por Tipo de Evaluación').first().json.proveedor_detectado || \"OTROS\";\n} catch(e) {\n  console.warn('⚠️ Error obteniendo provider, usando default:', e.message);\n}\n\n// 4. Procesar CADA respuesta del LLM\nconst resultados = [];\nlet skippedNoData = 0;\n\nfor (let i = 0; i < allItems.length; i++) {\n  try {\n    const item = allItems[i];\n    const itemData = item.json || item;\n\n    let rawText = itemData.text || itemData.output || \"\";\n\n    if (!rawText || typeof rawText !== 'string') {\n      console.warn(`⚠️ Item ${i}: No se encontró campo 'text' o 'output'`);\n      continue;\n    }\n\n    let cleanText = rawText\n      .replace(/```json/g, '')\n      .replace(/```/g, '')\n      .trim();\n\n    let parsedData = null;\n\n    try {\n      const start = cleanText.indexOf('[');\n      const end = cleanText.lastIndexOf(']');\n\n      if (start >= 0 && end >= 0 && end > start) {\n        const jsonString = cleanText.substring(start, end + 1);\n        parsedData = JSON.parse(jsonString);\n      } else {\n        parsedData = JSON.parse(cleanText);\n      }\n    } catch (parseError) {\n      console.error(`❌ Error parseando JSON del item ${i}:`, parseError.message);\n      console.error(`Texto recibido:`, cleanText.substring(0, 200));\n      continue;\n    }\n\n    const outputArray = Array.isArray(parsedData) ? parsedData : [parsedData];\n\n    for (let j = 0; j < outputArray.length; j++) {\n      const outputItem = outputArray[j];\n\n      if (!outputItem || typeof outputItem !== 'object') {\n        console.warn(`⚠️ Item ${i}.${j}: Elemento de salida no es objeto`);\n        continue;\n      }\n\n      const cumple = outputItem?.cumple || \"ERROR ANALISIS\";\n      const gap = outputItem?.gap_analysis || \"Check logs\";\n      const score = outputItem?.score !== undefined ? outputItem.score : 0;\n      const requirementId = outputItem?.id || null;\n\n      const validatedScore = Math.max(0, Math.min(10, parseInt(score) || 0));\n\n      if (!requirementId) {\n        console.error(`❌ Item ${i}.${j}: No se encontró ID del requisito en la respuesta del LLM`);\n        continue;\n      }\n\n      if (!validRequirements.includes(requirementId)) {\n        console.error(`❌ Item ${i}.${j}: El requirement_id ${requirementId} NO existe en rfq_items_master. Saltando...`);\n        continue;\n      }\n\n      // MERGE INTELIGENTE: Filtrar items sin datos para no sobreescribir evaluaciones reales\n      if (NO_DATA_VALUES.has(cumple.toUpperCase())) {\n        skippedNoData++;\n        continue;\n      }\n\n      console.log(`✅ Item ${i}.${j}: Requisito ${requirementId} - ${cumple} (${validatedScore}/10)`);\n\n      resultados.push({\n        json: {\n          requirement_id: requirementId,\n          provider_name: providerName,\n          evaluation_value: cumple,\n          comment: gap,\n          score: validatedScore\n        }\n      });\n    }\n\n  } catch (error) {\n    console.error(`❌ Error procesando item ${i}:`, error.message);\n    continue;\n  }\n}\n\nconsole.log(`✅ Procesados ${resultados.length} de ${allItems.length} items exitosamente (${skippedNoData} sin datos filtrados)`);\n\nreturn resultados;"
       },
-      "id": "c3afc2e4-53fb-4d54-b4a8-21a9a4b3d2a8",
+      "id": "0075770f-855a-40f9-bfd1-5ac8867a9831",
       "name": "Parsear y Preparar Update",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1280,
-        2912
+        3136,
+        10064
       ]
     },
     {
@@ -1909,10 +1909,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        -1728,
-        2784
+        2688,
+        9936
       ],
-      "id": "0eac8021-b87f-495c-9626-64fdad3bd410",
+      "id": "ea9ead01-0b11-4547-854a-078b1c705e1a",
       "name": "LLM Chain"
     },
     {
@@ -2019,10 +2019,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -4032,
-        3696
+        384,
+        10848
       ],
-      "id": "5aa367ed-d202-43d7-91cd-ccd3783ad669",
+      "id": "fdcd5d80-cdb1-4071-b4c8-984b3aa08014",
       "name": "Insert Document Metadata",
       "executeOnce": true,
       "credentials": {
@@ -2040,13 +2040,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "43b84f8a-b35b-4136-a4b1-bd827b701457",
+      "id": "75ea58bf-c53a-4496-821a-50cc4bbe7e82",
       "name": "Delete Old Doc Rows",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4240,
-        3696
+        176,
+        10848
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -2136,13 +2136,13 @@
         },
         "options": {}
       },
-      "id": "7864d7bf-7d9e-410a-969b-157aa91b0df4",
+      "id": "25be5204-88fa-4542-ae19-14e91705d4b3",
       "name": "Set File ID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -4432,
-        3696
+        -16,
+        10848
       ]
     },
     {
@@ -2180,13 +2180,13 @@
           }
         }
       },
-      "id": "1ac19917-9b0e-412d-b500-a481221af5c6",
+      "id": "e1afbbfa-65d5-4369-aa43-103647107c74",
       "name": "Default Data Loader",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        -816,
-        4000
+        3600,
+        11152
       ]
     },
     {
@@ -2198,10 +2198,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        -912,
-        4176
+        3504,
+        11328
       ],
-      "id": "7c8bf5d8-30eb-4e49-bfa5-7c9aa0384689",
+      "id": "eeb5dd99-8d3c-4b3b-a714-233908040911",
       "name": "Recursive Character Text Splitter"
     },
     {
@@ -2217,13 +2217,13 @@
           "queryName": "match_proposals"
         }
       },
-      "id": "8e56d1e8-f458-4204-9330-a1f5093b1c38",
+      "id": "fd210835-fc00-4bca-bfbd-e415eb6e1a97",
       "name": "Insert into Supabase Vectorstore",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -944,
-        3680
+        3472,
+        10832
       ],
       "credentials": {
         "supabaseApi": {
@@ -2240,10 +2240,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3360,
-        3696
+        1056,
+        10848
       ],
-      "id": "32a40b62-2b01-4f5d-885a-86cda660bbaf",
+      "id": "668bf6db-ae26-491b-9e8a-81c9e5b5902d",
       "name": "Validar Contenido PDF"
     },
     {
@@ -2254,10 +2254,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -3632,
-        3696
+        784,
+        10848
       ],
-      "id": "365899f7-9c01-4ba0-b348-d3427fa3b7ab",
+      "id": "ae6d3ade-f96c-45e5-9fb5-0e0faa655ad5",
       "name": "Extract from File"
     },
     {
@@ -2288,10 +2288,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -3072,
-        3696
+        1344,
+        10848
       ],
-      "id": "4d22ea07-4314-4dc0-8823-5f481448fe30",
+      "id": "f39aa5e5-f003-460c-9aa5-14471cd4a1e1",
       "name": "¿Necesita OCR?"
     },
     {
@@ -2301,23 +2301,23 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2432,
-        3584
+        1984,
+        10736
       ],
-      "id": "1b6b1f29-5f2a-4ef3-a427-9e639995ae9e",
+      "id": "79c60011-52d8-4964-8c16-28bfbaa713f4",
       "name": "Aggregate OCR Pages"
     },
     {
       "parameters": {
         "jsCode": "// =============================================\n// NODO: Preparar Texto de Muestra (STRICT LIMIT)\n// =============================================\n\nconst items = $input.all();\n\nreturn items.map(item => {\n    let texto_muestra = \"SIN TEXTO\";\n\n    try {\n        if (item.json.pages && Array.isArray(item.json.pages) && item.json.pages.length > 0) {\n            // Unimos las 2 primeras páginas pero limitamos el total a 3000 caracteres\n            let rawJoin = item.json.pages.slice(0, 2).map(p => p.text || \"\").join(\"\\n\\n\");\n            texto_muestra = rawJoin.substring(0, 3000);\n        } else {\n            // Fallback extremadamente corto para texto plano\n            texto_muestra = (item.json.text || \"\").substring(0, 500);\n        }\n    } catch (e) {\n        console.error(\"Error al procesar páginas:\", e);\n    }\n\n    return {\n        json: {\n            ...item.json,\n            texto_muestra: texto_muestra\n        }\n    };\n});"
       },
-      "id": "ac7112f4-be51-407f-b160-b02028c352ff",
+      "id": "2f6db748-7316-4d71-9ad3-35501867c1cf",
       "name": "Preparar Texto de Muestra",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1984,
-        3696
+        2432,
+        10848
       ]
     },
     {
@@ -2327,10 +2327,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1120,
-        3680
+        3296,
+        10832
       ],
-      "id": "a8702a4e-34d2-4c32-8244-b773f1e9059e",
+      "id": "26292295-2c0d-41a5-b454-1585cee05be5",
       "name": "Format for Vectorstore"
     },
     {
@@ -2340,10 +2340,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4784,
-        2992
+        -368,
+        10144
       ],
-      "id": "930fc226-1714-4d7f-a206-9cadcb5cdc1c",
+      "id": "99575857-887e-4b9e-9383-2131d05bf996",
       "name": "Expandir por Tipo de Evaluación"
     },
     {
@@ -2353,10 +2353,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -4480,
-        2912
+        -64,
+        10064
       ],
-      "id": "78c7e268-61af-42bf-a9f4-858a39588f28",
+      "id": "442a08b0-5217-4f67-bc43-eb33be855ff9",
       "name": "Loop Over Items1"
     },
     {
@@ -2378,13 +2378,13 @@
           "timeout": 300000
         }
       },
-      "id": "51cc4ad7-0d6b-4ac2-bf4d-d8a377246303",
+      "id": "eedee676-626c-4e4e-b223-ea218168c5cc",
       "name": "Docling OCR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -2640,
-        3488
+        1776,
+        10640
       ],
       "retryOnFail": true
     },
@@ -2396,10 +2396,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1328,
-        4144
+        3088,
+        11296
       ],
-      "id": "64fc32c9-cdd0-4e1c-b972-d26456872ab8",
+      "id": "8ad6d865-d102-4165-8a3f-afb692d19b6c",
       "name": "Structured Output Parser"
     },
     {
@@ -2407,10 +2407,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -2176,
-        3696
+        2240,
+        10848
       ],
-      "id": "783a3452-9644-4427-bbb9-d047939ac2be",
+      "id": "e748d21e-08df-4626-9e68-5b15f24c2575",
       "name": "Merge1"
     },
     {
@@ -2420,10 +2420,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3472,
-        2864
+        944,
+        10016
       ],
-      "id": "abcb46e0-f92b-41ed-81e3-ed368115e240",
+      "id": "9954744b-9dc0-4e45-a59f-a7df48171142",
       "name": "Reset Items"
     },
     {
@@ -2434,10 +2434,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -4032,
-        2640
+        384,
+        9792
       ],
-      "id": "2cb10625-949e-45c2-9029-6e29b1f03b79",
+      "id": "1ab4afd1-cbca-497f-939b-d750ba42405b",
       "name": "Respond to Webhook"
     },
     {
@@ -2450,10 +2450,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4864,
-        3696
+        -448,
+        10848
       ],
-      "id": "21c3654d-12a1-4f47-9a3e-094c56f79719",
+      "id": "efa0e949-cb91-4c43-b108-8ab6048811df",
       "name": "Webhook",
       "webhookId": "54339356-4e6d-4e22-9820-6e1e98e167a8"
     },
@@ -2464,10 +2464,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3856,
-        3696
+        560,
+        10848
       ],
-      "id": "6c98cc27-b096-405a-8583-ea2e57cf050e",
+      "id": "e2246005-9858-4c3e-9baa-c697680efe5c",
       "name": "Base64 a Binary"
     },
     {
@@ -2477,10 +2477,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2848,
-        3584
+        1568,
+        10736
       ],
-      "id": "26da4a8e-8198-4707-ad71-165e8f2f3155",
+      "id": "6a3a4fdd-bb6e-4703-ab61-3225ddafec74",
       "name": "Base64 a Binary1"
     },
     {
@@ -2490,10 +2490,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4624,
-        3696
+        -208,
+        10848
       ],
-      "id": "311df87b-76a1-4951-a7a5-07a860156cad",
+      "id": "8353e4e4-2f4b-442d-ad5f-df516e000952",
       "name": "Code in JavaScript1"
     },
     {
@@ -2621,10 +2621,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        -768,
-        3136
+        3648,
+        10288
       ],
-      "id": "7d621a58-e9d5-47b5-9a98-14d3183ba18a",
+      "id": "8c73f251-6546-47bf-8579-172fe3d46250",
       "name": "Insert or update rows in a table",
       "credentials": {
         "postgres": {
@@ -2640,10 +2640,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2720,
-        2784
+        1696,
+        9936
       ],
-      "id": "a3926ce6-5a2a-4a81-b3ac-5c15ec53800a",
+      "id": "af7d151f-9f46-46e5-bff1-6df9a80525bd",
       "name": "Preparar Todo para LLM1"
     },
     {
@@ -2680,10 +2680,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2416,
-        2544
+        2000,
+        9696
       ],
-      "id": "5bafc326-7995-44a6-9983-60e0cbea1b64",
+      "id": "ebebbdbb-4323-4e02-98af-6b5a73f501a3",
       "name": "Has Economic Evaluation?"
     },
     {
@@ -2696,10 +2696,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -2496,
-        2224
+        1920,
+        9376
       ],
-      "id": "93ff82f0-1536-4e54-95db-11d0fa514fdf",
+      "id": "7a26885a-999f-49d1-b7df-e9c03362dd5a",
       "name": "Sticky Note Economic"
     },
     {
@@ -2709,10 +2709,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2176,
-        2544
+        2240,
+        9696
       ],
-      "id": "07875367-9462-43c4-9628-4d3ba00ef0f4",
+      "id": "109e135e-12fe-4fc7-bff5-9385a5ae7540",
       "name": "Check If Economic Offer"
     },
     {
@@ -2731,10 +2731,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -1856,
-        2544
+        2560,
+        9696
       ],
-      "id": "4c700bf4-12cf-441b-99ee-77f05d608041",
+      "id": "c3035d66-31b5-4405-8fa9-69a161c602e3",
       "name": "Extract Economic Data"
     },
     {
@@ -2744,10 +2744,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1536,
-        2544
+        2880,
+        9696
       ],
-      "id": "f32fee48-1db0-4a80-a105-498f4f6cb66e",
+      "id": "1c451ef8-1dcb-41e3-94c0-e79a76658523",
       "name": "Parse Economic JSON"
     },
     {
@@ -3024,10 +3024,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1184,
-        2544
+        3232,
+        9696
       ],
-      "id": "88b1ef1e-a787-4b80-931f-aa34bba3677b",
+      "id": "83de59f4-9c78-4db8-a302-dbcf9017cc2b",
       "name": "Save Economic Offer",
       "credentials": {
         "postgres": {
@@ -3046,10 +3046,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -1664,
-        6496
+        2752,
+        13648
       ],
-      "id": "3e76b487-5067-4032-8139-2ebe6aea681a",
+      "id": "d822da58-2cc9-4051-900a-e92eabd17ac2",
       "name": "Sticky Note RFP Generate"
     },
     {
@@ -3062,10 +3062,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -1584,
-        6656
+        3040,
+        13792
       ],
-      "id": "0d6f1dee-3962-4d21-9c3a-1e1f7a4ec81b",
+      "id": "75d8e050-e135-40d9-8049-f3a5b8a82a53",
       "name": "Webhook RFP Generate",
       "webhookId": "rfp-generate-webhook-001"
     },
@@ -3212,20 +3212,20 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -1376,
-        6656
+        3264,
+        13792
       ],
-      "id": "a0f40cb4-eb1a-45a1-b619-b0aadd434a79",
+      "id": "72bb6448-b4fa-4ba2-90b0-7e71dc64587f",
       "name": "Set RFP Params"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=### CONTEXTO DEL PROYECTO\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Moneda:** {{ $json.currency || 'EUR' }}\n- **Descripcion:** {{ $json.description }}\n- **Requisitos:** {{ $json.requirements }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n### CRITERIOS DE EVALUACION\n{{ $json.criteria }}\n\n### PLAZOS Y CRONOGRAMA\n{{ $json.deadlines }}\n\n### PROVEEDORES INVITADOS\n{{ $json.providers }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION\n1. **Extension**: Escribe un MINIMO de 600 palabras para esta seccion. Debe ser completa y detallada.\n2. **Estilo narrativo**: Escribe en PROSA NARRATIVA. Usa parrafos completos de 3-5 oraciones cada uno que expliquen con profundidad.\n3. **Listas con contexto**: Si necesitas usar listas o enumeraciones, SIEMPRE precedelas de un parrafo explicativo. Nunca una seccion que sea SOLO una lista.\n4. **Tablas**: Si esta seccion trata de criterios de evaluacion, plazos o comparativas, incluye tablas Markdown bien formateadas.\n5. **Especificidad**: Incluye detalles especificos relevantes para proyectos {{ $json.project_type }} del sector energetico/industrial.\n6. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales ni cierres del documento. Escribe SOLO el contenido de esta seccion.\n7. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo (```).\n- NO incluyas comentarios meta ni explicaciones sobre lo que escribiste.\n- Empieza directamente con el contenido.",
+        "text": "=### CONTEXTO DEL PROYECTO\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Moneda:** {{ $json.currency || 'EUR' }}\n- **Descripcion:** {{ $json.description }}\n- **Requisitos:** {{ $json.requirements }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n### CRITERIOS DE EVALUACION\n{{ $json.criteria }}\n\n### PLAZOS Y CRONOGRAMA\n{{ $json.deadlines }}\n\n### PROVEEDORES INVITADOS\n{{ $json.providers }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION — CUMPLIMIENTO OBLIGATORIO\n1. **Extension MINIMA**: Escribe un MINIMO de 800 palabras para esta seccion. Secciones menores de 800 palabras seran rechazadas.\n2. **PROSA NARRATIVA OBLIGATORIA**: Cada parrafo debe contener entre 4 y 6 oraciones completas que desarrollen una idea con profundidad, contexto y justificacion tecnica. El texto debe fluir como un documento legal-tecnico revisado por un departamento juridico de una empresa Fortune 500.\n3. **LISTAS SEVERAMENTE RESTRINGIDAS**: SOLO puedes usar listas con viñetas o numeradas para: (a) enumerar normas tecnicas o codigos regulatorios especificos (ISO, EN, UNE, ASME, API, etc.), (b) listar pesos numericos de criterios de evaluacion, (c) detallar codigos de regulacion aplicables. En NINGUN otro caso uses listas. Toda la informacion debe presentarse en parrafos narrativos.\n4. **ANTI-PATRONES PROHIBIDOS**: Esta TERMINANTEMENTE PROHIBIDO usar el patron '**Etiqueta:** texto' de forma repetida. Esta prohibido escribir parrafos de una sola oracion. Esta prohibido que una seccion tenga mas de un 20% de su contenido en formato lista. Esta prohibido usar listas como estructura principal de la seccion.\n5. **Tablas**: Si esta seccion trata de criterios de evaluacion, plazos, comparativas o desgloses de costes, incluye tablas Markdown bien formateadas. Las tablas son COMPLEMENTARIAS al texto narrativo, nunca un sustituto.\n6. **ESPECIFICIDAD CONCRETA**: Nombra normas concretas (ISO 9001, ISO 14001, ISO 45001, EN 1090, API 650, ASME B31.3, etc.), regulaciones especificas, y estandares del sector. Evita generalidades como 'normativa aplicable' o 'regulaciones vigentes'. Cita normativa real.\n7. **REGISTRO PROFESIONAL**: Escribe como si este documento fuera a ser revisado por el departamento legal y de compliance de Airbus, Siemens, Ericsson u Oracle. Tono formal, preciso, sin coloquialismos, sin relleno generico.\n8. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales ni cierres del documento. Escribe SOLO el contenido de esta seccion.\n9. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo (```).\n- NO incluyas comentarios meta ni explicaciones sobre lo que escribiste.\n- Empieza directamente con el contenido.",
         "messages": {
           "messageValues": [
             {
-              "message": "=You are a senior procurement specialist and technical writer with 15+ years of experience drafting {{ $json.project_type }} documents for industrial EPC projects (energy, P2X, green hydrogen, solar, wind, BESS, petrochemical).\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal {{ $json.project_type }} document. You must write this section with the depth, detail and quality expected in a real corporate procurement document used in multi-million euro tenders.\n\n### WRITING STYLE REQUIREMENTS\n1. **NARRATIVE PROSE is mandatory**: Write in full, well-constructed paragraphs. Each paragraph must have 3-5 complete sentences that develop an idea thoroughly.\n2. **NO list-only sections**: You may use bullet points or numbered lists to enumerate specific items (e.g., requirements, criteria), but they MUST be preceded and followed by explanatory paragraphs that provide context and rationale.\n3. **Minimum 600 words**: This section must be substantial. A section shorter than 600 words is unacceptable.\n4. **Professional register**: Use formal, precise language appropriate for corporate procurement. No colloquialisms, no filler text, no generic statements.\n5. **Specificity over generality**: Reference the specific project type, sector, and requirements. Avoid vague statements like 'the provider must comply with applicable regulations' — instead specify WHICH regulations.\n6. **Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}** throughout.\n\n### FORMATTING\n- Use Markdown: **bold** for key terms, - for lists, | for tables where appropriate.\n- Do NOT include the section header/title (it will be added automatically).\n- Start directly with the substantive content.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT explain what you are doing. Just write the section."
+              "message": "=You are a senior procurement specialist and technical writer with 20+ years of experience drafting {{ $json.project_type }} documents for Fortune 500 industrial EPC projects (energy, P2X, green hydrogen, solar, wind, BESS, petrochemical, infrastructure). Your documents have been reviewed and approved by legal departments at companies like Airbus, Siemens, Ericsson, and Oracle.\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal {{ $json.project_type }} document. This section must read as if it were extracted from a real corporate procurement document used in multi-million euro tenders — the kind that passes legal review, compliance audits, and board-level scrutiny.\n\n### WRITING STYLE — MANDATORY RULES\n\n**RULE 1 — NARRATIVE PROSE IS THE DEFAULT FORMAT:**\nEvery section must be written primarily in flowing, narrative paragraphs. Each paragraph MUST contain 4 to 6 complete, well-constructed sentences that develop one coherent idea. Paragraphs must connect logically with transitions. Think of a legal contract's explanatory sections or a McKinsey consulting report — dense, substantive prose that leaves no ambiguity.\n\n**RULE 2 — LISTS ARE SEVERELY RESTRICTED:**\nBullet points and numbered lists may ONLY be used in these three specific scenarios:\n(a) To enumerate specific technical standards or regulatory codes (e.g., ISO 9001, EN 1090, API 650, ASME B31.3)\n(b) To list numerical weights of evaluation criteria in a scoring methodology\n(c) To reference specific regulatory codes applicable to the project\nIn ALL other cases, information MUST be presented as narrative paragraphs. If you catch yourself wanting to make a list, REWRITE it as prose.\n\n**RULE 3 — BANNED ANTI-PATTERNS (violation = rejection):**\n- NEVER use the pattern '**Label:** description text' repeated multiple times. This is lazy formatting, not professional writing.\n- NEVER write single-sentence paragraphs. Every paragraph needs 4-6 sentences minimum.\n- NEVER structure a section as primarily a list with brief introductions. The section must be 80%+ prose.\n- NEVER use generic phrases like 'applicable regulations', 'relevant standards', 'as required'. Name the SPECIFIC regulation, standard, or requirement.\n- NEVER use filler sentences that add no information (e.g., 'This section describes...' 'It is important to note that...').\n\n**RULE 4 — MINIMUM 800 WORDS:**\nThis section must contain at least 800 words of substantive content. Sections shorter than 800 words are unacceptable and will be rejected.\n\n**RULE 5 — CONCRETE SPECIFICITY:**\nReference real standards (ISO 9001, ISO 14001, ISO 45001, EN 1090, API 650, ASME B31.3, NFPA 70, IEC 61508, UNE-EN, etc.), real regulations, real industry practices. Every claim must be grounded in specific, verifiable references appropriate to {{ $json.project_type }} projects.\n\n**RULE 6 — PROFESSIONAL REGISTER:**\nWrite as if this document will be reviewed by the Chief Procurement Officer, General Counsel, and external auditors of a Fortune 500 company. Formal, precise, authoritative. Zero colloquialisms, zero filler, zero vagueness.\n\n6. **Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}** throughout.\n\n### FORMATTING\n- Use Markdown: **bold** for key terms, tables where data comparison is needed.\n- Do NOT include the section header/title (it will be added automatically).\n- Start directly with the substantive content — no preamble.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT explain what you are doing. Just write the section."
             }
           ]
         },
@@ -3234,10 +3234,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -1184,
-        6656
+        3936,
+        13696
       ],
-      "id": "6d67b039-6260-4c1d-b364-814b99875183",
+      "id": "c417d009-df63-4a57-93b4-f2a4691385d1",
       "name": "RFP Generation Chain"
     },
     {
@@ -3247,10 +3247,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -976,
-        6656
+        4288,
+        13696
       ],
-      "id": "55b18e0c-9d63-4eac-abd2-5e4050769211",
+      "id": "966e5c9f-412a-4c4f-a701-b34f501adb50",
       "name": "Parse RFP Output"
     },
     {
@@ -3261,10 +3261,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -784,
-        6656
+        4512,
+        13792
       ],
-      "id": "5f290b7b-1985-4d67-a41e-b69d9729752b",
+      "id": "5bd6c1df-d6eb-47ec-bbae-6ac64d918b39",
       "name": "Respond RFP Generate"
     },
     {
@@ -3274,10 +3274,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -1664,
-        2992
+        2752,
+        10144
       ],
-      "id": "d0b8f32f-ff26-4817-9fd6-39e215d56714",
+      "id": "a444b037-a85b-4a49-94f9-aa52d03d4ec0",
       "name": "OpenRouter Chat Model5",
       "credentials": {
         "openRouterApi": {
@@ -3295,10 +3295,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -272,
-        6384
+        4144,
+        13536
       ],
-      "id": "3fb7e04e-7259-4778-be2a-6a1e7e807b06",
+      "id": "4dcc89a4-cddf-44be-852e-faff9a139db9",
       "name": "OpenRouter Chat Model6",
       "credentials": {
         "openRouterApi": {
@@ -3317,10 +3317,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -5040,
-        4400
+        -624,
+        11552
       ],
-      "id": "1c2debd6-34a0-48b5-9086-595d081acf5e",
+      "id": "1371efb5-6a66-4773-ba34-326f302b6ade",
       "name": "Sticky Note"
     },
     {
@@ -3333,10 +3333,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4928,
-        4624
+        -512,
+        11776
       ],
-      "id": "4f1a80fe-bc97-4943-bec8-83e6ed11f4b6",
+      "id": "f3428bb0-c0f9-4c91-ab65-bffcc6223487",
       "name": "Webhook RFQ",
       "webhookId": "86850b01-70b4-4c99-a63a-6ccad35c0be2"
     },
@@ -3347,10 +3347,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3808,
-        4624
+        608,
+        11776
       ],
-      "id": "07c1c67e-bace-40d9-8d04-44490eafe7f9",
+      "id": "5aff1887-0efb-4353-a42e-c82ec5cf5263",
       "name": "Preparar Texto1"
     },
     {
@@ -3370,10 +3370,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -4112,
-        4864
+        304,
+        12016
       ],
-      "id": "12564477-00eb-4b3a-b616-1237e5f54962",
+      "id": "fd824953-b5a3-4f5d-94d7-1d2d21d722e4",
       "name": "Clasificador de Tipos1"
     },
     {
@@ -3386,10 +3386,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -4160,
-        5088
+        256,
+        12240
       ],
-      "id": "12858fa4-94a4-42a5-9fe7-2f8c94d51b96",
+      "id": "69d1a8fb-6f43-405a-9cd2-b9b877dc3ec3",
       "name": "Ollama Clasificador1",
       "credentials": {
         "ollamaApi": {
@@ -3406,10 +3406,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -3920,
-        5088
+        496,
+        12240
       ],
-      "id": "9499422c-2cbe-4ee3-91fc-3878cf5e75ca",
+      "id": "00559e1a-0a45-408c-a56b-9de63fdaebcf",
       "name": "Output Parser1"
     },
     {
@@ -3419,10 +3419,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3152,
-        4864
+        1264,
+        12016
       ],
-      "id": "81439100-fa6a-4570-a2e9-ead363912699",
+      "id": "dcbd2c89-0b81-449b-9328-2ad3f363a4ef",
       "name": "Expandir por Tipo1"
     },
     {
@@ -3432,10 +3432,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -2944,
-        4864
+        1472,
+        12016
       ],
-      "id": "3759b7ef-986a-4e09-8e84-4e621c105492",
+      "id": "46780c70-e95f-49a8-bbfa-e414579aa3c0",
       "name": "Loop por Tipo1"
     },
     {
@@ -3445,10 +3445,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1376,
-        4800
+        3040,
+        11952
       ],
-      "id": "16aaae20-464f-4d77-a947-0386d3b0b84c",
+      "id": "9aad2cc7-9b62-45f5-84ba-d324b5156d73",
       "name": "Parsear Items1"
     },
     {
@@ -3458,10 +3458,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        4992
+        3568,
+        12144
       ],
-      "id": "de4b31c7-a2b7-4eff-a608-9c7b0d45cf98",
+      "id": "67d2ddca-96ea-42d4-8cc3-be8180c32da4",
       "name": "Agregar Resultados1"
     },
     {
@@ -3471,10 +3471,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1648,
-        4464
+        2768,
+        11616
       ],
-      "id": "bedf08e5-3f62-4730-8cf7-2be6795eeac9",
+      "id": "9221621b-aaaf-42c9-8abb-d01fd6189175",
       "name": "Resumen Final1"
     },
     {
@@ -3486,10 +3486,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -1360,
-        4464
+        3056,
+        11616
       ],
-      "id": "74802e87-a6b9-4188-86a7-30a34b2a4301",
+      "id": "6d0194fd-99bb-44b6-8cda-e84adfc1951c",
       "name": "Respond Success1"
     },
     {
@@ -3499,10 +3499,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4256,
-        4624
+        160,
+        11776
       ],
-      "id": "5630e707-1df0-4a21-8614-14fd6565b47f",
+      "id": "dd27a1f0-b42a-4264-a9ca-1ef68a6fd3e1",
       "name": "Base64 a Binary3"
     },
     {
@@ -3513,10 +3513,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        -4032,
-        4624
+        384,
+        11776
       ],
-      "id": "67f40795-26f3-4599-8729-6edb0ed2e383",
+      "id": "0a862381-c371-4e68-b453-6edf6a0d9029",
       "name": "Extract from File3"
     },
     {
@@ -3526,10 +3526,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4704,
-        4624
+        -288,
+        11776
       ],
-      "id": "c183558b-9d3e-4802-b053-b158007e74a1",
+      "id": "6c0b0cbb-f7ec-4fae-b99a-3223c44a85d7",
       "name": "Generate IDs1"
     },
     {
@@ -3587,10 +3587,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -2048,
-        4992
+        2368,
+        12144
       ],
-      "id": "969748fc-27fc-4e4e-8111-5c6409d5c3a9",
+      "id": "779779fa-499b-47e8-b991-55090e0e29fa",
       "name": "Switch1"
     },
     {
@@ -3605,10 +3605,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -1792,
-        5440
+        2624,
+        12592
       ],
-      "id": "be85ffc5-63d8-47ec-bb9f-77ff567896f6",
+      "id": "2b4a4ff2-5b58-4ee8-9a31-da473aa4bfdb",
       "name": "Ollama Extractor2",
       "credentials": {
         "ollamaApi": {
@@ -3633,10 +3633,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        -1728,
-        5216
+        2688,
+        12368
       ],
-      "id": "4629b303-8889-46b5-9c0b-6855e6530a25",
+      "id": "deba5ed9-2fa5-42da-bc73-f3bbaa9aecfd",
       "name": "LLM Extractor - Deliverables"
     },
     {
@@ -3646,10 +3646,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1376,
-        5216
+        3040,
+        12368
       ],
-      "id": "ea75c091-9069-491b-ab77-495f4dc03bbe",
+      "id": "9b7bbf2b-c6b7-4e35-8b0d-6e6f2182f5e6",
       "name": "Parsear deliverables"
     },
     {
@@ -3664,10 +3664,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmOllama",
       "typeVersion": 1,
       "position": [
-        -1792,
-        4992
+        2624,
+        12144
       ],
-      "id": "fae00d9e-76ba-4d20-81d2-3b6f19d33646",
+      "id": "a6c50699-3e83-4cea-ba44-f60200b6d201",
       "name": "Ollama Extractor1",
       "credentials": {
         "ollamaApi": {
@@ -3684,10 +3684,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1488,
-        5424
+        2928,
+        12576
       ],
-      "id": "057ebcdc-2de2-476e-8afc-8ebc5e692fef",
+      "id": "7914a450-4bf9-4b04-bf4a-d2d47fe21428",
       "name": "Structured Output Parser1"
     },
     {
@@ -3698,10 +3698,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -1552,
-        4992
+        2864,
+        12144
       ],
-      "id": "e1a31aee-00d8-42bb-8345-3e0d820ba108",
+      "id": "ea566690-2b60-4955-8f1d-b7129ae85b47",
       "name": "Structured Output Parser2"
     },
     {
@@ -3711,10 +3711,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2656,
-        4976
+        1760,
+        12128
       ],
-      "id": "fce727fc-5914-4168-92d7-2bdbbb23f462",
+      "id": "7fb4b2dc-aea2-43aa-ba3a-6a020400bb2d",
       "name": "Dividir en Trozos1"
     },
     {
@@ -3726,10 +3726,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -2304,
-        4976
+        2112,
+        12128
       ],
-      "id": "313855d6-2d8c-48e6-a663-a4ac200d9cb1",
+      "id": "c930181a-7690-4d47-b5ef-8dee2031e1e3",
       "name": "Loop por Trozo1"
     },
     {
@@ -3739,10 +3739,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2480,
-        4976
+        1936,
+        12128
       ],
-      "id": "c5735507-7bc5-4a39-9c59-5b2d636e50a6",
+      "id": "d46ef081-c1d6-46cd-b4bd-7237470eb2e6",
       "name": "Reset Items1"
     },
     {
@@ -3752,10 +3752,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -3584,
-        5088
+        832,
+        12240
       ],
-      "id": "dacbb531-905c-46e9-b386-eef1e4565d46",
+      "id": "c38fd5a4-e6dc-48b9-898d-6ca596be24aa",
       "name": "Embeddings Ollama1",
       "credentials": {
         "ollamaApi": {
@@ -3777,13 +3777,13 @@
           "queryName": "match_rfq"
         }
       },
-      "id": "e49ba08d-045c-4fd1-a902-3ec94ca350a0",
+      "id": "55fff7ac-dca4-468e-9291-4c7bc72c3889",
       "name": "Insert into Supabase Vectorstore1",
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -3504,
-        4864
+        912,
+        12016
       ],
       "credentials": {
         "supabaseApi": {
@@ -3801,10 +3801,10 @@
       "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
       "typeVersion": 1,
       "position": [
-        -3328,
-        5296
+        1088,
+        12448
       ],
-      "id": "902d51d9-3978-48c9-9587-9718aeea9257",
+      "id": "402b3892-2cd4-4c6d-aa01-291d2b5af9e3",
       "name": "Recursive Character Text Splitter1"
     },
     {
@@ -3834,13 +3834,13 @@
           }
         }
       },
-      "id": "d11fac44-5a11-4726-b5d2-bda2b3d6bc61",
+      "id": "d60fd8ce-2299-4193-b045-040b34329b7a",
       "name": "Default Data Loader1",
       "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
       "typeVersion": 1,
       "position": [
-        -3408,
-        5088
+        1008,
+        12240
       ]
     },
     {
@@ -3871,10 +3871,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -1056,
-        4992
+        3360,
+        12144
       ],
-      "id": "fa49da3a-0e3a-4fd7-af4b-bbbdec48ffdf",
+      "id": "529c9e1f-91bc-47a9-b1f1-8b8d696bec2d",
       "name": "Create a row",
       "credentials": {
         "supabaseApi": {
@@ -3890,13 +3890,13 @@
         "filterType": "string",
         "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
       },
-      "id": "4f991be8-5899-468c-8895-b4a6e069ce6c",
+      "id": "6934c0d0-6525-4d5d-b619-ec8de5bee3d9",
       "name": "Delete Old Doc Rows1",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -4480,
-        4624
+        -64,
+        11776
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -4011,10 +4011,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -3728,
-        4864
+        688,
+        12016
       ],
-      "id": "7e38cb96-cdbe-4618-9ec4-16b874f0de91",
+      "id": "590e3108-0579-45b2-9248-dd10f9e72804",
       "name": "Insert Document Metadata2",
       "executeOnce": true,
       "credentials": {
@@ -4040,10 +4040,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.7,
       "position": [
-        -1744,
-        4800
+        2672,
+        11952
       ],
-      "id": "cba79c0c-0d0e-4649-b6ad-9e773a8acca0",
+      "id": "73c67aab-65c8-46b3-b869-82871a103895",
       "name": "LLM Extractor Tech-Econ"
     },
     {
@@ -4053,10 +4053,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -1968,
-        5216
+        2448,
+        12368
       ],
-      "id": "d6c3665c-9001-44c2-b3d3-2334a191ed40",
+      "id": "feed5097-ab9e-40bd-b090-515cdcfa02e1",
       "name": "OpenRouter Chat Model7",
       "credentials": {
         "openRouterApi": {
@@ -4072,10 +4072,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -4032,
-        5328
+        384,
+        12480
       ],
-      "id": "ce198106-c776-45f3-bd31-0c6cd1743802",
+      "id": "9830e7c8-5596-4d70-9707-a38e7af1a312",
       "name": "OpenRouter Chat Model8",
       "credentials": {
         "openRouterApi": {
@@ -4094,10 +4094,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -10448,
-        3360
+        -6032,
+        10512
       ],
-      "id": "875295b6-fd27-468f-af37-b89ec67edb74",
+      "id": "e67e7fc6-aff7-47a3-8ed1-133690af69c3",
       "name": "Webhook Inbound",
       "webhookId": "0496e481-bb76-42f1-b3d5-734935b4b631"
     },
@@ -4142,10 +4142,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -10224,
-        3360
+        -5808,
+        10512
       ],
-      "id": "f6dcf2f3-c3e3-4dde-a28d-b3c8eca4a900",
+      "id": "ce7f891d-8e5f-4835-9587-15b72f40d393",
       "name": "Set Input Params"
     },
     {
@@ -4173,10 +4173,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9776,
-        3360
+        -5360,
+        10512
       ],
-      "id": "1cf9da63-caed-4b3b-a62a-79f1adf85dc1",
+      "id": "f534263b-cacf-4ce5-8d4f-3da9af649932",
       "name": "Fetch All Provider Responses",
       "credentials": {
         "supabaseApi": {
@@ -4192,10 +4192,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9552,
-        3360
+        -5136,
+        10512
       ],
-      "id": "1845d9f3-7cfd-4a16-8612-daa0efee2cd9",
+      "id": "90073e72-d171-41ab-96aa-58cbb721427d",
       "name": "Filter Deficiencies Only"
     },
     {
@@ -4217,10 +4217,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9328,
-        3360
+        -4912,
+        10512
       ],
-      "id": "031d7216-ebe1-4ff2-b182-d609544ebecd",
+      "id": "20e24138-b15d-4233-a723-3867024ae241",
       "name": "Fetch Requirement Specs",
       "credentials": {
         "supabaseApi": {
@@ -4238,10 +4238,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -9104,
-        3360
+        -4688,
+        10512
       ],
-      "id": "8d5869d4-e036-4f79-a89e-900abadcd636",
+      "id": "3a6ee701-0c1b-469a-9c92-bca09b82abf5",
       "name": "Consolidate Deficiencies"
     },
     {
@@ -4254,10 +4254,10 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -8880,
-        3360
+        -4464,
+        10512
       ],
-      "id": "7fdf27cf-d4c6-4dbc-a8ec-37a3cb588a31",
+      "id": "f2a68b38-2f3f-4b5b-a793-b48a99bbe38a",
       "name": "QA Generation Chain"
     },
     {
@@ -4268,10 +4268,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -8736,
-        3584
+        -4320,
+        10736
       ],
-      "id": "26092689-7617-4062-928e-a1657e118b3a",
+      "id": "e06c636e-71d1-46f3-ba6a-a6a92259a039",
       "name": "JSON Output Parser"
     },
     {
@@ -4283,10 +4283,10 @@
       "type": "n8n-nodes-base.itemLists",
       "typeVersion": 3.1,
       "position": [
-        -8528,
-        3360
+        -4112,
+        10512
       ],
-      "id": "705c11d0-b603-43b2-8c52-7090f470e23f",
+      "id": "76114276-b842-42f8-acde-822e85b51b16",
       "name": "Split Questions List"
     },
     {
@@ -4296,10 +4296,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8416,
-        3360
+        -4000,
+        10512
       ],
-      "id": "21da1569-afd2-49dc-9b09-5a38fd0721cf",
+      "id": "25b4d712-0b55-47ed-a29b-95ead32f35c7",
       "name": "Validate Requirement IDs"
     },
     {
@@ -4342,10 +4342,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -8304,
-        3360
+        -3888,
+        10512
       ],
-      "id": "2fca7b99-6e58-40e3-8195-5151ed759de6",
+      "id": "9eb981a7-c147-4ebc-94a5-7fb771c1a3bd",
       "name": "Supabase Insert",
       "credentials": {
         "supabaseApi": {
@@ -4361,10 +4361,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8080,
-        3360
+        -3664,
+        10512
       ],
-      "id": "ee40ef0d-b227-463b-ac71-80552d355641",
+      "id": "0cff9a31-f254-4ea7-ab0e-371c0a037193",
       "name": "Extract Disciplines"
     },
     {
@@ -4394,10 +4394,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7856,
-        3360
+        -3440,
+        10512
       ],
-      "id": "98bda173-628e-48b7-a72d-93c5dda9ef92",
+      "id": "f2469512-306d-4235-b33a-2b87402ecff6",
       "name": "Save Project Disciplines",
       "credentials": {
         "supabaseApi": {
@@ -4414,10 +4414,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -7632,
-        3360
+        -3216,
+        10512
       ],
-      "id": "3c06bd5c-70f3-4701-9d6b-44fd407737df",
+      "id": "12f538dc-cf37-4958-ae75-7d5379b05a6e",
       "name": "Respond to Webhook1"
     },
     {
@@ -4430,10 +4430,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -10816,
-        2736
+        -6400,
+        9888
       ],
-      "id": "7ba75d9b-5829-4d7f-9fed-ccda1b55cc6a",
+      "id": "936546d9-29c1-433d-a2cd-3302a9938b9b",
       "name": "Sticky Note1"
     },
     {
@@ -4450,13 +4450,13 @@
           ]
         }
       },
-      "id": "7288ca5c-b26b-4971-9137-94f425379dee",
+      "id": "a1226ae9-1400-4365-a5ab-1b110d49ac94",
       "name": "Fetch Project Context QA",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -10000,
-        3360
+        -5584,
+        10512
       ],
       "credentials": {
         "supabaseApi": {
@@ -4474,10 +4474,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -9136,
-        3632
+        -4720,
+        10784
       ],
-      "id": "d76a67b6-5eba-4ded-becb-49deefd5ecd2",
+      "id": "21d4b1f8-f3f3-45c3-b0ec-7d615fb601ce",
       "name": "OpenRouter Chat Model4",
       "credentials": {
         "openRouterApi": {
@@ -4493,10 +4493,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -7040,
-        6128
+        -2624,
+        13280
       ],
-      "id": "2d81c573-5900-435a-a818-b58ce70b1b11",
+      "id": "f74d570f-926f-4222-bac2-c6729580ecd2",
       "name": "OpenRouter Chat Model2",
       "credentials": {
         "openRouterApi": {
@@ -4515,10 +4515,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -7248,
-        2736
+        -2832,
+        9888
       ],
-      "id": "ff5eb84d-67c0-4193-b1a5-95721bbae788",
+      "id": "a024f735-d60b-467b-99ef-20759b249c4b",
       "name": "Sticky Note4"
     },
     {
@@ -4528,10 +4528,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -5488,
-        2928
+        -1072,
+        10080
       ],
-      "id": "4f4c7d4c-f574-44e5-8a4a-49564d2aada6",
+      "id": "974f11b1-1cc0-471d-abac-bd82d2309901",
       "name": "Respond to Webhook5"
     },
     {
@@ -4544,10 +4544,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -7136,
-        2928
+        -2720,
+        10080
       ],
-      "id": "1c911022-1f8c-41e3-8199-2a6f2c560769",
+      "id": "6b441ba9-5595-43f6-b4ee-2eb800459a19",
       "name": "Webhook1",
       "webhookId": "chat-rfq"
     },
@@ -4556,13 +4556,13 @@
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.body.sessionId }}"
       },
-      "id": "af74afdd-3a1f-447c-80da-fa50c00aa657",
+      "id": "9f2c2c3a-a9eb-4c6a-a917-24152a346d47",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1,
       "position": [
-        -6784,
-        3152
+        -2368,
+        10304
       ],
       "notesInFlow": false,
       "credentials": {
@@ -4579,10 +4579,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -6288,
-        3360
+        -1872,
+        10512
       ],
-      "id": "c34f7a71-8150-4877-9273-02ab9eb81b48",
+      "id": "84005042-ce0d-472f-9c21-3c31ee64eef3",
       "name": "Embeddings Ollama",
       "credentials": {
         "ollamaApi": {
@@ -4599,13 +4599,13 @@
           "systemMessage": "=CRITICAL RULES - YOU MUST FOLLOW THESE:\n1. ALWAYS respond in {{ $json.body.language === 'en' ? 'ENGLISH' : 'SPANISH' }}.\n2. NEVER use emojis or emoticons in your responses.\n3. When referencing monetary values or prices, ALWAYS use {{ $json.body.currency || 'EUR' }} as the currency.\n\nYou are an expert assistant specialized in analyzing vendor proposals for RFQ evaluations.\n\nVENDORS: IDOM, SACYR, TECNICASREUNIDAS (TR), EA, SENER, TRESCA, WORLEY\n\n## AVAILABLE TOOLS\n\n### Vector Search Tools (for narrative/document content):\n- **consultar_ofertas_proveedores**: Search vendor proposal documents for detailed text, technical descriptions, and narrative content. Do NOT use this for prices or costs — use query_economic_offers instead.\n- **consultar_documentos_rfq**: Search original RFQ documents for client requirements and specifications.\n\n### SQL Tools (for structured data):\n- **query_economic_offers**: Query economic_offers table. Returns ACTUAL prices: total_price, net_price (after discount), discount_percentage, payment_terms, payment_schedule, tco_value, tco_breakdown, price_breakdown, optional_items, alternative_offers, validity_days, guarantees, insurance_included, taxes_included. USE THIS FIRST for any question about prices, costs, payment conditions or economic comparison between vendors.\n- **query_requirements**: Query rfq_items_master with provider_responses. Returns: requirement_text, evaluation_type (Technical/Economical/Pre-FEED/FEED), phase, provider evaluations (evaluation_value, comment).\n- **query_provider_responses**: Query provider_responses table. Filter by provider_name to get detailed vendor responses with comments.\n- **query_ranking**: Query ranking_proveedores table. Returns: overall_score (0-10 scale), compliance_percentage (%), category scores (0-10 scale), individual criterion scores (JSONB), and evaluation details with strengths/weaknesses (JSONB). Categories and weights are dynamic per project. IMPORTANT: Present data exactly as returned by the query, never invent or estimate scores.\n- **query_qa_audit**: Query qa_audit table. Filter by: provider, discipline (Electrica/Mecanica/Civil/Proceso/General), status, or all.\n\n## TOOL SELECTION GUIDE\n\n| Question Type | Tool to Use |\n|---------------|-------------|\n| Prices, costs, total price of a vendor | query_economic_offers |\n| Price comparison between vendors | query_economic_offers |\n| Payment terms, payment schedule, milestones | query_economic_offers |\n| TCO, total cost of ownership | query_economic_offers |\n| Discounts, optional items, alternatives | query_economic_offers |\n| Guarantees, insurance, taxes included | query_economic_offers |\n| Price breakdown (itemized costs) | query_economic_offers |\n| Overall ranking, who is best? | query_ranking |\n| Category scores (technical, economic, execution, HSE) | query_ranking |\n| Requirement compliance details | query_requirements |\n| Vendor evaluation details and comments | query_provider_responses |\n| Pending Q&A questions | query_qa_audit |\n| Document text, technical descriptions | consultar_ofertas_proveedores |\n| Original RFQ specifications | consultar_documentos_rfq |\n\n## ECONOMIC DATA RULES\n- ALWAYS use query_economic_offers for any question about prices, costs, payment conditions, or TCO.\n- The economic_offers table contains the ACTUAL structured data extracted from proposals. This is the source of truth for prices.\n- When presenting prices, format numbers with thousands separator and always include the currency ({{ $json.body.currency || 'EUR' }}).\n- If net_price differs from total_price, explain the discount.\n- For payment comparisons, highlight payment_terms (e.g. 30 days vs 120 days) as this significantly impacts cash flow.\n\n## SCORING\n- All scores are on a 0-10 scale.\n- Scoring categories and weights are DYNAMIC per project. Do NOT assume fixed categories or weights.\n- Always retrieve actual scores from query_ranking and present them exactly as returned.\n- NEVER invent, estimate, or hallucinate scores. If query_ranking returns no data, say so.\n\n## INSTRUCTIONS\n1. ALWAYS use tools to retrieve data before answering. Never guess.\n2. For comparisons, query multiple sources if needed.\n3. Be concise but complete when presenting economic data (show actual numbers).\n4. Remember: respond in {{ $json.body.language === 'en' ? 'English' : 'Spanish' }}, no emojis, use {{ $json.body.currency || 'EUR' }} for monetary values."
         }
       },
-      "id": "4b2468ed-7753-4ab1-977d-96c17f0fc4bf",
+      "id": "a4d46b11-6f3e-4936-9605-8feb53cbfc5c",
       "name": "Chat AI Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.6,
       "position": [
-        -6256,
-        2928
+        -1840,
+        10080
       ]
     },
     {
@@ -4627,10 +4627,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -6656,
-        3152
+        -2240,
+        10304
       ],
-      "id": "6d0fc800-1122-439e-b037-7fb81265b2c0",
+      "id": "bc51b928-8ddc-417f-93e0-85e81e2edb78",
       "name": "Revisar-ofertas",
       "credentials": {
         "supabaseApi": {
@@ -4646,10 +4646,10 @@
       "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
       "typeVersion": 1,
       "position": [
-        -6576,
-        3360
+        -2160,
+        10512
       ],
-      "id": "8d2e269f-20b9-42c3-9e54-e227245a7106",
+      "id": "8c289d88-6fdb-4c01-830f-2afb8927a7f2",
       "name": "Embeddings Ollama5",
       "credentials": {
         "ollamaApi": {
@@ -4671,10 +4671,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -6080,
-        3152
+        -1664,
+        10304
       ],
-      "id": "f08010a0-6c57-48f9-9330-30f53a2b1fe3",
+      "id": "60f28d88-a480-4ce6-8769-e2bece922a2a",
       "name": "query_requirements",
       "credentials": {
         "postgres": {
@@ -4696,10 +4696,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -5952,
-        3152
+        -1536,
+        10304
       ],
-      "id": "4a5ea058-e778-4d56-b183-5de9516f1f24",
+      "id": "06697022-65f7-4878-a86a-467897092438",
       "name": "query_provider_responses",
       "credentials": {
         "postgres": {
@@ -4721,10 +4721,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -5824,
-        3152
+        -1408,
+        10304
       ],
-      "id": "427c1649-1094-49bc-a982-11d34f77438f",
+      "id": "fdaf0fcf-1737-4cac-ac36-dc1be7b42dfa",
       "name": "query_ranking",
       "credentials": {
         "postgres": {
@@ -4746,10 +4746,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -5568,
-        3152
+        -1152,
+        10304
       ],
-      "id": "ceb2c374-5e41-485d-b479-80386e277276",
+      "id": "4510c7f5-d1bc-47d6-94b2-e0a94321c116",
       "name": "query_economic_offers",
       "credentials": {
         "postgres": {
@@ -4771,10 +4771,10 @@
       "type": "n8n-nodes-base.postgresTool",
       "typeVersion": 2.5,
       "position": [
-        -5696,
-        3152
+        -1280,
+        10304
       ],
-      "id": "fa80e9c8-424c-4305-b80a-a605b4d9d74e",
+      "id": "aa8aa05e-c0d5-4965-bc7c-915f11aa7a5c",
       "name": "query_qa_audit",
       "credentials": {
         "postgres": {
@@ -4792,10 +4792,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -6048,
-        3296
+        -1632,
+        10448
       ],
-      "id": "c488be28-f98a-475f-a71d-9b372aab64c1",
+      "id": "f369e023-b58b-4f8e-a42e-3fe372625b3e",
       "name": "OpenRouter Chat Model3",
       "credentials": {
         "openRouterApi": {
@@ -4823,10 +4823,10 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
       "typeVersion": 1,
       "position": [
-        -6368,
-        3152
+        -1952,
+        10304
       ],
-      "id": "a2fa7dff-d3b8-4b4b-9f0b-a1e374b1ca84",
+      "id": "62d57994-90ee-4afa-a760-db2d372fa5ca",
       "name": "Revisar RFQs",
       "credentials": {
         "supabaseApi": {
@@ -4834,6 +4834,99 @@
           "name": "Supabase account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-award-action",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "generate_award_justification",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3488,
+        13792
+      ],
+      "id": "b69eb516-f40c-47bc-9082-62f6ac36833c",
+      "name": "Is Award Justification?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### DATOS DE LA EVALUACION\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Fecha:** {{ new Date().toISOString().split('T')[0] }}\n- **Proveedor ganador:** {{ $json.winner_name }}\n- **Puntuacion global ganador:** {{ $json.winner_score }}/10\n- **Segundo clasificado:** {{ $json.runner_up_name || 'N/A' }}\n- **Puntuacion segundo:** {{ $json.runner_up_score || 0 }}/10\n- **Total proveedores evaluados:** {{ $json.total_providers }}\n\n**Puntuaciones por categoria:**\n{{ $json.category_scores }}\n\n**Fortalezas identificadas:**\n{{ $json.strengths }}\n\n**Debilidades identificadas:**\n{{ $json.weaknesses }}\n\n**Resumen economico:**\n{{ $json.economic_summary || 'No disponible' }}\n\n**Criterios de evaluacion:**\n{{ $json.scoring_criteria_summary }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION\n1. **Extension**: Escribe un MINIMO de 500 palabras para esta seccion.\n2. **Estilo narrativo**: Escribe en PROSA NARRATIVA con parrafos completos de 3-5 oraciones. No solo listas.\n3. **Basado en datos**: Referencia puntuaciones concretas, porcentajes y diferencias numericas de los datos proporcionados.\n4. **No inventes**: NO fabriques datos que no esten en el input. Si no hay datos para algun punto, indicalo.\n5. **Tono auditable**: Este documento debe resistir el escrutinio de auditoria interna, compliance y gobernanza.\n6. **Tablas**: Si esta seccion requiere comparativas, incluye tablas Markdown con los datos.\n7. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales.\n8. **Idioma**: Escribe en {{ $json.language === 'en' ? 'English' : 'Español' }}.\n9. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo.\n- Empieza directamente con el contenido.",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an expert procurement analyst, technical evaluator, and document writer specialized in industrial EPC projects (energy, green hydrogen, P2X, solar, wind, BESS).\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal Award Justification document (Propuesta de Adjudicacion). This is a critical procurement document that must be:\n- **Auditable**: Subject to review by internal audit, compliance, and governance teams\n- **Data-driven**: Every conclusion must reference specific scores, percentages, or factual data\n- **Objective**: Present both strengths and weaknesses honestly\n- **Professional**: Written in formal corporate language suitable for executive review\n\n### WRITING STYLE\n1. Write in NARRATIVE PROSE with full paragraphs (3-5 sentences each). Do not produce list-only sections.\n2. Minimum 500 words for this section.\n3. Reference specific numerical data from the evaluation throughout your analysis.\n4. Use Markdown formatting: **bold** for emphasis, - for lists, | for tables.\n5. When comparing providers, use concrete data points and percentage differences.\n6. Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT include the section title. Start directly with content."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.8,
+      "position": [
+        3936,
+        13888
+      ],
+      "id": "045336fb-848a-4251-82dc-a7620459c20e",
+      "name": "Award Justification Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Consolidate multiple section outputs into a single Award Justification document\nconst params = $('Set RFP Params').first().json;\nconst sectionMeta = $('Prepare Award Sections').all();\nconst llmOutputs = $input.all();\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst cleanText = (text) => String(text || '')\n  .replace(/```json\\n?/gi, '').replace(/```\\n?/g, '')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\ntry {\n  const sections = sectionMeta.map((meta, index) => {\n    const llmItem = llmOutputs[index];\n    const rawContent = llmItem?.json?.text || llmItem?.json?.output || llmItem?.json?.response || '';\n    const content = cleanText(rawContent);\n    return {\n      title: meta.json.section_title,\n      content: content,\n      word_count: content.split(/\\s+/).filter(w => w.length > 0).length\n    };\n  });\n\n  // Build the full justification document\n  const documentParts = sections.map((s, i) => {\n    return `## ${i + 1}. ${s.title}\\n\\n${s.content}`;\n  });\n\n  const title = lang === 'es'\n    ? `Propuesta de Adjudicacion - ${params.project_name}`\n    : `Award Proposal - ${params.project_name}`;\n\n  const justification = documentParts.join('\\n\\n---\\n\\n');\n  const totalWords = sections.reduce((sum, s) => sum + s.word_count, 0);\n\n  // Extract recommendation from the last section (Final Recommendation)\n  const lastSection = sections[sections.length - 1];\n  const recommendationSummary = lang === 'es'\n    ? `Se recomienda adjudicar el proyecto \"${params.project_name}\" a ${params.winner_name} con una puntuacion global de ${params.winner_score}/10, habiendo obtenido la mayor puntuacion en la evaluacion integral de las ${params.total_providers} ofertas recibidas.`\n    : `It is recommended to award the project \"${params.project_name}\" to ${params.winner_name} with an overall score of ${params.winner_score}/10, having achieved the highest score in the comprehensive evaluation of ${params.total_providers} submitted proposals.`;\n\n  const result = {\n    success: true,\n    title,\n    justification,\n    document: justification,\n    content: justification,\n    text: justification,\n    sections: sections.map(s => ({ title: s.title, content: s.content })),\n    recommendation_summary: recommendationSummary,\n    metadata: {\n      word_count: totalWords,\n      section_count: sections.length,\n      words_per_section: sections.map(s => ({ title: s.title, words: s.word_count })),\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest',\n      generation_mode: 'multi-agent-per-section'\n    },\n    message: `Award justification generated with ${sections.length} sections (${totalWords} words total)`\n  };\n\n  console.log('✅ Award Justification Consolidated:');\n  console.log(`   ├─ Title: ${title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   ├─ Total words: ${totalWords}`);\n  sections.forEach(s => console.log(`   │  └─ ${s.title}: ${s.word_count} words`));\n  console.log(`   └─ Mode: multi-agent-per-section`);\n\n  return [{ json: result }];\n} catch (err) {\n  console.error('❌ Error consolidating award justification:', err.message);\n  return [{ json: {\n    success: false,\n    title: '',\n    justification: '',\n    document: '',\n    content: '',\n    text: '',\n    sections: [],\n    recommendation_summary: '',\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error consolidating award justification: ' + err.message\n  }}];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4288,
+        13888
+      ],
+      "id": "08c561ee-a95a-4e14-acde-d4d4ac0157fe",
+      "name": "Parse Award Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split RFP sections into individual items for per-section LLM generation\nconst params = $input.first().json;\nconst sections = params.sections || [];\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\n// Default professional RFP sections\nconst defaultSections = lang === 'es' ? [\n  { id: 'introduccion', title: 'Introduccion y Objeto del Proyecto', description: 'Contexto del proyecto, objetivo de la licitacion, alcance general, antecedentes y justificacion de la necesidad. Explica quien es la empresa compradora, por que se lanza esta licitacion y que se espera lograr.' },\n  { id: 'alcance', title: 'Alcance Tecnico y Descripcion de Trabajos', description: 'Descripcion detallada del alcance tecnico del proyecto, fases de ejecucion, entregables esperados, tecnologias involucradas, condiciones de sitio y requisitos de ingenieria.' },\n  { id: 'requisitos', title: 'Requisitos Tecnicos y Funcionales', description: 'Especificaciones tecnicas detalladas, normativas aplicables, certificaciones requeridas, estandares de calidad, requisitos de seguridad y medio ambiente.' },\n  { id: 'economico', title: 'Condiciones Economicas y Estructura de Precios', description: 'Estructura de desglose de costes esperada (CAPEX, OPEX, unitarios), condiciones de pago, hitos de facturacion, garantias bancarias, moneda, validez de precios y formula de revision.' },\n  { id: 'evaluacion', title: 'Metodologia de Evaluacion y Criterios de Seleccion', description: 'Explicacion detallada del modelo de evaluacion ponderada multi-criterio, definicion de cada criterio, pesos asignados, escala de puntuacion y proceso de decision.' },\n  { id: 'cronograma', title: 'Cronograma del Proyecto y Plazos', description: 'Calendario del proceso de licitacion, hitos clave del proyecto, fechas de entrega, plazo de ejecucion y penalizaciones por retraso.' },\n  { id: 'participacion', title: 'Instrucciones para los Licitadores', description: 'Como presentar la oferta: formato requerido, numero de copias, documentacion obligatoria, plazo de presentacion, canal de comunicacion, proceso de preguntas y aclaraciones.' },\n  { id: 'legal', title: 'Condiciones Generales, Legales y Contractuales', description: 'Clausulas de confidencialidad, proteccion de datos, propiedad intelectual, seguros, responsabilidad civil, resolucion de disputas, ley aplicable y compliance anti-corrupcion.' }\n] : [\n  { id: 'introduction', title: 'Project Introduction and Objective', description: 'Project background, purpose of the tender, general scope, rationale and justification. Explain who the buyer is, why this tender is launched and what outcomes are expected.' },\n  { id: 'scope', title: 'Technical Scope and Work Description', description: 'Detailed technical scope, project phases, expected deliverables, technologies involved, site conditions and engineering requirements.' },\n  { id: 'requirements', title: 'Technical and Functional Requirements', description: 'Detailed technical specifications, applicable standards, required certifications, quality standards, HSE requirements.' },\n  { id: 'economic', title: 'Economic Conditions and Pricing Structure', description: 'Expected cost breakdown structure (CAPEX, OPEX, unit prices), payment terms, invoicing milestones, bank guarantees, currency, price validity and escalation formula.' },\n  { id: 'evaluation', title: 'Evaluation Methodology and Selection Criteria', description: 'Detailed explanation of weighted multi-criteria evaluation model, criterion definitions, assigned weights, scoring scale and decision process.' },\n  { id: 'timeline', title: 'Project Timeline and Milestones', description: 'Tender process calendar, key project milestones, delivery dates, execution period and delay penalties.' },\n  { id: 'submission', title: 'Bidder Instructions', description: 'How to submit the proposal: required format, number of copies, mandatory documentation, submission deadline, communication channel, Q&A process.' },\n  { id: 'legal', title: 'General, Legal and Contractual Conditions', description: 'Confidentiality clauses, data protection, intellectual property, insurance, liability, dispute resolution, governing law and anti-corruption compliance.' }\n];\n\n// Map from frontend default IDs to full section objects\nconst defaultIdMap = {\n  scope: lang === 'es' ? { title: 'Alcance Tecnico y Descripcion de Trabajos', description: 'Descripcion detallada del alcance tecnico del proyecto, fases de ejecucion, entregables esperados, tecnologias involucradas.' } : { title: 'Technical Scope and Work Description', description: 'Detailed technical scope, project phases, expected deliverables, technologies involved.' },\n  technical_requirements: lang === 'es' ? { title: 'Requisitos Tecnicos y Funcionales', description: 'Especificaciones tecnicas detalladas, normativas aplicables, certificaciones requeridas, estandares de calidad.' } : { title: 'Technical and Functional Requirements', description: 'Detailed technical specifications, applicable standards, required certifications, quality standards.' },\n  evaluation_criteria: lang === 'es' ? { title: 'Metodologia de Evaluacion y Criterios de Seleccion', description: 'Modelo de evaluacion ponderada multi-criterio, definicion de cada criterio, pesos asignados, escala de puntuacion.' } : { title: 'Evaluation Methodology and Selection Criteria', description: 'Weighted multi-criteria evaluation model, criterion definitions, assigned weights, scoring scale.' },\n  commercial_terms: lang === 'es' ? { title: 'Condiciones Economicas y Estructura de Precios', description: 'Estructura de desglose de costes (CAPEX, OPEX), condiciones de pago, hitos de facturacion, garantias bancarias.' } : { title: 'Economic Conditions and Pricing Structure', description: 'Cost breakdown structure (CAPEX, OPEX), payment terms, invoicing milestones, bank guarantees.' },\n  deadlines: lang === 'es' ? { title: 'Cronograma del Proyecto y Plazos', description: 'Calendario del proceso de licitacion, hitos clave, fechas de entrega, plazo de ejecucion.' } : { title: 'Project Timeline and Milestones', description: 'Tender process calendar, key milestones, delivery dates, execution period.' },\n  deliverables: lang === 'es' ? { title: 'Entregables del Proyecto', description: 'Lista y descripcion detallada de todos los entregables esperados, formato, criterios de aceptacion y plazos.' } : { title: 'Project Deliverables', description: 'Detailed list of all expected deliverables, format, acceptance criteria and timelines.' },\n  legal_terms: lang === 'es' ? { title: 'Condiciones Generales, Legales y Contractuales', description: 'Clausulas de confidencialidad, proteccion de datos, propiedad intelectual, seguros, responsabilidad civil, resolucion de disputas.' } : { title: 'General, Legal and Contractual Conditions', description: 'Confidentiality clauses, data protection, intellectual property, insurance, liability, dispute resolution.' },\n  submission_instructions: lang === 'es' ? { title: 'Instrucciones para los Licitadores', description: 'Como presentar la oferta: formato requerido, documentacion obligatoria, plazo de presentacion, canal de comunicacion.' } : { title: 'Bidder Instructions', description: 'How to submit the proposal: required format, mandatory documentation, submission deadline, communication channel.' }\n};\n\n// Resolve sections: if array of strings from frontend, map to objects\nlet sectionsToGenerate;\nif (sections.length > 0) {\n  if (typeof sections[0] === 'string') {\n    // Frontend sends array of strings (default IDs or custom names)\n    sectionsToGenerate = sections.map(s => {\n      if (defaultIdMap[s]) {\n        return { id: s, ...defaultIdMap[s] };\n      }\n      // Custom section: name is the string itself\n      const customDesc = lang === 'es'\n        ? `Seccion personalizada sobre: ${s}. Desarrolla este tema en profundidad con especificaciones concretas, requisitos detallados y condiciones aplicables al proyecto.`\n        : `Custom section about: ${s}. Develop this topic in depth with concrete specifications, detailed requirements and conditions applicable to the project.`;\n      return { id: 'custom_' + s.toLowerCase().replace(/\\s+/g, '_'), title: s, description: customDesc };\n    });\n  } else {\n    // Already full objects\n    sectionsToGenerate = sections;\n  }\n} else {\n  sectionsToGenerate = defaultSections;\n}\n\nconst totalSections = sectionsToGenerate.length;\n\n// Create one item per section with full project context\nconst items = sectionsToGenerate.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title || section.name || `Section ${index + 1}`,\n    section_description: section.description || section.content || '',\n    section_id: section.id || `section_${index}`,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    description: params.description,\n    requirements: params.requirements,\n    language: params.language,\n    currency: params.currency,\n    criteria: typeof params.criteria === 'string' ? params.criteria : JSON.stringify(params.criteria || []),\n    deadlines: typeof params.deadlines === 'string' ? params.deadlines : JSON.stringify(params.deadlines || {}),\n    providers: typeof params.providers === 'string' ? params.providers : JSON.stringify(params.providers || []),\n    all_sections_outline: sectionsToGenerate.map((s, i) => `${i+1}. ${s.title || s.name}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} RFP sections for individual generation`);\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3712,
+        13696
+      ],
+      "id": "b1d543f0-3840-4e88-be1b-6eb0e67143e1",
+      "name": "Prepare RFP Sections"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split Award Justification into individual sections for per-section LLM generation\nconst params = $input.first().json;\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst awardSections = lang === 'es' ? [\n  { id: 'resumen_ejecutivo', title: 'Resumen Ejecutivo', description: 'Sintesis del proceso de evaluacion: numero de proveedores evaluados, metodologia utilizada (modelo de evaluacion ponderada multi-criterio), resultado global y recomendacion final. Debe ser un resumen que permita a un directivo entender la conclusion sin leer el resto del documento.' },\n  { id: 'proceso_evaluacion', title: 'Descripcion del Proceso de Evaluacion', description: 'Metodologia de evaluacion detallada: modelo ponderado multi-criterio, como se definio cada criterio, como se asignaron los pesos, quien participo en la evaluacion, que fuentes de informacion se utilizaron (documentos tecnicos, ofertas economicas, referencias).' },\n  { id: 'analisis_comparativo', title: 'Analisis Comparativo de Proveedores', description: 'Comparacion detallada entre el proveedor ganador y el segundo clasificado (y tercero si relevante). Incluir tabla comparativa de puntuaciones globales, diferencias por categoria, y analisis de las brechas mas significativas.' },\n  { id: 'evaluacion_categorias', title: 'Evaluacion Detallada por Categorias', description: 'Desglose de las puntuaciones del ganador en CADA categoria de evaluacion. Para cada categoria: que se evaluo, que evidencia sustenta la puntuacion, como se compara con otros proveedores.' },\n  { id: 'fortalezas', title: 'Fortalezas del Proveedor Recomendado', description: 'Analisis exhaustivo de los puntos fuertes del proveedor ganador: experiencia relevante, capacidad tecnica, propuesta economica, plazos, equipo propuesto, referencias, innovacion. Cada fortaleza debe estar sustentada con datos concretos.' },\n  { id: 'riesgos_mitigacion', title: 'Areas de Atencion y Plan de Mitigacion', description: 'Identificacion honesta de debilidades o riesgos del proveedor ganador. Para cada riesgo: descripcion del riesgo, impacto potencial, probabilidad, y propuesta concreta de mitigacion (clausulas contractuales, supervisión adicional, hitos de control).' },\n  { id: 'analisis_economico', title: 'Analisis Economico', description: 'Resumen detallado de la propuesta economica del ganador. Comparativa de precios con otros proveedores. Analisis de la relacion calidad-precio. Desglose de costes principales si esta disponible. Condiciones de pago propuestas.' },\n  { id: 'recomendacion_final', title: 'Recomendacion Final y Proximos Pasos', description: 'Justificacion formal y fundamentada de por que se recomienda adjudicar a este proveedor. Referencia a las puntuaciones, fortalezas clave y analisis economico. Incluir proximos pasos recomendados (negociacion, due diligence, firma de contrato).' }\n] : [\n  { id: 'executive_summary', title: 'Executive Summary', description: 'Overview of the evaluation process: number of providers evaluated, methodology used (weighted multi-criteria model), overall result and final recommendation. Should allow an executive to understand the conclusion without reading the rest.' },\n  { id: 'evaluation_process', title: 'Evaluation Process Description', description: 'Detailed evaluation methodology: weighted multi-criteria model, how each criterion was defined, how weights were assigned, who participated, what information sources were used.' },\n  { id: 'comparative_analysis', title: 'Comparative Provider Analysis', description: 'Detailed comparison between winner and runner-up. Include comparative scoring table, per-category differences, and analysis of most significant gaps.' },\n  { id: 'category_evaluation', title: 'Detailed Category Evaluation', description: 'Breakdown of winner scores in EACH evaluation category. For each: what was evaluated, supporting evidence, comparison with other providers.' },\n  { id: 'strengths', title: 'Recommended Provider Strengths', description: 'Comprehensive analysis of winner strengths: relevant experience, technical capability, economic proposal, timelines, proposed team, references, innovation. Each backed by concrete data.' },\n  { id: 'risks_mitigation', title: 'Areas of Attention and Mitigation Plan', description: 'Honest identification of winner weaknesses or risks. For each: description, potential impact, probability, and concrete mitigation proposal.' },\n  { id: 'economic_analysis', title: 'Economic Analysis', description: 'Detailed summary of winner economic proposal. Price comparison with others. Value-for-money analysis. Main cost breakdown if available.' },\n  { id: 'final_recommendation', title: 'Final Recommendation and Next Steps', description: 'Formal justification for recommending this provider. Reference scores, key strengths, economic analysis. Include recommended next steps (negotiation, due diligence, contract signing).' }\n];\n\nconst totalSections = awardSections.length;\n\nconst items = awardSections.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title,\n    section_description: section.description,\n    section_id: section.id,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    language: params.language || 'es',\n    winner_name: params.winner_name,\n    winner_score: params.winner_score,\n    runner_up_name: params.runner_up_name || '',\n    runner_up_score: params.runner_up_score || 0,\n    total_providers: params.total_providers,\n    category_scores: params.category_scores,\n    strengths: params.strengths,\n    weaknesses: params.weaknesses,\n    economic_summary: params.economic_summary || '',\n    scoring_criteria_summary: params.scoring_criteria_summary,\n    all_sections_outline: awardSections.map((s, i) => `${i+1}. ${s.title}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} Award Justification sections for individual generation`);\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3712,
+        13888
+      ],
+      "id": "93c84465-4c68-4a60-aa2b-8227261a4991",
+      "name": "Prepare Award Sections"
     },
     {
       "parameters": {
@@ -4855,10 +4948,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9664,
-        4592
+        -5232,
+        11744
       ],
-      "id": "254d048d-f795-40fc-9daa-6abaa1174db4",
+      "id": "42375c9a-2404-4eb9-b09d-8eaab505dee1",
       "name": "Fetch Requirements",
       "credentials": {
         "supabaseApi": {
@@ -4886,10 +4979,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9664,
-        4832
+        -5232,
+        11984
       ],
-      "id": "199b70c2-95b6-40a1-8ba8-aab1b6b103b0",
+      "id": "fe192142-2870-447d-9e62-23f1f1f119fd",
       "name": "Fetch Provider Responses",
       "credentials": {
         "supabaseApi": {
@@ -4917,10 +5010,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9664,
-        5056
+        -5232,
+        12208
       ],
-      "id": "405bc67f-e887-46c8-b934-da8b7e296cc3",
+      "id": "22cd582f-a858-4a7b-ac47-f9970e612cde",
       "name": "Fetch Scoring Configuration",
       "alwaysOutputData": true,
       "credentials": {
@@ -4949,10 +5042,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9664,
-        5280
+        -5232,
+        12432
       ],
-      "id": "a84579ef-cc8e-471e-8bda-01ba52726ae3",
+      "id": "1d9a56e5-d13b-4116-a767-562b4006f8d9",
       "name": "Fetch Economic Offers",
       "alwaysOutputData": true,
       "credentials": {
@@ -4969,10 +5062,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -9440,
-        4688
+        -5008,
+        11840
       ],
-      "id": "184a6be4-ed7b-4451-b33b-ead5fd833ada",
+      "id": "62c543ac-2bbc-4abd-a0a0-88c9503fa107",
       "name": "Merge Requirements & Responses"
     },
     {
@@ -4982,10 +5075,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -9216,
-        4688
+        -4784,
+        11840
       ],
-      "id": "15b30aa0-87a6-4a70-aaa1-ae9be38062a4",
+      "id": "0bfdf33d-164d-4d04-9294-3f645f28e63a",
       "name": "Prepare Scoring Data"
     },
     {
@@ -4997,41 +5090,41 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -8992,
-        4640
+        -4560,
+        11792
       ],
-      "id": "1684a7ee-0f40-4bd8-9eaf-30341b3ec0ae",
+      "id": "aacb0e58-a8bc-46f8-a5be-eb8fb0c2be42",
       "name": "Loop Over Providers"
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are a procurement evaluation assistant. Score this provider's proposal.\n\nOUTPUT LANGUAGE: {{ $('Set Input Params1').first().json.language === 'en' ? 'ENGLISH - Write evaluation_summary, strengths and weaknesses in English.' : 'ESPAÑOL - Escribe evaluation_summary, strengths y weaknesses en español.' }}\n\nPROVIDER: {{ $json.provider_name }}\nTOTAL RESPONSES: {{ $json.total_responses }}\nPROJECT CONTEXT: {{ $('Fetch Project Context Scoring').first().json.ai_context || 'Procurement evaluation' }}\n\nCURRENCY: {{ $('Set Input Params1').first().json.currency || 'EUR' }} (use this currency when referencing monetary values)\n\nECONOMIC DATA (from economic_offers table):\n{{ $json.economic_data ? JSON.stringify($json.economic_data) : 'No economic data available' }}\n\nPRE-CALCULATED COMPLIANCE DATA:\nCategory scores: {{ JSON.stringify($json.category_scores) }}\nCriteria scores: {{ JSON.stringify($json.criteria_scores) }}\n\nCRITERIA DETAILS (included/partial/not_included/no_info counts):\n{{ JSON.stringify($json.criteria_summary) }}\n\nSCORING METHODOLOGY:\n- Scale: 0-10 per criterion\n- Use the pre-calculated scores as your STARTING POINT\n- Scoring is a MIX of compliance + quality. Both matter:\n  * Compliance (baseline): INCLUDED = provider covers the requirement, NOT_INCLUDED = critical gap\n  * Quality (your adjustment): HOW WELL they cover it — specificity, methodology, evidence, detail level\n- The pre-calculated scores reflect RELATIVE compliance across all providers (already normalized)\n- Adjust scores based on the 'comments' text in criteria_summary — that is the actual text from provider documents\n- NO fixed cap: if the evidence strongly justifies it, adjust ±3 or more from the baseline\n- A provider that checks a box with vague text is NOT the same as one that provides detailed methodology\n\nRESPONSE QUALITY GUIDE (read the 'comments' in criteria_summary):\n- 9-10: Specific methodology, quantified results, proven track record, unique technical advantage\n- 7-8: Clear approach with some specifics, relevant experience, solid but not exceptional\n- 5-6: Generic/boilerplate response, technically present but no depth or evidence\n- 3-4: Vague or templated — even if marked INCLUDED, substance is minimal\n- 1-2: No meaningful content, or clear inability to meet the requirement\n\nCOMPLIANCE SIGNAL:\n- NOT_INCLUDED on key requirements: drop score significantly (2-3 range)\n- PARTIAL: score 4-6 depending on what is actually missing\n- INCLUDED with quality content: 7-10 depending on how well\n- INCLUDED with no substance: 4-6 maximum\n\nCRITICAL — DIFFERENTIATION IS MANDATORY:\n- You MUST score providers differently. If all providers receive 6-8 on every criterion, the evaluation has failed its purpose.\n- Read the comments carefully. Providers that write more specific, detailed, evidence-backed responses MUST score higher.\n- Use the full 0-10 scale. Typical spread between best and worst provider on a criterion: 2-5 points.\n- Do NOT give the same score to all providers on any criterion unless their responses are truly identical.\n\nRETURN ONLY valid JSON with this exact structure:\n{\n  \"provider_name\": \"{{ $json.provider_name }}\",\n  \"category_scores\": {\n    {{ $json.scoring_config ? Object.keys($json.scoring_config.categories).map(name => `\"${name.toUpperCase()}\": { \"score\": 7.0, \"weight\": ${$json.scoring_config.categories[name].weight / 100} }`).join(',\\n    ') : `\"TECHNICAL\": { \"score\": 7.0, \"weight\": 0.30 },\\n    \"ECONOMIC\": { \"score\": 7.0, \"weight\": 0.35 },\\n    \"EXECUTION\": { \"score\": 7.0, \"weight\": 0.20 },\\n    \"HSE_COMPLIANCE\": { \"score\": 7.0, \"weight\": 0.15 }` }}\n  },\n  \"individual_scores\": {\n    {{ Object.keys($json.criteria_scores).map(k => `\"${k}\": ${$json.criteria_scores[k] || 5.0}`).join(',\\n    ') }}\n  },\n  \"overall_score\": {{ $json.global_score || 5.0 }},\n  \"compliance_percentage\": 70,\n  \"evaluation_summary\": \"Brief 1-2 sentence evaluation in {{ $('Set Input Params1').first().json.language === 'en' ? 'English' : 'Spanish' }}\",\n  \"strengths\": [\"strength 1\", \"strength 2\"],\n  \"weaknesses\": [\"weakness 1\", \"weakness 2\"]\n}\n\nIMPORTANT: Replace the example numbers with your REAL scores based on compliance + quality analysis. Read provider comments in criteria_summary. Differentiate between providers — identical scores defeat the purpose. All number fields must be actual numbers (not strings). Write text fields in {{ $('Set Input Params1').first().json.language === 'en' ? 'English' : 'Spanish' }}.",
+        "text": "=You are a procurement evaluation assistant. Score this provider's proposal.\n\nOUTPUT LANGUAGE: {{ $('Set Input Params1').first().json.language === 'en' ? 'ENGLISH - Write evaluation_summary, strengths and weaknesses in English.' : 'ESPAÑOL - Escribe evaluation_summary, strengths y weaknesses en español.' }}\n\nPROVIDER: {{ $json.provider_name }}\nTOTAL RESPONSES: {{ $json.total_responses }}\nPROJECT CONTEXT: {{ $('Fetch Project Context Scoring').first().json.ai_context || 'Procurement evaluation' }}\n\nCURRENCY: {{ $('Set Input Params1').first().json.currency || 'EUR' }} (use this currency when referencing monetary values)\n\nECONOMIC DATA (from economic_offers table):\n{{ $json.economic_data ? JSON.stringify($json.economic_data) : 'No economic data available' }}\n\nPRE-CALCULATED COMPLIANCE DATA:\nCategory scores: {{ JSON.stringify($json.category_scores) }}\nCriteria scores: {{ JSON.stringify($json.criteria_scores) }}\n\nCRITERIA DETAILS (included/partial/not_included/no_info counts):\n{{ JSON.stringify($json.criteria_summary) }}\n\nSCORING METHODOLOGY:\n- Scale: 0-10 per criterion\n- Use the pre-calculated scores as your STARTING POINT\n- Scoring is a MIX of compliance + quality. Both matter:\n  * Compliance (baseline): INCLUDED = provider covers the requirement, NOT_INCLUDED = critical gap\n  * Quality (your adjustment): HOW WELL they cover it — specificity, methodology, evidence, detail level\n- The pre-calculated scores reflect RELATIVE compliance across all providers (already normalized)\n- Adjust scores based on the 'comments' text in criteria_summary — that is the actual text from provider documents\n- NO fixed cap: if the evidence strongly justifies it, adjust ±3 or more from the baseline\n- A provider that checks a box with vague text is NOT the same as one that provides detailed methodology\n\nRESPONSE QUALITY GUIDE (read the 'comments' in criteria_summary):\n- 9-10: Specific methodology, quantified results, proven track record, unique technical advantage\n- 7-8: Clear approach with some specifics, relevant experience, solid but not exceptional\n- 5-6: Generic/boilerplate response, technically present but no depth or evidence\n- 3-4: Vague or templated — even if marked INCLUDED, substance is minimal\n- 1-2: No meaningful content, or clear inability to meet the requirement\n\nCOMPLIANCE SIGNAL:\n- NOT_INCLUDED on key requirements: drop score significantly (2-3 range)\n- PARTIAL: score 4-6 depending on what is actually missing\n- INCLUDED with quality content: 7-10 depending on how well\n- INCLUDED with no substance: 4-6 maximum\n\nCRITICAL — DIFFERENTIATION IS MANDATORY:\n- You MUST score providers differently. If all providers receive 6-8 on every criterion, the evaluation has failed its purpose.\n- Read the comments carefully. Providers that write more specific, detailed, evidence-backed responses MUST score higher.\n- Use the full 0-10 scale. Typical spread between best and worst provider on a criterion: 2-5 points.\n- Do NOT give the same score to all providers on any criterion unless their responses are truly identical.\n\nRETURN ONLY valid JSON with this exact structure:\n{\n  \"provider_name\": \"{{ $json.provider_name }}\",\n  \"category_scores\": {\n    {{ $json.scoring_config ? Object.keys($json.scoring_config.categories).map(name => `\"${name.toUpperCase()}\": { \"score\": 7.0, \"weight\": ${$json.scoring_config.categories[name].weight / 100} }`).join(',\\n    ') : `\"TECHNICAL\": { \"score\": 7.0, \"weight\": 0.30 },\\n    \"ECONOMIC\": { \"score\": 7.0, \"weight\": 0.35 },\\n    \"EXECUTION\": { \"score\": 7.0, \"weight\": 0.20 },\\n    \"HSE_COMPLIANCE\": { \"score\": 7.0, \"weight\": 0.15 }` }}\n  },\n  \"individual_scores\": {\n    {{ Object.keys($json.criteria_scores).map(k => `\"${k}\": ${$json.criteria_scores[k] || 5.0}`).join(',\\n    ') }}\n  },\n  \"overall_score\": {{ $json.global_score || 5.0 }},\n  \"compliance_percentage\": 70,\n  \"evaluation_summary\": \"Brief 1-2 sentence evaluation in {{ $('Set Input Params1').first().json.language === 'en' ? 'English' : 'Spanish' }}\",\n  \"strengths\": [\"strength 1\", \"strength 2\"],\n  \"weaknesses\": [\"weakness 1\", \"weakness 2\"]\n}\n\nADDITIONAL REQUIRED FIELDS IN YOUR JSON RESPONSE:\n\ncriterion_justifications: For EACH criterion you score, provide a 1-2 sentence justification explaining WHY you gave that specific score. Key must be the exact criterion name (e.g. \"Technical Completeness\", \"Price Competitiveness\"). Be specific about what the provider did well or poorly on this specific criterion.\n\ncategory_analysis: For EACH category (same keys as category_scores), provide:\n  - highlights: 2-4 bullet points of specific strengths in this category (what the provider does well here)\n  - improvements: 1-3 bullet points of specific gaps or areas needing improvement in this category\nFocus on actionable, specific observations useful for procurement negotiation.\n\n\nIMPORTANT: Replace the example numbers with your REAL scores based on compliance + quality analysis. Read provider comments in criteria_summary. Differentiate between providers — identical scores defeat the purpose. All number fields must be actual numbers (not strings). Write text fields in {{ $('Set Input Params1').first().json.language === 'en' ? 'English' : 'Spanish' }}.",
         "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.8,
       "position": [
-        -8720,
-        4656
+        -4288,
+        11808
       ],
-      "id": "ab022785-ea32-444f-8f49-fdc8270db934",
+      "id": "a8c9c2de-18ca-4bb3-8dff-953696741348",
       "name": "Scoring LLM Chain",
       "alwaysOutputData": true,
       "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "// =============================================\n// NODO: Calculate Weighted Scores (v8 - Resilient to LLM failures)\n// FIX: Gets project_id from Set Input Params1 (not LLM output)\n// FIX: Falls back to pre-calculated scores when LLM returns zeros or errors\n// FIX: Handles LLM chain continueOnFail error items\n// =============================================\n\nconst input = $input.first().json;\n\n// Check if LLM chain failed (continueOnFail produces error items)\nconst isLlmError = input.error || input.errorMessage || !input.output;\nif (isLlmError) {\n    console.log('Calculate Weighted Scores v8 - LLM FAILED, using pre-calculated scores only');\n    console.log('  Error:', input.error || input.errorMessage || 'No output from LLM');\n}\n\nconst llmOutput = (!isLlmError && input.output) ? input.output : {};\n\nconsole.log('Calculate Weighted Scores v8 - Starting...');\nconsole.log('  LLM output keys:', Object.keys(llmOutput).join(', '));\n\n// === FIX 1: Get project_id from webhook params (NOT from LLM) ===\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n} catch(e) {\n    console.log('  Could not get project_id:', e.message);\n}\n\n// === FIX 2: Get pre-calculated scores from Prepare Scoring Data ===\nlet configType = 'default';\nlet scoringConfig = null;\nlet preCalcCriteria = {};\nlet preCalcCategory = {};\nlet preCalcGlobal = 0;\ntry {\n    const allPrepared = $('Prepare Scoring Data').all();\n    const providerName = llmOutput.provider_name || '';\n    const match = allPrepared.find(item => item.json.provider_name === providerName);\n    if (match) {\n        configType = match.json.config_type || 'default';\n        scoringConfig = match.json.scoring_config || null;\n        preCalcCriteria = match.json.criteria_scores || {};\n        preCalcCategory = match.json.category_scores || {};\n        preCalcGlobal = match.json.global_score || 0;\n        console.log('  Pre-calculated scores found for', providerName);\n        console.log('  Pre-calc criteria:', JSON.stringify(preCalcCriteria));\n        console.log('  Pre-calc categories:', JSON.stringify(preCalcCategory));\n        console.log('  Pre-calc global:', preCalcGlobal);\n    } else {\n        console.log('  No pre-calculated match for:', providerName);\n    }\n} catch(e) {\n    console.log('  Could not get pre-calculated scores:', e.message);\n}\n\n// === Extract LLM category scores ===\nconst llmCatScores = llmOutput.category_scores || {};\nconst getScore = (cat) => {\n    const v = llmCatScores[cat];\n    if (!v) return 0;\n    return (typeof v === 'object' && v.score) ? v.score : (typeof v === 'number' ? v : 0);\n};\n\n// === FIX 3: Build individual scores with fallback to pre-calculated ===\nconst llmIndividual = llmOutput.individual_scores || {};\nconst is = {};\nconst allCriteriaKeys = new Set([\n    ...Object.keys(llmIndividual),\n    ...Object.keys(preCalcCriteria)\n]);\nfor (const key of allCriteriaKeys) {\n    const llmVal = llmIndividual[key];\n    const preVal = preCalcCriteria[key];\n    // Use LLM value only if it's a real positive number\n    const _isPrice = (key === 'total_price' || key.includes('tco') || key.includes('total_cost')); if (_isPrice && typeof preVal === 'number' && preVal > 0) { is[key] = preVal; } else if (typeof llmVal === 'number' && llmVal > 0 && typeof preVal === 'number' && preVal > 0) { is[key] = Math.round(Math.max(0, Math.min(10, Math.max(preVal - 3, Math.min(preVal + 3, llmVal)))) * 100) / 100; } else { is[key] = (typeof llmVal === 'number' && llmVal > 0) ? Math.round(Math.min(10, llmVal) * 100) / 100 : (preVal || 0); }\n}\nconsole.log('  Final individual_scores:', JSON.stringify(is));\n\n// === Build category scores with fallback ===\nconst categoryScoresClean = {};\nconst allCatKeys = new Set([\n    ...Object.keys(llmCatScores),\n    ...Object.keys(preCalcCategory)\n]);\nfor (const catKey of allCatKeys) {\n    const llmCatVal = llmCatScores[catKey];\n    const preCatVal = preCalcCategory[catKey];\n    const llmScore = (typeof llmCatVal === 'object' && llmCatVal?.score)\n        ? llmCatVal.score\n        : (typeof llmCatVal === 'number' ? llmCatVal : 0);\n    const _isEcon = (catKey === 'ECONOMIC' || catKey === 'economic'); if (_isEcon && typeof preCatVal === 'number' && preCatVal > 0) { categoryScoresClean[catKey] = preCatVal; } else if (llmScore > 0 && typeof preCatVal === 'number' && preCatVal > 0) { categoryScoresClean[catKey] = Math.round(Math.max(0, Math.min(10, Math.max(preCatVal - 3, Math.min(preCatVal + 3, llmScore)))) * 100) / 100; } else { categoryScoresClean[catKey] = llmScore > 0 ? Math.round(Math.min(10, llmScore) * 100) / 100 : (preCatVal || 0); }\n}\nconsole.log('  Final category_scores:', JSON.stringify(categoryScoresClean));\n\n// === Calculate overall score with fallback ===\nconst llmOverall = llmOutput.overall_score || 0;\nconst overallScore = (() => { const cw = (configType === 'dynamic' && scoringConfig && scoringConfig.categories) ? Object.fromEntries(Object.entries(scoringConfig.categories).map(([k,v]) => [k.toUpperCase(), v.weight/100])) : {'TECHNICAL':0.30,'ECONOMIC':0.35,'EXECUTION':0.20,'HSE_COMPLIANCE':0.15}; const r = Object.entries(cw).reduce((s,[k,w]) => s+(categoryScoresClean[k]||0)*w, 0); const rc = Object.values(cw).reduce((a,b)=>a+b,0); return rc > 0 ? Math.round(r/rc*100)/100 : (llmOverall > 0 ? llmOverall : preCalcGlobal); })();\n\n// === Calculate compliance percentage with fallback ===\nconst llmCompliance = llmOutput.compliance_percentage || 0;\nconst compliancePercentage = llmCompliance > 0 ? llmCompliance : Math.round(overallScore * 10);\n\n// Build ranking object\nconst ranking = {\n    provider_name: llmOutput.provider_name || input.provider_name || 'UNKNOWN',\n    project_id: projectId,\n    // Legacy fixed fields\n    technical_score: categoryScoresClean.TECHNICAL || categoryScoresClean.technical || 0,\n    economic_score: categoryScoresClean.ECONOMIC || categoryScoresClean.economic || 0,\n    execution_score: categoryScoresClean.EXECUTION || categoryScoresClean.execution || 0,\n    hse_compliance_score: categoryScoresClean.HSE_COMPLIANCE || categoryScoresClean.hse_compliance || 0,\n    scope_facilities_score: is.scope_facilities || 0,\n    scope_work_score: is.scope_work || 0,\n    deliverables_quality_score: is.deliverables_quality || 0,\n    total_price_score: is.total_price || 0,\n    price_breakdown_score: is.price_breakdown || 0,\n    optionals_included_score: is.optionals_included || 0,\n    capex_opex_methodology_score: is.capex_opex_methodology || 0,\n    schedule_score: is.schedule || 0,\n    resources_allocation_score: is.resources_allocation || 0,\n    exceptions_score: is.exceptions || 0,\n    safety_studies_score: is.safety_studies || 0,\n    regulatory_compliance_score: is.regulatory_compliance || 0,\n    // Dynamic JSONB fields\n    category_scores_json: categoryScoresClean,\n    individual_scores_json: is,\n    evaluation_details: {\n        strengths: llmOutput.strengths || [],\n        weaknesses: llmOutput.weaknesses || [],\n        recommendations: llmOutput.recommendations || [],\n        summary: llmOutput.evaluation_summary || ''\n    },\n    overall_score: overallScore,\n    compliance_percentage: compliancePercentage,\n    evaluation_count: 1,\n    last_updated: new Date().toISOString()\n};\n\nconsole.log('  FINAL ranking for', ranking.provider_name, ':', ranking.overall_score);\n\nreturn [{\n    json: {\n        ranking,\n        details: ranking.evaluation_details,\n        category_scores: categoryScoresClean,\n        individual_scores: is,\n        config_type: configType,\n        scoring_config: scoringConfig\n    }\n}];"
+        "jsCode": "// =============================================\n// NODO: Calculate Weighted Scores (v8 - Resilient to LLM failures)\n// FIX: Gets project_id from Set Input Params1 (not LLM output)\n// FIX: Falls back to pre-calculated scores when LLM returns zeros or errors\n// FIX: Handles LLM chain continueOnFail error items\n// =============================================\n\nconst input = $input.first().json;\n\n// Check if LLM chain failed (continueOnFail produces error items)\nconst isLlmError = input.error || input.errorMessage || !input.output;\nif (isLlmError) {\n    console.log('Calculate Weighted Scores v8 - LLM FAILED, using pre-calculated scores only');\n    console.log('  Error:', input.error || input.errorMessage || 'No output from LLM');\n}\n\nconst llmOutput = (!isLlmError && input.output) ? input.output : {};\n\nconsole.log('Calculate Weighted Scores v8 - Starting...');\nconsole.log('  LLM output keys:', Object.keys(llmOutput).join(', '));\n\n// === FIX 1: Get project_id from webhook params (NOT from LLM) ===\nlet projectId = null;\ntry {\n    projectId = $('Set Input Params1').first().json.project_id;\n} catch(e) {\n    console.log('  Could not get project_id:', e.message);\n}\n\n// === FIX 2: Get pre-calculated scores from Prepare Scoring Data ===\nlet configType = 'default';\nlet scoringConfig = null;\nlet preCalcCriteria = {};\nlet preCalcCategory = {};\nlet preCalcGlobal = 0;\ntry {\n    const allPrepared = $('Prepare Scoring Data').all();\n    const providerName = llmOutput.provider_name || '';\n    const match = allPrepared.find(item => item.json.provider_name === providerName);\n    if (match) {\n        configType = match.json.config_type || 'default';\n        scoringConfig = match.json.scoring_config || null;\n        preCalcCriteria = match.json.criteria_scores || {};\n        preCalcCategory = match.json.category_scores || {};\n        preCalcGlobal = match.json.global_score || 0;\n        console.log('  Pre-calculated scores found for', providerName);\n        console.log('  Pre-calc criteria:', JSON.stringify(preCalcCriteria));\n        console.log('  Pre-calc categories:', JSON.stringify(preCalcCategory));\n        console.log('  Pre-calc global:', preCalcGlobal);\n    } else {\n        console.log('  No pre-calculated match for:', providerName);\n    }\n} catch(e) {\n    console.log('  Could not get pre-calculated scores:', e.message);\n}\n\n// === Extract LLM category scores ===\nconst llmCatScores = llmOutput.category_scores || {};\nconst getScore = (cat) => {\n    const v = llmCatScores[cat];\n    if (!v) return 0;\n    return (typeof v === 'object' && v.score) ? v.score : (typeof v === 'number' ? v : 0);\n};\n\n// === FIX 3: Build individual scores with fallback to pre-calculated ===\nconst llmIndividual = llmOutput.individual_scores || {};\nconst is = {};\nconst allCriteriaKeys = new Set([\n    ...Object.keys(llmIndividual),\n    ...Object.keys(preCalcCriteria)\n]);\nfor (const key of allCriteriaKeys) {\n    const llmVal = llmIndividual[key];\n    const preVal = preCalcCriteria[key];\n    // Use LLM value only if it's a real positive number\n    const _isPrice = (key === 'total_price' || key.includes('tco') || key.includes('total_cost')); if (_isPrice && typeof preVal === 'number' && preVal > 0) { is[key] = preVal; } else if (typeof llmVal === 'number' && llmVal > 0 && typeof preVal === 'number' && preVal > 0) { is[key] = Math.round(Math.max(0, Math.min(10, Math.max(preVal - 3, Math.min(preVal + 3, llmVal)))) * 100) / 100; } else { is[key] = (typeof llmVal === 'number' && llmVal > 0) ? Math.round(Math.min(10, llmVal) * 100) / 100 : (preVal || 0); }\n}\nconsole.log('  Final individual_scores:', JSON.stringify(is));\n\n// === Build category scores with fallback ===\nconst categoryScoresClean = {};\nconst allCatKeys = new Set([\n    ...Object.keys(llmCatScores),\n    ...Object.keys(preCalcCategory)\n]);\nfor (const catKey of allCatKeys) {\n    const llmCatVal = llmCatScores[catKey];\n    const preCatVal = preCalcCategory[catKey];\n    const llmScore = (typeof llmCatVal === 'object' && llmCatVal?.score)\n        ? llmCatVal.score\n        : (typeof llmCatVal === 'number' ? llmCatVal : 0);\n    const _isEcon = (catKey === 'ECONOMIC' || catKey === 'economic'); if (_isEcon && typeof preCatVal === 'number' && preCatVal > 0) { categoryScoresClean[catKey] = preCatVal; } else if (llmScore > 0 && typeof preCatVal === 'number' && preCatVal > 0) { categoryScoresClean[catKey] = Math.round(Math.max(0, Math.min(10, Math.max(preCatVal - 3, Math.min(preCatVal + 3, llmScore)))) * 100) / 100; } else { categoryScoresClean[catKey] = llmScore > 0 ? Math.round(Math.min(10, llmScore) * 100) / 100 : (preCatVal || 0); }\n}\nconsole.log('  Final category_scores:', JSON.stringify(categoryScoresClean));\n\n// === Calculate overall score with fallback ===\nconst llmOverall = llmOutput.overall_score || 0;\nconst overallScore = (() => { const cw = (configType === 'dynamic' && scoringConfig && scoringConfig.categories) ? Object.fromEntries(Object.entries(scoringConfig.categories).map(([k,v]) => [k.toUpperCase(), v.weight/100])) : {'TECHNICAL':0.30,'ECONOMIC':0.35,'EXECUTION':0.20,'HSE_COMPLIANCE':0.15}; const r = Object.entries(cw).reduce((s,[k,w]) => s+(categoryScoresClean[k]||0)*w, 0); const rc = Object.values(cw).reduce((a,b)=>a+b,0); return rc > 0 ? Math.round(r/rc*100)/100 : (llmOverall > 0 ? llmOverall : preCalcGlobal); })();\n\n// === Calculate compliance percentage with fallback ===\nconst llmCompliance = llmOutput.compliance_percentage || 0;\nconst compliancePercentage = llmCompliance > 0 ? llmCompliance : Math.round(overallScore * 10);\n\n// Build ranking object\nconst ranking = {\n    provider_name: llmOutput.provider_name || input.provider_name || 'UNKNOWN',\n    project_id: projectId,\n    // Legacy fixed fields\n    technical_score: categoryScoresClean.TECHNICAL || categoryScoresClean.technical || 0,\n    economic_score: categoryScoresClean.ECONOMIC || categoryScoresClean.economic || 0,\n    execution_score: categoryScoresClean.EXECUTION || categoryScoresClean.execution || 0,\n    hse_compliance_score: categoryScoresClean.HSE_COMPLIANCE || categoryScoresClean.hse_compliance || 0,\n    scope_facilities_score: is.scope_facilities || 0,\n    scope_work_score: is.scope_work || 0,\n    deliverables_quality_score: is.deliverables_quality || 0,\n    total_price_score: is.total_price || 0,\n    price_breakdown_score: is.price_breakdown || 0,\n    optionals_included_score: is.optionals_included || 0,\n    capex_opex_methodology_score: is.capex_opex_methodology || 0,\n    schedule_score: is.schedule || 0,\n    resources_allocation_score: is.resources_allocation || 0,\n    exceptions_score: is.exceptions || 0,\n    safety_studies_score: is.safety_studies || 0,\n    regulatory_compliance_score: is.regulatory_compliance || 0,\n    // Dynamic JSONB fields\n    category_scores_json: categoryScoresClean,\n    individual_scores_json: is,\n    evaluation_details: {\n        strengths: llmOutput.strengths || [],\n        weaknesses: llmOutput.weaknesses || [],\n        recommendations: llmOutput.recommendations || [],\n        summary: llmOutput.evaluation_summary || '',\n        criterion_justifications: llmOutput.criterion_justifications || {},\n        category_analysis: llmOutput.category_analysis || {}\n    },\n    overall_score: overallScore,\n    compliance_percentage: compliancePercentage,\n    evaluation_count: 1,\n    last_updated: new Date().toISOString()\n};\n\nconsole.log('  FINAL ranking for', ranking.provider_name, ':', ranking.overall_score);\n\nreturn [{\n    json: {\n        ranking,\n        details: ranking.evaluation_details,\n        category_scores: categoryScoresClean,\n        individual_scores: is,\n        config_type: configType,\n        scoring_config: scoringConfig\n    }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8336,
-        4656
+        -3904,
+        11808
       ],
-      "id": "8939a0ac-1f49-4183-a15f-d30c4fdeb94f",
+      "id": "4cd55a9a-10c2-494c-bb68-9a6c601daefe",
       "name": "Calculate Weighted Scores"
     },
     {
@@ -5058,10 +5151,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -8096,
-        4656
+        -3664,
+        11808
       ],
-      "id": "f5039427-bdb5-4002-adc5-d352022656ae",
+      "id": "9c432396-e8ae-4478-8870-86a94ff6c979",
       "name": "Check Provider Exists",
       "alwaysOutputData": true,
       "credentials": {
@@ -5098,10 +5191,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -7856,
-        4656
+        -3424,
+        11808
       ],
-      "id": "1f5121af-20c1-4c40-86ad-14287e0ea03e",
+      "id": "0c62e7ba-e00c-42ab-8aa8-ec5d223093c1",
       "name": "Provider Exists?",
       "disabled": true
     },
@@ -5209,6 +5302,10 @@
             {
               "fieldId": "last_updated",
               "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.last_updated }}"
+            },
+            {
+              "fieldId": "evaluation_details",
+              "fieldValue": "={{ $('Calculate Weighted Scores').first().json.ranking.evaluation_details }}"
             }
           ]
         }
@@ -5216,10 +5313,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7616,
-        4560
+        -3184,
+        11712
       ],
-      "id": "ca7892a2-3e83-4990-a604-7499c64a30c1",
+      "id": "464616ac-c960-41cf-be63-35918ae9c8b2",
       "name": "Update Ranking",
       "alwaysOutputData": false,
       "credentials": {
@@ -5343,10 +5440,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -7616,
-        4784
+        -3184,
+        11936
       ],
-      "id": "91aeb3bf-499a-4248-89ae-0a10775ffddf",
+      "id": "b5e3c027-7074-4a5e-b7b8-a04909c31720",
       "name": "Insert Ranking",
       "alwaysOutputData": false,
       "credentials": {
@@ -5366,10 +5463,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -8720,
-        4480
+        -4288,
+        11632
       ],
-      "id": "d39e7e99-bc91-4653-a03f-c21dcabb948c",
+      "id": "18c1de14-146c-4795-a470-968f0ffc1b69",
       "name": "Aggregate All Rankings"
     },
     {
@@ -5379,10 +5476,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -8432,
-        4480
+        -4000,
+        11632
       ],
-      "id": "9d99ddf1-14e0-42cf-b9f7-22f003099208",
+      "id": "e736bf25-253a-4551-9552-d978511c5058",
       "name": "Generate Final Ranking"
     },
     {
@@ -5403,10 +5500,10 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        -8208,
-        4480
+        -3776,
+        11632
       ],
-      "id": "e97e623b-577f-40f3-b543-28fac8057da7",
+      "id": "c7945449-e23a-4aab-8587-286fa2650e78",
       "name": "Respond with Ranking"
     },
     {
@@ -5418,10 +5515,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -10672,
-        4080
+        -6240,
+        11232
       ],
-      "id": "aa4a7120-96e0-4477-b7bb-daad803f3b8f",
+      "id": "2e6d196a-403e-4b02-87bf-3a0085384acb",
       "name": "Workflow Info"
     },
     {
@@ -5434,10 +5531,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -8816,
-        4240
+        -4384,
+        11392
       ],
-      "id": "d04fc6d7-a2ee-4044-8f50-0047be027d47",
+      "id": "d35a4b65-f5c2-42f9-bc16-063579e47254",
       "name": "LLM Scoring Info"
     },
     {
@@ -5481,24 +5578,24 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -9888,
-        4688
+        -5456,
+        11840
       ],
-      "id": "a6afa3a9-8e8d-4345-aa30-afeaac81b0b1",
+      "id": "288718be-75a2-48ec-8424-69e9294aa3d8",
       "name": "Set Input Params1"
     },
     {
       "parameters": {
         "schemaType": "manual",
-        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"provider_name\": { \"type\": \"string\" },\n    \"category_scores\": {\n      \"type\": \"object\",\n      \"additionalProperties\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"score\": { \"type\": \"number\" },\n          \"weight\": { \"type\": \"number\" }\n        }\n      }\n    },\n    \"individual_scores\": {\n      \"type\": \"object\",\n      \"additionalProperties\": { \"type\": \"number\" }\n    },\n    \"overall_score\": { \"type\": \"number\" },\n    \"compliance_percentage\": { \"type\": \"number\" },\n    \"evaluation_summary\": { \"type\": \"string\" },\n    \"strengths\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"weaknesses\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } },\n    \"recommendations\": { \"type\": \"array\", \"items\": { \"type\": \"string\" } }\n  },\n  \"required\": [\"provider_name\", \"category_scores\", \"individual_scores\", \"overall_score\", \"compliance_percentage\"]\n}"
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"provider_name\": {\"type\": \"string\"}, \"category_scores\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"score\": {\"type\": \"number\"}, \"weight\": {\"type\": \"number\"}}}}, \"individual_scores\": {\"type\": \"object\", \"additionalProperties\": {\"type\": \"number\"}}, \"overall_score\": {\"type\": \"number\"}, \"compliance_percentage\": {\"type\": \"number\"}, \"evaluation_summary\": {\"type\": \"string\"}, \"strengths\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"weaknesses\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"recommendations\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"criterion_justifications\": {\"type\": \"object\", \"description\": \"Brief 1-2 sentence justification for each criterion score. Key is the criterion name exactly as provided.\", \"additionalProperties\": {\"type\": \"string\"}}, \"category_analysis\": {\"type\": \"object\", \"description\": \"Analysis per category with highlights and improvements.\", \"additionalProperties\": {\"type\": \"object\", \"properties\": {\"highlights\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}, \"improvements\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}}}}}}, \"required\": [\"provider_name\", \"category_scores\", \"individual_scores\", \"overall_score\", \"compliance_percentage\"]}"
       },
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -8576,
-        4896
+        -4144,
+        12048
       ],
-      "id": "ae2319f6-cc92-4439-aa73-cdb726a4870b",
+      "id": "9d2f88ea-7e77-46c6-9d4a-ca4eced89cc6",
       "name": "JSON Output Parser1"
     },
     {
@@ -5513,10 +5610,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
       "position": [
-        -8832,
-        4880
+        -4400,
+        12032
       ],
-      "id": "dacfb168-becf-4645-9ef2-39a935b35e88",
+      "id": "0da5907a-6cba-4556-9b62-21f8cb0050de",
       "name": "Ollama Scoring Model",
       "credentials": {
         "ollamaApi": {
@@ -5543,10 +5640,10 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -10112,
-        4688
+        -5680,
+        11840
       ],
-      "id": "fa20ecd5-9a8a-446d-9415-f1ed9f4741fa",
+      "id": "c345b309-df07-4ce9-a3c7-6fd6ed1ab7e2",
       "name": "Delete a row",
       "alwaysOutputData": true,
       "credentials": {
@@ -5558,15 +5655,17 @@
     },
     {
       "parameters": {
-        "options": {}
+        "options": {
+          "temperature": 0
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [
-        -8736,
-        4976
+        -4304,
+        12128
       ],
-      "id": "d1390406-477a-49be-b091-bdbd3d4920db",
+      "id": "ff22b3b1-ef4b-402e-9240-ea024fcc131d",
       "name": "OpenRouter Chat Model1",
       "credentials": {
         "openRouterApi": {
@@ -5585,10 +5684,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -10416,
-        4688
+        -5984,
+        11840
       ],
-      "id": "1a4f51d9-1b13-49bf-a26c-cb93e7feb710",
+      "id": "2a4ab4c5-473e-49d6-8ba9-3d0becba3096",
       "name": "Webhook Scoring",
       "webhookId": "scoring-eval-webhook-001"
     },
@@ -5606,13 +5705,13 @@
           ]
         }
       },
-      "id": "dd9622c5-ab77-401f-a9de-847cc3a86a07",
+      "id": "f773c26e-e84c-4185-a111-3b900dd6b10f",
       "name": "Fetch Project Context Scoring",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        -9632,
-        4688
+        -5200,
+        11840
       ],
       "credentials": {
         "supabaseApi": {
@@ -5620,99 +5719,6 @@
           "name": "Supabase account"
         }
       }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "check-award-action",
-              "leftValue": "={{ $json.action }}",
-              "rightValue": "generate_award_justification",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -1280,
-        6656
-      ],
-      "id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
-      "name": "Is Award Justification?"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=### DATOS DE LA EVALUACION\n\n- **Proyecto:** {{ $json.project_name }} ({{ $json.project_type }})\n- **Fecha:** {{ new Date().toISOString().split('T')[0] }}\n- **Proveedor ganador:** {{ $json.winner_name }}\n- **Puntuacion global ganador:** {{ $json.winner_score }}/10\n- **Segundo clasificado:** {{ $json.runner_up_name || 'N/A' }}\n- **Puntuacion segundo:** {{ $json.runner_up_score || 0 }}/10\n- **Total proveedores evaluados:** {{ $json.total_providers }}\n\n**Puntuaciones por categoria:**\n{{ $json.category_scores }}\n\n**Fortalezas identificadas:**\n{{ $json.strengths }}\n\n**Debilidades identificadas:**\n{{ $json.weaknesses }}\n\n**Resumen economico:**\n{{ $json.economic_summary || 'No disponible' }}\n\n**Criterios de evaluacion:**\n{{ $json.scoring_criteria_summary }}\n\n### INDICE COMPLETO DEL DOCUMENTO ({{ $json.section_total }} secciones)\n{{ $json.all_sections_outline }}\n\n---\n\n### TU TAREA\n\nEscribe la seccion {{ $json.section_index }} de {{ $json.section_total }}: **{{ $json.section_title }}**\n\nDescripcion de lo que debe cubrir esta seccion:\n{{ $json.section_description }}\n\n### REGLAS DE REDACCION\n1. **Extension**: Escribe un MINIMO de 500 palabras para esta seccion.\n2. **Estilo narrativo**: Escribe en PROSA NARRATIVA con parrafos completos de 3-5 oraciones. No solo listas.\n3. **Basado en datos**: Referencia puntuaciones concretas, porcentajes y diferencias numericas de los datos proporcionados.\n4. **No inventes**: NO fabriques datos que no esten en el input. Si no hay datos para algun punto, indicalo.\n5. **Tono auditable**: Este documento debe resistir el escrutinio de auditoria interna, compliance y gobernanza.\n6. **Tablas**: Si esta seccion requiere comparativas, incluye tablas Markdown con los datos.\n7. **Coherencia**: Esta seccion es parte de un documento mayor. No repitas introducciones generales.\n8. **Idioma**: Escribe en {{ $json.language === 'en' ? 'English' : 'Español' }}.\n9. **NO incluyas** el titulo de la seccion (se anadira automaticamente).\n\n### FORMATO DE SALIDA\n- Devuelve SOLO el texto de la seccion en Markdown.\n- NO devuelvas JSON.\n- NO uses bloques de codigo.\n- Empieza directamente con el contenido.",
-        "messages": {
-          "messageValues": [
-            {
-              "message": "=You are an expert procurement analyst, technical evaluator, and document writer specialized in industrial EPC projects (energy, green hydrogen, P2X, solar, wind, BESS).\n\n### YOUR ROLE\nYou are writing ONE SPECIFIC SECTION of a formal Award Justification document (Propuesta de Adjudicacion). This is a critical procurement document that must be:\n- **Auditable**: Subject to review by internal audit, compliance, and governance teams\n- **Data-driven**: Every conclusion must reference specific scores, percentages, or factual data\n- **Objective**: Present both strengths and weaknesses honestly\n- **Professional**: Written in formal corporate language suitable for executive review\n\n### WRITING STYLE\n1. Write in NARRATIVE PROSE with full paragraphs (3-5 sentences each). Do not produce list-only sections.\n2. Minimum 500 words for this section.\n3. Reference specific numerical data from the evaluation throughout your analysis.\n4. Use Markdown formatting: **bold** for emphasis, - for lists, | for tables.\n5. When comparing providers, use concrete data points and percentage differences.\n6. Write in {{ $json.language === 'en' ? 'English' : 'Spanish' }}.\n\n### OUTPUT FORMAT\n- Return ONLY the section content as plain Markdown text.\n- Do NOT return JSON, code blocks, or meta-commentary.\n- Do NOT include the section title. Start directly with content."
-            }
-          ]
-        },
-        "batching": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.chainLlm",
-      "typeVersion": 1.8,
-      "position": [
-        -1088,
-        6856
-      ],
-      "id": "c2d3e4f5-a6b7-8901-bcde-f23456789012",
-      "name": "Award Justification Chain"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Consolidate multiple section outputs into a single Award Justification document\nconst params = $('Set RFP Params').first().json;\nconst sectionMeta = $('Prepare Award Sections').all();\nconst llmOutputs = $input.all();\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst cleanText = (text) => String(text || '')\n  .replace(/```json\\n?/gi, '').replace(/```\\n?/g, '')\n  .replace(/\\n{3,}/g, '\\n\\n')\n  .trim();\n\ntry {\n  const sections = sectionMeta.map((meta, index) => {\n    const llmItem = llmOutputs[index];\n    const rawContent = llmItem?.json?.text || llmItem?.json?.output || llmItem?.json?.response || '';\n    const content = cleanText(rawContent);\n    return {\n      title: meta.json.section_title,\n      content: content,\n      word_count: content.split(/\\s+/).filter(w => w.length > 0).length\n    };\n  });\n\n  // Build the full justification document\n  const documentParts = sections.map((s, i) => {\n    return `## ${i + 1}. ${s.title}\\n\\n${s.content}`;\n  });\n\n  const title = lang === 'es'\n    ? `Propuesta de Adjudicacion - ${params.project_name}`\n    : `Award Proposal - ${params.project_name}`;\n\n  const justification = documentParts.join('\\n\\n---\\n\\n');\n  const totalWords = sections.reduce((sum, s) => sum + s.word_count, 0);\n\n  // Extract recommendation from the last section (Final Recommendation)\n  const lastSection = sections[sections.length - 1];\n  const recommendationSummary = lang === 'es'\n    ? `Se recomienda adjudicar el proyecto \"${params.project_name}\" a ${params.winner_name} con una puntuacion global de ${params.winner_score}/10, habiendo obtenido la mayor puntuacion en la evaluacion integral de las ${params.total_providers} ofertas recibidas.`\n    : `It is recommended to award the project \"${params.project_name}\" to ${params.winner_name} with an overall score of ${params.winner_score}/10, having achieved the highest score in the comprehensive evaluation of ${params.total_providers} submitted proposals.`;\n\n  const result = {\n    success: true,\n    title,\n    justification,\n    document: justification,\n    content: justification,\n    text: justification,\n    sections: sections.map(s => ({ title: s.title, content: s.content })),\n    recommendation_summary: recommendationSummary,\n    metadata: {\n      word_count: totalWords,\n      section_count: sections.length,\n      words_per_section: sections.map(s => ({ title: s.title, words: s.word_count })),\n      generated_at: new Date().toISOString(),\n      model: 'mistral-large-latest',\n      generation_mode: 'multi-agent-per-section'\n    },\n    message: `Award justification generated with ${sections.length} sections (${totalWords} words total)`\n  };\n\n  console.log('✅ Award Justification Consolidated:');\n  console.log(`   ├─ Title: ${title}`);\n  console.log(`   ├─ Sections: ${sections.length}`);\n  console.log(`   ├─ Total words: ${totalWords}`);\n  sections.forEach(s => console.log(`   │  └─ ${s.title}: ${s.word_count} words`));\n  console.log(`   └─ Mode: multi-agent-per-section`);\n\n  return [{ json: result }];\n} catch (err) {\n  console.error('❌ Error consolidating award justification:', err.message);\n  return [{ json: {\n    success: false,\n    title: '',\n    justification: '',\n    document: '',\n    content: '',\n    text: '',\n    sections: [],\n    recommendation_summary: '',\n    metadata: { word_count: 0, generated_at: new Date().toISOString(), model: 'mistral-large-latest' },\n    message: 'Error consolidating award justification: ' + err.message\n  }}];\n}\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -880,
-        6856
-      ],
-      "id": "d3e4f5a6-b789-0123-cdef-456789012345",
-      "name": "Parse Award Output"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Split RFP sections into individual items for per-section LLM generation\nconst params = $input.first().json;\nconst sections = params.sections || [];\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\n// Default professional RFP sections if none provided\nconst defaultSections = lang === 'es' ? [\n  { id: 'introduccion', title: 'Introduccion y Objeto del Proyecto', description: 'Contexto del proyecto, objetivo de la licitacion, alcance general, antecedentes y justificacion de la necesidad. Explica quien es la empresa compradora, por que se lanza esta licitacion y que se espera lograr.' },\n  { id: 'alcance', title: 'Alcance Tecnico y Descripcion de Trabajos', description: 'Descripcion detallada del alcance tecnico del proyecto, fases de ejecucion, entregables esperados, tecnologias involucradas, condiciones de sitio y requisitos de ingenieria.' },\n  { id: 'requisitos', title: 'Requisitos Tecnicos y Funcionales', description: 'Especificaciones tecnicas detalladas, normativas aplicables, certificaciones requeridas, estandares de calidad, requisitos de seguridad y medio ambiente.' },\n  { id: 'economico', title: 'Condiciones Economicas y Estructura de Precios', description: 'Estructura de desglose de costes esperada (CAPEX, OPEX, unitarios), condiciones de pago, hitos de facturacion, garantias bancarias, moneda, validez de precios y formula de revision.' },\n  { id: 'evaluacion', title: 'Metodologia de Evaluacion y Criterios de Seleccion', description: 'Explicacion detallada del modelo de evaluacion ponderada multi-criterio, definicion de cada criterio, pesos asignados, escala de puntuacion y proceso de decision.' },\n  { id: 'cronograma', title: 'Cronograma del Proyecto y Plazos', description: 'Calendario del proceso de licitacion, hitos clave del proyecto, fechas de entrega, plazo de ejecucion y penalizaciones por retraso.' },\n  { id: 'participacion', title: 'Instrucciones para los Licitadores', description: 'Como presentar la oferta: formato requerido, numero de copias, documentacion obligatoria, plazo de presentacion, canal de comunicacion, proceso de preguntas y aclaraciones.' },\n  { id: 'legal', title: 'Condiciones Generales, Legales y Contractuales', description: 'Clausulas de confidencialidad, proteccion de datos, propiedad intelectual, seguros, responsabilidad civil, resolucion de disputas, ley aplicable y compliance anti-corrupcion.' }\n] : [\n  { id: 'introduction', title: 'Project Introduction and Objective', description: 'Project background, purpose of the tender, general scope, rationale and justification. Explain who the buyer is, why this tender is launched and what outcomes are expected.' },\n  { id: 'scope', title: 'Technical Scope and Work Description', description: 'Detailed technical scope, project phases, expected deliverables, technologies involved, site conditions and engineering requirements.' },\n  { id: 'requirements', title: 'Technical and Functional Requirements', description: 'Detailed technical specifications, applicable standards, required certifications, quality standards, HSE requirements.' },\n  { id: 'economic', title: 'Economic Conditions and Pricing Structure', description: 'Expected cost breakdown structure (CAPEX, OPEX, unit prices), payment terms, invoicing milestones, bank guarantees, currency, price validity and escalation formula.' },\n  { id: 'evaluation', title: 'Evaluation Methodology and Selection Criteria', description: 'Detailed explanation of weighted multi-criteria evaluation model, criterion definitions, assigned weights, scoring scale and decision process.' },\n  { id: 'timeline', title: 'Project Timeline and Milestones', description: 'Tender process calendar, key project milestones, delivery dates, execution period and delay penalties.' },\n  { id: 'submission', title: 'Bidder Instructions', description: 'How to submit the proposal: required format, number of copies, mandatory documentation, submission deadline, communication channel, Q&A process.' },\n  { id: 'legal', title: 'General, Legal and Contractual Conditions', description: 'Confidentiality clauses, data protection, intellectual property, insurance, liability, dispute resolution, governing law and anti-corruption compliance.' }\n];\n\nconst sectionsToGenerate = sections.length > 0 ? sections : defaultSections;\nconst totalSections = sectionsToGenerate.length;\n\n// Create one item per section with full project context\nconst items = sectionsToGenerate.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title || section.name || `Section ${index + 1}`,\n    section_description: section.description || section.content || '',\n    section_id: section.id || `section_${index}`,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    description: params.description,\n    requirements: params.requirements,\n    language: params.language,\n    currency: params.currency,\n    criteria: typeof params.criteria === 'string' ? params.criteria : JSON.stringify(params.criteria || []),\n    deadlines: typeof params.deadlines === 'string' ? params.deadlines : JSON.stringify(params.deadlines || {}),\n    providers: typeof params.providers === 'string' ? params.providers : JSON.stringify(params.providers || []),\n    all_sections_outline: sectionsToGenerate.map((s, i) => `${i+1}. ${s.title || s.name}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} RFP sections for individual generation`);\nreturn items;\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1100,
-        6456
-      ],
-      "id": "e4f5a6b7-c890-1234-def0-567890123456",
-      "name": "Prepare RFP Sections"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Split Award Justification into individual sections for per-section LLM generation\nconst params = $input.first().json;\nconst lang = (params.language || 'es') === 'en' ? 'en' : 'es';\n\nconst awardSections = lang === 'es' ? [\n  { id: 'resumen_ejecutivo', title: 'Resumen Ejecutivo', description: 'Sintesis del proceso de evaluacion: numero de proveedores evaluados, metodologia utilizada (modelo de evaluacion ponderada multi-criterio), resultado global y recomendacion final. Debe ser un resumen que permita a un directivo entender la conclusion sin leer el resto del documento.' },\n  { id: 'proceso_evaluacion', title: 'Descripcion del Proceso de Evaluacion', description: 'Metodologia de evaluacion detallada: modelo ponderado multi-criterio, como se definio cada criterio, como se asignaron los pesos, quien participo en la evaluacion, que fuentes de informacion se utilizaron (documentos tecnicos, ofertas economicas, referencias).' },\n  { id: 'analisis_comparativo', title: 'Analisis Comparativo de Proveedores', description: 'Comparacion detallada entre el proveedor ganador y el segundo clasificado (y tercero si relevante). Incluir tabla comparativa de puntuaciones globales, diferencias por categoria, y analisis de las brechas mas significativas.' },\n  { id: 'evaluacion_categorias', title: 'Evaluacion Detallada por Categorias', description: 'Desglose de las puntuaciones del ganador en CADA categoria de evaluacion. Para cada categoria: que se evaluo, que evidencia sustenta la puntuacion, como se compara con otros proveedores.' },\n  { id: 'fortalezas', title: 'Fortalezas del Proveedor Recomendado', description: 'Analisis exhaustivo de los puntos fuertes del proveedor ganador: experiencia relevante, capacidad tecnica, propuesta economica, plazos, equipo propuesto, referencias, innovacion. Cada fortaleza debe estar sustentada con datos concretos.' },\n  { id: 'riesgos_mitigacion', title: 'Areas de Atencion y Plan de Mitigacion', description: 'Identificacion honesta de debilidades o riesgos del proveedor ganador. Para cada riesgo: descripcion del riesgo, impacto potencial, probabilidad, y propuesta concreta de mitigacion (clausulas contractuales, supervisión adicional, hitos de control).' },\n  { id: 'analisis_economico', title: 'Analisis Economico', description: 'Resumen detallado de la propuesta economica del ganador. Comparativa de precios con otros proveedores. Analisis de la relacion calidad-precio. Desglose de costes principales si esta disponible. Condiciones de pago propuestas.' },\n  { id: 'recomendacion_final', title: 'Recomendacion Final y Proximos Pasos', description: 'Justificacion formal y fundamentada de por que se recomienda adjudicar a este proveedor. Referencia a las puntuaciones, fortalezas clave y analisis economico. Incluir proximos pasos recomendados (negociacion, due diligence, firma de contrato).' }\n] : [\n  { id: 'executive_summary', title: 'Executive Summary', description: 'Overview of the evaluation process: number of providers evaluated, methodology used (weighted multi-criteria model), overall result and final recommendation. Should allow an executive to understand the conclusion without reading the rest.' },\n  { id: 'evaluation_process', title: 'Evaluation Process Description', description: 'Detailed evaluation methodology: weighted multi-criteria model, how each criterion was defined, how weights were assigned, who participated, what information sources were used.' },\n  { id: 'comparative_analysis', title: 'Comparative Provider Analysis', description: 'Detailed comparison between winner and runner-up. Include comparative scoring table, per-category differences, and analysis of most significant gaps.' },\n  { id: 'category_evaluation', title: 'Detailed Category Evaluation', description: 'Breakdown of winner scores in EACH evaluation category. For each: what was evaluated, supporting evidence, comparison with other providers.' },\n  { id: 'strengths', title: 'Recommended Provider Strengths', description: 'Comprehensive analysis of winner strengths: relevant experience, technical capability, economic proposal, timelines, proposed team, references, innovation. Each backed by concrete data.' },\n  { id: 'risks_mitigation', title: 'Areas of Attention and Mitigation Plan', description: 'Honest identification of winner weaknesses or risks. For each: description, potential impact, probability, and concrete mitigation proposal.' },\n  { id: 'economic_analysis', title: 'Economic Analysis', description: 'Detailed summary of winner economic proposal. Price comparison with others. Value-for-money analysis. Main cost breakdown if available.' },\n  { id: 'final_recommendation', title: 'Final Recommendation and Next Steps', description: 'Formal justification for recommending this provider. Reference scores, key strengths, economic analysis. Include recommended next steps (negotiation, due diligence, contract signing).' }\n];\n\nconst totalSections = awardSections.length;\n\nconst items = awardSections.map((section, index) => ({\n  json: {\n    section_index: index + 1,\n    section_total: totalSections,\n    section_title: section.title,\n    section_description: section.description,\n    section_id: section.id,\n    project_name: params.project_name,\n    project_type: params.project_type,\n    language: params.language || 'es',\n    winner_name: params.winner_name,\n    winner_score: params.winner_score,\n    runner_up_name: params.runner_up_name || '',\n    runner_up_score: params.runner_up_score || 0,\n    total_providers: params.total_providers,\n    category_scores: params.category_scores,\n    strengths: params.strengths,\n    weaknesses: params.weaknesses,\n    economic_summary: params.economic_summary || '',\n    scoring_criteria_summary: params.scoring_criteria_summary,\n    all_sections_outline: awardSections.map((s, i) => `${i+1}. ${s.title}`).join('\\n')\n  }\n}));\n\nconsole.log(`📋 Prepared ${items.length} Award Justification sections for individual generation`);\nreturn items;\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1100,
-        6856
-      ],
-      "id": "f5a6b7c8-d901-2345-ef01-678901234567",
-      "name": "Prepare Award Sections"
     }
   ],
   "connections": {
@@ -6798,35 +6804,6 @@
         ]
       ]
     },
-    "Is Award Justification?": {
-      "main": [
-        [
-          {
-            "node": "Prepare Award Sections",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Prepare RFP Sections",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare RFP Sections": {
-      "main": [
-        [
-          {
-            "node": "RFP Generation Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "RFP Generation Chain": {
       "main": [
         [
@@ -6839,39 +6816,6 @@
       ]
     },
     "Parse RFP Output": {
-      "main": [
-        [
-          {
-            "node": "Respond RFP Generate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Award Sections": {
-      "main": [
-        [
-          {
-            "node": "Award Justification Chain",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Award Justification Chain": {
-      "main": [
-        [
-          {
-            "node": "Parse Award Output",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse Award Output": {
       "main": [
         [
           {
@@ -7572,6 +7516,68 @@
         ]
       ]
     },
+    "Is Award Justification?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Award Sections",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare RFP Sections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Award Justification Chain": {
+      "main": [
+        [
+          {
+            "node": "Parse Award Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Award Output": {
+      "main": [
+        [
+          {
+            "node": "Respond RFP Generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare RFP Sections": {
+      "main": [
+        [
+          {
+            "node": "RFP Generation Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Award Sections": {
+      "main": [
+        [
+          {
+            "node": "Award Justification Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Fetch Requirements": {
       "main": [
         [
@@ -7835,7 +7841,6 @@
   },
   "pinData": {},
   "meta": {
-    "templateCredsSetupCompleted": true,
     "instanceId": "53140335eaf11280ef77ef2f5a378f48c2b28e822e3e0d96563cdd92175c0eff"
   }
 }
