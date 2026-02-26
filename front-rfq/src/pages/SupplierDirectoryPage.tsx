@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSupplierDirectoryStore, SupplierEntry, SupplierEvalDetail } from '../stores/useSupplierDirectoryStore';
 import { useLanguageStore } from '../stores/useLanguageStore';
 import { SupplierHistoryProfile } from '../components/suppliers/SupplierHistoryProfile';
+import { Pagination } from '../components/ui/Pagination';
 import './SupplierDirectoryPage.css';
 
 export const SupplierDirectoryPage = () => {
@@ -12,9 +13,15 @@ export const SupplierDirectoryPage = () => {
     loadSupplierEvaluationDetails, saveSupplierFeedback,
   } = useSupplierDirectoryStore();
 
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [search, setSearchRaw] = useState('');
+  const [categoryFilter, setCategoryFilterRaw] = useState<string>('all');
   const [historySupplier, setHistorySupplier] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 30;
+
+  // Wrap setters to reset page on filter change (avoids useEffect for derived state)
+  const setSearch = (v: string) => { setSearchRaw(v); setPage(1); };
+  const setCategoryFilter = (v: string) => { setCategoryFilterRaw(v); setPage(1); };
 
   useEffect(() => {
     loadSuppliers();
@@ -36,6 +43,12 @@ export const SupplierDirectoryPage = () => {
     }
     return list;
   }, [suppliers, search, categoryFilter]);
+
+  // Paginated subset of filtered results
+  const paginatedSuppliers = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
 
   const stats = useMemo(() => {
     const total = suppliers.length;
@@ -203,7 +216,7 @@ export const SupplierDirectoryPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(supplier => (
+              {paginatedSuppliers.map(supplier => (
                 <tr key={supplier.supplier_name} onClick={() => setSelectedSupplier(supplier.supplier_name)}>
                   <td>
                     <div className="supplier-name-cell">
@@ -334,6 +347,12 @@ export const SupplierDirectoryPage = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={filtered.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
 

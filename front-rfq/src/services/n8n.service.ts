@@ -6,6 +6,11 @@ import type { GenerateAuditPayload, GenerateAuditResponse } from '../types/qa.ty
 import { useSetupStore } from '../stores/useSetupStore';
 import { useScoringConfigStore } from '../stores/useScoringConfigStore';
 
+/** Set the cached auth email (called from useAuthStore on sign-in) */
+export function setCurrentUserEmailCache(email: string) {
+  (globalThis as any).__bideval_auth_email = email;
+}
+
 /**
  * Multiple files processing result
  */
@@ -1023,4 +1028,26 @@ export async function generateRfpDocument(
  */
 export function cancelRunningN8nExecutions(): Promise<void> {
   return Promise.resolve();
+}
+
+/**
+ * Send invite email via n8n webhook (best-effort).
+ */
+export async function sendInviteEmail(payload: {
+  email: string;
+  inviterName: string;
+  orgName: string;
+  inviteUrl: string;
+  role: string;
+}): Promise<void> {
+  const url = API_CONFIG.N8N_SEND_INVITE_URL;
+  if (!url) return;
+
+  await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).catch(() => {
+    // Best-effort — don't throw if webhook fails
+  });
 }

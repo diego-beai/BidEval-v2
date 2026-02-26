@@ -736,7 +736,7 @@ export const ScoringMatrix: React.FC = () => {
 
             {/* Scoring Table - Show when there's configuration, even without scoring data */}
             {!isCalculating && hasConfiguration && (
-                <div className="scoring-grid-container" style={{ overflowX: 'auto' }}>
+                <div className="scoring-grid-container" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '70vh' }}>
                     <table className="scoring-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
                         <thead>
                             <tr style={{ background: 'var(--bg-surface-alt)' }}>
@@ -1108,6 +1108,7 @@ export const ScoringMatrix: React.FC = () => {
                     }}
                 >
                     <div
+                        role="document"
                         style={{
                             background: 'var(--bg-surface)',
                             borderRadius: 'var(--radius-lg)',
@@ -1118,6 +1119,7 @@ export const ScoringMatrix: React.FC = () => {
                             border: '1px solid var(--border-color)'
                         }}
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                             <div style={{

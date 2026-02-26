@@ -12,6 +12,9 @@ import { ProjectDetailModal } from '../common/ProjectDetailModal';
 import { useQAStore } from '../../stores/useQAStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { usePermissionsStore, ALL_ROLES, ROLE_LABELS } from '../../stores/usePermissionsStore';
+import { Changelog } from '../changelog/Changelog';
+import { useChangelogBadge } from '../../hooks/useChangelogBadge';
+import { UserMenu } from '../auth/UserMenu';
 
 
 interface SidebarLayoutProps {
@@ -61,6 +64,8 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
     const [showRoleDropdown, setShowRoleDropdown] = useState(false);
     const roleDropdownRef = useRef<HTMLDivElement>(null);
     const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+    const [showChangelog, setShowChangelog] = useState(false);
+    const { hasNewChanges } = useChangelogBadge();
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -236,12 +241,68 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                             </svg>
                         }
                     />
+
+                    {/* Admin section */}
+                    {can('manage_users') && (
+                        <>
+                            <div className="nav-section-divider" />
+                            <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
+                                view="admin-dashboard"
+                                labelKey="nav.admin_dashboard"
+                                icon={
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
+                                }
+                            />
+                            <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
+                                view="api-docs"
+                                labelKey="nav.api_docs"
+                                icon={
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="16 18 22 12 16 6" />
+                                        <polyline points="8 6 2 12 8 18" />
+                                    </svg>
+                                }
+                            />
+                            <NavItem activeView={activeView} isExpanded={isExpanded} language={language} t={t} hasActiveSession={hasActiveSession} onNavigate={onNavigate}
+                                view="api-keys"
+                                labelKey="nav.api_keys"
+                                icon={
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                                    </svg>
+                                }
+                            />
+                        </>
+                    )}
                 </nav>
 
                 <div className="sidebar-footer">
                     <div className="footer-content">
                         <span className="version-badges">{t('nav.footer')}</span>
                     </div>
+                    {/* Changelog / What's New Button */}
+                    <button
+                        className="tour-help-btn-footer"
+                        onClick={() => setShowChangelog(true)}
+                        title={language === 'es' ? 'Novedades' : "What's New"}
+                        style={{ position: 'relative' }}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        {hasNewChanges && (
+                            <span style={{
+                                position: 'absolute', top: -2, right: -2,
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: '#ef4444',
+                            }} />
+                        )}
+                    </button>
                     {/* Tour Help Button */}
                     {hasCompletedTour && (
                         <button
@@ -675,9 +736,7 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
                         <div style={{ flex: 1 }}></div>
                         <div style={{ width: '1px', height: '20px', background: 'var(--border-color)', margin: '0 8px' }}></div>
                         <ThemeToggle />
-                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--color-secondary)', color: 'white', display: 'grid', placeItems: 'center' }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        </div>
+                        <UserMenu onNavigate={onNavigate} />
                     </div>
                 </header>
 
@@ -693,6 +752,9 @@ export const SidebarLayout: React.FC<SidebarLayoutProps> = ({ children, activeVi
 
             {/* Onboarding Tour */}
             <TourProvider onNavigate={onNavigate} />
+
+            {/* Changelog Modal */}
+            <Changelog isOpen={showChangelog} onClose={() => setShowChangelog(false)} />
         </div >
     );
 };

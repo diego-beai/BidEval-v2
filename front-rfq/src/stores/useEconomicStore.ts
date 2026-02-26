@@ -48,13 +48,14 @@ interface EconomicState {
     comparison: EconomicComparison[];
     isLoading: boolean;
     error: string | null;
+    _lastFetchedAt: number | null;
 
     // Excel-related state
     excelTemplate: ExcelTemplateData | null;
     comparisonData: ExcelComparisonData | null;
 
     // Actions
-    loadOffers: () => Promise<void>;
+    loadOffers: (forceRefresh?: boolean) => Promise<void>;
 
     // Excel actions
     setExcelTemplate: (data: ExcelTemplateData) => void;
@@ -68,12 +69,13 @@ export const useEconomicStore = create<EconomicState>((set, get) => ({
     comparison: [],
     isLoading: false,
     error: null,
+    _lastFetchedAt: null,
 
     // Excel-related state
     excelTemplate: null,
     comparisonData: null,
 
-    loadOffers: async () => {
+    loadOffers: async (forceRefresh?: boolean) => {
         const projectId = useProjectStore.getState().activeProjectId;
         if (!projectId) {
             set({ offers: [], comparison: [], error: null });
@@ -82,6 +84,13 @@ export const useEconomicStore = create<EconomicState>((set, get) => ({
 
         if (!isSupabaseConfigured()) {
             set({ offers: [], comparison: [], error: 'Supabase not configured', isLoading: false });
+            return;
+        }
+
+        // Cache guard: skip re-fetch if data is fresh (< 2 min) unless forced
+        const now = Date.now();
+        const state = get();
+        if (!forceRefresh && state._lastFetchedAt && (now - state._lastFetchedAt) < 120_000 && state.offers.length > 0) {
             return;
         }
 
@@ -115,7 +124,7 @@ export const useEconomicStore = create<EconomicState>((set, get) => ({
                 item.price_rank = idx + 1;
             });
 
-            set({ offers, comparison: withNet, isLoading: false });
+            set({ offers, comparison: withNet, isLoading: false, _lastFetchedAt: Date.now() });
 
             // Auto-rebuild Excel comparison if template is loaded
             const { excelTemplate } = get();

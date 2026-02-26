@@ -33,7 +33,15 @@ interface PermissionsState {
   role: Role;
   setRole: (role: Role) => void;
   can: (action: PermissionAction) => boolean;
+  syncFromAuth: (orgRole: string | null) => void;
 }
+
+const ORG_ROLE_MAP: Record<string, Role> = {
+  owner: 'admin',
+  admin: 'admin',
+  member: 'evaluator',
+  viewer: 'viewer',
+};
 
 export const usePermissionsStore = create<PermissionsState>()(
   persist(
@@ -41,6 +49,12 @@ export const usePermissionsStore = create<PermissionsState>()(
       role: 'evaluator' as Role,
       setRole: (role) => set({ role }),
       can: (action) => ROLE_PERMISSIONS[get().role].includes(action),
+      syncFromAuth: (orgRole) => {
+        const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+        if (isDemoMode || !orgRole) return;
+        const mapped = ORG_ROLE_MAP[orgRole] || 'viewer';
+        set({ role: mapped });
+      },
     }),
     { name: 'permissions-storage' }
   )

@@ -1,0 +1,116 @@
+.changelog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.15s ease;
+}
+
+.changelog-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 520px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  animation: fadeInUp 0.2s ease;
+}
+
+.changelog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.changelog-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.changelog-close {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.changelog-close:hover {
+  color: var(--text-primary);
+}
+
+.changelog-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.changelog-entry {
+  margin-bottom: 24px;
+}
+
+.changelog-entry:last-child {
+  margin-bottom: 0;
+}
+
+.changelog-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.changelog-version {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: rgba(18, 181, 176, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.changelog-date {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.changelog-entry-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+}
+
+.changelog-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.changelog-item {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.changelog-item-type {
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}

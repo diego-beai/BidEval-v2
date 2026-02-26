@@ -103,10 +103,13 @@ interface RfqState {
   setError: (error: string | null) => void;
   reset: () => void;
 
+  // Cache
+  _lastTableFetchedAt: number | null;
+
   // Dashboard Actions
   fetchProjects: () => Promise<void>;
   fetchAllData: () => Promise<void>;
-  fetchAllTableData: () => Promise<void>;
+  fetchAllTableData: (forceRefresh?: boolean) => Promise<void>;
   fetchDataByProject: (projectName: string) => Promise<void>;
   fetchProposalEvaluations: (projectId?: string) => Promise<void>;
   refreshProposalEvaluations: () => Promise<void>;
@@ -207,6 +210,7 @@ export const useRfqStore = create<RfqState>()(
       rfqBaseError: null,
       rfqBaseStatus: initialStatus,
       selectedRfqBaseFiles: [],
+      _lastTableFetchedAt: null,
 
       applyTableFilters: false,
       setApplyTableFilters: (val) => set({ applyTableFilters: val }),
@@ -544,7 +548,14 @@ export const useRfqStore = create<RfqState>()(
         });
       },
 
-      fetchAllTableData: async () => {
+      fetchAllTableData: async (forceRefresh?: boolean) => {
+        // Cache guard: skip re-fetch if data is fresh (< 2 min) unless forced
+        const now = Date.now();
+        const currentState = get();
+        if (!forceRefresh && currentState._lastTableFetchedAt && (now - currentState._lastTableFetchedAt) < 120_000 && currentState.tableData.length > 0) {
+          return;
+        }
+
         set({ isLoadingData: true, error: null });
 
         // Get active project ID for filtering
@@ -562,8 +573,7 @@ export const useRfqStore = create<RfqState>()(
             const { data, error } = await supabase
               .from('rfq_items_master')
               .select('*')
-              .eq('project_id', activeProjectId)
-              .limit(1000);
+              .eq('project_id', activeProjectId);
 
             if (error) {
               throw new Error(`Supabase error: ${error.message}`);
@@ -576,7 +586,8 @@ export const useRfqStore = create<RfqState>()(
             set({
               tableData: data || [],
               projects: projectList,
-              error: null
+              error: null,
+              _lastTableFetchedAt: Date.now(),
             });
           } else {
             // Fallback to n8n if Supabase not configured

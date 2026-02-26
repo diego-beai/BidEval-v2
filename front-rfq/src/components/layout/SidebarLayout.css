@@ -568,6 +568,13 @@
     justify-content: center;
 }
 
+.sidebar:not(.expanded) .demo-role-dropdown {
+    left: calc(100% + 8px);
+    bottom: 0;
+    transform: none;
+    top: auto;
+}
+
 .demo-role-dropdown {
     position: absolute;
     bottom: calc(100% + 6px);

@@ -116,13 +116,15 @@ export async function sendChatMessage(
     // Payload según el formato esperado por n8n chatTrigger
     // Incluye project_id para filtrar datos por proyecto
     // Incluye document_ids para acotar a documentos específicos
+    const userEmail = (globalThis as any).__bideval_auth_email || '';
     const payload: Record<string, unknown> = {
       action: 'sendMessage',
       sessionId: currentSessionId,
       chatInput: message,
       project_id: projectId || '',
       language: language || 'es',
-      currency: currency || 'EUR'
+      currency: currency || 'EUR',
+      user_email: userEmail,
     };
 
     if (documentIds && documentIds.length > 0) {

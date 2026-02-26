@@ -4,6 +4,7 @@ import { API_CONFIG } from '../config/constants';
 import { supabase } from '../lib/supabase';
 import { useToastStore } from './useToastStore';
 import { useProjectStore } from './useProjectStore';
+import { logAudit } from '../services/audit.service';
 import type { ScoringWeights } from '../types/database.types';
 import type { ESGCertification } from '../types/esg.types';
 
@@ -62,6 +63,7 @@ interface ScoringState {
     lastCalculation: Date | null;
     scoringResults: ScoringResult | null;
     error: string | null;
+    _lastFetchedAt: number | null;
 
     // Custom weights state
     customWeights: ScoringWeights;
@@ -70,7 +72,7 @@ interface ScoringState {
 
     // Acciones
     calculateScoring: (projectId?: string, providerName?: string) => Promise<void>;
-    refreshScoring: (projectId?: string) => Promise<void>;
+    refreshScoring: (projectId?: string, forceRefresh?: boolean) => Promise<void>;
     clearError: () => void;
     reset: () => void;
 
@@ -91,6 +93,7 @@ export const useScoringStore = create<ScoringState>()(
                     lastCalculation: null,
                     scoringResults: null,
                     error: null,
+                    _lastFetchedAt: null,
                     customWeights: { ...DEFAULT_WEIGHTS },
                     savedWeightsId: null,
                     isSavingWeights: false,
@@ -117,6 +120,7 @@ export const useScoringStore = create<ScoringState>()(
                     const projectCurrency = activeProject?.currency || 'EUR';
                     const projectType = activeProject?.project_type || 'RFP';
 
+                    const userEmail = (globalThis as any).__bideval_auth_email || '';
                     const response = await fetch(API_CONFIG.N8N_SCORING_URL, {
                         method: 'POST',
                         headers: {
@@ -128,7 +132,8 @@ export const useScoringStore = create<ScoringState>()(
                             recalculate_all: !providerName,
                             language: projectLanguage,
                             currency: projectCurrency,
-                            project_type: projectType
+                            project_type: projectType,
+                            user_email: userEmail,
                         })
                     });
 
@@ -154,6 +159,10 @@ export const useScoringStore = create<ScoringState>()(
                             `Scoring completed! ${data.ranking.length} providers evaluated. Top: ${data.statistics.top_performer}`,
                             'success'
                         );
+                        logAudit('scoring.evaluate', 'project', effectiveProjectId, {
+                          providers_count: data.ranking.length,
+                          top_performer: data.statistics.top_performer,
+                        });
 
                         // Reload full data from Supabase (evaluation_details, strengths, etc.)
                         // n8n writes to DB but its HTTP response may lack these fields.
@@ -186,7 +195,7 @@ export const useScoringStore = create<ScoringState>()(
                 }
             },
 
-            refreshScoring: async (projectId?: string) => {
+            refreshScoring: async (projectId?: string, forceRefresh?: boolean) => {
                 if (!supabase) {
                     set({ isCalculating: false });
                     return;
@@ -201,6 +210,13 @@ export const useScoringStore = create<ScoringState>()(
                         scoringResults: null,
                         isCalculating: false
                     });
+                    return;
+                }
+
+                // Cache guard: skip re-fetch if data is fresh (< 2 min) unless forced
+                const now = Date.now();
+                const state = get();
+                if (!forceRefresh && state._lastFetchedAt && (now - state._lastFetchedAt) < 120_000 && state.scoringResults) {
                     return;
                 }
 
@@ -333,7 +349,8 @@ export const useScoringStore = create<ScoringState>()(
                             message: 'Loaded from database'
                         },
                         lastCalculation: new Date(),
-                        isCalculating: false
+                        isCalculating: false,
+                        _lastFetchedAt: Date.now()
                     });
 
                 } catch (err: any) {

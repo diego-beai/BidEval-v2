@@ -60,8 +60,9 @@ interface SupplierDirectoryState {
   selectedSupplier: string | null;
   supplierEvaluations: Record<string, SupplierEvalDetail[]>;
   isLoadingEvaluations: boolean;
+  _lastFetchedAt: number | null;
 
-  loadSuppliers: () => Promise<void>;
+  loadSuppliers: (forceRefresh?: boolean) => Promise<void>;
   setSelectedSupplier: (name: string | null) => void;
   upsertSupplier: (data: Partial<SupplierDirectoryRecord> & { name: string }) => Promise<boolean>;
   loadSupplierEvaluationDetails: (supplierName: string) => Promise<void>;
@@ -77,9 +78,17 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
       selectedSupplier: null,
       supplierEvaluations: {},
       isLoadingEvaluations: false,
+      _lastFetchedAt: null,
 
-      loadSuppliers: async () => {
+      loadSuppliers: async (forceRefresh?: boolean) => {
         if (!isSupabaseConfigured()) return;
+
+        // Cache guard: skip re-fetch if data is fresh (< 2 min) unless forced
+        const now = Date.now();
+        const state = get();
+        if (!forceRefresh && state._lastFetchedAt && (now - state._lastFetchedAt) < 120_000 && state.suppliers.length > 0) {
+          return;
+        }
 
         set({ isLoading: true, error: null });
 
@@ -115,6 +124,7 @@ export const useSupplierDirectoryStore = create<SupplierDirectoryState>()(
               statuses: row.statuses || [],
             })),
             isLoading: false,
+            _lastFetchedAt: Date.now(),
           });
         } catch (err) {
           set({

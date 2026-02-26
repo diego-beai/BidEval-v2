@@ -1,0 +1,55 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { authenticateRequest } from '../_shared/auth.ts';
+import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
+import { checkRateLimit } from '../_shared/rate-limiter.ts';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+Deno.serve(async (req) => {
+  const corsRes = handleCors(req);
+  if (corsRes) return corsRes;
+
+  try {
+    const auth = await authenticateRequest(req);
+    const { allowed, remaining } = await checkRateLimit(auth.userId);
+    if (!allowed) return errorResponse('Rate limit exceeded', 429);
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const url = new URL(req.url);
+    const method = req.method;
+
+    // GET — list reports for a project
+    if (method === 'GET') {
+      const projectId = url.searchParams.get('project_id');
+      if (!projectId) return errorResponse('project_id query parameter required');
+
+      // Verify project belongs to org
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId)
+        .eq('organization_id', auth.orgId)
+        .maybeSingle();
+
+      if (!project) return errorResponse('Project not found', 404);
+
+      const { data, error } = await supabase
+        .from('technical_reports')
+        .select('id, report_type, version, title, created_at')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) return errorResponse(error.message, 500);
+
+      return jsonResponse({
+        data,
+        meta: { project_id: projectId, total: data?.length || 0, rate_limit_remaining: remaining },
+      });
+    }
+
+    return errorResponse('Method not allowed', 405);
+  } catch (err) {
+    return errorResponse(err instanceof Error ? err.message : 'Error', 401);
+  }
+});

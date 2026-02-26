@@ -58,6 +58,22 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Gets the current auth JWT for API calls (non-demo mode only).
+ * Lazily imports to avoid circular dependencies.
+ */
+async function getAuthToken(): Promise<string | null> {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') return null;
+  try {
+    const { supabase } = await import('../lib/supabase');
+    if (!supabase) return null;
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Wrapper de fetch con timeout configurable y retry automático
  */
 export async function fetchWithTimeout(
@@ -69,6 +85,16 @@ export async function fetchWithTimeout(
 ): Promise<Response> {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
   let lastError: Error | null = null;
+
+  // Inject Authorization header if authenticated
+  const token = await getAuthToken();
+  if (token) {
+    const headers = new Headers(options.headers || {});
+    if (!headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    options = { ...options, headers };
+  }
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     const controller = new AbortController();

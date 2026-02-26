@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, devtools, subscribeWithSelector } from 'zustand/middleware';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { logAudit } from '../services/audit.service';
 
 export const REQUIRED_EVAL_TYPES = [
   'Technical Evaluation',
@@ -135,8 +136,11 @@ interface ProjectState {
   projectMilestones: ProjectMilestone[];
   projectMilestonesProjectId: string | null;
 
+  // Cache
+  _lastFetchedAt: number | null;
+
   // Actions
-  loadProjects: () => Promise<void>;
+  loadProjects: (forceRefresh?: boolean) => Promise<void>;
   setActiveProject: (projectId: string | null) => void;
   getActiveProject: () => Project | null;
   createProject: (displayName: string, description?: string) => Promise<Project | null>;
@@ -165,7 +169,7 @@ export function subscribeProjectRealtime() {
   const debouncedRefresh = () => {
     if (_debounceTimer) clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(() => {
-      useProjectStore.getState().loadProjects();
+      useProjectStore.getState().loadProjects(true); // force refresh on realtime events
     }, 2000); // 2s debounce to batch rapid changes
   };
 
@@ -204,15 +208,23 @@ export const useProjectStore = create<ProjectState>()(
           projectEconomicFieldsProjectId: null,
           projectMilestones: [],
           projectMilestonesProjectId: null,
+          _lastFetchedAt: null,
 
           // Load projects from v_projects_with_stats view
-          loadProjects: async () => {
+          loadProjects: async (forceRefresh?: boolean) => {
             if (!isSupabaseConfigured()) {
               set({
                 projects: [],
                 isLoading: false,
                 error: 'Supabase not configured'
               });
+              return;
+            }
+
+            // Cache guard: skip re-fetch if data is fresh (< 2 min) unless forced
+            const now = Date.now();
+            const state = get();
+            if (!forceRefresh && state._lastFetchedAt && (now - state._lastFetchedAt) < 120_000 && state.projects.length > 0) {
               return;
             }
 
@@ -415,7 +427,7 @@ export const useProjectStore = create<ProjectState>()(
               );
               const projects = projectResults.filter(Boolean) as Project[];
 
-              set({ projects, isLoading: false, error: null });
+              set({ projects, isLoading: false, error: null, _lastFetchedAt: Date.now() });
 
               // If no active project and we have projects, set the first one
               const state = get();
@@ -458,6 +470,16 @@ export const useProjectStore = create<ProjectState>()(
             set({ isLoading: true, error: null });
 
             try {
+              // Check org limits before creating (non-demo mode only)
+              const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+              if (!isDemoMode && supabase) {
+                const { data: limitsData } = await (supabase as any).rpc('check_org_limits');
+                if (limitsData && limitsData.projects_available <= 0) {
+                  set({ error: 'Project limit reached for your plan', isLoading: false });
+                  return null;
+                }
+              }
+
               // Use the database function get_or_create_project
               const { data, error } = await (supabase! as any)
                 .rpc('get_or_create_project', {
@@ -479,6 +501,7 @@ export const useProjectStore = create<ProjectState>()(
               // Set it as active
               if (newProject) {
                 set({ activeProjectId: newProject.id });
+                logAudit('project.create', 'project', newProject.id, { display_name: displayName });
               }
 
               return newProject || null;
@@ -570,6 +593,8 @@ export const useProjectStore = create<ProjectState>()(
                 set({ error: data?.error || 'Unknown error', isLoading: false });
                 return false;
               }
+
+              logAudit('project.delete', 'project', projectId);
 
               // If the deleted project was the active one, clear it
               const { activeProjectId } = get();

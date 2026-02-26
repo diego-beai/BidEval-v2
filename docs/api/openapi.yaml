@@ -1,0 +1,214 @@
+openapi: 3.0.3
+info:
+  title: BidEval API
+  version: 1.0.0
+  description: REST API for integrating BidEval evaluations with external systems.
+  contact:
+    name: BidEval Support
+    email: support@bideval.com
+
+servers:
+  - url: https://your-domain.com/api/v1
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        project_type:
+          type: string
+          enum: [RFP, RFQ, RFI]
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ScoringResult:
+      type: object
+      properties:
+        provider_name:
+          type: string
+        total_score:
+          type: number
+        rank:
+          type: integer
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        report_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /projects:
+    get:
+      summary: List projects
+      description: List all projects in your organization.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create project
+      description: Create a new project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [display_name, project_type]
+              properties:
+                display_name:
+                  type: string
+                project_type:
+                  type: string
+                  enum: [RFP, RFQ, RFI]
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Project'
+
+  /scoring:
+    get:
+      summary: Get scoring ranking
+      description: Get provider ranking for a project.
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScoringResult'
+
+    post:
+      summary: Trigger scoring evaluation
+      description: Trigger AI scoring evaluation for a project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+      responses:
+        '202':
+          description: Accepted
+
+  /reports:
+    get:
+      summary: List reports
+      description: List generated reports for a project.
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+
+  /upload:
+    post:
+      summary: Upload file
+      description: Upload a PDF file for processing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, filename, file_base64]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                filename:
+                  type: string
+                file_base64:
+                  type: string
+                  format: byte
+      responses:
+        '202':
+          description: Accepted

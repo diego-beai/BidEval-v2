@@ -160,7 +160,7 @@ export const useScoringAuditStore = create<ScoringAuditState>()(
               name,
               alternative_weights: weights,
               results,
-              created_by: 'current_user',
+              created_by: (globalThis as any).__bideval_auth_email || 'current_user',
             });
 
           if (error) throw error;

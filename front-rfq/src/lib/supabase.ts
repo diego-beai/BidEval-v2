@@ -14,13 +14,20 @@ if (!hasCredentials) {
 // Schema: 'desarrollo' para local, 'public' (default) para produccion
 const dbSchema = import.meta.env.VITE_SUPABASE_SCHEMA;
 
+const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+
 // Solo crear cliente si hay credenciales válidas
 // Nota: Solo pasar db.schema cuando NO es 'public' para evitar el header
 // Accept-Profile que causa 406 en Supabase self-hosted
 const clientOptions: Parameters<typeof createClient>[2] = {
-  auth: {
-    persistSession: false
-  },
+  auth: isDemoMode
+    ? { persistSession: false }
+    : {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storageKey: 'bideval-auth-token',
+      },
 };
 
 if (dbSchema && dbSchema !== 'public') {

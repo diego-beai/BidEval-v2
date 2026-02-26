@@ -28,10 +28,16 @@ import { LandingPage } from './pages/LandingPage';
 import { EconomicSection } from './components/economic/EconomicSection';
 import { RfpGeneratorPage } from './pages/RfpGeneratorPage';
 import { SupplierDirectoryPage } from './pages/SupplierDirectoryPage';
+import { OrganizationPage } from './pages/OrganizationPage';
+import { ApiDocsPage } from './pages/ApiDocsPage';
+import { ApiKeysPage } from './pages/ApiKeysPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
 
-type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status';
+type ViewType = 'landing' | 'home' | 'upload' | 'table' | 'qa' | 'decision' | 'economic' | 'chat' | 'communications' | 'rfp-gen' | 'suppliers' | 'projects-status' | 'organization' | 'api-docs' | 'api-keys' | 'admin-dashboard';
 
 export default function App() {
+  useSessionTimeout();
   const { selectedFiles, isProcessing, error, processingFileCount, setApplyTableFilters, results, refreshProposalEvaluations, status } = useRfqStore();
   const [activeView, setActiveView] = useState<ViewType>(() => {
     const saved = localStorage.getItem('activeView') as ViewType;
@@ -54,24 +60,24 @@ export default function App() {
     return providers[0] || '';
   }, [clickedProvider, selectedFiles]);
 
-  // Persist activeView state
-  useEffect(() => {
-    localStorage.setItem('activeView', activeView);
-  }, [activeView]);
-
-  useEffect(() => {
-    // Clear processing error when navigating away from the upload view
-    if (error && !isProcessing) {
-      useRfqStore.getState().setError(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeView]);
-
   const { loadDashboardData } = useDashboardStore();
   const { loadProjects, getActiveProject, activeProjectId, projects } = useProjectStore();
   const projectType = projects.find(p => p.id === activeProjectId)?.project_type || 'RFP';
   const tp = { type: projectType };
   const { fetchProjectProviders, projectProviders } = useProviderStore();
+
+  // Navigation handler — consolidates side effects (persist, clear errors, load data, RFI redirect)
+  const navigateTo = (view: string) => {
+    const target = (view === 'economic' && projectType === 'RFI') ? 'home' : view;
+    setActiveView(target as ViewType);
+    localStorage.setItem('activeView', target);
+    if (error && !isProcessing) {
+      useRfqStore.getState().setError(null);
+    }
+    if (target === 'qa' || target === 'decision') {
+      loadDashboardData();
+    }
+  };
 
   // Load projects on app mount + subscribe to realtime updates
   useEffect(() => {
@@ -86,19 +92,6 @@ export default function App() {
       fetchProjectProviders(activeProjectId);
     }
   }, [activeProjectId, fetchProjectProviders]);
-
-  useEffect(() => {
-    if (activeView === 'qa' || activeView === 'decision') {
-      loadDashboardData();
-    }
-  }, [activeView, loadDashboardData]);
-
-  // Redirect RFI projects away from economic section
-  useEffect(() => {
-    if (activeView === 'economic' && projectType === 'RFI') {
-      setActiveView('home');
-    }
-  }, [activeView, projectType]);
 
   // Get active project for use throughout the app
   const activeProject = getActiveProject();
@@ -539,7 +532,7 @@ export default function App() {
                   <ProcessingStatus
                     onViewResults={() => {
                       useRfqStore.getState().updateStatus({ stage: ProcessingStage.IDLE, message: '', progress: 0 });
-                      setActiveView('table');
+                      navigateTo('table');
                       setApplyTableFilters(true);
                     }}
                     onClose={() => {
@@ -579,7 +572,7 @@ export default function App() {
   if (activeView === 'landing') {
     return (
       <LandingPage
-        onEnterApp={() => setActiveView('home')}
+        onEnterApp={() => navigateTo('home')}
         language={useLanguageStore.getState().language}
       />
     );
@@ -588,9 +581,9 @@ export default function App() {
   return (
     <>
       <Preloader />
-      <SidebarLayout activeView={activeView} onNavigate={(view) => setActiveView(view as ViewType)} onNewProject={() => setShowSetupWizard(true)}>
+      <SidebarLayout activeView={activeView} onNavigate={navigateTo} onNewProject={() => setShowSetupWizard(true)}>
 
-        {activeView === 'home' && <HomeDashboard onNavigate={(view) => setActiveView(view as ViewType)} onNewProject={() => setShowSetupWizard(true)} />}
+        {activeView === 'home' && <HomeDashboard onNavigate={navigateTo} onNewProject={() => setShowSetupWizard(true)} />}
 
         {activeView === 'upload' && renderUploadView()}
 
@@ -612,7 +605,7 @@ export default function App() {
 
         {activeView === 'chat' && <ChatPage />}
 
-        {activeView === 'communications' && <CommunicationsHub onNavigate={(view) => setActiveView(view as ViewType)} />}
+        {activeView === 'communications' && <CommunicationsHub onNavigate={navigateTo} />}
 
         {activeView === 'rfp-gen' && <RfpGeneratorPage />}
 
@@ -621,6 +614,14 @@ export default function App() {
         {activeView === 'projects-status' && (
           <AllProjectsStatusPage />
         )}
+
+        {activeView === 'organization' && <OrganizationPage />}
+
+        {activeView === 'api-docs' && <ApiDocsPage />}
+
+        {activeView === 'api-keys' && <ApiKeysPage />}
+
+        {activeView === 'admin-dashboard' && <AdminDashboardPage />}
       </SidebarLayout>
       <ToastContainer />
       {showSetupWizard && (
