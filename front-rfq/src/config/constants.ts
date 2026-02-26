@@ -12,31 +12,31 @@ export { getProviderColor, getProviderDisplayName, getProviderFullDisplayName };
 export const API_CONFIG = {
   // URL del webhook de ofertas de proveedores
   // nginx proxies /api/n8n/* to n8n.beaienergy.com/webhook/*
-  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || '/api/n8n/ofertas',
+  N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || '/api/n8n/ofertas-desarrollo',
   // URL del webhook de ingesta de RFQ base del cliente
-  N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || '/api/n8n/ingesta-rfq',
+  N8N_RFQ_INGESTA_URL: import.meta.env.VITE_N8N_RFQ_INGESTA_URL || '/api/n8n/ingesta-rfq-desarrollo',
   // URL del webhook de chat de n8n
-  N8N_CHAT_URL: import.meta.env.VITE_N8N_CHAT_URL || '/api/n8n/chat-rfq',
+  N8N_CHAT_URL: import.meta.env.VITE_N8N_CHAT_URL || '/api/n8n/chat-rfq-desarrollo',
   // URL del webhook para ver tabla adicional
-  N8N_TABLA_URL: import.meta.env.VITE_N8N_TABLA_URL || '/api/n8n/tabla',
+  N8N_TABLA_URL: import.meta.env.VITE_N8N_TABLA_URL || '/api/n8n/tabla-desarrollo',
   // URL del webhook para el generador de correos
-  N8N_MAIL_URL: import.meta.env.VITE_N8N_MAIL_URL || '/api/n8n/mail',
+  N8N_MAIL_URL: import.meta.env.VITE_N8N_MAIL_URL || '/api/n8n/mail-desarrollo',
   // URL del webhook para generar auditoría técnica Q&A
-  N8N_QA_AUDIT_URL: import.meta.env.VITE_N8N_QA_AUDIT_URL || '/api/n8n/qa-audit-generator',
+  N8N_QA_AUDIT_URL: import.meta.env.VITE_N8N_QA_AUDIT_URL || '/api/n8n/qa-audit-generator-desarrollo',
   // URL del webhook para el scoring de proveedores
-  N8N_SCORING_URL: import.meta.env.VITE_N8N_SCORING_URL || '/api/n8n/scoring-evaluation',
+  N8N_SCORING_URL: import.meta.env.VITE_N8N_SCORING_URL || '/api/n8n/scoring-evaluation-desarrollo',
   // URL del webhook para enviar Q&A al proveedor
-  N8N_QA_SEND_TO_SUPPLIER_URL: import.meta.env.VITE_N8N_QA_SEND_TO_SUPPLIER_URL || '/api/n8n/qa-send-to-supplier',
+  N8N_QA_SEND_TO_SUPPLIER_URL: import.meta.env.VITE_N8N_QA_SEND_TO_SUPPLIER_URL || '/api/n8n/qa-send-to-supplier-desarrollo',
   // URL del webhook para procesar respuestas del proveedor
-  N8N_QA_PROCESS_RESPONSES_URL: import.meta.env.VITE_N8N_QA_PROCESS_RESPONSES_URL || '/api/n8n/qa-process-responses',
+  N8N_QA_PROCESS_RESPONSES_URL: import.meta.env.VITE_N8N_QA_PROCESS_RESPONSES_URL || '/api/n8n/qa-process-responses-desarrollo',
   // URL del webhook para enviar email Q&A
-  N8N_QA_SEND_EMAIL_URL: import.meta.env.VITE_N8N_QA_SEND_EMAIL_URL || '/api/n8n/qa-send-email',
+  N8N_QA_SEND_EMAIL_URL: import.meta.env.VITE_N8N_QA_SEND_EMAIL_URL || '/api/n8n/qa-send-email-desarrollo',
   // URL del webhook para procesar respuesta de email con IA
-  N8N_QA_PROCESS_EMAIL_RESPONSE_URL: import.meta.env.VITE_N8N_QA_PROCESS_EMAIL_RESPONSE_URL || '/api/n8n/qa-process-email-response',
+  N8N_QA_PROCESS_EMAIL_RESPONSE_URL: import.meta.env.VITE_N8N_QA_PROCESS_EMAIL_RESPONSE_URL || '/api/n8n/qa-process-email-response-desarrollo',
   // URL del webhook para generar RFP con IA a partir de requisitos
-  N8N_RFP_GENERATE_URL: import.meta.env.VITE_N8N_RFP_GENERATE_URL || '/api/n8n/rfp-generate',
+  N8N_RFP_GENERATE_URL: import.meta.env.VITE_N8N_RFP_GENERATE_URL || '/api/n8n/rfp-generate-desarrollo',
   // URL del webhook para enviar email de invitación
-  N8N_SEND_INVITE_URL: import.meta.env.VITE_N8N_SEND_INVITE_URL || '/api/n8n/send-invite',
+  N8N_SEND_INVITE_URL: import.meta.env.VITE_N8N_SEND_INVITE_URL || '/api/n8n/send-invite-desarrollo',
   REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '1800000', 10), // 30 minutos por defecto (procesamiento de PDFs puede tardar hasta 30 min)
   MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
   ALLOWED_FILE_TYPES: ['application/pdf'],
